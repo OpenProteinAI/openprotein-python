@@ -104,55 +104,23 @@ def prots2prot_score_get(session: OpenProtein, job_id, page_size=1000, page_offs
         url,
         params={'job_id': job_id, 'page_size': page_size, 'page_offset': page_offset}
     )
-    return Prots2ProtScoreJob(**response.json())
+    return Prots2ProtScoreJob(**response.json())    
 
 
-class Prots2ProtScoreFuture:
-    PAGE_SIZE = 256
+class Prots2ProtSiteResult(pydantic.BaseModel):
+    sequence: bytes
+    score: float
+    name: Optional[str]
 
-    def __init__(self, session: OpenProtein, job: Job, queries):
-        self.session = session
-        self.job = job
-        self.queries = queries
 
-    def update(self):
-        self.job = job_get(self.session, self.job.job_id)
-
-    def get(self):
-        job_id = self.job.job_id
-        step = self.PAGE_SIZE
-        results = {}
-        n_completed = 1
-        offset = 0
-        while len(results) < n_completed:
-            response = prots2prot_score_get(
-                self.session,
-                job_id,
-                page_offset=offset,
-                page_size=step,
-            )
-            for r in response.result:
-                results[r.sequence] = r.score
-            #results += response.result
-            offset += step
-
-        # prots2prot de-duplicates the queries
-        # so we need to match the results back against the queries
-        # to return results exactly matched
-        x = np.zeros(len(self.queries))
-        for i in range(len(x)):
-            x[i] = results[self.queries[i]]
-        return x
-
-    @property
-    def status(self):
-        return self.job.status
-
-    def done(self):
-        status = self.status
-        return status == Status.CANCELED or status == Status.FAILURE or status == Status.SUCCESS
-    
-
+class Prots2ProtSingleSiteJob(Job):
+    parent_id: Optional[str]
+    s3prefix: Optional[str]
+    page_size: Optional[int]
+    page_offset: Optional[int]
+    num_rows: Optional[int]
+    result: Optional[List[Prots2ProtSiteResult]]
+    #n_completed: Optional[int]
 
 
 def prots2prot_single_site_post(session: OpenProtein, variant, parent_id=None, prompt=None):
@@ -172,7 +140,7 @@ def prots2prot_single_site_post(session: OpenProtein, variant, parent_id=None, p
         params=params,
         files=files,
     )
-    return response
+    return Prots2ProtSingleSiteJob(**response.json())
 
 
 def prots2prot_single_site_get(session: OpenProtein, job_id, page_size=100, page_offset=0):
@@ -180,7 +148,102 @@ def prots2prot_single_site_get(session: OpenProtein, job_id, page_size=100, page
 
     params = {'job_id': job_id, 'page_size': page_size, 'page_offset': page_offset}
     response = session.session.get(url, params=params)
-    return response
+
+    return Prots2ProtSingleSiteJob(**response.json())
+
+
+class Prots2ProtScoreFuture:
+    PAGE_SIZE = 256
+
+    def __init__(self, session: OpenProtein, job: Job, queries):
+        self.session = session
+        self.job = job
+        self.queries = queries
+
+    def update(self):
+        self.job = job_get(self.session, self.job.job_id)
+
+    def get(self):
+        job_id = self.job.job_id
+        step = self.PAGE_SIZE
+        results = {}
+        offset = 0
+        num_returned = step
+        while num_returned >= step:
+            response = prots2prot_score_get(
+                self.session,
+                job_id,
+                page_offset=offset,
+                page_size=step,
+            )
+            for r in response.result:
+                results[r.sequence] = r.score
+            #results += response.result
+            offset += step
+            num_returned = len(response.result)
+
+        # prots2prot de-duplicates the queries
+        # so we need to match the results back against the queries
+        # to return results exactly matched
+        x = np.zeros(len(self.queries))
+        for i in range(len(x)):
+            x[i] = results[self.queries[i]]
+        return x
+
+    @property
+    def status(self):
+        return self.job.status
+
+    def done(self):
+        status = self.status
+        return status == Status.CANCELED or status == Status.FAILURE or status == Status.SUCCESS
+
+
+class Prots2ProtSingleSiteFuture:
+    PAGE_SIZE = 256
+
+    def __init__(self, session: OpenProtein, job: Job):
+        self.session = session
+        self.job = job
+
+    def update(self):
+        self.job = job_get(self.session, self.job.job_id)
+
+    def get(self):
+        job_id = self.job.job_id
+        step = self.PAGE_SIZE
+        results = {}
+        offset = 0
+        num_returned = step
+        while num_returned >= step:
+            response = prots2prot_single_site_get(
+                self.session,
+                job_id,
+                page_offset=offset,
+                page_size=step,
+            )
+            for r in response.result:
+                results[r.sequence] = r.score
+            offset += step
+            num_returned = len(response.result)
+        
+        return results
+
+    @property
+    def status(self):
+        return self.job.status
+
+    def done(self):
+        status = self.status
+        return status == Status.CANCELED or status == Status.FAILURE or status == Status.SUCCESS
+
+
+def validate_prompt(prompt, prompt_is_seed):
+    if prompt_is_seed and len(prompt) > 1:
+        warnings.warn('When prompt_is_seed=True, only the first prompt sequence is used to build the expanded MSA.')
+    elif not prompt_is_seed and len(prompt) == 1:
+        warnings.warn('Prots2prot works best with more contextual sequences in the prompt. You passed one prompt sequence, but set prompt_is_seed=False. Set prompt_is_seed=True to expand the prompt via homology search.')
+    return prompt, prompt_is_seed
 
 
 class Prots2ProtAPI:
@@ -188,9 +251,15 @@ class Prots2ProtAPI:
         self.session = session
 
     def score(self, prompt, queries, prompt_is_seed=False):
-        if prompt_is_seed and len(prompt) > 1:
-            warnings.warn('When prompt_is_seed=True, only the first prompt sequence is used to build the expanded MSA.')
-        elif not prompt_is_seed and len(prompt) == 1:
-            warnings.warn('Prots2prot works best with more contextual sequences in the prompt. You passed one prompt sequence, but set prompt_is_seed=False. Set prompt_is_seed=True to expand the prompt via homology search.')
+        prompt, prompt_is_seed = validate_prompt(prompt, prompt_is_seed)
         response = prots2prot_score_post(self.session, prompt, queries, prompt_is_seed=prompt_is_seed)
         return Prots2ProtScoreFuture(self.session, response, queries)
+
+    def single_site(self, sequence, prompt=None, prompt_id=None):
+        parent_id = None
+        if prompt_id is not None:
+            # prompt ID needs to be a predict job
+            parent_id = prompt_id.job.job_id
+
+        response = prots2prot_single_site_post(self.session, sequence, prompt=prompt, parent_id=parent_id)
+        return Prots2ProtSingleSiteFuture(self.session, response)
