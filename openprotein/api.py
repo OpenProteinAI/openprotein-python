@@ -9,13 +9,16 @@ import numpy as np
 import warnings
 
 
+DEV_URL = 'https://backend-dev.openprotein.ai'
+
+
 class OpenProtein:
     def __init__(self, username, password):
         session = requests.Session()
         session.auth = (username, password)
         session.verify = True
         self.session = session
-        self.url_prefix = 'https://backend-dev.openprotein.ai'
+        self.url_prefix = DEV_URL
 
     def prots2prot(self):
         return Prots2ProtAPI(self)

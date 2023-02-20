@@ -1,0 +1,1 @@
+from openprotein._version import __version__
