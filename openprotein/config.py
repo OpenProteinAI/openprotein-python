@@ -1,0 +1,7 @@
+DEV_API_V1_URL = 'https://backend-dev.openprotein.ai/api/'
+
+POLLING_INTERVAL = 2.5
+POLLING_TIMEOUT = 600
+
+BASE_PAGE_SIZE = 256
+PROTS2PROT_PAGE_SIZE = 256
