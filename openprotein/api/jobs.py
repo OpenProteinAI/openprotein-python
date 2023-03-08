@@ -137,3 +137,8 @@ class AsyncJobFuture:
             pbar.set_postfix({'status': self.job.status})
 
         return self.get()
+
+
+class StreamingAsyncJobFuture(AsyncJobFuture):
+    def get(self):
+        return [entry for entry in self.stream()]

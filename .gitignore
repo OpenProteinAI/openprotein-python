@@ -1,6 +1,9 @@
 # data for testing
 data/
 
+# VS code
+.DS_store
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

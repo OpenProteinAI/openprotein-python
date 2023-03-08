@@ -66,6 +66,22 @@ result = future.wait()
 # result is a dictionary of {variant: score}
 ```
 
+Generate sequences from the prots2prot model.
+```
+prompt = b'MALWMRLLPLLALLALWGPDPAAAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN'
+future = session.prots2prot.generate(
+    prompt,
+    prompt_is_seed=True,
+    max_seqs_from_msa=1024,
+    num_samples=100,
+    # temperature=1.0,
+    # topk=None,
+    # topp=None,
+    # max_length=1000,
+)
+samples = future.wait()
+```
+
 
 ## TODOs
 
