@@ -3,9 +3,64 @@ from openprotein.api.jobs import Job, AsyncJobFuture, StreamingAsyncJobFuture
 import openprotein.config as config
 
 import pydantic
+from enum import Enum
 from typing import Optional, List, Dict, Union
 from io import BytesIO
 import warnings
+
+
+class Prots2ProtInputType(str, Enum):
+    INPUT = 'RAW'
+    MSA = 'GENERATED'
+    PROMPT = 'SAMPLED'
+
+
+def get_prots2prot_job_inputs(session: APISession, job_id, input_type: Prots2ProtInputType):
+    endpoint = 'v1/workflow/align/inputs'
+
+    params = {'job_id': job_id, 'msa_type': input_type}
+    response = session.get(endpoint, params=params, stream=True)
+
+    return response
+
+
+def get_input(self: APISession, job: Job, input_type: Prots2ProtInputType):
+    job_id = job.job_id
+    response = get_prots2prot_job_inputs(self, job_id, input_type)
+
+    for line in response.iter_lines():
+        name, sequence = line.split(b',')
+        name = name.decode()
+        yield name, sequence
+
+
+def get_prompt(self: APISession, job: Job):
+    return get_input(self, job, Prots2ProtInputType.PROMPT)
+
+
+def get_seed(self: APISession, job: Job):
+    return get_input(self, job, Prots2ProtInputType.INPUT)
+
+
+def get_msa(self: APISession, job: Job):
+    return get_input(self, job, Prots2ProtInputType.MSA)
+
+
+class Prots2ProtFutureMixin:
+    session: APISession
+    job: Job
+
+    def get_input(self, input_type: Prots2ProtInputType):
+        return get_input(self.session, self.job, input_type)
+
+    def get_prompt(self):
+        return get_prompt(self.session, self.job)
+
+    def get_seed(self):
+        return get_seed(self.session, self.job)
+    
+    def get_msa(self):
+        return get_msa(self.session, self.job)
 
 
 class Prots2ProtScoreResult(pydantic.BaseModel):
@@ -50,7 +105,7 @@ def prots2prot_score_get(session: APISession, job_id, page_size=1000, page_offse
     return Prots2ProtScoreJob(**response.json()) 
 
 
-class Prots2ProtScoreFuture(AsyncJobFuture):
+class Prots2ProtScoreFuture(Prots2ProtFutureMixin, AsyncJobFuture):
     def __init__(self, session: APISession, job: Job, page_size=config.PROTS2PROT_PAGE_SIZE):
         super().__init__(session, job)
         self.page_size = page_size
@@ -127,7 +182,7 @@ def prots2prot_single_site_get(session: APISession, job_id, page_size=100, page_
     return Prots2ProtSingleSiteJob(**response.json())
 
 
-class Prots2ProtSingleSiteFuture(AsyncJobFuture):
+class Prots2ProtSingleSiteFuture(Prots2ProtFutureMixin, AsyncJobFuture):
     def __init__(self, session: APISession, job: Job, page_size=config.PROTS2PROT_PAGE_SIZE):
         super().__init__(session, job)
         self.page_size = page_size
@@ -208,7 +263,7 @@ def prots2prot_generate_get(session: APISession, job_id):
     return response
 
 
-class Prots2ProtGenerateFuture(StreamingAsyncJobFuture):
+class Prots2ProtGenerateFuture(Prots2ProtFutureMixin, StreamingAsyncJobFuture):
     def stream(self):
         """
         Yield results from the response stream.

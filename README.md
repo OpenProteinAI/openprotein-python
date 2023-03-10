@@ -82,6 +82,15 @@ future = session.prots2prot.generate(
 samples = future.wait()
 ```
 
+Retrieve the prompt, MSA, or input (seed) sequences for a prots2prot job.
+```
+future.get_input(INPUT_TYPE)
+# or, functions for each type
+future.get_prompt()
+future.get_msa()
+future.get_seed()
+```
+
 
 ## TODOs
 
