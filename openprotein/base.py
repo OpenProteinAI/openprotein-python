@@ -23,6 +23,7 @@ class APISession(requests.Session):
         #print(args)
         #print(kwargs)
         response = super().request(method, full_url, *args, **kwargs)
+        response.raise_for_status()
         #print(response, response.json())
         return response
 

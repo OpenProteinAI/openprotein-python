@@ -1,5 +1,5 @@
 from openprotein.base import APISession
-from openprotein.api.jobs import Job, AsyncJobFuture, StreamingAsyncJobFuture
+from openprotein.api.jobs import Job, AsyncJobFuture, StreamingAsyncJobFuture, job_get
 import openprotein.config as config
 
 import pydantic
@@ -7,12 +7,14 @@ from enum import Enum
 from typing import Optional, List, Dict, Union
 from io import BytesIO
 import warnings
+import random
+import sys
 
 
 class Prots2ProtInputType(str, Enum):
     INPUT = 'RAW'
     MSA = 'GENERATED'
-    PROMPT = 'SAMPLED'
+    PROMPT = 'PROMPT'
 
 
 def get_prots2prot_job_inputs(session: APISession, job_id, input_type: Prots2ProtInputType):
@@ -63,6 +65,66 @@ class Prots2ProtFutureMixin:
         return get_msa(self.session, self.job)
 
 
+class MSAJob(Job):
+    msa_id: str
+
+
+def msa_post(session: APISession, msa_file=None, seed=None):
+    endpoint = 'v1/workflow/align/msa'
+    assert msa_file is not None or seed is not None, 'One of msa_file or seed must be set'
+    assert not (msa_file is not None and seed is not None), 'Both msa_file and seed cannot be set'
+
+    is_seed = False
+    if seed is not None:
+        msa_file = BytesIO(b'\n'.join([b'>seed', seed]))
+        is_seed = True
+
+    params = {'is_seed': is_seed}
+    files = {'msa_file': msa_file}
+
+    response = session.post(endpoint, files=files, params=params)
+    return MSAJob(**response.json())
+
+
+class MSASamplingMethod(str, Enum):
+    RANDOM = 'RANDOM'
+    NEIGHBORS = 'NEIGHBORS'
+    NEIGHBORS_NO_LIMIT = 'NEIGHBORS_NO_LIMIT'
+    NEIGHBORS_NONGAP_NORM_NO_LIMIT = 'NEIGHBORS_NONGAP_NORM_NO_LIMIT'
+    TOP = 'TOP'
+
+
+class PromptJob(Job):
+    prompt_id: str
+
+
+def prompt_post(
+        session: APISession,
+        msa_id: str,
+        num_sequences: int = 33,
+        method: MSASamplingMethod = MSASamplingMethod.NEIGHBORS_NONGAP_NORM_NO_LIMIT,
+        homology_level: float = 0.8,
+        random_seed: Optional[int] = None,
+    ):
+    endpoint = 'v1/workflow/align/prompt'
+
+    assert 0 <= homology_level and homology_level <= 1
+    assert num_sequences >= 1
+
+    if random_seed is None:
+        random_seed = random.randrange(sys.maxsize)
+
+    params = {
+        'msa_id': msa_id,
+        'max_msa': num_sequences,
+        'msa_method': method,
+        'theta': 1 - homology_level,
+        'seed': random_seed
+    }
+    response = session.post(endpoint, params=params)
+    return PromptJob(**response.json())
+
+
 class Prots2ProtScoreResult(pydantic.BaseModel):
     sequence: bytes
     score: float
@@ -79,17 +141,16 @@ class Prots2ProtScoreJob(Job):
     n_completed: Optional[int]
 
 
-def prots2prot_score_post(session: APISession, prompt, queries, prompt_is_seed=False):
+def prots2prot_score_post(session: APISession, prompt_id: str, queries):
     endpoint = 'v1/workflow/prots2prot/score'
 
-    msa_file = BytesIO(b'\n'.join(prompt))
     variant_file = BytesIO(b'\n'.join(queries))
 
-    params = {'msa_is_seed': prompt_is_seed}
+    params = {'prompt_id': prompt_id}
 
     response = session.post(
         endpoint,
-        files={'variant_file': variant_file, 'msa_file': msa_file},
+        files={'variant_file': variant_file},
         params=params,
     )
     return Prots2ProtScoreJob(**response.json())
@@ -148,27 +209,23 @@ class Prots2ProtSingleSiteJob(Job):
     #n_completed: Optional[int]
 
 
-def prots2prot_single_site_post(session: APISession, variant, parent_id=None, prompt=None, prompt_is_seed=False):
+def prots2prot_single_site_post(session: APISession, variant, parent_id=None, prompt_id=None):
     endpoint = 'v1/workflow/prots2prot/single_site'
 
-    assert (parent_id is not None) or (prompt is not None), 'One of parent_id or prompt must be set.'
-    assert not ((parent_id is not None) and (prompt is not None)), 'Both parent_id and prompt cannot be set.'
-
-    files = None
-    if prompt is not None:
-        msa_file = BytesIO(b'\n'.join(prompt))
-        files = {'msa_file': msa_file}
+    assert (parent_id is not None) or (prompt_id is not None), 'One of parent_id or prompt_id must be set.'
+    assert not ((parent_id is not None) and (prompt_id is not None)), 'Both parent_id and prompt_id cannot be set.'
     
-    params = {'variant': variant, 'msa_is_seed': prompt_is_seed}
+    params = {'variant': variant}
+    if prompt_id is not None:
+        params['prompt_id'] = prompt_id
     if parent_id is not None:
         params['parent_id'] = parent_id
-    else:
-        params['parent_id'] = ''
+    #else:
+    #    params['parent_id'] = ''
 
     response = session.post(
         endpoint,
         params=params,
-        files=files,
     )
     return Prots2ProtSingleSiteJob(**response.json())
 
@@ -210,11 +267,7 @@ class Prots2ProtSingleSiteFuture(Prots2ProtFutureMixin, AsyncJobFuture):
 
 def prots2prot_generate_post(
         session: APISession,
-        prompt=None,
-        prompt_is_seed=False,
-        msa_sampling_method='NEIGHBORS_NONGAP_NORM_NO_LIMIT',
-        max_seqs_from_msa=33,
-        parent_id=None,
+        prompt_id: str,
         num_samples=100,
         temperature=1.0,
         topk=None,
@@ -223,24 +276,12 @@ def prots2prot_generate_post(
     ) -> Job:
     endpoint = 'v1/workflow/prots2prot/generate'
 
-    assert (parent_id is not None) or (prompt is not None), 'One of parent_id or prompt must be set.'
-    assert not ((parent_id is not None) and (prompt is not None)), 'Both parent_id and prompt cannot be set.'
-
-    files = None
-    if prompt is not None:
-        msa_file = BytesIO(b'\n'.join(prompt))
-        files = {'msa_file': msa_file}
-    
     params = {
-        'msa_is_seed': prompt_is_seed,
-        'max_msa': max_seqs_from_msa,
-        'msa_method': msa_sampling_method,
+        'prompt_id': prompt_id,
         'generate_n': num_samples,
         'temperature': temperature,
         'maxlen': max_length,
     }
-    if parent_id is not None:
-        params['parent_id'] = parent_id
     if topk is not None:
         params['topk'] = topk
     if topp is not None:
@@ -249,7 +290,6 @@ def prots2prot_generate_post(
     response = session.post(
         endpoint,
         params=params,
-        files=files,
     )
     return Job(**response.json())
 
@@ -277,63 +317,81 @@ class Prots2ProtGenerateFuture(Prots2ProtFutureMixin, StreamingAsyncJobFuture):
             yield sample
 
 
-Prompt = Union[bytes, List[bytes]]
+Prompt = Union[PromptJob, str]
 
 
-def validate_prompt(prompt: Prompt, prompt_is_seed):
-    if type(prompt) is bytes:
-        prompt = [prompt]
-    if prompt_is_seed and len(prompt) > 1:
-        warnings.warn('When prompt_is_seed=True, only the first prompt sequence is used to build the expanded MSA.')
-    elif not prompt_is_seed and len(prompt) == 1:
-        warnings.warn('Prots2prot works best with more contextual sequences in the prompt. You passed one prompt sequence, but set prompt_is_seed=False. Set prompt_is_seed=True to expand the prompt via homology search.')
-    return prompt, prompt_is_seed
+def validate_prompt(prompt: Prompt):
+    prompt_id = prompt
+    if isinstance(prompt, PromptJob):
+        prompt_id = prompt.prompt_id
+    return prompt_id
 
 
 class Prots2ProtAPI:
     def __init__(self, session: APISession):
         self.session = session
 
-    def score(self, prompt: Prompt, queries: List[bytes], prompt_is_seed=False):
-        prompt, prompt_is_seed = validate_prompt(prompt, prompt_is_seed)
-        response = prots2prot_score_post(self.session, prompt, queries, prompt_is_seed=prompt_is_seed)
+    def upload_msa(self, msa_file) -> MSAJob:
+        return msa_post(self.session, msa_file=msa_file)
+
+    def create_msa(self, seed: bytes) -> MSAJob:
+        return msa_post(self.session, seed=seed)
+
+    def sample_prompt(
+            self,
+            msa: Union[MSAJob, str],
+            num_sequences: int = 33,
+            method: MSASamplingMethod = MSASamplingMethod.NEIGHBORS_NONGAP_NORM_NO_LIMIT,
+            homology_level: float = 0.8,
+            random_seed: Optional[int] = None,
+        ) -> PromptJob:
+        msa_id = msa
+        if isinstance(msa, MSAJob):
+            msa_id = msa.msa_id
+        return prompt_post(self.session, msa_id, num_sequences=num_sequences, method=method, homology_level=homology_level, random_seed=random_seed)
+
+    def get_prompt(self, job: Job):
+        return get_input(self.session, job, Prots2ProtInputType.PROMPT)
+
+    def get_seed(self, job: Job):
+        return get_input(self.session, job, Prots2ProtInputType.INPUT)
+
+    def get_msa(self, job: Job):
+        return get_input(self.session, job, Prots2ProtInputType.MSA)
+
+    def get_prompt_job(self, job_id: str) -> PromptJob:
+        job = job_get(self.session, job_id)
+        assert job.job_type == 'workflow/align/prompt'
+        return PromptJob(**job.dict(), prompt_id=job.job_id)
+
+    def get_msa_job(self, job_id: str) -> MSAJob:
+        job = job_get(self.session, job_id)
+        assert job.job_type == 'workflow/align/align'
+        return MSAJob(**job.dict(), msa_id=job.job_id)
+
+    def score(self, prompt: Prompt, queries: List[bytes]):
+        prompt_id = validate_prompt(prompt)
+        response = prots2prot_score_post(self.session, prompt_id, queries)
         return Prots2ProtScoreFuture(self.session, response)
 
-    def single_site(self, prompt: Union[Prompt, Job], sequence: bytes, prompt_is_seed=False):
-        parent_id = None
-        if isinstance(prompt, Job):
-            parent_id = prompt.job_id
-        else:
-            prompt, prompt_is_seed = validate_prompt(prompt, prompt_is_seed=prompt_is_seed)
-
-        response = prots2prot_single_site_post(self.session, sequence, prompt=prompt, parent_id=parent_id, prompt_is_seed=prompt_is_seed)
+    def single_site(self, prompt: Prompt, sequence: bytes):
+        prompt_id = validate_prompt(prompt)
+        response = prots2prot_single_site_post(self.session, sequence, prompt_id=prompt_id)
         return Prots2ProtSingleSiteFuture(self.session, response)
 
     def generate(
             self,
-            prompt: Union[Prompt, Job],
-            prompt_is_seed=False,
-            msa_sampling_method='NEIGHBORS_NONGAP_NORM_NO_LIMIT',
-            max_seqs_from_msa=33,
+            prompt: Prompt,
             num_samples=100,
             temperature=1.0,
             topk=None,
             topp=None,
             max_length=1000,
         ):
-        parent_id = None
-        if isinstance(prompt, Job):
-            parent_id = prompt.job_id
-        else:
-            prompt, prompt_is_seed = validate_prompt(prompt, prompt_is_seed=prompt_is_seed)
-        
+        prompt_id = validate_prompt(prompt)
         job = prots2prot_generate_post(
             self.session,
-            prompt=prompt,
-            prompt_is_seed=prompt_is_seed,
-            parent_id=parent_id,
-            msa_sampling_method=msa_sampling_method,
-            max_seqs_from_msa=max_seqs_from_msa,
+            prompt_id,
             num_samples=num_samples,
             temperature=temperature,
             topk=topk,

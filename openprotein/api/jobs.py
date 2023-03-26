@@ -28,7 +28,7 @@ class Job(pydantic.BaseModel):
     status: JobStatus
     job_id: str
     job_type: str
-    created_date: datetime
+    created_date: Optional[datetime]
     start_date: Optional[datetime]
     end_date: Optional[datetime]
     prerequisite_job_id: Optional[str]
@@ -43,6 +43,35 @@ class Job(pydantic.BaseModel):
 
     def cancelled(self):
         return self.status.cancelled()
+
+    def wait(self, session: APISession, interval=config.POLLING_INTERVAL, timeout=None, verbose=False):
+        start_time = time.time()
+        
+        def is_done(job: Job):
+            if timeout is not None:
+                elapsed_time = time.time() - start_time
+                if elapsed_time >= timeout:
+                    raise TimeoutException(f'Wait time exceeded timeout {timeout}, waited {elapsed_time}')
+            return job.done()
+        
+        pbar = None
+        if verbose:
+            pbar = tqdm.tqdm()
+
+        job = self.refresh(session)
+        while not is_done(job):
+            if verbose:
+                pbar.update(1)
+                pbar.set_postfix({'status': job.status})
+                #print(f'Retry {retries}, status={self.job.status}, time elapsed {time.time() - start_time:.2f}')
+            time.sleep(interval)
+            job = job.refresh(session)
+        
+        if verbose:
+            pbar.update(1)
+            pbar.set_postfix({'status': job.status})
+
+        return job
 
 
 def jobs_list(
@@ -84,6 +113,9 @@ class JobsAPI:
     def get(self, job_id) -> Job:
         return job_get(self.session, job_id)
 
+    def wait(self, job: Job, interval=config.POLLING_INTERVAL, timeout=None, verbose=False):
+        return job.wait(self.session, interval=interval, timeout=timeout, verbose=verbose)
+
 
 class TimeoutException(Exception):
     pass
@@ -111,31 +143,8 @@ class AsyncJobFuture:
         raise NotImplementedError()
 
     def wait(self, interval=config.POLLING_INTERVAL, timeout=None, verbose=False):
-        start_time = time.time()
-        
-        def is_done():
-            if timeout is not None:
-                elapsed_time = time.time() - start_time
-                if elapsed_time >= timeout:
-                    raise TimeoutException(f'Wait time exceeded timeout {timeout}, waited {elapsed_time}')
-
-            self.refresh()
-            return self.done()
-        
-        pbar = None
-        if verbose:
-            pbar = tqdm.tqdm()
-        while not is_done():
-            if verbose:
-                pbar.update(1)
-                pbar.set_postfix({'status': self.job.status})
-                #print(f'Retry {retries}, status={self.job.status}, time elapsed {time.time() - start_time:.2f}')
-            time.sleep(interval)
-        
-        if verbose:
-            pbar.update(1)
-            pbar.set_postfix({'status': self.job.status})
-
+        job = self.job.wait(self.session, interval=interval, timeout=timeout, verbose=verbose)
+        self.job = job
         return self.get()
 
 
