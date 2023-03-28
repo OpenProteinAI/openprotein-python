@@ -7,18 +7,15 @@ from typing import Union
 
 
 class APISession(requests.Session):
-    def __init__(self, username, password, base_url=None):
+    def __init__(self, username, password, backend=config.Backend.DEV):
         super().__init__()
 
-        if base_url is None:
-            base_url = config.DEV_API_V1_URL
-
-        self.base_url = base_url
+        self.backend = backend
         self.auth = (username, password)
         self.verify = True
 
     def request(self, method: Union[str, bytes], url: Union[str, bytes], *args, **kwargs):
-        full_url = urljoin(self.base_url, url)
+        full_url = urljoin(self.backend, url)
         #print(full_url)
         #print(args)
         #print(kwargs)

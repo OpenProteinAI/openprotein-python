@@ -1,4 +1,9 @@
-DEV_API_V1_URL = 'https://backend-dev.openprotein.ai/api/'
+from enum import Enum
+
+class Backend(str, Enum):
+    PROD = 'https://api.openprotein.ai/api/'
+    DEV = 'https://backend-dev.openprotein.ai/api/'
+    TEST = 'https://test.api.openprotein.ai/api/'
 
 POLLING_INTERVAL = 2.5
 POLLING_TIMEOUT = 600
