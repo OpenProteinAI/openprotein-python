@@ -107,8 +107,8 @@ class JobsAPI:
     def __init__(self, session: APISession):
         self.session = session
 
-    def list(self, *args, **kwargs) -> List[Job]:
-        return jobs_list(self.session, *args, **kwargs)
+    def list(self, status=None, job_type=None, assay_id=None, more_recent_than=None) -> List[Job]:
+        return jobs_list(self.session, status=status, job_type=job_type, assay_id=assay_id, more_recent_than=more_recent_than)
 
     def get(self, job_id) -> Job:
         return job_get(self.session, job_id)
