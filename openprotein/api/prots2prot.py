@@ -6,15 +6,19 @@ import pydantic
 from enum import Enum
 from typing import Optional, List, Dict, Union
 from io import BytesIO
-import warnings
 import random
-import sys
 import csv
+import codecs
 import requests
 
 
 def csv_stream(response: requests.Response):
-    content = response.iter_content(decode_unicode=True)
+    raw_content = response.raw # the raw bytes stream
+
+    # force the response to be encoded as utf-8
+    # NOTE - this isn't ideal, as the response could be encoded differently in the future
+    # but, the csv parser requires str not bytes
+    content = codecs.getreader('utf-8')(raw_content)
     return csv.reader(content)
 
 
@@ -35,9 +39,9 @@ def get_prots2prot_job_inputs(session: APISession, job_id, input_type: Prots2Pro
     return response
 
 
-def get_input(self: APISession, job: Job, input_type: Prots2ProtInputType):
+def get_input(self: APISession, job: Job, input_type: Prots2ProtInputType, prompt_index: Optional[int] = None):
     job_id = job.job_id
-    response = get_prots2prot_job_inputs(self, job_id, input_type)
+    response = get_prots2prot_job_inputs(self, job_id, input_type, prompt_index=prompt_index)
     return csv_stream(response)
 
 
@@ -107,7 +111,7 @@ def prompt_post(
         session: APISession,
         msa_id: str,
         num_sequences: Optional[int] = None,
-        num_residues: Optional[int] = 12288,
+        num_residues: Optional[int] = None,
         method: MSASamplingMethod = MSASamplingMethod.NEIGHBORS_NONGAP_NORM_NO_LIMIT,
         homology_level: float = 0.8,
         max_similarity: float = 1.0,
@@ -121,6 +125,9 @@ def prompt_post(
     assert 0 <= homology_level and homology_level <= 1
     assert 0 <= max_similarity and max_similarity <= 1
     assert 0 <= min_similarity and min_similarity <= 1
+
+    if num_residues is None and num_sequences is None:
+        num_residues = 12288
 
     assert (num_sequences is not None) or (num_residues is not None), 'One of num_sequences or num_tokens must be set'
     assert (num_sequences is None) or (num_residues is None), 'Both num_sequences and num_tokens cannot be set'
@@ -374,7 +381,7 @@ class Prots2ProtAPI:
             self,
             msa: Union[MSAJob, str],
             num_sequences: Optional[int] = None,
-            num_residues: Optional[int] = 12288,
+            num_residues: Optional[int] = None,
             method: MSASamplingMethod = MSASamplingMethod.NEIGHBORS_NONGAP_NORM_NO_LIMIT,
             homology_level: float = 0.8,
             max_similarity: float = 1.0,
@@ -400,8 +407,8 @@ class Prots2ProtAPI:
             random_seed=random_seed,
         )
 
-    def get_prompt(self, job: Job):
-        return get_input(self.session, job, Prots2ProtInputType.PROMPT)
+    def get_prompt(self, job: Job, prompt_index: Optional[int] = None):
+        return get_input(self.session, job, Prots2ProtInputType.PROMPT, prompt_index=prompt_index)
 
     def get_seed(self, job: Job):
         return get_input(self.session, job, Prots2ProtInputType.INPUT)
