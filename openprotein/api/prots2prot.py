@@ -9,6 +9,13 @@ from io import BytesIO
 import warnings
 import random
 import sys
+import csv
+import requests
+
+
+def csv_stream(response: requests.Response):
+    content = response.iter_content(decode_unicode=True)
+    return csv.reader(content)
 
 
 class Prots2ProtInputType(str, Enum):
@@ -31,11 +38,7 @@ def get_prots2prot_job_inputs(session: APISession, job_id, input_type: Prots2Pro
 def get_input(self: APISession, job: Job, input_type: Prots2ProtInputType):
     job_id = job.job_id
     response = get_prots2prot_job_inputs(self, job_id, input_type)
-
-    for line in response.iter_lines():
-        name, sequence = line.split(b',')
-        name = name.decode()
-        yield name, sequence
+    return csv_stream(response)
 
 
 def get_prompt(self: APISession, job: Job, prompt_index: Optional[int] = None):
@@ -134,17 +137,17 @@ def prompt_post(
     params = {
         'msa_id': msa_id,
         'msa_method': method,
-        'theta': 1 - homology_level,
+        'homology_level': homology_level,
         'max_similarity': max_similarity,
-        'max_dissimilarity': 1 - min_similarity,
+        'min_similarity': min_similarity,
         'force_include_first': always_include_seed_sequence,
         'replicates': num_ensemble_prompts,
         'seed': random_seed,
     }
     if num_sequences is not None:
-        params['max_msa'] = num_sequences
+        params['max_msa_sequences'] = num_sequences
     if num_residues is not None:
-        params['n_msa_tokens'] = num_residues
+        params['max_msa_tokens'] = num_residues
 
     response = session.post(endpoint, params=params)
     return PromptJob(**response.json())
@@ -298,14 +301,19 @@ def prots2prot_generate_post(
         topk=None,
         topp=None,
         max_length=1000,
+        random_seed=None,
     ) -> Job:
     endpoint = 'v1/workflow/prots2prot/generate'
+
+    if random_seed is None:
+        random_seed = random.randrange(2**32)
 
     params = {
         'prompt_id': prompt_id,
         'generate_n': num_samples,
         'temperature': temperature,
         'maxlen': max_length,
+        'seed': random_seed,
     }
     if topk is not None:
         params['topk'] = topk
@@ -334,11 +342,10 @@ class Prots2ProtGenerateFuture(Prots2ProtFutureMixin, StreamingAsyncJobFuture):
         Yield results from the response stream.
         """
         response = prots2prot_generate_get(self.session, self.job.job_id)
-        for line in response.iter_lines():
-            tokens = line.split(b',')
+        for tokens in csv_stream(response):
             name, sequence = tokens[:2]
             score = [float(s) for s in tokens[2:]]
-            name = name.decode()
+            sequence = sequence.encode() # tokens are string type, but we encode sequences as bytes type
             sample = Prots2ProtScoreResult(sequence=sequence, score=score, name=name)
             yield sample
 

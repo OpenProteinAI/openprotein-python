@@ -7,7 +7,7 @@ from typing import Union
 
 
 class APISession(requests.Session):
-    def __init__(self, username, password, backend=config.Backend.DEV):
+    def __init__(self, username, password, backend=config.Backend.PROD):
         super().__init__()
 
         self.backend = backend
