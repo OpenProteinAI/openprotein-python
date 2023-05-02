@@ -1,6 +1,9 @@
 # data for testing
 data/
 
+# SECRETS FILE
+secrets.config
+
 # VS code
 .DS_store
 
