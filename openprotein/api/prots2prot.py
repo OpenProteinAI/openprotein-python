@@ -4,7 +4,7 @@ import openprotein.config as config
 
 import pydantic
 from enum import Enum
-from typing import Optional, List, Dict, Union
+from typing import Optional, List, Dict, Union, BinaryIO
 from io import BytesIO
 import random
 import csv
@@ -157,6 +157,22 @@ def prompt_post(
         params['max_msa_tokens'] = num_residues
 
     response = session.post(endpoint, params=params)
+    return PromptJob(**response.json())
+
+
+
+
+def upload_prompt_post(
+        session: APISession,
+        prompt_file: BinaryIO,
+    ):
+    """
+    Directly upload prompt sequences.
+    """
+    endpoint = 'v1/workflow/align/upload_prompt'
+
+    body = {'prompt_file': prompt_file}
+    response = session.post(endpoint, body=body)
     return PromptJob(**response.json())
 
 
@@ -376,6 +392,9 @@ class Prots2ProtAPI:
 
     def create_msa(self, seed: bytes) -> MSAJob:
         return msa_post(self.session, seed=seed)
+
+    def upload_prompt(self, prompt_file) -> PromptJob:
+        return upload_prompt_post(self.session, prompt_file)
 
     def sample_prompt(
             self,
