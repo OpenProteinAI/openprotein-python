@@ -207,9 +207,9 @@ def prots2prot_score_post(session: APISession, prompt_id: str, queries):
     return Prots2ProtScoreJob(**response.json())
 
 
-def prots2prot_score_get(session: APISession, job_id, page_size=1000, page_offset=0):
+def prots2prot_score_get(session: APISession, job_id, page_size=config.PROTS2PROT_PAGE_SIZE, page_offset=0):
     endpoint = 'v1/workflow/prots2prot/score'
-    assert page_size <= 1000 # 1000 is the maximum page size...
+    assert page_size <= config.PROTS2PROT_MAX_PAGE_SIZE, f'Page size must be less than the max for prots2prot: {config.PROTS2PROT_MAX_PAGE_SIZE}' # 1000 is the maximum page size...
     response = session.get(
         endpoint,
         params={'job_id': job_id, 'page_size': page_size, 'page_offset': page_offset}
