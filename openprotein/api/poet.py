@@ -160,8 +160,6 @@ def prompt_post(
     return PromptJob(**response.json())
 
 
-
-
 def upload_prompt_post(
         session: APISession,
         prompt_file: BinaryIO,
