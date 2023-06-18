@@ -22,13 +22,13 @@ def csv_stream(response: requests.Response):
     return csv.reader(content)
 
 
-class Prots2ProtInputType(str, Enum):
+class PoetInputType(str, Enum):
     INPUT = 'RAW'
     MSA = 'GENERATED'
     PROMPT = 'PROMPT'
 
 
-def get_prots2prot_job_inputs(session: APISession, job_id, input_type: Prots2ProtInputType, prompt_index: Optional[int] = None):
+def get_poet_job_inputs(session: APISession, job_id, input_type: PoetInputType, prompt_index: Optional[int] = None):
     endpoint = 'v1/workflow/align/inputs'
 
     params = {'job_id': job_id, 'msa_type': input_type}
@@ -39,29 +39,29 @@ def get_prots2prot_job_inputs(session: APISession, job_id, input_type: Prots2Pro
     return response
 
 
-def get_input(self: APISession, job: Job, input_type: Prots2ProtInputType, prompt_index: Optional[int] = None):
+def get_input(self: APISession, job: Job, input_type: PoetInputType, prompt_index: Optional[int] = None):
     job_id = job.job_id
-    response = get_prots2prot_job_inputs(self, job_id, input_type, prompt_index=prompt_index)
+    response = get_poet_job_inputs(self, job_id, input_type, prompt_index=prompt_index)
     return csv_stream(response)
 
 
 def get_prompt(self: APISession, job: Job, prompt_index: Optional[int] = None):
-    return get_input(self, job, Prots2ProtInputType.PROMPT, prompt_index=prompt_index)
+    return get_input(self, job, PoetInputType.PROMPT, prompt_index=prompt_index)
 
 
 def get_seed(self: APISession, job: Job):
-    return get_input(self, job, Prots2ProtInputType.INPUT)
+    return get_input(self, job, PoetInputType.INPUT)
 
 
 def get_msa(self: APISession, job: Job):
-    return get_input(self, job, Prots2ProtInputType.MSA)
+    return get_input(self, job, PoetInputType.MSA)
 
 
-class Prots2ProtFutureMixin:
+class PoetFutureMixin:
     session: APISession
     job: Job
 
-    def get_input(self, input_type: Prots2ProtInputType):
+    def get_input(self, input_type: PoetInputType):
         return get_input(self.session, self.job, input_type)
 
     def get_prompt(self, prompt_index: Optional[int] = None):
@@ -176,24 +176,24 @@ def upload_prompt_post(
     return PromptJob(**response.json())
 
 
-class Prots2ProtScoreResult(pydantic.BaseModel):
+class PoetScoreResult(pydantic.BaseModel):
     sequence: bytes
     score: List[float]
     name: Optional[str]
 
 
-class Prots2ProtScoreJob(Job):
+class PoetScoreJob(Job):
     parent_id: Optional[str]
     s3prefix: Optional[str]
     page_size: Optional[int]
     page_offset: Optional[int]
     num_rows: Optional[int]
-    result: Optional[List[Prots2ProtScoreResult]]
+    result: Optional[List[PoetScoreResult]]
     n_completed: Optional[int]
 
 
-def prots2prot_score_post(session: APISession, prompt_id: str, queries):
-    endpoint = 'v1/workflow/prots2prot/score'
+def poet_score_post(session: APISession, prompt_id: str, queries):
+    endpoint = 'v1/workflow/poet/score'
 
     variant_file = BytesIO(b'\n'.join(queries))
 
@@ -204,25 +204,25 @@ def prots2prot_score_post(session: APISession, prompt_id: str, queries):
         files={'variant_file': variant_file},
         params=params,
     )
-    return Prots2ProtScoreJob(**response.json())
+    return PoetScoreJob(**response.json())
 
 
-def prots2prot_score_get(session: APISession, job_id, page_size=config.PROTS2PROT_PAGE_SIZE, page_offset=0):
-    endpoint = 'v1/workflow/prots2prot/score'
-    assert page_size <= config.PROTS2PROT_MAX_PAGE_SIZE, f'Page size must be less than the max for prots2prot: {config.PROTS2PROT_MAX_PAGE_SIZE}' # 1000 is the maximum page size...
+def poet_score_get(session: APISession, job_id, page_size=config.POET_PAGE_SIZE, page_offset=0):
+    endpoint = 'v1/workflow/poet/score'
+    assert page_size <= config.POET_MAX_PAGE_SIZE, f'Page size must be less than the max for PoET: {config.POET_MAX_PAGE_SIZE}'
     response = session.get(
         endpoint,
         params={'job_id': job_id, 'page_size': page_size, 'page_offset': page_offset}
     )
-    return Prots2ProtScoreJob(**response.json()) 
+    return PoetScoreJob(**response.json()) 
 
 
-class Prots2ProtScoreFuture(Prots2ProtFutureMixin, AsyncJobFuture):
-    def __init__(self, session: APISession, job: Job, page_size=config.PROTS2PROT_PAGE_SIZE):
+class PoetScoreFuture(PoetFutureMixin, AsyncJobFuture):
+    def __init__(self, session: APISession, job: Job, page_size=config.POET_PAGE_SIZE):
         super().__init__(session, job)
         self.page_size = page_size
 
-    def get(self) -> List[Prots2ProtScoreResult]:
+    def get(self) -> List[PoetScoreResult]:
         job_id = self.job.job_id
         step = self.page_size
 
@@ -231,7 +231,7 @@ class Prots2ProtScoreFuture(Prots2ProtFutureMixin, AsyncJobFuture):
         offset = 0
 
         while num_returned >= step:
-            response = prots2prot_score_get(
+            response = poet_score_get(
                 self.session,
                 job_id,
                 page_offset=offset,
@@ -244,24 +244,24 @@ class Prots2ProtScoreFuture(Prots2ProtFutureMixin, AsyncJobFuture):
         return results
 
 
-class Prots2ProtSiteResult(pydantic.BaseModel):
+class PoetSiteResult(pydantic.BaseModel):
     sequence: bytes
     score: List[float]
     name: Optional[str]
 
 
-class Prots2ProtSingleSiteJob(Job):
+class PoetSingleSiteJob(Job):
     parent_id: Optional[str]
     s3prefix: Optional[str]
     page_size: Optional[int]
     page_offset: Optional[int]
     num_rows: Optional[int]
-    result: Optional[List[Prots2ProtSiteResult]]
+    result: Optional[List[PoetSiteResult]]
     #n_completed: Optional[int]
 
 
-def prots2prot_single_site_post(session: APISession, variant, parent_id=None, prompt_id=None):
-    endpoint = 'v1/workflow/prots2prot/single_site'
+def poet_single_site_post(session: APISession, variant, parent_id=None, prompt_id=None):
+    endpoint = 'v1/workflow/poet/single_site'
 
     assert (parent_id is not None) or (prompt_id is not None), 'One of parent_id or prompt_id must be set.'
     assert not ((parent_id is not None) and (prompt_id is not None)), 'Both parent_id and prompt_id cannot be set.'
@@ -278,20 +278,20 @@ def prots2prot_single_site_post(session: APISession, variant, parent_id=None, pr
         endpoint,
         params=params,
     )
-    return Prots2ProtSingleSiteJob(**response.json())
+    return PoetSingleSiteJob(**response.json())
 
 
-def prots2prot_single_site_get(session: APISession, job_id, page_size=100, page_offset=0):
-    endpoint = 'v1/workflow/prots2prot/single_site'
+def poet_single_site_get(session: APISession, job_id, page_size=100, page_offset=0):
+    endpoint = 'v1/workflow/poet/single_site'
 
     params = {'job_id': job_id, 'page_size': page_size, 'page_offset': page_offset}
     response = session.get(endpoint, params=params)
 
-    return Prots2ProtSingleSiteJob(**response.json())
+    return PoetSingleSiteJob(**response.json())
 
 
-class Prots2ProtSingleSiteFuture(Prots2ProtFutureMixin, AsyncJobFuture):
-    def __init__(self, session: APISession, job: Job, page_size=config.PROTS2PROT_PAGE_SIZE):
+class PoetSingleSiteFuture(PoetFutureMixin, AsyncJobFuture):
+    def __init__(self, session: APISession, job: Job, page_size=config.POET_PAGE_SIZE):
         super().__init__(session, job)
         self.page_size = page_size
 
@@ -302,7 +302,7 @@ class Prots2ProtSingleSiteFuture(Prots2ProtFutureMixin, AsyncJobFuture):
         offset = 0
         num_returned = step
         while num_returned >= step:
-            response = prots2prot_single_site_get(
+            response = poet_single_site_get(
                 self.session,
                 job_id,
                 page_offset=offset,
@@ -316,7 +316,7 @@ class Prots2ProtSingleSiteFuture(Prots2ProtFutureMixin, AsyncJobFuture):
         return results
 
 
-def prots2prot_generate_post(
+def poet_generate_post(
         session: APISession,
         prompt_id: str,
         num_samples=100,
@@ -326,7 +326,7 @@ def prots2prot_generate_post(
         max_length=1000,
         random_seed=None,
     ) -> Job:
-    endpoint = 'v1/workflow/prots2prot/generate'
+    endpoint = 'v1/workflow/poet/generate'
 
     if random_seed is None:
         random_seed = random.randrange(2**32)
@@ -350,8 +350,8 @@ def prots2prot_generate_post(
     return Job(**response.json())
 
 
-def prots2prot_generate_get(session: APISession, job_id):
-    endpoint = 'v1/workflow/prots2prot/generate'
+def poet_generate_get(session: APISession, job_id):
+    endpoint = 'v1/workflow/poet/generate'
 
     params = {'job_id': job_id}
     response = session.get(endpoint, params=params, stream=True)
@@ -359,17 +359,17 @@ def prots2prot_generate_get(session: APISession, job_id):
     return response
 
 
-class Prots2ProtGenerateFuture(Prots2ProtFutureMixin, StreamingAsyncJobFuture):
+class PoetGenerateFuture(PoetFutureMixin, StreamingAsyncJobFuture):
     def stream(self):
         """
         Yield results from the response stream.
         """
-        response = prots2prot_generate_get(self.session, self.job.job_id)
+        response = poet_generate_get(self.session, self.job.job_id)
         for tokens in csv_stream(response):
             name, sequence = tokens[:2]
             score = [float(s) for s in tokens[2:]]
             sequence = sequence.encode() # tokens are string type, but we encode sequences as bytes type
-            sample = Prots2ProtScoreResult(sequence=sequence, score=score, name=name)
+            sample = PoetScoreResult(sequence=sequence, score=score, name=name)
             yield sample
 
 
@@ -383,7 +383,7 @@ def validate_prompt(prompt: Prompt):
     return prompt_id
 
 
-class Prots2ProtAPI:
+class PoetAPI:
     def __init__(self, session: APISession):
         self.session = session
 
@@ -427,13 +427,13 @@ class Prots2ProtAPI:
         )
 
     def get_prompt(self, job: Job, prompt_index: Optional[int] = None):
-        return get_input(self.session, job, Prots2ProtInputType.PROMPT, prompt_index=prompt_index)
+        return get_input(self.session, job, PoetInputType.PROMPT, prompt_index=prompt_index)
 
     def get_seed(self, job: Job):
-        return get_input(self.session, job, Prots2ProtInputType.INPUT)
+        return get_input(self.session, job, PoetInputType.INPUT)
 
     def get_msa(self, job: Job):
-        return get_input(self.session, job, Prots2ProtInputType.MSA)
+        return get_input(self.session, job, PoetInputType.MSA)
 
     def get_prompt_job(self, job_id: str) -> PromptJob:
         job = job_get(self.session, job_id)
@@ -447,13 +447,13 @@ class Prots2ProtAPI:
 
     def score(self, prompt: Prompt, queries: List[bytes]):
         prompt_id = validate_prompt(prompt)
-        response = prots2prot_score_post(self.session, prompt_id, queries)
-        return Prots2ProtScoreFuture(self.session, response)
+        response = poet_score_post(self.session, prompt_id, queries)
+        return PoetScoreFuture(self.session, response)
 
     def single_site(self, prompt: Prompt, sequence: bytes):
         prompt_id = validate_prompt(prompt)
-        response = prots2prot_single_site_post(self.session, sequence, prompt_id=prompt_id)
-        return Prots2ProtSingleSiteFuture(self.session, response)
+        response = poet_single_site_post(self.session, sequence, prompt_id=prompt_id)
+        return PoetSingleSiteFuture(self.session, response)
 
     def generate(
             self,
@@ -465,7 +465,7 @@ class Prots2ProtAPI:
             max_length=1000,
         ):
         prompt_id = validate_prompt(prompt)
-        job = prots2prot_generate_post(
+        job = poet_generate_post(
             self.session,
             prompt_id,
             num_samples=num_samples,
@@ -474,4 +474,4 @@ class Prots2ProtAPI:
             topp=topp,
             max_length=max_length,
         )
-        return Prots2ProtGenerateFuture(self.session, job)
+        return PoetGenerateFuture(self.session, job)

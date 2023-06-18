@@ -3,7 +3,7 @@ from openprotein._version import __version__
 from openprotein.base import APISession
 from openprotein.api.jobs import JobsAPI
 from openprotein.api.data import DataAPI
-from openprotein.api.prots2prot import Prots2ProtAPI
+from openprotein.api.poet import PoetAPI
 
 
 class OpenProtein(APISession):
@@ -17,6 +17,6 @@ class OpenProtein(APISession):
 
     @property
     def prots2prot(self):
-        return Prots2ProtAPI(self)
+        return PoetAPI(self)
 
 connect = OpenProtein
