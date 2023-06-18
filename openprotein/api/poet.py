@@ -384,16 +384,28 @@ def validate_prompt(prompt: Prompt):
 
 
 class PoetAPI:
+    """
+    This class defines a high level interface for accessing PoET.
+    """
     def __init__(self, session: APISession):
         self.session = session
 
     def upload_msa(self, msa_file) -> MSAJob:
+        """
+        Upload an MSA from a file.
+        """
         return msa_post(self.session, msa_file=msa_file)
 
     def create_msa(self, seed: bytes) -> MSAJob:
+        """
+        Construct an MSA via homology search with the seed sequence.
+        """
         return msa_post(self.session, seed=seed)
 
     def upload_prompt(self, prompt_file) -> PromptJob:
+        """
+        Upload prompt sequences directly from a file.
+        """
         return upload_prompt_post(self.session, prompt_file)
 
     def sample_prompt(
@@ -409,6 +421,10 @@ class PoetAPI:
             num_ensemble_prompts: int = 1,
             random_seed: Optional[int] = None,
         ) -> PromptJob:
+        """
+        Construct a prompt by sampling from an MSA.
+        """
+
         msa_id = msa
         if isinstance(msa, MSAJob):
             msa_id = msa.msa_id
@@ -446,11 +462,17 @@ class PoetAPI:
         return MSAJob(**job.dict(), msa_id=job.job_id)
 
     def score(self, prompt: Prompt, queries: List[bytes]):
+        """
+        Score query sequences using the specified prompt.
+        """
         prompt_id = validate_prompt(prompt)
         response = poet_score_post(self.session, prompt_id, queries)
         return PoetScoreFuture(self.session, response)
 
     def single_site(self, prompt: Prompt, sequence: bytes):
+        """
+        Score all single substitutions of the query sequence using the specified prompt.
+        """
         prompt_id = validate_prompt(prompt)
         response = poet_single_site_post(self.session, sequence, prompt_id=prompt_id)
         return PoetSingleSiteFuture(self.session, response)
@@ -465,6 +487,9 @@ class PoetAPI:
             max_length=1000,
             seed=None,
         ):
+        """
+        Generate sequences from the PoET model conditioned on the given prompt.
+        """
         prompt_id = validate_prompt(prompt)
         job = poet_generate_post(
             self.session,
