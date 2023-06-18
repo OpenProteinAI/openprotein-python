@@ -16,7 +16,7 @@ class OpenProtein(APISession):
         return DataAPI(self)
 
     @property
-    def prots2prot(self):
+    def poet(self):
         return PoetAPI(self)
 
 connect = OpenProtein
