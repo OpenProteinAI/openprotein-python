@@ -463,6 +463,7 @@ class PoetAPI:
             topk=None,
             topp=None,
             max_length=1000,
+            seed=None,
         ):
         prompt_id = validate_prompt(prompt)
         job = poet_generate_post(
@@ -473,5 +474,6 @@ class PoetAPI:
             topk=topk,
             topp=topp,
             max_length=max_length,
+            random_seed=seed,
         )
         return PoetGenerateFuture(self.session, job)
