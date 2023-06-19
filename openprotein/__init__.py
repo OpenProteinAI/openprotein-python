@@ -4,6 +4,7 @@ from openprotein.base import APISession
 from openprotein.api.jobs import JobsAPI
 from openprotein.api.data import DataAPI
 from openprotein.api.poet import PoetAPI
+from openprotein.api.embedding import EmbeddingAPI
 
 
 class OpenProtein(APISession):
@@ -28,5 +29,12 @@ class OpenProtein(APISession):
         The PoET submodule gives access to the PoET generative model and MSA and prompt creation interfaces.
         """
         return PoetAPI(self)
+    
+    @property
+    def embedding(self):
+        """
+        The embedding submodule gives access to protein embedding models and their inference endpoints.
+        """
+        return EmbeddingAPI(self)
 
 connect = OpenProtein
