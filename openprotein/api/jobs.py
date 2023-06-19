@@ -33,7 +33,7 @@ class Job(pydantic.BaseModel):
     end_date: Optional[datetime]
     prerequisite_job_id: Optional[str]
     progress_message: Optional[str]
-    progress_count: Optional[int]
+    progress_counter: Optional[int]
 
     def refresh(self, session: APISession):
         return job_get(session, self.job_id)
