@@ -1,9 +1,10 @@
 from openprotein.base import APISession
-from openprotein.api.jobs import Job, AsyncJobFuture, StreamingAsyncJobFuture, job_get
+from openprotein.api.jobs import Job, AsyncJobFuture, PagedAsyncJobFuture, job_get
 import openprotein.config as config
 
 import pydantic
 import numpy as np
+from base64 import b64decode
 from typing import Optional, List, Tuple, Dict, Union, BinaryIO
 
 
@@ -22,6 +23,12 @@ def embedding_models_get(session: APISession) -> List[str]:
     return result
 
 
+def decode_embedding(data, shape, dtype=np.float32):
+    data = b64decode(data)
+    array = np.frombuffer(data, dtype=dtype).reshape(*shape)
+    return array
+
+
 class EmbeddingResult(pydantic.BaseModel):
     data: bytes
     sequence: bytes
@@ -29,8 +36,7 @@ class EmbeddingResult(pydantic.BaseModel):
 
     def to_numpy(self):
         dtype = np.float32
-        shape = self.shape
-        array = np.frombuffer(self.data, dtype=dtype).reshape(*shape)
+        array = decode_embedding(self.data, self.shape, dtype=dtype)
         return array
 
 
@@ -44,10 +50,8 @@ def embedding_get(session: APISession, job_id: str, page_offset: int = 0, page_s
     return EmbeddingJob(**response.json())
 
 
-class EmbeddingResultFuture(AsyncJobFuture):
-    def __init__(self, session: APISession, job: Job, page_size=config.EMBEDDING_PAGE_SIZE):
-        super().__init__(session, job)
-        self.page_size = page_size
+class EmbeddingResultFuture(PagedAsyncJobFuture):
+    DEFAULT_PAGE_SIZE = config.EMBEDDING_PAGE_SIZE
 
     def get_slice(self, start, end) -> List[Tuple[bytes, np.ndarray]]:
         assert end >= start
@@ -57,22 +61,8 @@ class EmbeddingResultFuture(AsyncJobFuture):
             page_offset=start,
             page_size=(end - start),
         )
+        #return response.results
         return [(r.sequence, r.to_numpy()) for r in response.results]
-
-    def get(self) -> List[Tuple[bytes, np.ndarray]]:
-        step = self.page_size
-
-        results = []
-        num_returned = step
-        offset = 0
-
-        while num_returned >= step:
-            result_page = self.get_slice(offset, offset + step)
-            results += result_page
-            num_returned = len(result_page)
-            offset += num_returned
-        
-        return results
 
 
 def embedding_post(session: APISession, model_id: str, sequences: List[bytes], reduction=None):
@@ -161,7 +151,7 @@ class EmbeddingAPI:
     def __init__(self, session: APISession):
         self.session = session
 
-    def list_models(self):
+    def list_models(self) -> List[ProtembedModel]:
         models = []
         for model_id in embedding_models_get(self.session):
             models.append(ProtembedModel(self.session, model_id))

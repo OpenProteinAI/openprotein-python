@@ -21,8 +21,11 @@ class APISession(requests.Session):
     def __init__(self, username, password, backend=config.Backend.PROD):
         super().__init__()
         self.backend = backend
-        self.auth = self.get_auth_token(username, password)
+        self.login(username, password)
         self.verify = True
+
+    def login(self, username, password):
+        self.auth = self.get_auth_token(username, password)
 
     def get_auth_token(self, username, password):
         endpoint = 'v1/login/access-token'
@@ -34,12 +37,8 @@ class APISession(requests.Session):
 
     def request(self, method: Union[str, bytes], url: Union[str, bytes], *args, **kwargs):
         full_url = urljoin(self.backend, url)
-        #print(full_url)
-        #print(args)
-        #print(kwargs)
         response = super().request(method, full_url, *args, **kwargs)
         response.raise_for_status()
-        #print(response, response.json())
         return response
 
 

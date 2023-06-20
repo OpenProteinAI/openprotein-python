@@ -220,7 +220,7 @@ class PoetScoreFuture(PoetFutureMixin, AsyncJobFuture):
         super().__init__(session, job)
         self.page_size = page_size
 
-    def get(self) -> List[PoetScoreResult]:
+    def get(self, verbose=False) -> List[PoetScoreResult]:
         job_id = self.job.job_id
         step = self.page_size
 
@@ -293,7 +293,7 @@ class PoetSingleSiteFuture(PoetFutureMixin, AsyncJobFuture):
         super().__init__(session, job)
         self.page_size = page_size
 
-    def get(self) -> Dict[bytes, float]:
+    def get(self, verbose=False) -> Dict[bytes, float]:
         job_id = self.job.job_id
         step = self.page_size
         results = {}
