@@ -25,7 +25,15 @@ def embedding_models_get(session: APISession) -> List[str]:
 
 def decode_embedding(data, shape, dtype=np.float32):
     data = b64decode(data)
-    array = np.frombuffer(data, dtype=dtype).reshape(*shape)
+    array = np.frombuffer(data, dtype=dtype)
+    # TODO - remove this work-around for error in returned shape of fixed-sized embeddings
+    num_entries = 1
+    for i in range(len(shape)):
+        num_entries *= shape[i]
+    if len(array) < num_entries:
+        shape = shape[-1:] # only use last dimension for size estimate
+    # end work-around
+    array = array.reshape(*shape)
     return array
 
 

@@ -9,6 +9,7 @@ import time
 import tqdm
 
 import concurrent.futures
+from requests import HTTPError
 
 
 class JobStatus(str, Enum):
@@ -215,7 +216,12 @@ class PagedAsyncJobFuture(StreamingAsyncJobFuture):
                 futures_next = []
                 # iterate the futures and submit new requests as needed
                 for f in concurrent.futures.as_completed(futures):
-                    result_page = f.result()
+                    try:
+                        result_page = f.result()
+                    except HTTPError:
+                        # if getting the page failed with an HTTP error, it means the index was out of bounds
+                        # TODO - this is a problem, because the request could have failed for other reasons
+                        result_page = []
                     # check if we're done, meaning the result page is not full
                     done = (done or len(result_page) < step)
                     # if we aren't done, submit another request
