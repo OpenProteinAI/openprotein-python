@@ -133,6 +133,10 @@ class ProtembedModel:
     def embed(self, sequences: List[bytes], reduction=None):
         job = embedding_post(self.session, self.id, sequences, reduction=reduction)
         return EmbeddingResultFuture(self.session, job)
+    
+    def fit_svd(self, sequences: List[bytes]):
+        job = svd_fit_post(self.session, self.id, sequences)
+        return SVDModel(self.session, job)
 
 
 class SVDModel:
@@ -181,7 +185,10 @@ class EmbeddingAPI:
             job = embedding_post(self.session, model_id, sequences, reduction=reduction)
         return EmbeddingResultFuture(self.session, job)
     
-    def svd_fit(self, model_id: str, sequences: List[bytes]):
+    def fit_svd(self, model_id: str, sequences: List[bytes]):
         job = svd_fit_post(self.session, model_id, sequences)
+        return SVDModel(self.session, job)
+    
+    def get_svd(self, job):
         return SVDModel(self.session, job)
 
