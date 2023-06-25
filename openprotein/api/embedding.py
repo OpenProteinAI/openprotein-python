@@ -5,15 +5,8 @@ import openprotein.config as config
 import pydantic
 import numpy as np
 from base64 import b64decode
-from typing import Optional, List, Tuple, Dict, Union, BinaryIO
+from typing import Optional, List, Tuple, Dict, Union
 
-
-from enum import Enum
-from io import BytesIO
-import random
-import csv
-import codecs
-import requests
 
 
 def embedding_models_get(session: APISession) -> List[str]:
@@ -94,6 +87,12 @@ class SVDJob(Job):
     pass
 
 
+def svd_list_get(session: APISession):
+    endpoint = 'v1/embeddings/svd'
+    response = session.get(endpoint)
+    return response.json()
+
+
 def svd_fit_post(session: APISession, model_id: str, sequences: List[bytes]):
     endpoint = 'v1/embeddings/svd'
 
@@ -139,14 +138,10 @@ class ProtembedModel:
         return SVDModel(self.session, job)
 
 
-class SVDModel:
+class SVDModel(EmbeddingResultFuture):
     """
-    Class providing embedding endpoint for SVD models.
+    Class providing embedding endpoint for SVD models. Also allows retrieving embeddings of sequences used to fit the SVD with `get`.
     """
-    def __init__(self, session, job):
-        self.session = session
-        self.job = job
-
     @property
     def id(self):
         return self.job.job_id
@@ -191,4 +186,10 @@ class EmbeddingAPI:
     
     def get_svd(self, job):
         return SVDModel(self.session, job)
+    
+    def get_svd_results(self, job):
+        return EmbeddingResultFuture(self.session, job)
+    
+    def list_svd(self):
+        return svd_list_get(self.session)
 

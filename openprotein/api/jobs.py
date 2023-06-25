@@ -4,7 +4,7 @@ import openprotein.config as config
 from enum import Enum
 import pydantic
 from datetime import datetime
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Union
 import time
 import tqdm
 
@@ -125,7 +125,9 @@ class TimeoutException(Exception):
 
 
 class AsyncJobFuture:
-    def __init__(self, session: APISession, job: Job):
+    def __init__(self, session: APISession, job: Union[Job, str]):
+        if type(job) is str:
+            job = job_get(session, job)
         self.session = session
         self.job = job
 
