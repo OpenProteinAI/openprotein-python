@@ -8,24 +8,19 @@ from base64 import b64decode
 from typing import Optional, List, Tuple, Dict, Union
 
 
+PATH_PREFIX = 'v1/embeddings'
+
 
 def embedding_models_get(session: APISession) -> List[str]:
-    endpoint = 'v1/embeddings/models'
+    endpoint = PATH_PREFIX + '/models'
     response = session.get(endpoint)
-    result = response.json()['models']
+    result = response.json()
     return result
 
 
 def decode_embedding(data, shape, dtype=np.float32):
     data = b64decode(data)
     array = np.frombuffer(data, dtype=dtype)
-    # TODO - remove this work-around for error in returned shape of fixed-sized embeddings
-    num_entries = 1
-    for i in range(len(shape)):
-        num_entries *= shape[i]
-    if len(array) < num_entries:
-        shape = shape[-1:] # only use last dimension for size estimate
-    # end work-around
     array = array.reshape(*shape)
     return array
 
@@ -46,8 +41,8 @@ class EmbeddingJob(Job):
 
 
 def embedding_get(session: APISession, job_id: str, page_offset: int = 0, page_size: int = 10):
-    endpoint = f'v1/embeddings/{job_id}'
-    response = session.get(endpoint, params={'offset': page_offset, 'limit': page_size})
+    endpoint = PATH_PREFIX + f'/{job_id}'
+    response = session.get(endpoint, params={'page_offset': page_offset, 'page_size': page_size})
     return EmbeddingJob(**response.json())
 
 
@@ -66,19 +61,15 @@ class EmbeddingResultFuture(PagedAsyncJobFuture):
         return [(r.sequence, r.to_numpy()) for r in response.results]
 
 
-def embedding_post(session: APISession, model_id: str, sequences: List[bytes], reduction=None):
-    endpoint = f'v1/embeddings/{model_id}/embed'
-
-    # TODO - fix reduction parameters, improve clarity between mean and SVD options
-    reduction_params = {}
-    if reduction == 'mean':
-        reduction_params['mean'] = True
+def embedding_model_post(session: APISession, model_id: str, sequences: List[bytes], reduction=None):
+    endpoint = PATH_PREFIX + f'/models/{model_id}/embed'
 
     sequences = [s.decode() for s in sequences]
     body = {
         'sequences': sequences,
-        'reduction': reduction_params,
     }
+    if reduction is not None:
+        body['reduction'] = reduction
     response = session.post(endpoint, json=body)
     return EmbeddingJob(**response.json())
 
@@ -87,26 +78,43 @@ class SVDJob(Job):
     pass
 
 
-def svd_list_get(session: APISession):
-    endpoint = 'v1/embeddings/svd'
+class SVDModelMetadata(pydantic.BaseModel):
+    id: str
+    model_id: str
+    n_components: int
+    reduction: Optional[str]
+    sequence_length: Optional[int]
+
+
+def svd_list_get(session: APISession) -> List[SVDModelMetadata]:
+    endpoint = PATH_PREFIX + '/svd'
     response = session.get(endpoint)
-    return response.json()
+    return pydantic.parse_obj_as(List[SVDModelMetadata], response.json())
 
 
-def svd_fit_post(session: APISession, model_id: str, sequences: List[bytes]):
-    endpoint = 'v1/embeddings/svd'
+def svd_get(session: APISession, svd_id: str) -> SVDModelMetadata:
+    endpoint = PATH_PREFIX + f'/svd/{svd_id}'
+    response = session.get(endpoint)
+    return SVDModelMetadata(**response.json())
+
+
+def svd_fit_post(session: APISession, model_id: str, sequences: List[bytes], n_components: int = 1024, reduction: Optional[str] = None):
+    endpoint = PATH_PREFIX + '/svd'
 
     sequences = [s.decode() for s in sequences]
     body = {
-        'model': model_id,
+        'model_id': model_id,
         'sequences': sequences,
+        'n_components': n_components,
     }
+    if reduction is not None:
+        body['reduction'] = reduction
     response = session.post(endpoint, json=body)
     return SVDJob(**response.json())
 
 
 def svd_embed_post(session: APISession, svd_id: str, sequences: List[bytes]):
-    endpoint = f'v1/embeddings/svd/{svd_id}/embed'
+    endpoint = PATH_PREFIX + f'/svd/{svd_id}/embed'
 
     sequences = [s.decode() for s in sequences]
     body = {'sequences': sequences}
@@ -130,21 +138,34 @@ class ProtembedModel:
         return self.id
 
     def embed(self, sequences: List[bytes], reduction=None):
-        job = embedding_post(self.session, self.id, sequences, reduction=reduction)
+        job = embedding_model_post(self.session, self.id, sequences, reduction=reduction)
         return EmbeddingResultFuture(self.session, job)
     
-    def fit_svd(self, sequences: List[bytes]):
-        job = svd_fit_post(self.session, self.id, sequences)
-        return SVDModel(self.session, job)
+    def fit_svd(self, sequences: List[bytes], n_components: int = 1024, reduction: Optional[str] = None):
+        model_id = self.id
+        job = svd_fit_post(self.session, model_id, sequences, n_components=n_components, reduction=reduction)
+        metadata = svd_get(self.session, job.job_id)
+        return SVDModel(self.session, job, metadata)
 
 
 class SVDModel(EmbeddingResultFuture):
     """
     Class providing embedding endpoint for SVD models. Also allows retrieving embeddings of sequences used to fit the SVD with `get`.
     """
+    def __init__(self, session: APISession, job: Job, metadata: SVDModelMetadata, page_size=None, max_workers=config.MAX_CONCURRENT_WORKERS):
+        assert job.job_id == metadata.id
+        super().__init__(session, job, page_size, max_workers)
+        self.metadata = metadata
+
+    def __str__(self) -> str:
+        return str(self.metadata)
+    
+    def __repr__(self) -> str:
+        return repr(self.metadata)
+
     @property
     def id(self):
-        return self.job.job_id
+        return self.metadata.id
     
     def embed(self, sequences: List[bytes]):
         job = svd_embed_post(self.session, self.id, sequences)
@@ -170,26 +191,35 @@ class EmbeddingAPI:
         """
         if type(model) is ProtembedModel:
             model_id = model.id
-            job = embedding_post(self.session, model_id, sequences, reduction=reduction)
+            job = embedding_model_post(self.session, model_id, sequences, reduction=reduction)
         elif type(model) is SVDModel:
             svd_id = model.id
             job = svd_embed_post(self.session, svd_id, sequences)
         else:
             # we assume model is the model_id
             model_id = model
-            job = embedding_post(self.session, model_id, sequences, reduction=reduction)
+            job = embedding_model_post(self.session, model_id, sequences, reduction=reduction)
         return EmbeddingResultFuture(self.session, job)
     
-    def fit_svd(self, model_id: str, sequences: List[bytes]):
-        job = svd_fit_post(self.session, model_id, sequences)
-        return SVDModel(self.session, job)
+    def fit_svd(self, model_id: str, sequences: List[bytes], n_components: int = 1024, reduction: Optional[str] = None):
+        job = svd_fit_post(self.session, model_id, sequences, n_components=n_components, reduction=reduction)
+        metadata = svd_get(self.session, job.job_id)
+        return SVDModel(self.session, job, metadata)
     
     def get_svd(self, job):
-        return SVDModel(self.session, job)
+        if job is str:
+            job_id = job
+        else:
+            job_id = job.job_id
+        metadata = svd_get(self.session, job_id)
+        return SVDModel(self.session, job, metadata)
+    
+    def list_svd(self):
+        svds = []
+        for metadata in svd_list_get(self.session):
+            job = job_get(self.session, metadata.id)
+            svds.append(SVDModel(self.session, job, metadata))
+        return svds
     
     def get_svd_results(self, job):
         return EmbeddingResultFuture(self.session, job)
-    
-    def list_svd(self):
-        return svd_list_get(self.session)
-

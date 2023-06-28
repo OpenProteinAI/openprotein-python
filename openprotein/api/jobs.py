@@ -37,6 +37,7 @@ class Job(pydantic.BaseModel):
     prerequisite_job_id: Optional[str]
     progress_message: Optional[str]
     progress_counter: Optional[int]
+    num_records: Optional[int]
 
     def refresh(self, session: APISession):
         return job_get(session, self.job_id)
@@ -172,7 +173,7 @@ class StreamingAsyncJobFuture(AsyncJobFuture):
 class PagedAsyncJobFuture(StreamingAsyncJobFuture):
     DEFAULT_PAGE_SIZE = 1024
 
-    def __init__(self, session: APISession, job: Job, page_size=None, max_workers=config.MAX_CONCURRENT_WORKERS):
+    def __init__(self, session: APISession, job: Job, page_size=None, num_records=None, max_workers=config.MAX_CONCURRENT_WORKERS):
         """
         Retrieve results from asynchronous, paged endpoints. Use `max_workers` > 0 to enable concurrent retrieval of multiple pages.
         """
@@ -181,6 +182,9 @@ class PagedAsyncJobFuture(StreamingAsyncJobFuture):
         super().__init__(session, job)
         self.page_size = page_size
         self.max_workers = max_workers
+        self.num_records = num_records
+        if num_records is None:
+            self.num_records = job.num_records
 
     def get_slice(self, start, end):
         raise NotImplementedError()
@@ -218,12 +222,7 @@ class PagedAsyncJobFuture(StreamingAsyncJobFuture):
                 futures_next = []
                 # iterate the futures and submit new requests as needed
                 for f in concurrent.futures.as_completed(futures):
-                    try:
-                        result_page = f.result()
-                    except HTTPError:
-                        # if getting the page failed with an HTTP error, it means the index was out of bounds
-                        # TODO - this is a problem, because the request could have failed for other reasons
-                        result_page = []
+                    result_page = f.result()
                     # check if we're done, meaning the result page is not full
                     done = (done or len(result_page) < step)
                     # if we aren't done, submit another request

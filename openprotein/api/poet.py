@@ -12,6 +12,9 @@ import codecs
 import requests
 
 
+PATH_PREFIX = 'v1/poet'
+
+
 def csv_stream(response: requests.Response):
     raw_content = response.raw # the raw bytes stream
 
@@ -29,7 +32,7 @@ class PoetInputType(str, Enum):
 
 
 def get_poet_job_inputs(session: APISession, job_id, input_type: PoetInputType, prompt_index: Optional[int] = None):
-    endpoint = 'v1/workflow/align/inputs'
+    endpoint = PATH_PREFIX + '/align/inputs'
 
     params = {'job_id': job_id, 'msa_type': input_type}
     if prompt_index is not None:
@@ -79,7 +82,7 @@ class MSAJob(Job):
 
 
 def msa_post(session: APISession, msa_file=None, seed=None):
-    endpoint = 'v1/workflow/align/msa'
+    endpoint = PATH_PREFIX + '/align/msa'
     assert msa_file is not None or seed is not None, 'One of msa_file or seed must be set'
     assert msa_file is None or seed is None, 'Both msa_file and seed cannot be set'
 
@@ -120,7 +123,7 @@ def prompt_post(
         num_ensemble_prompts: int = 1,
         random_seed: Optional[int] = None,
     ):
-    endpoint = 'v1/workflow/align/prompt'
+    endpoint = PATH_PREFIX + '/align/prompt'
 
     assert 0 <= homology_level and homology_level <= 1
     assert 0 <= max_similarity and max_similarity <= 1
@@ -167,7 +170,7 @@ def upload_prompt_post(
     """
     Directly upload prompt sequences.
     """
-    endpoint = 'v1/workflow/align/upload_prompt'
+    endpoint = PATH_PREFIX + '/align/upload_prompt'
 
     body = {'prompt_file': prompt_file}
     response = session.post(endpoint, body=body)
@@ -191,7 +194,7 @@ class PoetScoreJob(Job):
 
 
 def poet_score_post(session: APISession, prompt_id: str, queries):
-    endpoint = 'v1/workflow/poet/score'
+    endpoint = PATH_PREFIX + '/score'
 
     variant_file = BytesIO(b'\n'.join(queries))
 
@@ -206,7 +209,7 @@ def poet_score_post(session: APISession, prompt_id: str, queries):
 
 
 def poet_score_get(session: APISession, job_id, page_size=config.POET_PAGE_SIZE, page_offset=0):
-    endpoint = 'v1/workflow/poet/score'
+    endpoint = PATH_PREFIX + '/score'
     assert page_size <= config.POET_MAX_PAGE_SIZE, f'Page size must be less than the max for PoET: {config.POET_MAX_PAGE_SIZE}'
     response = session.get(
         endpoint,
@@ -259,7 +262,7 @@ class PoetSingleSiteJob(Job):
 
 
 def poet_single_site_post(session: APISession, variant, parent_id=None, prompt_id=None):
-    endpoint = 'v1/workflow/poet/single_site'
+    endpoint = PATH_PREFIX + '/single_site'
 
     assert (parent_id is not None) or (prompt_id is not None), 'One of parent_id or prompt_id must be set.'
     assert not ((parent_id is not None) and (prompt_id is not None)), 'Both parent_id and prompt_id cannot be set.'
@@ -280,7 +283,7 @@ def poet_single_site_post(session: APISession, variant, parent_id=None, prompt_i
 
 
 def poet_single_site_get(session: APISession, job_id, page_size=100, page_offset=0):
-    endpoint = 'v1/workflow/poet/single_site'
+    endpoint = PATH_PREFIX + '/single_site'
 
     params = {'job_id': job_id, 'page_size': page_size, 'page_offset': page_offset}
     response = session.get(endpoint, params=params)
@@ -324,7 +327,7 @@ def poet_generate_post(
         max_length=1000,
         random_seed=None,
     ) -> Job:
-    endpoint = 'v1/workflow/poet/generate'
+    endpoint = PATH_PREFIX + '/generate'
 
     if random_seed is None:
         random_seed = random.randrange(2**32)
@@ -349,7 +352,7 @@ def poet_generate_post(
 
 
 def poet_generate_get(session: APISession, job_id):
-    endpoint = 'v1/workflow/poet/generate'
+    endpoint = PATH_PREFIX + '/generate'
 
     params = {'job_id': job_id}
     response = session.get(endpoint, params=params, stream=True)
