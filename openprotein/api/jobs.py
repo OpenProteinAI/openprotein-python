@@ -60,22 +60,28 @@ class Job(pydantic.BaseModel):
         
         pbar = None
         if verbose:
-            pbar = tqdm.tqdm()
+            pbar = tqdm.tqdm(total=100)
 
         job = self.refresh(session)
         while not is_done(job):
             if verbose:
-                pbar.update(1)
+                progress = job.progress_counter
+                pbar.n = progress
                 pbar.set_postfix({'status': job.status})
+                #pbar.refresh()
                 #print(f'Retry {retries}, status={self.job.status}, time elapsed {time.time() - start_time:.2f}')
             time.sleep(interval)
             job = job.refresh(session)
         
         if verbose:
-            pbar.update(1)
+            #pbar.update(1)
+            progress = job.progress_counter
+            pbar.n = progress
             pbar.set_postfix({'status': job.status})
 
         return job
+    
+    wait_until_done = wait
 
 
 def jobs_list(
@@ -138,6 +144,14 @@ class AsyncJobFuture:
     @property
     def status(self):
         return self.job.status
+    
+    @property
+    def progress(self):
+        return self.job.progress_counter
+    
+    @property
+    def num_records(self):
+        return self.job.num_records
 
     def done(self):
         return self.job.done()
@@ -166,7 +180,8 @@ class StreamingAsyncJobFuture(AsyncJobFuture):
     def get(self, verbose=False):
         generator = self.stream()
         if verbose:
-            generator = tqdm.tqdm(generator, desc='Retrieving')
+            total = self.num_records
+            generator = tqdm.tqdm(generator, desc='Retrieving', total=total)
         return [entry for entry in generator]
 
 
@@ -182,9 +197,7 @@ class PagedAsyncJobFuture(StreamingAsyncJobFuture):
         super().__init__(session, job)
         self.page_size = page_size
         self.max_workers = max_workers
-        self.num_records = num_records
-        if num_records is None:
-            self.num_records = job.num_records
+        self._num_records = num_records
 
     def get_slice(self, start, end):
         raise NotImplementedError()
