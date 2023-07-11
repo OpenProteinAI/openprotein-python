@@ -6,7 +6,6 @@ from openprotein.api.data import DataAPI
 from openprotein.api.poet import PoetAPI
 from openprotein.api.embedding import EmbeddingAPI
 
-
 class OpenProtein(APISession):
     """
     The base class for accessing OpenProtein API functionality.

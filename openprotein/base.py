@@ -18,9 +18,9 @@ class BearerAuth(requests.auth.AuthBase):
 
 
 class APISession(requests.Session):
-    def __init__(self, username, password, backend=config.Backend.PROD):
+    def __init__(self, username, password):
         super().__init__()
-        self.backend = backend
+        self.backend = 'https://dev.api.openprotein.ai/api/'
         self.login(username, password)
         self.verify = True
 
@@ -28,9 +28,9 @@ class APISession(requests.Session):
         self.auth = self.get_auth_token(username, password)
 
     def get_auth_token(self, username, password):
-        endpoint = 'v1/login/access-token'
+        endpoint = 'v1/login/user-access-token'
         url = urljoin(self.backend, endpoint)
-        response = requests.post(url, data={'username': username, 'password': password})
+        response = requests.post(url, params={'username': username, 'password': password})
         result = response.json()
         token = result['access_token']
         return BearerAuth(token)
