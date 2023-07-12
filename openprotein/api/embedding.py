@@ -10,6 +10,16 @@ from typing import Optional, List, Tuple, Dict, Union
 
 
 def embedding_models_get(session: APISession) -> List[str]:
+    """
+    List available embeddings models.
+
+    Args:
+        session (APISession): API session
+
+    Returns:
+        List[str]: list of model names. 
+    """
+    
     endpoint = 'v1/embeddings/models'
     response = session.get(endpoint)
     result = response.json()['models']
@@ -17,6 +27,17 @@ def embedding_models_get(session: APISession) -> List[str]:
 
 
 def decode_embedding(data, shape, dtype=np.float32):
+    """
+    Decode embedding. 
+
+    Args:
+        data (_type_): _description_
+        shape (_type_): _description_
+        dtype (_type_, optional): _description_. Defaults to np.float32.
+
+    Returns:
+        _type_: _description_
+    """
     data = b64decode(data)
     array = np.frombuffer(data, dtype=dtype)
     # TODO - remove this work-around for error in returned shape of fixed-sized embeddings
@@ -46,6 +67,25 @@ class EmbeddingJob(Job):
 
 
 def embedding_get(session: APISession, job_id: str, page_offset: int = 0, page_size: int = 10):
+    """
+    Get paged embedding results.
+
+    Parameters
+    ----------
+    session : APISession
+        Session object for API communication.
+    job_id : str
+        job ID to fetch 
+    page_offset : int 
+        number of results to skip
+    page_size: int:
+        number of results to return
+
+    Returns
+    -------
+    EmbeddingJob
+    
+    """
     endpoint = f'v1/embeddings/{job_id}'
     response = session.get(endpoint, params={'offset': page_offset, 'limit': page_size})
     return EmbeddingJob(**response.json())
@@ -67,6 +107,25 @@ class EmbeddingResultFuture(PagedAsyncJobFuture):
 
 
 def embedding_post(session: APISession, model_id: str, sequences: List[bytes], reduction=None):
+    """
+    Create embeddings job on your sequences.
+
+    Parameters
+    ----------
+    session : APISession
+        Session object for API communication.
+    model_d : str
+        model to use when computing embeddings
+    sequences : List[bytes] 
+        sequences to embed
+    reduction: str:
+        reduction to apply to embeddings. currently only MEAN supported
+
+    Returns
+    -------
+    EmbeddingJob
+    
+    """
     endpoint = f'v1/embeddings/{model_id}/embed'
 
     # TODO - fix reduction parameters, improve clarity between mean and SVD options
@@ -94,6 +153,23 @@ def svd_list_get(session: APISession):
 
 
 def svd_fit_post(session: APISession, model_id: str, sequences: List[bytes]):
+    """
+    Create SVD fit job. .
+
+    Parameters
+    ----------
+    session : APISession
+        Session object for API communication.
+    model_id : str
+        model to use
+    sequences : List[bytes] 
+        sequences to SVD
+
+    Returns
+    -------
+    EmbeddingJob
+    """
+    
     endpoint = 'v1/embeddings/svd'
 
     sequences = [s.decode() for s in sequences]
@@ -106,6 +182,22 @@ def svd_fit_post(session: APISession, model_id: str, sequences: List[bytes]):
 
 
 def svd_embed_post(session: APISession, svd_id: str, sequences: List[bytes]):
+    """
+    Create embed and SVD request.
+
+    Parameters
+    ----------
+    session : APISession
+        Session object for API communication.
+    svd_id : str
+        SVD model to use
+    sequences : List[bytes] 
+        sequences to SVD
+
+    Returns
+    -------
+    EmbeddingJob
+    """
     endpoint = f'v1/embeddings/svd/{svd_id}/embed'
 
     sequences = [s.decode() for s in sequences]

@@ -1,35 +1,39 @@
 import pytest
+from unittest.mock import MagicMock
+from openprotein.base import APISession
+from datetime import datetime
+from openprotein.api.poet import *
 import io
-import csv
-import requests
-from unittest.mock import Mock, patch, MagicMock
+from urllib.parse import urljoin
+
+from typing import List, Optional, Union
 from io import BytesIO
-from typing import List, Dict, Any
-from requests import Response
-from openprotein.api.poet import (
-    APISession,
-    poet_single_site_post,
-    poet_single_site_get,
-    poet_generate_post,
-    poet_generate_get,
-    poet_score_get,
-    get_align_job_inputs,
-    prompt_post,
-    poet_score_post,
-    msa_post,
-    upload_prompt_post,
-    MSASamplingMethod,
-    PoetInputType,
-    InvalidParameterError,
-    MissingParameterError,
-    APIError,
-    Job
-)
 from unittest.mock import ANY
 import json
+from openprotein.base import BearerAuth
 
-with open('secrets.config') as f:
-    secrets = json.load(f)
+class ResponseMock:
+    def __init__(self):
+        super().__init__()
+        self._json = {}
+        self.headers = {}
+        self.iter_content = MagicMock()
+        self._content = None
+        self.status_code = 200
+        self.raw = io.BytesIO()  # Create an empty raw bytes stream
+        self.text = "blank"
+
+    @property
+    def content(self):
+        return self._content
+
+    @content.setter
+    def content(self, value):
+        self._content = value
+
+    def json(self):
+        return self._json
+
 
 class APISessionMock(APISession):
     """
@@ -37,9 +41,12 @@ class APISessionMock(APISession):
     """
 
     def __init__(self):
-        username = secrets['username']  # Provide username
-        password = secrets['password']  # Provide password
+        username = "test_username"
+        password = "test_password"
         super().__init__(username, password)
+
+    def get_auth_token(self, username, password):
+        return BearerAuth('AUTHORIZED')
 
     def post(self, endpoint, data=None, json=None, **kwargs):
         return ResponseMock()
@@ -53,35 +60,10 @@ class APISessionMock(APISession):
         response.raise_for_status()
         return response
 
-
-class ResponseMock:
-    def __init__(self):
-        super().__init__()
-        self._json = {}
-        self.headers = {}
-        self.iter_content = MagicMock()
-        self._content = None
-        self.raw = io.BytesIO()  # Create an empty raw bytes stream
-
-    @property
-    def content(self):
-        return self._content
-
-    @content.setter
-    def content(self, value):
-        self._content = value
-
-    def json(self):
-        return self._json
-    
-        
-
-
-
 @pytest.fixture
 def api_session_mock():
-    return APISessionMock()
-
+    sess = APISessionMock()
+    yield sess 
 
 def test_poet_single_site_post(api_session_mock):
     variant = 'AUGUCA'
@@ -200,7 +182,7 @@ def test_poet_score_post(api_session_mock):
     assert result.job_id == '67890'
 
 
-def test_msa_post(api_session_mock):
+def test_poet_msa_post(api_session_mock):
     msa_fasta = f">test\nAAALHAAA".encode()
     response_mock = ResponseMock()
     response_mock._json = {'job_id': '12345','msa_id': '12345', 'status': 'SUCCESS', 'job_type': '/align/align'}
@@ -215,7 +197,7 @@ def test_msa_post(api_session_mock):
     )
     assert result.msa_id == '12345'
 
-def test_upload_prompt_post(api_session_mock):
+def test_poet_upload_prompt_post(api_session_mock):
     prompt_fasta = f">test\nAAALHAAA".encode()
     response_mock = ResponseMock()
     response_mock._json = {'job_id': 'j123','prompt_id': 'j123', 'status': 'SUCCESS', 'job_type': '/align/align'}
@@ -229,7 +211,7 @@ def test_upload_prompt_post(api_session_mock):
     )
     assert result.job_id == 'j123'
 
-def test_prompt_post(api_session_mock):
+def test_poet_prompt_post(api_session_mock):
     msa_id = '12345'
     job_id = '67890'
     response_mock = ResponseMock()
@@ -266,7 +248,7 @@ def test_prompt_post(api_session_mock):
     )
     assert result.job_id == '67890'
 
-def test_get_align_job_inputs(api_session_mock):
+def test_poet_get_align_job_inputs(api_session_mock):
     job_id = '12345'
     input_type = PoetInputType.INPUT
 
@@ -282,7 +264,7 @@ def test_get_align_job_inputs(api_session_mock):
     )
     assert result == response_mock
 
-def test_get_align_job_inputs_prompt_index(api_session_mock):
+def test_poet_get_align_job_inputs_prompt_index(api_session_mock):
     job_id = '12345'
     input_type = PoetInputType.PROMPT
     prompt_index =1

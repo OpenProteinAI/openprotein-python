@@ -4,7 +4,7 @@ import openprotein.config as config
 import requests
 from urllib.parse import urljoin
 from typing import Union
-
+from openprotein.errors import APIError, InvalidParameterError, MissingParameterError, AuthError
 
 class BearerAuth(requests.auth.AuthBase):
     """
@@ -18,6 +18,7 @@ class BearerAuth(requests.auth.AuthBase):
 
 
 class APISession(requests.Session):
+    """Connection session."""
     def __init__(self, username, password):
         super().__init__()
         self.backend = 'https://dev.api.openprotein.ai/api/'
@@ -30,10 +31,15 @@ class APISession(requests.Session):
     def get_auth_token(self, username, password):
         endpoint = 'v1/login/user-access-token'
         url = urljoin(self.backend, endpoint)
-        response = requests.post(url, params={'username': username, 'password': password})
-        result = response.json()
-        token = result['access_token']
-        return BearerAuth(token)
+        response = requests.post(url,
+                                 params={'username': username, 'password': password},
+                                 timeout=3)
+        if response.status_code == 200:
+            result = response.json()
+            token = result['access_token']
+            return BearerAuth(token)
+        else:
+            raise AuthError(f"Unable to authenticate with given credentials: {response.status_code} : {response.text}")
 
     def request(self, method: Union[str, bytes], url: Union[str, bytes], *args, **kwargs):
         full_url = urljoin(self.backend, url)

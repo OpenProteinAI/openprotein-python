@@ -9,8 +9,8 @@ from openprotein.base import APISession
 from openprotein.api.jobs import Job, AsyncJobFuture, StreamingAsyncJobFuture, job_get
 import openprotein.config as config
 
-from .models import (MSASamplingMethod, PoetInputType, PoetScoreJob, PoetScoreResult, PromptJob, PoetSingleSiteJob, MSAJob)
-from .errors import InvalidParameterError, MissingParameterError, APIError
+from ..models import (MSASamplingMethod, PoetInputType, PoetScoreJob, PoetScoreResult, PromptJob, PoetSingleSiteJob, MSAJob)
+from ..errors import InvalidParameterError, MissingParameterError, APIError
 
 def csv_stream(response: requests.Response) -> csv.reader:
     """
@@ -396,7 +396,7 @@ class PoetScoreFuture(PoetFutureMixin, AsyncJobFuture):
 
     def __init__(self, session: APISession, job: Job, page_size=config.POET_PAGE_SIZE):
         """
-        Initialize a PoetScoreFuture instance.
+        init a PoetScoreFuture instance.
 
         Args:
             session (APISession): An instance of APISession for API interactions.
@@ -532,7 +532,7 @@ class PoetSingleSiteFuture(PoetFutureMixin, AsyncJobFuture):
 
     def __init__(self, session: APISession, job: Job, page_size=config.POET_PAGE_SIZE):
         """
-        Initialize a PoetSingleSiteFuture instance.
+        init a PoetSingleSiteFuture instance.
 
         Args:
             session (APISession): An instance of APISession for API interactions.

@@ -16,3 +16,8 @@ class APIError(Exception):
         self.message = message
         super().__init__(self.message)
 
+class AuthError(Exception):
+    """InvalidParameterError"""
+    def __init__(self, message="Invalid authorization"):
+        self.message = message
+        super().__init__(self.message)
