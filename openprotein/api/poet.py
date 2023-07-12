@@ -335,6 +335,11 @@ def poet_score_post(session: APISession, prompt_id: str, queries: List[str]) -> 
     """
     endpoint = 'v1/poet/score'
 
+    if len(queries)==0:
+        raise MissingParameterError("Must include queries for scoring!")
+    if not prompt_id:
+        raise MissingParameterError("Must include prompt_id in request!")
+
     try:
         variant_file = BytesIO(b'\n'.join(queries))
         params = {'prompt_id': prompt_id}
@@ -467,7 +472,7 @@ def poet_single_site_post(session: APISession,
     endpoint = 'v1/poet/single_site'
 
     if (parent_id is None and prompt_id is None) or (parent_id is not None and prompt_id is not None):
-        raise APIError('Either parent_id or prompt_id must be set.')
+        raise InvalidParameterError('Either parent_id or prompt_id must be set.')
 
     params = {'variant': variant}
     if prompt_id is not None:
@@ -607,6 +612,20 @@ def poet_generate_post(
         Job: An object representing the status and information about the generation job.
     """
     endpoint = 'v1/poet/generate'
+
+    if not (0.1 <= temperature <= 2):
+        raise InvalidParameterError("The 'temperature' must be between 0.1 and 2.")
+    if topk:
+        if not (2 <= topk <= 20):
+            raise InvalidParameterError("The 'topk' must be between 2 and 22.")
+    if topp:
+        if not (0 <= topp <= 1):
+            raise InvalidParameterError("The 'topp' must be between 0 and 1.")
+    if random_seed:
+        if not (0 <= random_seed <= 2**32):
+            raise InvalidParameterError("The 'random_seed' must be between 0 and 1.")
+
+
 
     if random_seed is None:
         random_seed = random.randrange(2**32)
