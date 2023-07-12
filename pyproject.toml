@@ -1,28 +1,24 @@
-[build-system]
-requires = ["setuptools>=61.0", "setuptools_scm[toml]>=6.2"]
-build-backend = "setuptools.build_meta"
-
-[project]
+[tool.poetry]
 name = "openprotein"
-authors = [
-    {name="Tristan Bepler", email="tbepler@ne47.bio"},
-]
+version = "0.0.1"
 description = "OpenProtein Python interface."
-readme = "README.md"
-requires-python = ">=3.7"
-dynamic = ["version"]
-dependencies=[
-    "requests",
-    "pydantic",
-    "tqdm",
-]
+authors = ["OpenProtein <info@ne47.bio>"]
 
-[tool.setuptools]
-packages = ["openprotein"]
+[tool.poetry.dependencies]
+python = "^3.7"
+requests = "*"
+pydantic = "*"
+tqdm = "*"
 
-[tool.setuptools.dynamic]
-version = {attr = "openprotein.__version__"}
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[[tool.poetry.source]]
+name = "legacy"
+url = "https://pypi.org/simple"
 
 [project.urls]
-"Homepage" = "https://github.com/OpenProteinAI/openprotein-python"
-"Bug Tracker" = "https://github.com/OpenProteinAI/openprotein-python/issues"
+Homepage = "https://github.com/OpenProteinAI/openprotein-python"
