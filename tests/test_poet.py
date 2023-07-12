@@ -24,6 +24,8 @@ from openprotein.api.poet import (
 )
 from unittest.mock import ANY
 import json
+
+
 with open('secrets.config') as f:
     secrets = json.load(f)
 class APISessionMock(APISession):
@@ -32,8 +34,8 @@ class APISessionMock(APISession):
     """
 
     def __init__(self):
-        username = secrets['username']  # Provide a username value
-        password = secrets['password']  # Provide a password value
+        username = secrets['username']  # Provide username
+        password = secrets['password']  # Provide password
         super().__init__(username, password)
 
     def post(self, endpoint, data=None, json=None, **kwargs):
@@ -189,7 +191,7 @@ def test_poet_score_post(api_session_mock):
 
     api_session_mock.post.assert_called_once_with(
         'v1/poet/score',
-        files={'variant_file': ANY},  # You can use `ANY` matcher for the files parameter
+        files={'variant_file': ANY},
         params={'prompt_id': prompt_id}
     )
     assert result.job_id == '67890'
