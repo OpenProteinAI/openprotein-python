@@ -20,14 +20,17 @@ from openprotein.api.poet import (
     upload_prompt_post,
     MSASamplingMethod,
     PoetInputType,
+    InvalidParameterError,
+    MissingParameterError,
+    APIError,
     Job
 )
 from unittest.mock import ANY
 import json
 
-
 with open('secrets.config') as f:
     secrets = json.load(f)
+
 class APISessionMock(APISession):
     """
     A mock class for APISession.
@@ -295,3 +298,61 @@ def test_get_align_job_inputs_prompt_index(api_session_mock):
         stream=True
     )
     assert result == response_mock
+
+
+def test_poet_single_site_post_invalid_parameter(api_session_mock):
+    variant = 'HLALA'
+    error_message = ""
+    response_mock = MagicMock()
+    api_session_mock.post = MagicMock(return_value=response_mock)
+
+    with pytest.raises(InvalidParameterError) as exc:
+        poet_single_site_post(api_session_mock, variant=variant)
+
+    assert "parent_id or prompt_id must be set" in str(exc.value)  # Assertion for the backend exception message
+
+    with pytest.raises(InvalidParameterError) as exc:
+        poet_single_site_post(api_session_mock, variant=variant, parent_id='123', prompt_id='123')
+
+    assert "parent_id or prompt_id must be set" in str(exc.value)  # Assertion for the backend exception message
+
+def test_poet_generate_post_invalid_parameter(api_session_mock):
+    prompt_id = '1234'
+    num_samples = 100
+    response_mock = MagicMock()
+    api_session_mock.post = MagicMock(return_value=response_mock)
+
+    with pytest.raises(InvalidParameterError) as exc:
+        poet_generate_post(api_session_mock, prompt_id=prompt_id, num_samples=num_samples, temperature=100)
+    assert  "'temperature' must be between" in str(exc.value)  # Assertion for the backend exception message
+
+    with pytest.raises(InvalidParameterError) as exc:
+        poet_generate_post(api_session_mock, prompt_id=prompt_id, num_samples=num_samples, topk=100, temperature=1)
+    assert  "'topk' must be between" in str(exc.value)  # Assertion for the backend exception message
+
+    with pytest.raises(InvalidParameterError) as exc:
+        poet_generate_post(api_session_mock, prompt_id=prompt_id, num_samples=num_samples, topp=-1)
+    assert  "'topp' must be between" in str(exc.value)  # Assertion for the backend exception message
+
+    with pytest.raises(InvalidParameterError) as exc:
+        poet_generate_post(api_session_mock, prompt_id=prompt_id, num_samples=num_samples, random_seed=-100)
+    assert  "'random_seed' must be between" in str(exc.value)  # Assertion for the backend exception message
+
+
+
+def test_poet_score_post_invalid_parameter(api_session_mock):
+    queries = ["LHAALA", "AAAHAAA"]
+    queries = [i.encode() for i in queries]
+    response_mock = MagicMock()
+    api_session_mock.post = MagicMock(return_value=response_mock)
+
+    with pytest.raises(MissingParameterError) as exc:
+        poet_score_post(api_session_mock, prompt_id='123', queries=[])
+
+    assert "include queries" in str(exc.value)  # Assertion for the backend exception message
+
+    with pytest.raises(MissingParameterError) as exc:
+        poet_score_post(api_session_mock, prompt_id=None, queries=queries)
+
+    assert "include prompt" in str(exc.value)  # Assertion for the backend exception message
+
