@@ -60,7 +60,7 @@ class Job(pydantic.BaseModel):
         
         pbar = None
         if verbose:
-            pbar = tqdm.tqdm(total=100)
+            pbar = tqdm.tqdm(total=100, desc='Waiting', position=0)
 
         job = self.refresh(session)
         while not is_done(job):
@@ -180,9 +180,69 @@ class StreamingAsyncJobFuture(AsyncJobFuture):
     def get(self, verbose=False):
         generator = self.stream()
         if verbose:
-            total = self.num_records
-            generator = tqdm.tqdm(generator, desc='Retrieving', total=total)
+            total = None
+            if hasattr(self, '__len__'):
+                total = len(self)
+            generator = tqdm.tqdm(generator, desc='Retrieving', total=total, position=0)
         return [entry for entry in generator]
+
+
+class MappedAsyncJobFuture(StreamingAsyncJobFuture):
+    def __init__(self, session: APISession, job: Job, max_workers=config.MAX_CONCURRENT_WORKERS):
+        """
+        Retrieve results from asynchronous, mapped endpoints. Use `max_workers` > 0 to enable concurrent retrieval of multiple pages.
+        """
+        super().__init__(session, job)
+        self.max_workers = max_workers
+        self._cache = {}
+    
+    def keys(self):
+        raise NotImplementedError()
+    
+    def get_item(self, k):
+        raise NotImplementedError()
+    
+    def stream_sync(self):
+        for k in self.keys():
+            v = self[k]
+            yield k, v
+
+    def stream_parallel(self):
+        num_workers = self.max_workers
+
+        def process(k):
+            v = self[k]
+            return k, v
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+            futures = []
+            for k in self.keys():
+                if k in self._cache:
+                    yield k, self._cache[k]
+                else:
+                    f = executor.submit(process, k)
+                    futures.append(f)
+
+            for f in concurrent.futures.as_completed(futures):
+                yield f.result()
+    
+    def stream(self):
+        if self.max_workers > 0:
+            return self.stream_parallel()
+        return self.stream_sync()
+    
+    def __getitem__(self, k):
+        if k in self._cache:
+            return self._cache[k]
+        v = self.get_item(k)
+        self._cache[k] = v
+        return v
+    
+    def __len__(self):
+        return len(self.keys())
+    
+    def __iter__(self):
+        return self.stream()
 
 
 class PagedAsyncJobFuture(StreamingAsyncJobFuture):

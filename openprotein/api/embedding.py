@@ -1,5 +1,5 @@
 from openprotein.base import APISession
-from openprotein.api.jobs import Job, AsyncJobFuture, PagedAsyncJobFuture, job_get
+from openprotein.api.jobs import Job, MappedAsyncJobFuture, PagedAsyncJobFuture, job_get
 import openprotein.config as config
 
 import pydantic
@@ -7,6 +7,7 @@ import numpy as np
 from base64 import b64decode
 from typing import Optional, List, Tuple, Dict, Union
 from collections import namedtuple
+import io
 
 
 PATH_PREFIX = 'v1/embeddings'
@@ -50,11 +51,16 @@ def embedding_model_get(session: APISession, model_id: str) -> ModelMetadata:
     return ModelMetadata(**result)
 
 
-def decode_embedding(data, shape, dtype=np.float32):
+def _decode_embedding(data, shape, dtype=np.float32):
     data = b64decode(data)
     array = np.frombuffer(data, dtype=dtype)
     array = array.reshape(*shape)
     return array
+
+
+def decode_embedding(data) -> np.ndarray:
+    s = io.BytesIO(data)
+    return np.load(s, allow_pickle=False)
 
 
 class EmbeddingResult(pydantic.BaseModel):
@@ -84,6 +90,13 @@ def embedding_get_sequences(session: APISession, job_id: str) -> List[bytes]:
     return pydantic.parse_obj_as(List[bytes], response.json())
 
 
+def embedding_get_sequence_result(session: APISession, job_id: str, sequence: bytes) -> bytes:
+    sequence = sequence.decode()
+    endpoint = PATH_PREFIX + f'/{job_id}/{sequence}'
+    response = session.get(endpoint)
+    return response.content
+
+
 class EmbeddedSequence(pydantic.BaseModel):
     class Config:
         arbitrary_types_allowed = True
@@ -105,7 +118,7 @@ class EmbeddedSequence(pydantic.BaseModel):
             return self.embedding
 
 
-class EmbeddingResultFuture(PagedAsyncJobFuture):
+class _EmbeddingResultFuture(PagedAsyncJobFuture):
     DEFAULT_PAGE_SIZE = config.EMBEDDING_PAGE_SIZE
 
     def get_slice(self, start, end) -> List[EmbeddedSequence]:
@@ -118,6 +131,25 @@ class EmbeddingResultFuture(PagedAsyncJobFuture):
         )
         #return response.results
         return [EmbeddedSequence(sequence=r.sequence, embedding=r.to_numpy()) for r in response.results]
+    
+
+class EmbeddingResultFuture(MappedAsyncJobFuture):
+    def __init__(self, session: APISession, job: Job, sequences=None, max_workers=config.MAX_CONCURRENT_WORKERS):
+        super().__init__(session, job, max_workers)
+        self._sequences = sequences
+
+    @property
+    def sequences(self):
+        if self._sequences is None:
+            self._sequences = embedding_get_sequences(self.session, self.job.job_id)
+        return self._sequences
+    
+    def keys(self):
+        return self.sequences
+    
+    def get_item(self, k):
+        data = embedding_get_sequence_result(self.session, self.job.job_id, k)
+        return decode_embedding(data)
 
 
 def embedding_model_post(session: APISession, model_id: str, sequences: List[bytes], reduction=None):
@@ -135,6 +167,7 @@ def embedding_model_post(session: APISession, model_id: str, sequences: List[byt
 
 class SVDJob(Job):
     pass
+
 
 class SVDMetadata(pydantic.BaseModel):
     id: str
@@ -207,7 +240,7 @@ class ProtembedModel:
 
     def embed(self, sequences: List[bytes], reduction=None):
         job = embedding_model_post(self.session, self.id, sequences, reduction=reduction)
-        return EmbeddingResultFuture(self.session, job)
+        return EmbeddingResultFuture(self.session, job, sequences=sequences)
     
     def fit_svd(self, sequences: List[bytes], n_components: int = 1024, reduction: Optional[str] = None):
         model_id = self.id
@@ -265,7 +298,7 @@ class SVDModel:
     
     def embed(self, sequences: List[bytes]) -> EmbeddingResultFuture:
         job = svd_embed_post(self.session, self.id, sequences)
-        return EmbeddingResultFuture(self.session, job)
+        return EmbeddingResultFuture(self.session, job, sequences=sequences)
 
 
 class EmbeddingAPI:
@@ -298,6 +331,9 @@ class EmbeddingAPI:
             # we assume model is the model_id
             model_id = model
             job = embedding_model_post(self.session, model_id, sequences, reduction=reduction)
+        return EmbeddingResultFuture(self.session, job, sequences=sequences)
+    
+    def get_results(self, job):
         return EmbeddingResultFuture(self.session, job)
     
     def fit_svd(self, model_id: str, *args, **kwargs):
