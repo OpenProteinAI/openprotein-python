@@ -153,27 +153,6 @@ def get_msa(self: APISession, job: Job) -> csv.reader:
     """
     return get_input(self, job, PoetInputType.MSA)
 
-
-class PoetFutureMixin:
-    session: APISession
-    job: Job
-
-    def get_input(self, input_type: PoetInputType):
-        """See child function docs."""
-        return get_input(self.session, self.job, input_type)
-
-    def get_prompt(self, prompt_index: Optional[int] = None):
-        """See child function docs."""
-        return get_prompt(self.session, self.job, prompt_index=prompt_index)
-
-    def get_seed(self):
-        """See child function docs."""
-        return get_seed(self.session, self.job)
-    
-    def get_msa(self):
-        """See child function docs."""
-        return get_msa(self.session, self.job)
-
 def msa_post(session: APISession, msa_file=None, seed=None):
     """
     Create an MSA. 
@@ -379,6 +358,27 @@ def poet_score_get(session: APISession, job_id, page_size=config.POET_PAGE_SIZE,
     return PoetScoreJob(**response.json())
 
 
+
+class PoetFutureMixin:
+    session: APISession
+    job: Job
+
+    def get_input(self, input_type: PoetInputType):
+        """See child function docs."""
+        return get_input(self.session, self.job, input_type)
+
+    def get_prompt(self, prompt_index: Optional[int] = None):
+        """See child function docs."""
+        return get_prompt(self.session, self.job, prompt_index=prompt_index)
+
+    def get_seed(self):
+        """See child function docs."""
+        return get_seed(self.session, self.job)
+    
+    def get_msa(self):
+        """See child function docs."""
+        return get_msa(self.session, self.job)
+
 class PoetScoreFuture(PoetFutureMixin, AsyncJobFuture):
     """
     Represents a result of a PoET scoring job.
@@ -442,7 +442,6 @@ class PoetScoreFuture(PoetFutureMixin, AsyncJobFuture):
                 if verbose:
                     print(f"Failed to get results: {exc}")
                 return results
-        
         return results
 
 def poet_single_site_post(session: APISession,

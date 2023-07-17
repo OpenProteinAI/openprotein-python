@@ -1,13 +1,34 @@
 import pydantic
 from pydantic import Field
 from enum import Enum
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Dict
+
 from io import BytesIO
 from datetime import datetime 
 
 from openprotein.api.jobs import Job
 import openprotein.config as config
 
+
+class TrainStep(pydantic.BaseModel):
+    step: int
+    loss: float
+    tag: str
+    tags: dict
+
+class TrainGraph(pydantic.BaseModel):
+    traingraph: List[TrainStep]
+    created_date: datetime
+    job_id: str
+
+class SequenceData(pydantic.BaseModel):
+    sequence: str
+class SequenceDataset(pydantic.BaseModel):
+    sequences: List[str]
+class JobDetails(pydantic.BaseModel):
+    job_id: str
+    job_type: str
+    status: str
 class AssayMetadata(pydantic.BaseModel):
     assay_name: str
     assay_description: str
@@ -17,6 +38,7 @@ class AssayMetadata(pydantic.BaseModel):
     num_rows: int
     num_entries: int
     measurement_names: List[str]
+    sequence_length: Optional[int] = None
 
 class AssayDataRow(pydantic.BaseModel):
     mut_sequence: str
@@ -86,3 +108,43 @@ class PoetScoreJob(Job):
     num_rows: Optional[int]
     result: Optional[List[PoetScoreResult]]
     n_completed: Optional[int]
+
+class Prediction(pydantic.BaseModel):
+    """Prediction details."""
+
+    model_id: str
+    model_name: str
+    properties: Dict[str, Dict[str, float]]
+
+class PredictJobBase(pydantic.BaseModel):
+    """Shared properties for predict job outputs."""
+
+    # might be none if just fetching
+    job_id: Optional[str] = None
+    job_type: str
+    status: str
+
+
+class PredictJob(PredictJobBase):
+    """Properties about predict job returned via API."""
+
+    class SequencePrediction(pydantic.BaseModel):
+        """Sequence prediction."""
+
+        sequence: str
+        predictions: List[Prediction] = []
+
+    result: Optional[List[SequencePrediction]] = None
+
+class PredictSingleSiteJob(PredictJobBase):
+    """Properties about single-site prediction job returned via API."""
+
+    class SequencePrediction(pydantic.BaseModel):
+        """Sequence prediction."""
+
+        position: int
+        amino_acid: str
+        # sequence: str
+        predictions: List[Prediction] = []
+
+    result: Optional[List[SequencePrediction]] = None

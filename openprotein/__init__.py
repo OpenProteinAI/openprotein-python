@@ -5,6 +5,8 @@ from openprotein.api.jobs import JobsAPI
 from openprotein.api.data import DataAPI
 from openprotein.api.poet import PoetAPI
 from openprotein.api.embedding import EmbeddingAPI
+from openprotein.api.train import TrainingAPI
+from openprotein.api.predict import PredictAPI
 class OpenProtein(APISession):
     """
     The base class for accessing OpenProtein API functionality.
@@ -20,6 +22,10 @@ class OpenProtein(APISession):
     @property
     def data(self):
         return DataAPI(self)
+    
+    @property 
+    def train(self):
+        return TrainingAPI(self)
 
     @property
     def poet(self):
@@ -34,5 +40,9 @@ class OpenProtein(APISession):
         The embedding submodule gives access to protein embedding models and their inference endpoints.
         """
         return EmbeddingAPI(self)
+
+    @property 
+    def predict(self):
+        return PredictAPI(self)
 
 connect = OpenProtein
