@@ -1,9 +1,10 @@
 from openprotein.base import APISession
-from openprotein.api.jobs import Job, MappedAsyncJobFuture, PagedAsyncJobFuture, job_get
+from openprotein.api.jobs import Job, MappedAsyncJobFuture, PagedAsyncJobFuture, job_get, JobStatus
 import openprotein.config as config
 
 import pydantic
 import numpy as np
+from datetime import datetime
 from base64 import b64decode
 from typing import Optional, List, Tuple, Dict, Union
 from collections import namedtuple
@@ -49,13 +50,6 @@ def embedding_model_get(session: APISession, model_id: str) -> ModelMetadata:
     response = session.get(endpoint)
     result = response.json()
     return ModelMetadata(**result)
-
-
-def _decode_embedding(data, shape, dtype=np.float32):
-    data = b64decode(data)
-    array = np.frombuffer(data, dtype=dtype)
-    array = array.reshape(*shape)
-    return array
 
 
 def decode_embedding(data) -> np.ndarray:
@@ -116,21 +110,6 @@ class EmbeddedSequence(pydantic.BaseModel):
             return self.sequence
         elif i == 1:
             return self.embedding
-
-
-class _EmbeddingResultFuture(PagedAsyncJobFuture):
-    DEFAULT_PAGE_SIZE = config.EMBEDDING_PAGE_SIZE
-
-    def get_slice(self, start, end) -> List[EmbeddedSequence]:
-        assert end >= start
-        response = embedding_get(
-            self.session,
-            self.job.job_id,
-            page_offset=start,
-            page_size=(end - start),
-        )
-        #return response.results
-        return [EmbeddedSequence(sequence=r.sequence, embedding=r.to_numpy()) for r in response.results]
     
 
 class EmbeddingResultFuture(MappedAsyncJobFuture):
@@ -165,12 +144,36 @@ def embedding_model_post(session: APISession, model_id: str, sequences: List[byt
     return EmbeddingJob(**response.json())
 
 
+def embedding_model_logits_post(session: APISession, model_id: str, sequences: List[bytes]):
+    endpoint = PATH_PREFIX + f'/models/{model_id}/logits'
+
+    sequences = [s.decode() for s in sequences]
+    body = {
+        'sequences': sequences,
+    }
+    response = session.post(endpoint, json=body)
+    return EmbeddingJob(**response.json())
+
+
+def embedding_model_attn_post(session: APISession, model_id: str, sequences: List[bytes]):
+    endpoint = PATH_PREFIX + f'/models/{model_id}/attn'
+
+    sequences = [s.decode() for s in sequences]
+    body = {
+        'sequences': sequences,
+    }
+    response = session.post(endpoint, json=body)
+    return EmbeddingJob(**response.json())
+
+
 class SVDJob(Job):
     pass
 
 
 class SVDMetadata(pydantic.BaseModel):
     id: str
+    status: JobStatus
+    created_date: Optional[datetime]
     model_id: str
     n_components: int
     reduction: Optional[str]
@@ -240,6 +243,14 @@ class ProtembedModel:
 
     def embed(self, sequences: List[bytes], reduction=None):
         job = embedding_model_post(self.session, self.id, sequences, reduction=reduction)
+        return EmbeddingResultFuture(self.session, job, sequences=sequences)
+    
+    def logits(self, sequences: List[bytes]):
+        job = embedding_model_logits_post(self.session, self.id, sequences)
+        return EmbeddingResultFuture(self.session, job, sequences=sequences)
+    
+    def attn(self, sequences: List[bytes]):
+        job = embedding_model_attn_post(self.session, self.id, sequences)
         return EmbeddingResultFuture(self.session, job, sequences=sequences)
     
     def fit_svd(self, sequences: List[bytes], n_components: int = 1024, reduction: Optional[str] = None):
