@@ -13,12 +13,24 @@ import io
 
 PATH_PREFIX = 'v1/embeddings'
 
+def embedding_models_get(session: APISession) -> List[str]:
+    """
+    List available embeddings models.
 
-def embedding_models_list_get(session: APISession) -> List[str]:
+    Args:
+        session (APISession): API session
+
+    Returns:
+        List[str]: list of model names. 
+    """
+    
     endpoint = PATH_PREFIX + '/models'
     response = session.get(endpoint)
     result = response.json()
     return result
+
+# alias embedding_models_list_get to embedding_models_get
+embedding_models_list_get = embedding_models_get
 
 
 class ModelDescription(pydantic.BaseModel):
@@ -52,43 +64,82 @@ def embedding_model_get(session: APISession, model_id: str) -> ModelMetadata:
     return ModelMetadata(**result)
 
 
-def decode_embedding(data) -> np.ndarray:
-    s = io.BytesIO(data)
-    return np.load(s, allow_pickle=False)
+def embedding_get(session: APISession, job_id: str) -> List[bytes]:
+    """
+    Get sequences associated with the given request ID.
 
+    Parameters
+    ----------
+    session : APISession
+        Session object for API communication.
+    job_id : str
+        job ID to fetch 
 
-class EmbeddingResult(pydantic.BaseModel):
-    data: bytes
-    sequence: bytes
-    shape: List[int]
+    Returns
+    -------
+    sequences : List[bytes] 
+    """
 
-    def to_numpy(self):
-        dtype = np.float32
-        array = decode_embedding(self.data, self.shape, dtype=dtype)
-        return array
-
-
-class EmbeddingJob(Job):
-    results: Optional[List[EmbeddingResult]]
-
-
-def embedding_get(session: APISession, job_id: str, page_offset: int = 0, page_size: int = 10):
     endpoint = PATH_PREFIX + f'/{job_id}'
-    response = session.get(endpoint, params={'page_offset': page_offset, 'page_size': page_size})
-    return EmbeddingJob(**response.json())
+    response = session.get(endpoint)
+    return pydantic.parse_obj_as(List[bytes], response.json())
 
 
 def embedding_get_sequences(session: APISession, job_id: str) -> List[bytes]:
+    """
+    Get sequences associated with the given request ID.
+
+    Parameters
+    ----------
+    session : APISession
+        Session object for API communication.
+    job_id : str
+        job ID to fetch 
+
+    Returns
+    -------
+    sequences : List[bytes] 
+    """
     endpoint = PATH_PREFIX + f'/{job_id}/sequences'
     response = session.get(endpoint)
     return pydantic.parse_obj_as(List[bytes], response.json())
 
 
 def embedding_get_sequence_result(session: APISession, job_id: str, sequence: bytes) -> bytes:
+    """
+    Get encoded result for a sequence from the request ID.
+
+    Parameters
+    ----------
+    session : APISession
+        Session object for API communication.
+    job_id : str
+        job ID to retrieve results from
+    sequence : bytes
+        sequence to retrieve results for
+
+    Returns
+    -------
+    result : bytes 
+    """
     sequence = sequence.decode()
     endpoint = PATH_PREFIX + f'/{job_id}/{sequence}'
     response = session.get(endpoint)
     return response.content
+
+
+def decode_embedding(data: bytes) -> np.ndarray:
+    """
+    Decode embedding. 
+
+    Args:
+        data (bytes): raw bytes encoding the array received over the API
+
+    Returns:
+        np.ndarray: decoded array
+    """
+    s = io.BytesIO(data)
+    return np.load(s, allow_pickle=False)
 
 
 class EmbeddedSequence(pydantic.BaseModel):
@@ -113,6 +164,14 @@ class EmbeddedSequence(pydantic.BaseModel):
     
 
 class EmbeddingResultFuture(MappedAsyncJobFuture):
+    """
+    This class defines a future result from an inference request. Results are viewed as a mapping from
+    sequences to result arrays, which can be queried using the `Map` interface. The status of the job
+    can be checked using the `AsyncJobFuture` interface and all results can be retrieved as a list of
+    tuples of (sequence, result) pairs from the `.get()` function. Individual results can be retrieved
+    with `__getitem__(sequence)` and the object can be iterated like a dictionary. Results are cached
+    so repeated indexing of the same result will not result in additional `GET` requests against the server.
+    """
     def __init__(self, session: APISession, job: Job, sequences=None, max_workers=config.MAX_CONCURRENT_WORKERS):
         super().__init__(session, job, max_workers)
         self._sequences = sequences
@@ -131,7 +190,26 @@ class EmbeddingResultFuture(MappedAsyncJobFuture):
         return decode_embedding(data)
 
 
-def embedding_model_post(session: APISession, model_id: str, sequences: List[bytes], reduction=None):
+def embedding_model_post(session: APISession, model_id: str, sequences: List[bytes], reduction: Optional[str]=None):
+    """
+    POST a request for embeddings from the given model ID. Returns a Job object referring to this request
+    that can be used to retrieve results later.
+
+    Parameters
+    ----------
+    session : APISession
+        Session object for API communication.
+    model_id : str
+        model ID to request results from
+    sequences : List[bytes]
+        sequences to request results for
+    reduction : Optional[str]
+        reduction to apply to the embeddings. options are None, "MEAN", or "SUM". defaul: None
+
+    Returns
+    -------
+    job : Job 
+    """
     endpoint = PATH_PREFIX + f'/models/{model_id}/embed'
 
     sequences = [s.decode() for s in sequences]
@@ -141,7 +219,11 @@ def embedding_model_post(session: APISession, model_id: str, sequences: List[byt
     if reduction is not None:
         body['reduction'] = reduction
     response = session.post(endpoint, json=body)
-    return EmbeddingJob(**response.json())
+    return Job(**response.json())
+
+
+# alias embedding_post to embedding_model_post
+embedding_post = embedding_model_post
 
 
 def embedding_model_logits_post(session: APISession, model_id: str, sequences: List[bytes]):
@@ -152,7 +234,7 @@ def embedding_model_logits_post(session: APISession, model_id: str, sequences: L
         'sequences': sequences,
     }
     response = session.post(endpoint, json=body)
-    return EmbeddingJob(**response.json())
+    return Job(**response.json())
 
 
 def embedding_model_attn_post(session: APISession, model_id: str, sequences: List[bytes]):
@@ -163,7 +245,7 @@ def embedding_model_attn_post(session: APISession, model_id: str, sequences: Lis
         'sequences': sequences,
     }
     response = session.post(endpoint, json=body)
-    return EmbeddingJob(**response.json())
+    return Job(**response.json())
 
 
 class SVDJob(Job):
@@ -193,6 +275,27 @@ def svd_get(session: APISession, svd_id: str) -> SVDMetadata:
 
 
 def svd_fit_post(session: APISession, model_id: str, sequences: List[bytes], n_components: int = 1024, reduction: Optional[str] = None):
+    """
+    Create SVD fit job.
+
+    Parameters
+    ----------
+    session : APISession
+        Session object for API communication.
+    model_id : str
+        model to use
+    sequences : List[bytes] 
+        sequences to SVD
+    n_components : int
+        number of SVD components to fit. default = 1024
+    reduction : Optional[str]
+        embedding reduction to use for fitting the SVD. default = None
+
+    Returns
+    -------
+    SVDJob
+    """
+    
     endpoint = PATH_PREFIX + '/svd'
 
     sequences = [s.decode() for s in sequences]
@@ -207,13 +310,29 @@ def svd_fit_post(session: APISession, model_id: str, sequences: List[bytes], n_c
     return SVDJob(**response.json())
 
 
-def svd_embed_post(session: APISession, svd_id: str, sequences: List[bytes]):
+def svd_embed_post(session: APISession, svd_id: str, sequences: List[bytes]) -> Job:
+    """
+    POST a request for embeddings from the given SVD model.
+
+    Parameters
+    ----------
+    session : APISession
+        Session object for API communication.
+    svd_id : str
+        SVD model to use
+    sequences : List[bytes] 
+        sequences to SVD
+
+    Returns
+    -------
+    Job
+    """
     endpoint = PATH_PREFIX + f'/svd/{svd_id}/embed'
 
     sequences = [s.decode() for s in sequences]
     body = {'sequences': sequences}
     response = session.post(endpoint, json=body)
-    return EmbeddingJob(**response.json())
+    return Job(**response.json())
 
 
 class ProtembedModel:
