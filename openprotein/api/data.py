@@ -190,6 +190,10 @@ class AssayDataset:
     @property
     def measurement_names(self):
         return self.metadata.measurement_names
+    
+    @property
+    def sequence_length(self):
+        return self.metadata.sequence_length
 
     def __len__(self):
         return self.metadata.num_rows
@@ -236,6 +240,30 @@ class AssayDataset:
         return table
 
 
+    def get_first(self) -> pd.DataFrame:
+        """
+        Get a slice of assay data.
+
+        Parameters
+        ----------
+        start : int
+            Start index of the slice.
+        end : int
+            End index of the slice.
+
+        Returns
+        -------
+        pd.DataFrame
+            Dataframe containing the slice of assay data.
+        """
+        rows = []
+        entries = assaydata_page_get(self.session, self.id, page_offset=0, page_size=1)
+        for row in entries.assaydata:
+            row = [row.mut_sequence] + row.measurement_values
+            rows.append(row)
+        table = pd.DataFrame(rows, columns=['sequence'] + self.measurement_names)
+        return table
+    
     def get_slice(self, start: int, end: int) -> pd.DataFrame:
         """
         Get a slice of assay data.
@@ -308,6 +336,7 @@ class DataAPI:
         table.to_csv(stream, index=False)
         stream.seek(0)
         metadata = assaydata_post(self.session, stream, name, assay_description=description)
+        metadata.sequence_length = len(table['sequence'].values[0])
         return AssayDataset(self.session, metadata)
     
     def get(self, assay_id: str) -> AssayDataset:
