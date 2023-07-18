@@ -261,6 +261,9 @@ class SVDMetadata(pydantic.BaseModel):
     reduction: Optional[str]
     sequence_length: Optional[int]
 
+    def is_done(self):
+        return self.status.done()
+
 
 def svd_list_get(session: APISession) -> List[SVDMetadata]:
     endpoint = PATH_PREFIX + '/svd'
@@ -272,6 +275,27 @@ def svd_get(session: APISession, svd_id: str) -> SVDMetadata:
     endpoint = PATH_PREFIX + f'/svd/{svd_id}'
     response = session.get(endpoint)
     return SVDMetadata(**response.json())
+
+
+def svd_delete(session: APISession, svd_id: str):
+    """
+    Delete and SVD model.
+
+    Parameters
+    ----------
+    session : APISession
+        Session object for API communication.
+    svd_id : str
+        SVD model to delete
+
+    Returns
+    -------
+    bool
+    """
+    
+    endpoint = PATH_PREFIX + f'/svd/{svd_id}'
+    response = session.delete(endpoint)
+    return True
 
 
 def svd_fit_post(session: APISession, model_id: str, sequences: List[bytes], n_components: int = 1024, reduction: Optional[str] = None):
@@ -385,37 +409,52 @@ class SVDModel:
     """
     def __init__(self, session: APISession, metadata: SVDMetadata):
         self.session = session
-        self.metadata = metadata
+        self._metadata = metadata
 
     def __str__(self) -> str:
         return str(self.metadata)
     
     def __repr__(self) -> str:
         return repr(self.metadata)
+    
+    @property
+    def metadata(self):
+        self._refresh_metadata()
+        return self._metadata
+    
+    def _refresh_metadata(self):
+        if not self._metadata.is_done():
+            self.metadata = svd_get(self.session, self.id)
 
     @property
     def id(self):
-        return self.metadata.id
+        return self._metadata.id
     
     @property
     def n_components(self):
-        return self.metadata.n_components
+        return self._metadata.n_components
     
     @property
     def sequence_length(self):
-        return self.metadata.sequence_length
+        return self._metadata.sequence_length
     
     @property
     def reduction(self):
-        return self.metadata.reduction
+        return self._metadata.reduction
     
     def get_model(self) -> ProtembedModel:
-        model = ProtembedModel(self.session, self.metadata.model_id)
+        model = ProtembedModel(self.session, self._metadata.model_id)
         return model
     
     @property
     def model(self) -> ProtembedModel:
         return self.get_model()
+    
+    def delete(self) -> bool:
+        """
+        Delete this SVD model.
+        """
+        return svd_delete(self.session, self.id)
     
     def get_job(self) -> Job:
         return job_get(self.session, self.id)
@@ -473,6 +512,9 @@ class EmbeddingAPI:
     def get_svd(self, svd_id: str):
         metadata = svd_get(self.session, svd_id)
         return SVDModel(self.session, metadata)
+    
+    def delete_svd(self, svd_id: str):
+        return svd_delete(self.session, svd_id)
     
     def list_svd(self):
         return [SVDModel(self.session, metadata) for metadata in svd_list_get(self.session)]
