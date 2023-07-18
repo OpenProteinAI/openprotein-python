@@ -183,7 +183,7 @@ class StreamingAsyncJobFuture(AsyncJobFuture):
             total = None
             if hasattr(self, '__len__'):
                 total = len(self)
-            generator = tqdm.tqdm(generator, desc='Retrieving', total=total, position=0)
+            generator = tqdm.tqdm(generator, desc='Retrieving', total=total, position=0, mininterval=1.0)
         return [entry for entry in generator]
 
 

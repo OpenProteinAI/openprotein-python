@@ -6,6 +6,7 @@ from urllib.parse import urljoin
 from typing import Union
 from openprotein.errors import APIError, InvalidParameterError, MissingParameterError, AuthError
 
+
 class BearerAuth(requests.auth.AuthBase):
     """
     See https://stackoverflow.com/a/58055668
@@ -19,9 +20,9 @@ class BearerAuth(requests.auth.AuthBase):
 
 class APISession(requests.Session):
     """Connection session."""
-    def __init__(self, username, password):
+    def __init__(self, username, password, backend='https://api.openprotein.ai/api/'):
         super().__init__()
-        self.backend = 'https://dev.api.openprotein.ai/api/'
+        self.backend = backend
         self.login(username, password)
         self.verify = True
 
