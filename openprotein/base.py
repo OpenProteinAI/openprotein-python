@@ -44,7 +44,8 @@ class APISession(requests.Session):
     def request(self, method: Union[str, bytes], url: Union[str, bytes], *args, **kwargs):
         full_url = urljoin(self.backend, url)
         response = super().request(method, full_url, *args, **kwargs)
-        response.raise_for_status()
+        if response.status_code not in [200,201,202]:
+            raise APIError(f"Request failed with status {response.status_code} and message {response.text} ")
         return response
 
 

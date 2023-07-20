@@ -21,3 +21,9 @@ class AuthError(Exception):
     def __init__(self, message="Invalid authorization"):
         self.message = message
         super().__init__(self.message)
+    
+class InvalidJob(Exception):
+    """InvalidParameterError"""
+    def __init__(self, message="No such job"):
+        self.message = message
+        super().__init__(self.message)

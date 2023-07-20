@@ -10,6 +10,36 @@ from openprotein.api.jobs import Job
 import openprotein.config as config
 
 
+
+class JobType(str, Enum):
+    """
+    Type of job.
+
+    Describes the types of jobs that can be done.
+    """
+
+    stub = "stub"
+
+    preprocess = "/workflow/preprocess"
+    train = "/workflow/train"
+    embed_umap = "/workflow/embed/umap"
+    predict = "/workflow/predict"
+    predict_single_site = "/workflow/predict/single_site"
+    crossvalidate = "/workflow/crossvalidate"
+    evaluate = "/workflow/evaluate"
+    design = "/workflow/design"
+
+    align = "/align/align"
+    align_prompt = "/align/prompt"
+    prots2prot = "/poet"
+    prots2prot_single_site = "/poet/single_site"
+    prots2prot_generate = "/poet/generate"
+
+    embeddings = "/embeddings/embed"
+    svd = "/embeddings/svd"
+    attn = "/embeddings/attn"
+    logits = "/embeddings/logits"
+    
 class TrainStep(pydantic.BaseModel):
     step: int
     loss: float

@@ -76,6 +76,8 @@ class Job(pydantic.BaseModel):
 
         return job
 
+class JobTrainMeta(Job):
+    sequence_length: Optional[int]
 
 def jobs_list(
         session: APISession,

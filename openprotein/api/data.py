@@ -4,7 +4,7 @@ from typing import Optional, List
 from io import BytesIO
 
 from ..models import AssayMetadata, AssayDataPage
-from ..errors import APIError
+from ..errors import APIError, InvalidJob
 from openprotein.base import APISession
 import openprotein.config as config
 
@@ -65,6 +65,15 @@ def assaydata_list(session: APISession) -> List[AssayMetadata]:
         return pydantic.parse_obj_as(List[AssayMetadata], response.json())
     else:
         raise APIError(f"Unable to list assay data: {response.text}")
+
+def get_assay_metadata(session: APISession, assay_id:str) -> AssayMetadata:
+    metadata = assaydata_list(session)
+    metadata_filtered = [i for i in metadata if i.assay_id==assay_id]
+    if len(metadata_filtered)==1:
+        return metadata_filtered[0]
+    else: 
+        raise InvalidJob(f"No assaydata with id {assay_id} found")
+    
 
 def assaydata_put(session: APISession, assay_id: str, assay_name: Optional[str] = None, assay_description: Optional[str] = None) -> AssayMetadata:
     """
@@ -168,6 +177,10 @@ class AssayDataset:
         """
         self.session = session
         self.metadata = metadata
+        self.page_size = config.BASE_PAGE_SIZE
+        if self.page_size>1000:
+            self.page_size = 1000
+
 
     def __str__(self) -> str:
         return str(self.metadata)
@@ -221,7 +234,7 @@ class AssayDataset:
         self.metadata = metadata
 
 
-    def get_all(self) -> pd.DataFrame:
+    def _get_all(self, verbose:bool=False) -> pd.DataFrame:
         """
         Get all assay data.
 
@@ -230,12 +243,31 @@ class AssayDataset:
         pd.DataFrame
             Dataframe containing all assay data.
         """
+        step = self.page_size
+
+        results = []
+        num_returned = step
+        offset = 0
+
+        while num_returned >= step:
+            try:
+                result = self.get_slice(
+                        offset,
+                        offset+step)
+                results.append(result)
+                num_returned = len(result)
+                offset += num_returned
+            except APIError as exc:
+                if verbose:
+                    print(f"Failed to get results: {exc}")
+                return pd.concat(results)
+        return pd.concat(results)
+    
         rows = []
-        for i in range(0, len(self), config.BASE_PAGE_SIZE):
-            entries = assaydata_page_get(self.session, self.id, page_offset=i, page_size=config.BASE_PAGE_SIZE)
-            for row in entries.assaydata:
-                row = [row.mut_sequence] + row.measurement_values
-                rows.append(row)
+        entries = assaydata_page_get(self.session, self.id, page_offset=0, page_size=None)
+        for row in entries.assaydata:
+            row = [row.mut_sequence] + row.measurement_values
+            rows.append(row)
         table = pd.DataFrame(rows, columns=['sequence'] + self.measurement_names)
         return table
 
@@ -281,8 +313,8 @@ class AssayDataset:
             Dataframe containing the slice of assay data.
         """
         rows = []
-        for i in range(start, end, config.BASE_PAGE_SIZE):
-            entries = assaydata_page_get(self.session, self.id, page_offset=i, page_size=config.BASE_PAGE_SIZE)
+        for i in range(start, end, self.page_size):
+            entries = assaydata_page_get(self.session, self.id, page_offset=i, page_size= self.page_size)
             for row in entries.assaydata:
                 row = [row.mut_sequence] + row.measurement_values
                 rows.append(row)
@@ -364,6 +396,27 @@ class DataAPI:
                 return dataset
         raise KeyError(f"No assay with id={assay_id} found.")
 
+    def load_job(self, assay_id: str) -> AssayDataset:
+        """
+        Create assay job from existing id.
+
+        Parameters
+        ----------
+        assay_id : str
+            ID of the assay dataset.
+
+        Returns
+        -------
+        AssayDataset
+            Assay dataset with the specified ID.
+
+        Raises
+        ------
+        KeyError
+            If no assay dataset with the given ID is found.
+        """
+        return self.get(assay_id=assay_id)
+    
     def __len__(self) -> int:
         """
         Get the number of assay datasets.
