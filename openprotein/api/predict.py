@@ -2,14 +2,36 @@ from typing import Optional, List, Union
 import pydantic
 
 from openprotein.base import APISession
-from openprotein.api.jobs import Job, AsyncJobFuture
-from ..models import JobDetails, SequenceDataset, SequenceData, PredictJob, PredictSingleSiteJob, JobType
-from ..errors import InvalidParameterError, APIError, InvalidJob
-from .train import TrainFuture
+from openprotein.api.jobs import AsyncJobFuture
+from openprotein.models import SequenceDataset, SequenceData, PredictJob, PredictSingleSiteJob, JobType, Job
+from openprotein.errors import InvalidParameterError, APIError, InvalidJob
+from openprotein.api.train import TrainFuture
 
 
 
 def load_job(session: APISession, job_id: str) -> Job:
+    """
+    Reload a Submitted job to resume from where you left off!
+
+
+    Parameters
+    ----------
+    session : APISession
+        The current API session for communication with the server.
+    job_id : str
+        The identifier of the job whose details are to be loaded.
+
+    Returns
+    -------
+    Job
+        Job
+
+    Raises
+    ------
+    HTTPError
+        If the request to the server fails.
+
+    """
     endpoint = f'v1/jobs/{job_id}'
     response = session.get(endpoint)
     return pydantic.parse_obj_as(Job, response.json())
@@ -484,15 +506,28 @@ class PredictAPI:
     
     def load_job(self, job_id:str) -> Job:
         """
-        Load training job from id, and resume where you left off. 
+        Reload a Submitted job to resume from where you left off!
 
-        Args:
-            job_id (str): job id from training job
 
-        Returns:
-            JobTrainMeta: job object
+        Parameters
+        ----------
+        job_id : str
+            The identifier of the job whose details are to be loaded.
+
+        Returns
+        -------
+        Job
+            Job
+
+        Raises
+        ------
+        HTTPError
+            If the request to the server fails.
+        InvalidJob
+            If the Job is of the wrong type
+
         """
         job_details = load_job(self.session, job_id)
         if job_details.job_type not in [JobType.predict, JobType.predict_single_site]:
-            raise InvalidJob(f"Job {job_id} is not of type {JobType.train}")
+            raise InvalidJob(f"Job {job_id} is not of type {JobType.predict} or {JobType.predict_single_site}")
         return PredictFuture(self.session, job_details)
