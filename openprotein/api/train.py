@@ -15,17 +15,26 @@ from ..errors import InvalidParameterError, MissingParameterError, APIError, Inv
 from .data import AssayDataset, AssayMetadata, get_assay_metadata
 
 
+def list_models(session: APISession, job_id: str) -> List:
+    endpoint = "v1/models"
+    response = session.get(endpoint, params={"job_id":job_id})
+    return response.json()
+
 def _train_job(session: APISession,
                      endpoint:str,
                      assaydataset: AssayDataset,
-                     measurement_name: str,
+                     measurement_name: Union[str, List[str]],
                      model_name: str = "",
                      force_preprocess: Optional[bool] = False) -> JobTrainMeta:
     
     if not isinstance(assaydataset, AssayDataset):
         raise InvalidParameterError("assaydataset should be an assaydata Job result")
-    if measurement_name not in assaydataset.measurement_names:
-        raise InvalidParameterError(f"No {measurement_name} in measurement names")
+    if isinstance(measurement_name, str):
+        measurement_name = [measurement_name]
+
+    for mm in measurement_name:
+        if mm not in assaydataset.measurement_names:
+            raise InvalidParameterError(f"No {mm} in measurement names")
     if assaydataset.shape[0] <3:
         raise InvalidParameterError("Assaydata must have at least 3 data points for training")
     if model_name is None:
@@ -33,7 +42,7 @@ def _train_job(session: APISession,
 
     data = {
         "assay_id": assaydataset.id,
-        "measurement_name": [measurement_name], 
+        "measurement_name": measurement_name, 
         "model_name": model_name
     }
     params = {"force_preprocess": str(force_preprocess).lower()}
@@ -44,7 +53,7 @@ def _train_job(session: APISession,
 
 def create_train_job(session: APISession,
                      assaydataset: AssayDataset,
-                     measurement_name: str,
+                     measurement_name: Union[str, List[str]],
                      model_name: str = "",
                      force_preprocess: Optional[bool] = False):
     endpoint = 'v1/workflow/train'
@@ -53,7 +62,7 @@ def create_train_job(session: APISession,
 
 def create_train_job_br(session: APISession,
                      assaydataset: AssayDataset,
-                     measurement_name: str,
+                     measurement_name: Union[str, List[str]],
                      model_name: str = "",
                      force_preprocess: Optional[bool] = False):
     endpoint = 'v1/workflow/train/br'
@@ -62,7 +71,7 @@ def create_train_job_br(session: APISession,
 
 def create_train_job_gp(session: APISession,
                      assaydataset: AssayDataset,
-                     measurement_name: str,
+                     measurement_name: Union[str, List[str]],
                      model_name: str = "",
                      force_preprocess: Optional[bool] = False):
     endpoint = 'v1/workflow/train/gp'
@@ -93,6 +102,9 @@ class TrainFutureMixin:
             The assay data.
         """
         pass
+
+    def list_models(self):
+        return list_models(self.session, self.job.job_id)
     
 
 class TrainFuture(TrainFutureMixin, AsyncJobFuture):
@@ -134,15 +146,17 @@ class TrainingAPI:
 
     def create_training_job(self,
                     assaydataset: AssayDataset,
-                    measurement_name: str,
+                    measurement_name: Union[str, List[str]],
                     model_name:str ="",
                     force_preprocess: Optional[bool]=False):
+        if isinstance(measurement_name, str):
+            measurement_name = [measurement_name]
         job_details = create_train_job(self.session, assaydataset,measurement_name,model_name, force_preprocess)
         return TrainFuture(self.session, job_details, assaydataset)
 
     def create_training_job_br(self,
                     assaydataset: AssayDataset,
-                    measurement_name: str,
+                    measurement_name: Union[str, List[str]],
                     model_name:str="",
                     force_preprocess: Optional[bool]=False):
         job_details = create_train_job_br(self.session, assaydataset,measurement_name,model_name, force_preprocess)
@@ -150,7 +164,7 @@ class TrainingAPI:
 
     def create_training_job_gp(self,
                     assaydataset: AssayDataset,
-                    measurement_name: str,
+                    measurement_name: Union[str, List[str]],
                     model_name:str="",
                     force_preprocess: Optional[bool]=False):
         job_details = create_train_job_gp(self.session, assaydataset,measurement_name,model_name, force_preprocess)

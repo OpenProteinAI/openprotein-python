@@ -1,0 +1,498 @@
+from typing import Optional, List, Union
+import pydantic
+
+from openprotein.base import APISession
+from openprotein.api.jobs import Job, AsyncJobFuture
+from ..models import JobDetails, SequenceDataset, SequenceData, PredictJob, PredictSingleSiteJob, JobType
+from ..errors import InvalidParameterError, APIError, InvalidJob
+from .train import TrainFuture
+
+
+
+def load_job(session: APISession, job_id: str) -> Job:
+    endpoint = f'v1/jobs/{job_id}'
+    response = session.get(endpoint)
+    return pydantic.parse_obj_as(Job, response.json())
+
+def _create_predict_job(session: APISession,
+                        endpoint: str,
+                        payload: dict, 
+                        model_ids: Optional[List[str]] = None,
+                        train_job_id: Optional[str] = None) -> Job:
+    """
+    Creates a Predict request and returns the job object.
+
+    This function makes a post request to the specified endpoint with the payload. 
+    Either 'model_ids' or 'train_job_id' should be provided but not both. 
+
+    Parameters
+    ----------
+    session : APISession
+        APIsession with auth
+    endpoint : str
+        The endpoint to which the post request is to be made.
+        either predict or predict/single_site
+    payload : dict
+        The payload to be sent in the post request.
+    model_ids : List[str], optional
+        The list of model ids to be used for Predict. Default is None.
+    train_job_id : str, optional
+        The id of the train job to be used for Predict. Default is None.
+
+    Returns
+    -------
+    Job
+        The job object representing the Predict job.
+
+    Raises
+    ------
+    InvalidParameterError
+        If neither 'model_ids' nor 'train_job_id' is provided.
+        If both 'model_ids' and 'train_job_id' are provided.
+    HTTPError
+        If the post request does not succeed.
+    ValidationError
+        If the response cannot be parsed into a 'Job' object.
+    """
+    
+    if model_ids is None and train_job_id is None:
+        raise InvalidParameterError("Either a list of model IDs or a train job ID must be provided")
+
+    if model_ids is not None and train_job_id is not None:
+        raise InvalidParameterError("Only a list of model IDs OR a train job ID must be provided, not both")
+
+    if model_ids is not None:
+        payload["model_id"] = model_ids
+    else:
+        payload["train_job_id"] = train_job_id
+
+    response = session.post(endpoint, json=payload)
+    response.raise_for_status()  # raises HTTPError if the request fails
+    return pydantic.parse_obj_as(Job, response.json())  # raises ValidationError if parsing fails
+
+
+
+def create_predict_job(session: APISession,
+                       sequences:SequenceDataset,
+                       train_job: TrainFuture) -> Job:
+    """
+    Creates a predict job with a given set of sequences and a train job.
+
+    This function will use the sequences and train job ID to create a new Predict job.
+
+    Parameters
+    ----------
+    session : APISession
+        APIsession with auth
+    sequences : SequenceDataset
+        The dataset containing the sequences to predict
+    train_job : TrainFuture
+        The Train job: this model will be used for making Predicts.
+
+    Returns
+    -------
+    Job
+        The job object representing the created Predict job.
+
+    Raises
+    ------
+    InvalidParameterError
+        If neither 'model_ids' nor 'train_job_id' is provided.
+    HTTPError
+        If the post request does not succeed.
+    ValidationError
+        If the response cannot be parsed into a 'Job' object.
+    """
+    endpoint = 'v1/workflow/predict'
+    payload = {
+        "sequences": sequences.sequences
+    }
+    return _create_predict_job(session, endpoint, payload, model_ids=None, train_job_id=train_job.id)
+
+
+def create_predict_single_site(session: APISession,
+                               sequence: SequenceData,
+                               train_job: TrainFuture) -> Job:
+    """
+    Creates a predict job for single site mutants with a given sequence and a train job.
+
+    Parameters
+    ----------
+    session : APISession
+        APIsession with auth
+    sequence : SequenceData
+        The sequence for which single site mutants predictions will be made.
+    train_job : TrainFuture
+        The train job whose model will be used for making Predicts.
+
+    Returns
+    -------
+    Job
+        The job object representing the created Predict job.
+
+    Raises
+    ------
+    InvalidParameterError
+        If neither 'model_ids' nor 'train_job_id' is provided.
+    HTTPError
+        If the post request does not succeed.
+    ValidationError
+        If the response cannot be parsed into a 'Job' object.
+    """
+    endpoint = 'v1/workflow/predict/single_site'
+    payload = {
+        "sequence": sequence.sequence
+    }
+    return _create_predict_job(session, endpoint, payload, model_ids=None, train_job_id=train_job.id)
+
+def get_prediction_results(session: APISession, job_id: str, page_size: Optional[int] = None, page_offset: Optional[int] = None) -> PredictJob:
+    """
+    Retrieves the results of a Predict job.
+
+    This function retrieves the results of a Predict job by making a GET request to predict..
+
+    Parameters
+    ----------
+    session : APISession
+        APIsession with auth
+    job_id : str
+        The ID of the job whose results are to be retrieved.
+    page_size : Optional[int], default is None
+        The number of results to be returned per page. If None, all results are returned.
+    page_offset : Optional[int], default is None
+        The number of results to skip. If None, defaults to 0.
+
+    Returns
+    -------
+    PredictJob
+        The job object representing the Predict job.
+
+    Raises
+    ------
+    HTTPError
+        If the GET request does not succeed.
+    """
+    endpoint = f'v1/workflow/predict/{job_id}'
+    params = {}
+    if page_size is not None:
+        params['page_size'] = page_size
+    if page_offset is not None:
+        params['page_offset'] = page_offset
+
+    response = session.get(endpoint, params=params)
+
+    return PredictJob(**response.json())
+
+
+
+def get_single_site_prediction_results(session: APISession, job_id: str, page_size: Optional[int] = None, page_offset: Optional[int] = None) -> PredictSingleSiteJob:
+    """
+    Retrieves the results of a single site Predict job.
+
+    This function retrieves the results of a single site Predict job by making a GET request to predict/single_site
+
+    Parameters
+    ----------
+    session : APISession
+        APIsession with auth
+    job_id : str
+        The ID of the job whose results are to be retrieved.
+    page_size : Optional[int], default is None
+        The number of results to be returned per page. If None, all results are returned.
+    page_offset : Optional[int], default is None
+        The number of results to skip. If None, defaults to 0.
+
+    Returns
+    -------
+    PredictSingleSiteJob
+        The job object representing the single site Predict job.
+
+    Raises
+    ------
+    HTTPError
+        If the GET request does not succeed.
+    """
+    endpoint = f'v1/workflow/predict/single_site/{job_id}'
+    params = {}
+    if page_size is not None:
+        params['page_size'] = page_size
+    if page_offset is not None:
+        params['page_offset'] = page_offset
+
+    response = session.get(endpoint, params=params)
+    
+    return PredictSingleSiteJob(**response.json())
+
+
+class PredictFutureMixin:
+    """
+    Mixin class to handle predictions in an API session.
+
+    It provides a method to retrieve results from a Predict job.
+
+    Attributes
+    ----------
+    session : APISession
+        APIsession with auth
+    job : Job
+        The job object that represents the current Predict job.
+
+    Methods
+    -------
+    get_results(page_size: Optional[int] = None, page_offset: Optional[int] = None) -> Union[PredictSingleSiteJob, PredictJob]
+        Retrieves results from a Predict job.
+    """
+
+    session: APISession
+    job: Job
+
+    def get_results(self,
+                    page_size: Optional[int] = None,
+                    page_offset: Optional[int] = None) -> Union[PredictSingleSiteJob, PredictJob]:
+        """
+        Retrieves results from a Predict job.
+
+        it uses the appropriate method to retrieve the results based on job_type.
+
+        Parameters
+        ----------
+        page_size : Optional[int], default is None
+            The number of results to be returned per page. If None, all results are returned.
+        page_offset : Optional[int], default is None
+            The number of results to skip. If None, defaults to 0.
+
+        Returns
+        -------
+        Union[PredictSingleSiteJob, PredictJob]
+            The job object representing the Predict job. The exact type of job depends on the job type.
+
+        Raises
+        ------
+        HTTPError
+            If the GET request does not succeed.
+        """
+        if "single_site" in self.job.job_type:
+            return get_single_site_prediction_results(self.session, self.id, page_size, page_offset)
+        else:
+            return get_prediction_results(self.session, self.id, page_size, page_offset)
+
+
+
+class PredictFuture(PredictFutureMixin, AsyncJobFuture):
+    def __init__(self, session: APISession, job: Job, page_size=1000):
+        super().__init__(session, job)
+        self.page_size = page_size
+
+    def __str__(self) -> str:
+        return str(self.job)
+
+    def __repr__(self) -> str:
+        return repr(self.job)
+
+    @property
+    def id(self):
+        return self.job.job_id
+
+    def get(self, verbose:bool=False) ->  Union[PredictSingleSiteJob, PredictJob]:
+        """
+        Get all the results of the predict job.
+
+        Args:
+            verbose (bool, optional): If True, print verbose output. Defaults False.
+
+        Raises:
+            APIError: If there is an issue with the API request.
+
+        Returns:
+            PredictJob: A list of predict objects representing the results.
+        """
+        step = self.page_size
+
+        results = []
+        num_returned = step
+        offset = 0
+
+        while num_returned >= step:
+            try:
+                response = self.get_results(
+                        page_offset=offset,
+                        page_size=step)
+                results += response.result
+                num_returned = len(response.result)
+                offset += num_returned
+            except APIError as exc:
+                if verbose:
+                    print(f"Failed to get results: {exc}")
+                return results
+        return results
+
+
+class PredictAPI:
+    """
+    Class to handle/wrap API calls related to Predict endpoints.
+
+
+    Attributes
+    ----------
+    session : APISession
+        APIsession with auth
+
+    Methods
+    -------
+    create_predict_job(sequences: List, train_job: TrainFuture) -> PredictFuture
+        Creates a new predict job for a given list of sequences and a trained model.
+    create_predict_single_site(sequence: str, train_job: TrainFuture) -> PredictFuture
+        Creates a new predict job for a single sequence and a trained model.
+    get_prediction_results(job_id: str, page_size: Optional[int] = None, page_offset: Optional[int] = None) -> PredictJob
+        Retrieves the results of a predict job.
+    get_single_site_prediction_results(job_id: str, page_size: Optional[int] = None, page_offset: Optional[int] = None) -> PredictSingleSiteJob
+        Retrieves the results of a single site predict job.
+    """
+    def __init__(self, session: APISession):
+        """
+        Initialize a new instance of the PredictAPI class.
+
+        Parameters
+        ----------
+        session : APISession
+            APIsession with auth
+        """
+        self.session = session
+
+    def create_predict_job(self,
+                           sequences: List,
+                           train_job: TrainFuture) -> PredictFuture:
+        """
+        Creates a new Predict job for a given list of sequences and a trained model.
+
+        Parameters
+        ----------
+        sequences : List
+            The list of sequences to be used for the Predict job.
+        train_job : TrainFuture
+            The train job object representing the trained model.
+
+        Returns
+        -------
+        PredictFuture
+            The job object representing the Predict job.
+
+        Raises
+        ------
+        InvalidParameterError
+            If the sequences are not of the same length as the assay data or if the train job has not completed successfully.
+        """
+        if train_job.assaymetadata is not None:
+            if train_job.assaymetadata.sequence_length is not None:
+                if any([train_job.assaymetadata.sequence_length != len(s) for s in sequences]):
+                    raise InvalidParameterError(f"Predict sequences length {len(sequences[0])}  != training assaydata ({train_job.assaymetadata.sequence_length})")
+        if not train_job.done():
+            raise InvalidParameterError(f"train job has status {train_job.status.value}, Predict requires status SUCCESS")
+
+        sequence_dataset = SequenceDataset(sequences=sequences)
+        job = create_predict_job(self.session, sequence_dataset,train_job)
+        return PredictFuture(self.session, job)
+
+    def create_predict_single_site(self,
+                                   sequence: str,
+                                   train_job: TrainFuture) -> PredictFuture:
+        """
+        Creates a new Predict job for single site mutation analysis with a trained model.
+
+        Parameters
+        ----------
+        sequence : str
+            The sequence for single site analysis.
+        train_job : TrainFuture
+            The train job object representing the trained model.
+
+        Returns
+        -------
+        PredictFuture
+            The job object representing the Predict job.
+
+        Raises
+        ------
+        InvalidParameterError
+            If the sequence is not of the same length as the assay data or if the train job has not completed yet.
+        """
+        if train_job.assaymetadata is not None:
+            if train_job.assaymetadata.sequence_length is not None:
+                if any([train_job.assaymetadata.sequence_length != len(sequence)]):
+                    raise InvalidParameterError(f"Predict sequences length {len(sequence)}  != training assaydata ({train_job.assaymetadata.sequence_length})")
+        train_job.refresh() 
+        if not train_job.done():
+            raise InvalidParameterError(f"train job has status {train_job.status.value}, Predict requires status SUCCESS")
+
+        sequence_dataset = SequenceData(sequence=sequence)
+        job = create_predict_single_site(self.session, sequence_dataset, train_job)
+        return PredictFuture(self.session, job)
+
+    def get_prediction_results(self, job_id: str, page_size: Optional[int] = None, page_offset: Optional[int] = None) -> PredictJob:
+        """
+        Retrieves the results of a Predict job.
+
+        Parameters
+        ----------
+        job_id : str
+            The ID of the Predict job.
+        page_size : Optional[int], default is None
+            The number of results to be returned per page. If None, all results are returned.
+        page_offset : Optional[int], default is None
+            The number of results to skip. If None, defaults to 0.
+
+        Returns
+        -------
+        PredictJob
+            The job object representing the Predict job.
+
+        Raises
+        ------
+        HTTPError
+            If the GET request does not succeed.
+        """
+        job_details= get_prediction_results(self.session, job_id, page_size, page_offset)
+        return PredictFuture(self.session, job_details)
+
+
+    def get_single_site_prediction_results(self, job_id: str, page_size: Optional[int] = None, page_offset: Optional[int] = None) -> PredictSingleSiteJob:
+        """
+        Retrieves the results of a single site Predict job.
+
+        Parameters
+        ----------
+        job_id : str
+            The ID of the Predict job.
+        page_size : Optional[int], default is None
+            The number of results to be returned per page. If None, all results are returned.
+        page_offset : Optional[int], default is None
+            The page number to start retrieving results from. If None, defaults to 0.
+
+        Returns
+        -------
+        PredictSingleSiteJob
+            The job object representing the single site Predict job.
+
+        Raises
+        ------
+        HTTPError
+            If the GET request does not succeed.
+        """
+        job_details= get_single_site_prediction_results(self.session, job_id, page_size, page_offset)
+        return PredictFuture(self.session, job_details)
+
+    
+    def load_job(self, job_id:str) -> Job:
+        """
+        Load training job from id, and resume where you left off. 
+
+        Args:
+            job_id (str): job id from training job
+
+        Returns:
+            JobTrainMeta: job object
+        """
+        job_details = load_job(self.session, job_id)
+        if job_details.job_type not in [JobType.predict, JobType.predict_single_site]:
+            raise InvalidJob(f"Job {job_id} is not of type {JobType.train}")
+        return PredictFuture(self.session, job_details)
