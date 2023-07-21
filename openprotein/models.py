@@ -1,37 +1,37 @@
 
 from typing import Optional, List, Union, Dict, Literal
-
-from io import BytesIO
 from datetime import datetime 
 import time 
-
-import pydantic
 from enum import Enum
-
+from pydantic import BaseModel, Field
+import tqdm
+from openprotein.errors import TimeoutException
 import openprotein.config as config
 from openprotein.base import APISession
+from openprotein.api.jobs import Job, JobStatus
 
 
-class DesignMetadata(pydantic.BaseModel):
+class DesignMetadata(BaseModel):
     y_mu: Optional[float]
     y_var: Optional[float]
-class DesignSubscore(pydantic.BaseModel):
+
+class DesignSubscore(BaseModel):
     score: int
     metadata: DesignMetadata
 
-class DesignStep(pydantic.BaseModel):
+class DesignStep(BaseModel):
     step: int
     sample_index: int
     sequence: str
     #scores: List[int]
     #subscores_metadata: List[List[DesignSubscore]]
-    initial_scores: List[int] = pydantic.Field(..., alias='scores')  # renaming 'scores' to 'initial_scores'
-    scores: List[List[DesignSubscore]] = pydantic.Field(..., alias='subscores_metadata')  # renaming 'subscores_metadata' to 'scores'
+    initial_scores: List[int] = Field(..., alias='scores')  # renaming 'scores' to 'initial_scores'  # noqa: E501
+    scores: List[List[DesignSubscore]] = Field(..., alias='subscores_metadata')  # renaming 'subscores_metadata' to 'scores'  # noqa: E501
     umap1: float
     umap2: float
 
 
-class DesignResults(pydantic.BaseModel):
+class DesignResults(BaseModel):
     status: str
     job_id: str
     created_date: str
@@ -48,24 +48,24 @@ class DirectionEnum(str, Enum):
     lt = '<'
     eq = '='
 
-class Criterion(pydantic.BaseModel):
+class Criterion(BaseModel):
     target: float
     weight: float
     direction: str
 
-class ModelCriterion(pydantic.BaseModel):
+class ModelCriterion(BaseModel):
     criterion_type: Literal["model"]
     model_id: str
     measurement_name: str
     criterion: Criterion
 
-class NMutationCriterion(pydantic.BaseModel):
+class NMutationCriterion(BaseModel):
     criterion_type: Literal["n_mutations"]
     #sequences: Optional[List[str]]
 
 CriterionItem = Union[ModelCriterion, NMutationCriterion]
 
-class DesignJobCreate(pydantic.BaseModel):
+class DesignJobCreate(BaseModel):
     assay_id: str
     criteria: List[List[CriterionItem]]
     num_steps: Optional[int] = 8
@@ -105,116 +105,29 @@ class JobType(str, Enum):
     attn = "/embeddings/attn"
     logits = "/embeddings/logits"
 
-
-
-class JobStatus(str, Enum):
-    PENDING: str = 'PENDING'
-    RUNNING: str = 'RUNNING'
-    SUCCESS: str = 'SUCCESS'
-    FAILURE: str = 'FAILURE'
-    RETRYING: str = 'RETRYING'
-    CANCELED: str = 'CANCELED'
-
-    def done(self):
-        return (self is self.SUCCESS) or (self is self.FAILURE) or (self is self.CANCELED)
-
-    def cancelled(self):
-        return self is self.CANCELED
-
-
-class Job(pydantic.BaseModel):
-    status: JobStatus
-    job_id: str
-    job_type: str
-    created_date: Optional[datetime]
-    start_date: Optional[datetime]
-    end_date: Optional[datetime]
-    prerequisite_job_id: Optional[str]
-    progress_message: Optional[str]
-    progress_counter: Optional[int]
-
-    def refresh(self, session: APISession):
-        """ refresh job status"""
-        return job_get(session, self.job_id)
-
-    def done(self) -> bool:
-        """ Check if job is complete"""
-        return self.status.done()
-
-    def cancelled(self) -> bool:
-        """ check if job is cancelled"""
-        return self.status.cancelled()
-
-    def wait(self, session: APISession,
-             interval:int=config.POLLING_INTERVAL,
-             timeout:Optional[int]=None,
-             verbose:bool=False):
-        """
-        Wait for a job to finish, and then get the results. 
-
-        Args:
-            session (APISession): Auth'd APIsession
-            interval (int, optional): Wait between polls (secs). Defaults to config.POLLING_INTERVAL.
-            timeout (int, optional): Max. time to wait before raising error. Defaults to unlimited.
-            verbose (bool, optional): print status updates. Defaults to False.
-
-        Raises:
-            TimeoutException: _description_
-
-        Returns:
-            _type_: _description_
-        """
-        start_time = time.time()
-        
-        def is_done(job: Job):
-            if timeout is not None:
-                elapsed_time = time.time() - start_time
-                if elapsed_time >= timeout:
-                    raise TimeoutException(f'Wait time exceeded timeout {timeout}, waited {elapsed_time}')
-            return job.done()
-        
-        pbar = None
-        if verbose:
-            pbar = tqdm.tqdm()
-
-        job = self.refresh(session)
-        while not is_done(job):
-            if verbose:
-                pbar.update(1)
-                pbar.set_postfix({'status': job.status})
-                #print(f'Retry {retries}, status={self.job.status}, time elapsed {time.time() - start_time:.2f}')
-            time.sleep(interval)
-            job = job.refresh(session)
-        
-        if verbose:
-            pbar.update(1)
-            pbar.set_postfix({'status': job.status})
-
-        return job
-
 class Jobplus(Job):
     sequence_length: Optional[int]
  
-class TrainStep(pydantic.BaseModel):
+class TrainStep(BaseModel):
     step: int
     loss: float
     tag: str
     tags: dict
 
-class TrainGraph(pydantic.BaseModel):
+class TrainGraph(BaseModel):
     traingraph: List[TrainStep]
     created_date: datetime
     job_id: str
 
-class SequenceData(pydantic.BaseModel):
+class SequenceData(BaseModel):
     sequence: str
-class SequenceDataset(pydantic.BaseModel):
+class SequenceDataset(BaseModel):
     sequences: List[str]
-class JobDetails(pydantic.BaseModel):
+class JobDetails(BaseModel):
     job_id: str
     job_type: str
     status: str
-class AssayMetadata(pydantic.BaseModel):
+class AssayMetadata(BaseModel):
     assay_name: str
     assay_description: str
     assay_id: str
@@ -225,12 +138,12 @@ class AssayMetadata(pydantic.BaseModel):
     measurement_names: List[str]
     sequence_length: Optional[int] = None
 
-class AssayDataRow(pydantic.BaseModel):
+class AssayDataRow(BaseModel):
     mut_sequence: str
     measurement_values: List[Union[float, None]]
 
 
-class AssayDataPage(pydantic.BaseModel):
+class AssayDataPage(BaseModel):
     assaymetadata: AssayMetadata
     page_size: int
     page_offset: int
@@ -249,19 +162,19 @@ class MSASamplingMethod(str, Enum):
     NEIGHBORS_NONGAP_NORM_NO_LIMIT = 'NEIGHBORS_NONGAP_NORM_NO_LIMIT'
     TOP = 'TOP'
 
-class PoetSiteResult(pydantic.BaseModel):
+class PoetSiteResult(BaseModel):
     sequence: bytes
     score: List[float]
     name: Optional[str]
 
-class PromptPostParams(pydantic.BaseModel):
+class PromptPostParams(BaseModel):
     msa_id: str
-    num_sequences: Optional[int] = pydantic.Field(None, ge=0, lt=100)
-    num_residues: Optional[int] = pydantic.Field(None, ge=0, lt=24577)
+    num_sequences: Optional[int] = Field(None, ge=0, lt=100)
+    num_residues: Optional[int] = Field(None, ge=0, lt=24577)
     method: MSASamplingMethod = MSASamplingMethod.NEIGHBORS_NONGAP_NORM_NO_LIMIT
-    homology_level: float = pydantic.Field(0.8, ge=0, le=1)
-    max_similarity: float = pydantic.Field(1.0, ge=0, le=1)
-    min_similarity: float = pydantic.Field(0.0, ge=0, le=1)
+    homology_level: float = Field(0.8, ge=0, le=1)
+    max_similarity: float = Field(1.0, ge=0, le=1)
+    min_similarity: float = Field(0.0, ge=0, le=1)
     always_include_seed_sequence: bool = False
     num_ensemble_prompts: int = 1
     random_seed: Optional[int] = None
@@ -280,7 +193,7 @@ class PoetInputType(str, Enum):
     MSA = 'GENERATED'
     PROMPT = 'PROMPT'
 
-class PoetScoreResult(pydantic.BaseModel):
+class PoetScoreResult(BaseModel):
     sequence: bytes
     score: List[float]
     name: Optional[str]
@@ -294,14 +207,14 @@ class PoetScoreJob(Job):
     result: Optional[List[PoetScoreResult]]
     n_completed: Optional[int]
 
-class Prediction(pydantic.BaseModel):
+class Prediction(BaseModel):
     """Prediction details."""
 
     model_id: str
     model_name: str
     properties: Dict[str, Dict[str, float]]
 
-class PredictJobBase(pydantic.BaseModel):
+class PredictJobBase(BaseModel):
     """Shared properties for predict job outputs."""
 
     # might be none if just fetching
@@ -309,7 +222,7 @@ class PredictJobBase(pydantic.BaseModel):
     job_type: str
     status: str
 
-class DesignJob(pydantic.BaseModel):
+class DesignJob(BaseModel):
     job_id: Optional[str] = None
     job_type: str
     status: str
@@ -317,7 +230,7 @@ class DesignJob(pydantic.BaseModel):
 class PredictJob(PredictJobBase):
     """Properties about predict job returned via API."""
 
-    class SequencePrediction(pydantic.BaseModel):
+    class SequencePrediction(BaseModel):
         """Sequence prediction."""
 
         sequence: str
@@ -328,7 +241,7 @@ class PredictJob(PredictJobBase):
 class PredictSingleSiteJob(PredictJobBase):
     """Properties about single-site prediction job returned via API."""
 
-    class SequencePrediction(pydantic.BaseModel):
+    class SequencePrediction(BaseModel):
         """Sequence prediction."""
 
         position: int

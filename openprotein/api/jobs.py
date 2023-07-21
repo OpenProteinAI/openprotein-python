@@ -8,9 +8,100 @@ from typing import List, Optional, Dict, Union
 import tqdm
 import concurrent.futures
 from requests import HTTPError
-from ..errors import TimeoutException
-from ..models import Job, JobStatus
+from openprotein.errors import TimeoutException
+import time 
 
+
+
+class JobStatus(str, Enum):
+    PENDING: str = 'PENDING'
+    RUNNING: str = 'RUNNING'
+    SUCCESS: str = 'SUCCESS'
+    FAILURE: str = 'FAILURE'
+    RETRYING: str = 'RETRYING'
+    CANCELED: str = 'CANCELED'
+
+    def done(self):
+        return (self is self.SUCCESS) or (self is self.FAILURE) or (self is self.CANCELED)  # noqa: E501
+
+    def cancelled(self):
+        return self is self.CANCELED
+
+class Job(pydantic.BaseModel):
+    status: JobStatus
+    job_id: str
+    job_type: str
+    created_date: Optional[datetime]
+    start_date: Optional[datetime]
+    end_date: Optional[datetime]
+    prerequisite_job_id: Optional[str]
+    progress_message: Optional[str]
+    progress_counter: Optional[int]
+
+    def refresh(self, session: APISession):
+        """ refresh job status"""
+        return job_get(session, self.job_id)
+
+    def done(self) -> bool:
+        """ Check if job is complete"""
+        return self.status.done()
+
+    def cancelled(self) -> bool:
+        """ check if job is cancelled"""
+        return self.status.cancelled()
+
+    def wait(self, session: APISession,
+             interval:int=config.POLLING_INTERVAL,
+             timeout:Optional[int]=None,
+             verbose:bool=False):
+        """
+        Wait for a job to finish, and then get the results. 
+
+        Args:
+            session (APISession): Auth'd APIsession
+            interval (int): Wait between polls (secs). Defaults to POLLING_INTERVAL
+            timeout (int): Max. time to wait before raising error. Defaults to unlimited.
+            verbose (bool, optional): print status updates. Defaults to False.
+
+        Raises:
+            TimeoutException: _description_
+
+        Returns:
+            _type_: _description_
+        """
+        start_time = time.time()
+        
+        def is_done(job: Job):
+            if timeout is not None:
+                elapsed_time = time.time() - start_time
+                if elapsed_time >= timeout:
+                    raise TimeoutException(
+                        f'Wait time exceeded timeout {timeout}, waited {elapsed_time}')
+            return job.done()
+        
+        pbar = None
+        if verbose:
+            pbar = tqdm.tqdm()
+
+        job = self.refresh(session)
+        while not is_done(job):
+            if verbose:
+                pbar.update(1)
+                pbar.set_postfix({'status': job.status})
+                #print(f'Retry {retries}, status={self.job.status}, time elapsed {time.time() - start_time:.2f}') # noqa: E501
+            time.sleep(interval)
+            job = job.refresh(session)
+        
+        if verbose:
+            pbar.update(1)
+            pbar.set_postfix({'status': job.status})
+
+        return job
+
+def job_get(session: APISession, job_id) -> Job:
+    endpoint = f'v1/jobs/{job_id}'
+    response = session.get(endpoint)
+    return Job(**response.json())
 
 def jobs_list(
         session: APISession,
@@ -55,11 +146,6 @@ def jobs_list(
     response = session.get(endpoint, params=params)
     return pydantic.parse_obj_as(List[Job], response.json())
 
-
-def job_get(session: APISession, job_id) -> Job:
-    endpoint = f'v1/jobs/{job_id}'
-    response = session.get(endpoint)
-    return Job(**response.json())
 
 
 class JobsAPI:

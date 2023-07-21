@@ -2,8 +2,8 @@ from typing import Optional, List, Union
 import pydantic
 
 from openprotein.base import APISession
-from openprotein.api.jobs import AsyncJobFuture
-from openprotein.models import SequenceDataset, SequenceData, PredictJob, PredictSingleSiteJob, JobType, Job
+from openprotein.api.jobs import AsyncJobFuture,Job
+from openprotein.models import SequenceDataset, SequenceData, PredictJob, PredictSingleSiteJob, JobType
 from openprotein.errors import InvalidParameterError, APIError, InvalidJob
 from openprotein.api.train import TrainFuture
 

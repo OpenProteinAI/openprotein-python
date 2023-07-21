@@ -1,10 +1,9 @@
 from typing import Optional, List, Union
 import pydantic
-
 from openprotein.base import APISession
-from openprotein.api.jobs import AsyncJobFuture
+from openprotein.api.jobs import AsyncJobFuture, Job
 
-from openprotein.models import (TrainGraph, JobType, Job,Jobplus)
+from openprotein.models import (TrainGraph, JobType,Jobplus)
 from openprotein.errors import InvalidParameterError, APIError, InvalidJob
 from openprotein.api.data import AssayDataset, AssayMetadata
 
@@ -38,8 +37,9 @@ def _train_job(session: APISession,
     """
     Create a training job.
 
-    This function validates the inputs, formats the data, sends the job training request to the endpoint,
-    and then parses the response into a `Job` object.
+    Validate inputs, format  data, sends the job training request to the endpoint,
+    
+    Parses the response into a `Job` object.
 
     Parameters
     ----------
@@ -75,11 +75,11 @@ def _train_job(session: APISession,
     if isinstance(measurement_name, str):
         measurement_name = [measurement_name]
 
-    for mm in measurement_name:
-        if mm not in assaydataset.measurement_names:
-            raise InvalidParameterError(f"No {mm} in measurement names")
+    for measurement in measurement_name:
+        if measurement not in assaydataset.measurement_names:
+            raise InvalidParameterError(f"No {measurement} in measurement names")
     if assaydataset.shape[0] <3:
-        raise InvalidParameterError("Assaydata must have at least 3 data points for training")
+        raise InvalidParameterError("Assaydata must have >=3 data points for training!")
     if model_name is None:
         model_name = ""
 
@@ -102,8 +102,9 @@ def create_train_job(session: APISession,
     """
     Create a training job.
 
-    This function validates the inputs, formats the data, sends the job training request to the endpoint,
-    and then parses the response into a `Job` object.
+    Validate inputs, format  data, sends the job training request to the endpoint,
+    
+    Parses the response into a `Job` object.
 
     Parameters
     ----------
@@ -135,7 +136,11 @@ def create_train_job(session: APISession,
         If the request to the server fails.
     """
     endpoint = 'v1/workflow/train'
-    return _train_job(session, endpoint, assaydataset, measurement_name, model_name, force_preprocess)
+    return _train_job(session,
+                      endpoint,
+                      assaydataset,
+                      measurement_name,
+                      model_name, force_preprocess)
 
 
 def _create_train_job_br(session: APISession,
@@ -143,8 +148,14 @@ def _create_train_job_br(session: APISession,
                      measurement_name: Union[str, List[str]],
                      model_name: str = "",
                      force_preprocess: Optional[bool] = False):
+    """ Alias for create_train_job"""
     endpoint = 'v1/workflow/train/br'
-    return _train_job(session, endpoint, assaydataset, measurement_name, model_name, force_preprocess)
+    return _train_job(session,
+                      endpoint,
+                      assaydataset,
+                      measurement_name,
+                      model_name,
+                      force_preprocess)
 
 
 def _create_train_job_gp(session: APISession,
@@ -152,8 +163,14 @@ def _create_train_job_gp(session: APISession,
                      measurement_name: Union[str, List[str]],
                      model_name: str = "",
                      force_preprocess: Optional[bool] = False):
+    """ Alias for create_train_job"""
     endpoint = 'v1/workflow/train/gp'
-    return _train_job(session, endpoint, assaydataset, measurement_name, model_name, force_preprocess)
+    return _train_job(session,
+                      endpoint,
+                      assaydataset,
+                      measurement_name,
+                      model_name,
+                      force_preprocess)
 
 
 def get_training_results(session: APISession, job_id: str) -> TrainGraph:
@@ -194,6 +211,7 @@ class TrainFutureMixin:
     job: Job
 
     def get_results(self) -> TrainGraph:
+        """ Get results of training job (e.g. loss etc)."""
         return get_training_results(self.session, self.job.job_id)
 
     def get_assay_data(self):
@@ -227,7 +245,10 @@ class TrainFutureMixin:
     
 
 class TrainFuture(TrainFutureMixin, AsyncJobFuture):
-    def __init__(self, session: APISession, job: Job, assaymetadata: Optional[AssayMetadata] = None):
+    def __init__(self,
+                 session: APISession,
+                 job: Job,
+                 assaymetadata: Optional[AssayMetadata] = None):
         super().__init__(session, job)
         self.assaymetadata = assaymetadata
 
@@ -250,7 +271,7 @@ class TrainFuture(TrainFutureMixin, AsyncJobFuture):
         Returns:
             The assay data.
         """
-        return super().get_assay_data()
+        return self.get_assay_data()
 
     def get(self, verbose:bool=False) -> TrainGraph:
 
@@ -291,7 +312,7 @@ class TrainingAPI:
         model_name : str, optional
             The name to give the model.
         force_preprocess : bool, optional
-            If set to True, preprocessing is forced even if preprocessed data already exists.
+            If set to True, preprocessing is forced even if data already exists.
 
         Returns
         -------
@@ -390,5 +411,3 @@ class TrainingAPI:
         if job_details.job_type != JobType.train:
             raise InvalidJob(f"Job {job_id} is not of type {JobType.train}")
         return TrainFuture(self.session, job_details, assay_metadata)
-        
-    
