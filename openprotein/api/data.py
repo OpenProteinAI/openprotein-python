@@ -3,14 +3,29 @@ import pydantic
 from typing import Optional, List
 from io import BytesIO
 
-from ..models import AssayMetadata, AssayDataPage
-from ..errors import APIError, InvalidJob
+from openprotein.models import AssayMetadata, AssayDataPage
+from openprotein.errors import APIError, InvalidJob
 from openprotein.base import APISession
 import openprotein.config as config
 
-def list_models(session: APISession, job_id: str) -> List:
+def list_models(session: APISession, assay_id: str) -> List:
+    """
+    List models assoicated with assay.
+
+    Parameters
+    ----------
+    session : APISession
+        Session object for API communication.
+    assay_id : str
+        assay ID
+
+    Returns
+    -------
+    List
+        List of models
+    """
     endpoint = "v1/models"
-    response = session.get(endpoint, params={"assay_id":job_id})
+    response = session.get(endpoint, params={"assay_id":assay_id})
     return response.json()
 
 def assaydata_post(session: APISession, assay_file, assay_name: str, assay_description: Optional[str] = '') -> AssayMetadata:
@@ -72,15 +87,40 @@ def assaydata_list(session: APISession) -> List[AssayMetadata]:
         raise APIError(f"Unable to list assay data: {response.text}")
 
 def get_assay_metadata(session: APISession, assay_id:str) -> AssayMetadata:
+    """
+    Retrieve metadata for a specified assay.
+
+
+    Parameters
+    ----------
+    session : APISession
+        The current API session for communication with the server.
+    assay_id : str
+        The identifier of the assay for which metadata is to be retrieved.
+
+    Returns
+    -------
+    AssayMetadata
+        An AssayMetadata instance that contains the metadata for the specified assay.
+
+    Raises
+    ------
+    InvalidJob
+        If no assay metadata with the specified assay_id is found.
+    """
     metadata = assaydata_list(session)
     metadata_filtered = [i for i in metadata if i.assay_id==assay_id]
     if len(metadata_filtered)==1:
         return metadata_filtered[0]
-    else: 
+    elif len(metadata_filtered)==0:
         raise InvalidJob(f"No assaydata with id {assay_id} found")
+    elif len(metadata_filtered)>1:
+        return metadata_filtered[0]
     
-
-def assaydata_put(session: APISession, assay_id: str, assay_name: Optional[str] = None, assay_description: Optional[str] = None) -> AssayMetadata:
+def assaydata_put(session: APISession,
+                  assay_id: str,
+                  assay_name: Optional[str] = None,
+                  assay_description: Optional[str] = None) -> AssayMetadata:
     """
     Update assay metadata.
 
@@ -221,6 +261,14 @@ class AssayDataset:
         return (len(self), len(self.measurement_names) + 1)
 
     def list_models(self):
+        """
+        List models assoicated with assay.
+
+        Returns
+        -------
+        List
+            List of models
+        """
         return list_models(self.session, self.id)
     
     def update(self, assay_name: Optional[str] = None, assay_description: Optional[str] = None) -> None:
@@ -338,6 +386,7 @@ class AssayDataset:
 
 
 class DataAPI:
+    """ API interface for calling AssayData endpoints"""
     def __init__(self, session: APISession):
         """
         init the DataAPI.
@@ -413,22 +462,26 @@ class DataAPI:
 
     def load_job(self, assay_id: str) -> AssayDataset:
         """
-        Create assay job from existing id.
+        Reload a Submitted job to resume from where you left off!
+
 
         Parameters
         ----------
         assay_id : str
-            ID of the assay dataset.
+            The identifier of the assay to be loaded.
 
         Returns
         -------
-        AssayDataset
-            Assay dataset with the specified ID.
+        Job
+            Job
 
         Raises
         ------
-        KeyError
-            If no assay dataset with the given ID is found.
+        HTTPError
+            If the request to the server fails.
+        InvalidJob
+            If the Job is of the wrong type
+
         """
         return self.get(assay_id=assay_id)
     

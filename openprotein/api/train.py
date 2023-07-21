@@ -1,21 +1,30 @@
-from typing import Optional, List, Dict, Union, BinaryIO, Iterator
-from io import BytesIO
-import random
-import csv
-import codecs
-import requests
+from typing import Optional, List, Union
 import pydantic
 
 from openprotein.base import APISession
-from openprotein.api.jobs import Job,JobTrainMeta, AsyncJobFuture, StreamingAsyncJobFuture, job_get
-import openprotein.config as config
+from openprotein.api.jobs import AsyncJobFuture
 
-from ..models import (TrainGraph, JobType)
-from ..errors import InvalidParameterError, MissingParameterError, APIError, InvalidJob
-from .data import AssayDataset, AssayMetadata, get_assay_metadata
+from openprotein.models import (TrainGraph, JobType, Job,Jobplus)
+from openprotein.errors import InvalidParameterError, APIError, InvalidJob
+from openprotein.api.data import AssayDataset, AssayMetadata
 
 
 def list_models(session: APISession, job_id: str) -> List:
+    """
+    List models assoicated with job
+
+    Parameters
+    ----------
+    session : APISession
+        Session object for API communication.
+    job_id : str
+        job ID
+
+    Returns
+    -------
+    List
+        List of models
+    """
     endpoint = "v1/models"
     response = session.get(endpoint, params={"job_id":job_id})
     return response.json()
@@ -25,8 +34,42 @@ def _train_job(session: APISession,
                      assaydataset: AssayDataset,
                      measurement_name: Union[str, List[str]],
                      model_name: str = "",
-                     force_preprocess: Optional[bool] = False) -> JobTrainMeta:
-    
+                     force_preprocess: Optional[bool] = False) -> Jobplus:
+    """
+    Create a training job.
+
+    This function validates the inputs, formats the data, sends the job training request to the endpoint,
+    and then parses the response into a `Job` object.
+
+    Parameters
+    ----------
+    session : APISession
+        The current API session for communication with the server.
+    endpoint : str
+        The endpoint to which the job training request is to be sent.
+    assaydataset : AssayDataset
+        An AssayDataset object from which the assay_id is extracted.
+    measurement_name : str or List[str]
+        The name(s) of the measurement(s) to be used in the training job.
+    model_name : str, optional
+        The name to give the model.
+    force_preprocess : bool, optional
+        If set to True, preprocessing is forced even if preprocessed data already exists.
+
+    Returns
+    -------
+    Job
+        A Job
+
+    Raises
+    ------
+    InvalidParameterError
+        If the `assaydataset` is not an AssayDataset object,
+        If any measurement name provided does not exist in the AssayDataset,
+        or if the AssayDataset has fewer than 3 data points.
+    HTTPError
+        If the request to the server fails.
+    """
     if not isinstance(assaydataset, AssayDataset):
         raise InvalidParameterError("assaydataset should be an assaydata Job result")
     if isinstance(measurement_name, str):
@@ -49,18 +92,53 @@ def _train_job(session: APISession,
 
     response = session.post(endpoint, params=params, json=data)
     response.raise_for_status()
-    return pydantic.parse_obj_as(JobTrainMeta, response.json())
+    return pydantic.parse_obj_as(Jobplus, response.json())
 
 def create_train_job(session: APISession,
                      assaydataset: AssayDataset,
                      measurement_name: Union[str, List[str]],
                      model_name: str = "",
                      force_preprocess: Optional[bool] = False):
+    """
+    Create a training job.
+
+    This function validates the inputs, formats the data, sends the job training request to the endpoint,
+    and then parses the response into a `Job` object.
+
+    Parameters
+    ----------
+    session : APISession
+        The current API session for communication with the server.
+    endpoint : str
+        The endpoint to which the job training request is to be sent.
+    assaydataset : AssayDataset
+        An AssayDataset object from which the assay_id is extracted.
+    measurement_name : str or List[str]
+        The name(s) of the measurement(s) to be used in the training job.
+    model_name : str, optional
+        The name to give the model.
+    force_preprocess : bool, optional
+        If set to True, preprocessing is forced even if preprocessed data already exists.
+
+    Returns
+    -------
+    Job
+        A Job
+
+    Raises
+    ------
+    InvalidParameterError
+        If the `assaydataset` is not an AssayDataset object,
+        If any measurement name provided does not exist in the AssayDataset,
+        or if the AssayDataset has fewer than 3 data points.
+    HTTPError
+        If the request to the server fails.
+    """
     endpoint = 'v1/workflow/train'
     return _train_job(session, endpoint, assaydataset, measurement_name, model_name, force_preprocess)
 
 
-def create_train_job_br(session: APISession,
+def _create_train_job_br(session: APISession,
                      assaydataset: AssayDataset,
                      measurement_name: Union[str, List[str]],
                      model_name: str = "",
@@ -69,7 +147,7 @@ def create_train_job_br(session: APISession,
     return _train_job(session, endpoint, assaydataset, measurement_name, model_name, force_preprocess)
 
 
-def create_train_job_gp(session: APISession,
+def _create_train_job_gp(session: APISession,
                      assaydataset: AssayDataset,
                      measurement_name: Union[str, List[str]],
                      model_name: str = "",
@@ -79,14 +157,37 @@ def create_train_job_gp(session: APISession,
 
 
 def get_training_results(session: APISession, job_id: str) -> TrainGraph:
+    """Get Training results (e.g. loss etc) of job."""
     endpoint = f'v1/workflow/train/{job_id}'
     response = session.get(endpoint)
     return TrainGraph( ** response.json() )
 
-def load_job(session: APISession, job_id: str) -> JobTrainMeta:
+def load_job(session: APISession, job_id: str) -> Jobplus:
+    """
+    Reload a Submitted job to resume from where you left off!
+
+
+    Parameters
+    ----------
+    session : APISession
+        The current API session for communication with the server.
+    job_id : str
+        The identifier of the job whose details are to be loaded.
+
+    Returns
+    -------
+    Job
+        Job
+
+    Raises
+    ------
+    HTTPError
+        If the request to the server fails.
+
+    """
     endpoint = f'v1/workflow/train/job/{job_id}'
     response = session.get(endpoint)
-    return pydantic.parse_obj_as(JobTrainMeta, response.json())
+    return pydantic.parse_obj_as(Jobplus, response.json())
 
 class TrainFutureMixin:
     session: APISession
@@ -96,14 +197,32 @@ class TrainFutureMixin:
         return get_training_results(self.session, self.job.job_id)
 
     def get_assay_data(self):
-        """Get the assay data used for the training job. 
+        """
+        NOT IMPLEMENTED.
+        
+        Get the assay data used for the training job. 
 
         Returns:
             The assay data.
         """
-        pass
+        raise NotImplementedError("get_assay_data is not available.")
 
     def list_models(self):
+        """
+        List models assoicated with job
+
+        Parameters
+        ----------
+        session : APISession
+            Session object for API communication.
+        job_id : str
+            job ID
+
+        Returns
+        -------
+        List
+            List of models
+        """
         return list_models(self.session, self.job.job_id)
     
 
@@ -117,14 +236,21 @@ class TrainFuture(TrainFutureMixin, AsyncJobFuture):
 
     def __repr__(self) -> str:
         return repr(self.job)
-    
-    @property
-    def get_assay_data(self):
-        return super().get_assay_data()
 
     @property
     def id(self):
         return self.job.job_id
+
+    def get_assay_data(self):
+        """
+        NOT IMPLEMENTED.
+        
+        Get the assay data used for the training job. 
+
+        Returns:
+            The assay data.
+        """
+        return super().get_assay_data()
 
     def get(self, verbose:bool=False) -> TrainGraph:
 
@@ -139,6 +265,8 @@ class TrainFuture(TrainFutureMixin, AsyncJobFuture):
 
 
 class TrainingAPI:
+    """ API interface for calling Train endpoints"""
+
     def __init__(self, session: APISession, ):
         self.session = session
         self.assay= None
@@ -148,44 +276,115 @@ class TrainingAPI:
                     assaydataset: AssayDataset,
                     measurement_name: Union[str, List[str]],
                     model_name:str ="",
-                    force_preprocess: Optional[bool]=False):
+                    force_preprocess: Optional[bool]=False) -> TrainFuture:
+        """
+        Create a training job on your data.
+
+        This function validates the inputs, formats the data, and sends the job. 
+
+        Parameters
+        ----------
+        assaydataset : AssayDataset
+            An AssayDataset object from which the assay_id is extracted.
+        measurement_name : str or List[str]
+            The name(s) of the measurement(s) to be used in the training job.
+        model_name : str, optional
+            The name to give the model.
+        force_preprocess : bool, optional
+            If set to True, preprocessing is forced even if preprocessed data already exists.
+
+        Returns
+        -------
+        TrainFuture
+            A TrainFuture Job
+
+        Raises
+        ------
+        InvalidParameterError
+            If the `assaydataset` is not an AssayDataset object,
+            If any measurement name provided does not exist in the AssayDataset,
+            or if the AssayDataset has fewer than 3 data points.
+        HTTPError
+            If the request to the server fails.
+        """
         if isinstance(measurement_name, str):
             measurement_name = [measurement_name]
-        job_details = create_train_job(self.session, assaydataset,measurement_name,model_name, force_preprocess)
+        job_details = create_train_job(self.session,
+                                       assaydataset,
+                                       measurement_name,
+                                       model_name,
+                                       force_preprocess)
         return TrainFuture(self.session, job_details, assaydataset)
 
-    def create_training_job_br(self,
+    def _create_training_job_br(self,
                     assaydataset: AssayDataset,
                     measurement_name: Union[str, List[str]],
                     model_name:str="",
-                    force_preprocess: Optional[bool]=False):
-        job_details = create_train_job_br(self.session, assaydataset,measurement_name,model_name, force_preprocess)
+                    force_preprocess: Optional[bool]=False) -> TrainFuture:
+        """Same as create_training_job."""
+        job_details = _create_train_job_br(self.session,
+                                           assaydataset,
+                                           measurement_name,
+                                           model_name,
+                                           force_preprocess)
         return TrainFuture(self.session, job_details, assaydataset)
 
-    def create_training_job_gp(self,
+    def _create_training_job_gp(self,
                     assaydataset: AssayDataset,
                     measurement_name: Union[str, List[str]],
                     model_name:str="",
-                    force_preprocess: Optional[bool]=False):
-        job_details = create_train_job_gp(self.session, assaydataset,measurement_name,model_name, force_preprocess)
+                    force_preprocess: Optional[bool]=False) -> TrainFuture:
+        """Same as create_training_job."""
+        job_details = _create_train_job_gp(self.session,
+                                           assaydataset,
+                                           measurement_name,
+                                           model_name,
+                                           force_preprocess)
         return TrainFuture(self.session, job_details, assaydataset)
 
-    def get_training_results(self, job_id: str):
+    def get_training_results(self, job_id: str) -> TrainFuture:
+        """
+        Get training results (e.g. loss etc).
+
+        Parameters
+        ----------
+        assaydataset : str
+            job_id to get
+
+
+        Returns
+        -------
+        TrainFuture
+            A TrainFuture Job 
+        """
         job_details = get_training_results(self.session, job_id)
         return TrainFuture(self.session, job_details)
 
-    def load_job(self, job_id:str) -> JobTrainMeta:
+    def load_job(self, job_id:str) -> Jobplus:
         """
-        Load training job from id, and resume where you left off. 
+        Reload a Submitted job to resume from where you left off!
 
-        Args:
-            job_id (str): job id from training job
 
-        Returns:
-            JobTrainMeta: job object
+        Parameters
+        ----------
+        job_id : str
+            The identifier of the job whose details are to be loaded.
+
+        Returns
+        -------
+        Job
+            Job
+
+        Raises
+        ------
+        HTTPError
+            If the request to the server fails.
+        InvalidJob
+            If the Job is of the wrong type
+
         """
         job_details = load_job(self.session, job_id)
-        assay_metadata = None 
+        assay_metadata = None
         #assay_metadata = get_assay_metadata(self.session, assay_id)
 
         if job_details.job_type != JobType.train:
