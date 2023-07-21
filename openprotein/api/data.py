@@ -8,6 +8,11 @@ from ..errors import APIError, InvalidJob
 from openprotein.base import APISession
 import openprotein.config as config
 
+def list_models(session: APISession, job_id: str) -> List:
+    endpoint = "v1/models"
+    response = session.get(endpoint, params={"assay_id":job_id})
+    return response.json()
+
 def assaydata_post(session: APISession, assay_file, assay_name: str, assay_description: Optional[str] = '') -> AssayMetadata:
     """
     Post assay data.
@@ -215,6 +220,9 @@ class AssayDataset:
     def shape(self):
         return (len(self), len(self.measurement_names) + 1)
 
+    def list_models(self):
+        return list_models(self.session, self.id)
+    
     def update(self, assay_name: Optional[str] = None, assay_description: Optional[str] = None) -> None:
         """
         Update the assay metadata.
@@ -313,11 +321,18 @@ class AssayDataset:
             Dataframe containing the slice of assay data.
         """
         rows = []
-        for i in range(start, end, self.page_size):
-            entries = assaydata_page_get(self.session, self.id, page_offset=i, page_size= self.page_size)
+        page_size = self.page_size
+        # loop over the range
+        for i in range(start, end, page_size):
+            # the last page might be smaller than the page size
+            current_page_size = min(page_size, end - i)
+
+            entries = assaydata_page_get(self.session, self.id, page_offset=i, page_size=current_page_size)
+
             for row in entries.assaydata:
                 row = [row.mut_sequence] + row.measurement_values
                 rows.append(row)
+
         table = pd.DataFrame(rows, columns=['sequence'] + self.measurement_names)
         return table
 
