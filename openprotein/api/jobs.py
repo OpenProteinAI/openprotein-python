@@ -5,79 +5,12 @@ from enum import Enum
 import pydantic
 from datetime import datetime
 from typing import List, Optional, Dict, Union
-import time
 import tqdm
-
 import concurrent.futures
 from requests import HTTPError
+from ..errors import TimeoutException
+from ..models import Job, JobStatus
 
-
-class JobStatus(str, Enum):
-    PENDING: str = 'PENDING'
-    RUNNING: str = 'RUNNING'
-    SUCCESS: str = 'SUCCESS'
-    FAILURE: str = 'FAILURE'
-    RETRYING: str = 'RETRYING'
-    CANCELED: str = 'CANCELED'
-
-    def done(self):
-        return (self is self.SUCCESS) or (self is self.FAILURE) or (self is self.CANCELED)
-
-    def cancelled(self):
-        return self is self.CANCELED
-
-
-class Job(pydantic.BaseModel):
-    status: JobStatus
-    job_id: str
-    job_type: str
-    created_date: Optional[datetime]
-    start_date: Optional[datetime]
-    end_date: Optional[datetime]
-    prerequisite_job_id: Optional[str]
-    progress_message: Optional[str]
-    progress_counter: Optional[int]
-
-    def refresh(self, session: APISession):
-        return job_get(session, self.job_id)
-
-    def done(self):
-        return self.status.done()
-
-    def cancelled(self):
-        return self.status.cancelled()
-
-    def wait(self, session: APISession, interval=config.POLLING_INTERVAL, timeout=None, verbose=False):
-        start_time = time.time()
-        
-        def is_done(job: Job):
-            if timeout is not None:
-                elapsed_time = time.time() - start_time
-                if elapsed_time >= timeout:
-                    raise TimeoutException(f'Wait time exceeded timeout {timeout}, waited {elapsed_time}')
-            return job.done()
-        
-        pbar = None
-        if verbose:
-            pbar = tqdm.tqdm()
-
-        job = self.refresh(session)
-        while not is_done(job):
-            if verbose:
-                pbar.update(1)
-                pbar.set_postfix({'status': job.status})
-                #print(f'Retry {retries}, status={self.job.status}, time elapsed {time.time() - start_time:.2f}')
-            time.sleep(interval)
-            job = job.refresh(session)
-        
-        if verbose:
-            pbar.update(1)
-            pbar.set_postfix({'status': job.status})
-
-        return job
-
-class JobTrainMeta(Job):
-    sequence_length: Optional[int]
 
 def jobs_list(
         session: APISession,
@@ -86,6 +19,27 @@ def jobs_list(
         assay_id=None,
         more_recent_than=None
     ) -> List[Job]:
+    """
+    Retrieve a list of jobs filtered by specific criteria.
+
+    Parameters
+    ----------
+    session : APISession
+        The current API session for communication with the server.
+    status : str, optional
+        Filter by job status. If None, jobs of all statuses are retrieved. Default is None.
+    job_type : str, optional
+        Filter by Filter. If None, jobs of all types are retrieved. Default is None.
+    assay_id : str, optional
+        Filter by assay. If None, jobs for all assays are retrieved. Default is None.
+    more_recent_than : str, optional
+        Retrieve jobs that are more recent than a specified date. If None, no date filtering is applied. Default is None.
+
+    Returns
+    -------
+    List[Job]
+        A list of Job instances that match the specified criteria.
+    """
     endpoint = 'v1/jobs'
 
     params = {}
@@ -121,9 +75,6 @@ class JobsAPI:
     def wait(self, job: Job, interval=config.POLLING_INTERVAL, timeout=None, verbose=False):
         return job.wait(self.session, interval=interval, timeout=timeout, verbose=verbose)
 
-
-class TimeoutException(Exception):
-    pass
 
 
 class AsyncJobFuture:
