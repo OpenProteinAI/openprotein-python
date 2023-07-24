@@ -190,7 +190,7 @@ class EmbeddingResultFuture(MappedAsyncJobFuture):
         return decode_embedding(data)
 
 
-def embedding_model_post(session: APISession, model_id: str, sequences: List[bytes], reduction: Optional[str]=None):
+def embedding_model_post(session: APISession, model_id: str, sequences: List[bytes], reduction: Optional[str]="MEAN"):
     """
     POST a request for embeddings from the given model ID. Returns a Job object referring to this request
     that can be used to retrieve results later.
@@ -204,7 +204,7 @@ def embedding_model_post(session: APISession, model_id: str, sequences: List[byt
     sequences : List[bytes]
         sequences to request results for
     reduction : Optional[str]
-        reduction to apply to the embeddings. options are None, "MEAN", or "SUM". defaul: None
+        reduction to apply to the embeddings. options are None, "MEAN", or "SUM". defaul: "MEAN"
 
     Returns
     -------
@@ -216,8 +216,7 @@ def embedding_model_post(session: APISession, model_id: str, sequences: List[byt
     body = {
         'sequences': sequences,
     }
-    if reduction is not None:
-        body['reduction'] = reduction
+    body['reduction'] = reduction
     response = session.post(endpoint, json=body)
     return Job(**response.json())
 
@@ -384,7 +383,7 @@ class ProtembedModel:
         self._metadata = embedding_model_get(self.session, self.id)
         return self._metadata
 
-    def embed(self, sequences: List[bytes], reduction=None):
+    def embed(self, sequences: List[bytes], reduction="MEAN"):
         job = embedding_model_post(self.session, self.id, sequences, reduction=reduction)
         return EmbeddingResultFuture(self.session, job, sequences=sequences)
     
@@ -486,7 +485,7 @@ class EmbeddingAPI:
     def get_model(self, model_id) -> ProtembedModel:
         return ProtembedModel(self.session, model_id)
 
-    def embed(self, model: Union[ProtembedModel, SVDModel, str], sequences: List[bytes], reduction=None):
+    def embed(self, model: Union[ProtembedModel, SVDModel, str], sequences: List[bytes], reduction="MEAN"):
         """
         Embed sequences using the specified model.
         """
