@@ -108,14 +108,13 @@ def get_assay_metadata(session: APISession, assay_id:str) -> AssayMetadata:
     InvalidJob
         If no assay metadata with the specified assay_id is found.
     """
-    metadata = assaydata_list(session)
-    metadata_filtered = [i for i in metadata if i.assay_id==assay_id]
-    if len(metadata_filtered)==1:
-        return metadata_filtered[0]
-    elif len(metadata_filtered)==0:
-        raise InvalidJob(f"No assaydata with id {assay_id} found")
-    elif len(metadata_filtered)>1:
-        return metadata_filtered[0]
+
+    endpoint = f'v1/assaydata/metadata'
+    response = session.get(endpoint, params={"assay_id":assay_id})
+    if response.status_code == 200:
+        return pydantic.parse_obj_as(AssayMetadata, response.json())
+    else:
+        raise APIError(f"Unable to list assay data: {response.text}")
     
 def assaydata_put(session: APISession,
                   assay_id: str,
@@ -454,11 +453,7 @@ class DataAPI:
         KeyError
             If no assay dataset with the given ID is found.
         """
-        datasets = self.list()
-        for dataset in datasets:
-            if dataset.id == assay_id:
-                return dataset
-        raise KeyError(f"No assay with id={assay_id} found.")
+        return get_assay_metadata(self.session, assay_id)
 
     def load_job(self, assay_id: str) -> AssayDataset:
         """
