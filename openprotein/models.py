@@ -250,3 +250,19 @@ class PredictSingleSiteJob(PredictJobBase):
         predictions: List[Prediction] = []
 
     result: Optional[List[SequencePrediction]] = None
+
+
+class CVItem(BaseModel):
+    row_index: int
+    sequence: str
+    measurement_name: str
+    y: float
+    y_mu: float
+    y_var: float
+
+class CVResults(Job):
+    num_rows: int
+    page_size: int
+    page_offset: int
+    result: List[CVItem]
+

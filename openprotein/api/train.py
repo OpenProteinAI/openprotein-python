@@ -322,7 +322,6 @@ class CVFuture(CVFutureMixin, AsyncJobFuture):
 class TrainFutureMixin:
     session: APISession
     job: Job
-    crossvalidation: Optional[CVFuture] = None
 
     def get_results(self) -> TrainGraph:
         """ Get results of training job (e.g. loss etc)."""
@@ -371,7 +370,7 @@ class TrainFuture(TrainFutureMixin, AsyncJobFuture):
                  assaymetadata: Optional[AssayMetadata] = None):
         super().__init__(session, job)
         self.assaymetadata = assaymetadata
-        #self.crossvalidation = CVFutureMixin(session, job)
+        self.crossvalidation: Optional[CVFuture] = CVFuture(session, job.job_id, None)
 
     def __str__(self) -> str:
         return str(self.job)

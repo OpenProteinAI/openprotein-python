@@ -6,6 +6,7 @@ from openprotein.api.data import DataAPI
 from openprotein.api.poet import PoetAPI
 from openprotein.api.embedding import EmbeddingAPI
 from openprotein.api.train import TrainingAPI
+from openprotein.api.design import DesignAPI
 from openprotein.api.predict import PredictAPI
 class OpenProtein(APISession):
     """
@@ -44,5 +45,9 @@ class OpenProtein(APISession):
     @property 
     def predict(self):
         return PredictAPI(self)
+    
+    @property
+    def design(self):
+        return DesignAPI(self)
 
 connect = OpenProtein
