@@ -170,8 +170,6 @@ def get_prediction_results(session: APISession, job_id: str, page_size: Optional
     """
     Retrieves the results of a Predict job.
 
-    This function retrieves the results of a Predict job by making a GET request to predict..
-
     Parameters
     ----------
     session : APISession
@@ -210,8 +208,6 @@ def get_single_site_prediction_results(session: APISession, job_id: str, page_si
     """
     Retrieves the results of a single site Predict job.
 
-    This function retrieves the results of a single site Predict job by making a GET request to predict/single_site
-
     Parameters
     ----------
     session : APISession
@@ -247,9 +243,7 @@ def get_single_site_prediction_results(session: APISession, job_id: str, page_si
 
 class PredictFutureMixin:
     """
-    Mixin class to handle predictions in an API session.
-
-    It provides a method to retrieve results from a Predict job.
+    Class to to retrieve results from a Predict job.
 
     Attributes
     ----------
@@ -349,26 +343,7 @@ class PredictFuture(PredictFutureMixin, AsyncJobFuture):
 
 
 class PredictAPI:
-    """
-    Class to handle/wrap API calls related to Predict endpoints.
-
-
-    Attributes
-    ----------
-    session : APISession
-        APIsession with auth
-
-    Methods
-    -------
-    create_predict_job(sequences: List, train_job: TrainFuture) -> PredictFuture
-        Creates a new predict job for a given list of sequences and a trained model.
-    create_predict_single_site(sequence: str, train_job: TrainFuture) -> PredictFuture
-        Creates a new predict job for a single sequence and a trained model.
-    get_prediction_results(job_id: str, page_size: Optional[int] = None, page_offset: Optional[int] = None) -> PredictJob
-        Retrieves the results of a predict job.
-    get_single_site_prediction_results(job_id: str, page_size: Optional[int] = None, page_offset: Optional[int] = None) -> PredictSingleSiteJob
-        Retrieves the results of a single site predict job.
-    """
+    """ API interface for calling Predict endpoints"""
     def __init__(self, session: APISession):
         """
         Initialize a new instance of the PredictAPI class.

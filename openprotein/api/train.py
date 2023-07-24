@@ -243,13 +243,44 @@ def load_job(session: APISession, job_id: str) -> Jobplus:
 
 
 class CVFutureMixin:
+    """
+    A mixin class to provide cross-validation job submission and retrieval.
+
+    Attributes
+    ----------
+    session : APISession
+        The session object to use for API communication.
+    train_job_id : str
+        The id of the training job associated with this cross-validation job.
+    job : Job
+        The Job object for this cross-validation job.
+
+    Methods
+    -------
+    crossvalidate():
+        Submits a cross-validation job to the server.
+    get_crossvalidation(page_size: Optional[int] = None, page_offset: Optional[int] = 0):
+        Retrieves the results of the cross-validation job.
+    """
     session: APISession
     train_job_id: str
     job: Job
 
     def crossvalidate(self):
         """
-        Submit cross validation job
+        Submit a cross-validation job to the server.
+
+        If the job has already been submitted, an InvalidJob exception is raised.
+
+        Returns
+        -------
+        Job
+            The Job object for this cross-validation job.
+
+        Raises
+        ------
+        InvalidJob
+            If the job has already been submitted.
         """
         if self.job is None:
             self.job = crossvalidate(self.session, self.train_job_id)
@@ -257,20 +288,74 @@ class CVFutureMixin:
         else:
             raise InvalidJob("CV Job has already been submitted. Use get_crossvalidation() instead.")
 
-    def get_crossvalidation(self,  page_size: Optional[int] = None, page_offset: Optional[int] = 0):
+    def get_crossvalidation(self, page_size: Optional[int] = None, page_offset: Optional[int] = 0):
+        """
+        Retrieves the results of the cross-validation job.
+
+        If no job has been submitted, an InvalidJob exception is raised.
+
+        Parameters
+        ----------
+        page_size : int, optional
+            The number of items to retrieve in a single request. If None, all items are retrieved.
+        page_offset : int, optional
+            The offset to start retrieving items from. Default is 0.
+
+        Returns
+        -------
+        dict
+            The results of the cross-validation job.
+
+        Raises
+        ------
+        InvalidJob
+            If no job has been submitted.
+        """
         if self.job is not None:
             return get_crossvalidation(self.session, self.job.job_id, page_size, page_offset)
         else:
             raise InvalidJob("No CV Job has been submitted! Call crossvalidate() and try again.")
-    
-    #def wait(self):
-    #    self.job.wait(self.session)
 
 class CVFuture(CVFutureMixin, AsyncJobFuture):
+    """
+    This class helps initiating, submitting, and retrieving the
+    results of a cross-validation job.
+
+    Attributes
+    ----------
+    session : APISession
+        The session object to use for API communication.
+    train_job_id : str
+        The id of the training job associated with this cross-validation job.
+    job : Job
+        The Job object for this cross-validation job.
+    page_size : int
+        The number of items to retrieve in a single request.
+
+    Methods
+    -------
+    __str__():
+        Returns a string representation of the cross-validation job.
+    __repr__():
+        Returns a detailed representation of the cross-validation job.
+    """
+
     def __init__(self,
                  session: APISession,
                  train_job_id: str, 
                  job: Job = None):
+        """
+        Constructs a new CVFuture instance.
+
+        Parameters
+        ----------
+        session : APISession
+            The session object to use for API communication.
+        train_job_id : str
+            The id of the training job associated with this cross-validation job.
+        job : Job, optional
+            The Job object for this cross-validation job.
+        """
         super().__init__(session, job)
         self.train_job_id = train_job_id
         self.page_size = 1000
@@ -287,7 +372,7 @@ class CVFuture(CVFutureMixin, AsyncJobFuture):
 
     def get(self, verbose:bool=False) ->  CVResults:
         """
-        Get all the results of the predict job.
+        Get all the results of the CV job.
 
         Args:
             verbose (bool, optional): If True, print verbose output. Defaults False.
@@ -320,13 +405,57 @@ class CVFuture(CVFutureMixin, AsyncJobFuture):
     
 
 class TrainFutureMixin:
+    """
+    This class provides functionality for retrieving the
+    results of a training job and initiating cross-validation jobs.
+
+    Attributes
+    ----------
+    session : APISession
+        The session object to use for API communication.
+    job : Job
+        The Job object for this training job.
+    crossvalidation : CVFuture
+        The CVFuture object for the associated cross-validation job.
+
+    Methods
+    -------
+    get_results() -> TrainGraph:
+        Returns the results of the training job.
+    crossvalidate():
+        Submits a cross-validation job and returns it.
+    """
+
     session: APISession
     job: Job
+    crossvalidation: CVFuture = None
 
     def get_results(self) -> TrainGraph:
-        """ Get results of training job (e.g. loss etc)."""
+        """
+        Gets the results of the training job.
+
+        Returns
+        -------
+        TrainGraph
+            The results of the training job.
+        """
         return get_training_results(self.session, self.job.job_id)
 
+    def crossvalidate(self):
+        """
+        Submits a cross-validation job and binds it.
+
+        If a cross-validation job has already been created, it returns that job.
+        Otherwise, it creates a new cross-validation job and returns it.
+
+        Returns
+        -------
+        CVFuture
+            The cross-validation job associated with this training job.
+        """
+        if self.crossvalidation is None:
+            self.crossvalidation = CVFuture(self.session, self.job.job_id)
+        return self.crossvalidation.crossvalidate()
 
     def get_assay_data(self):
         """
@@ -356,12 +485,6 @@ class TrainFutureMixin:
             List of models
         """
         return list_models(self.session, self.job.job_id)
-
-    def crossvalidate(self):
-        if self.crossvalidation is None:
-            self.crossvalidation = CVFuture(self.session, self.job.job_id)
-        return self.crossvalidation.crossvalidate()
-
 
 class TrainFuture(TrainFutureMixin, AsyncJobFuture):
     def __init__(self,
@@ -407,7 +530,6 @@ class TrainFuture(TrainFutureMixin, AsyncJobFuture):
 
 class TrainingAPI:
     """ API interface for calling Train endpoints"""
-
     def __init__(self, session: APISession, ):
         self.session = session
         self.assay= None
@@ -526,7 +648,6 @@ class TrainingAPI:
         """
         job_details = load_job(self.session, job_id)
         assay_metadata = None
-        #assay_metadata = get_assay_metadata(self.session, assay_id)
 
         if job_details.job_type != JobType.train:
             raise InvalidJob(f"Job {job_id} is not of type {JobType.train}")

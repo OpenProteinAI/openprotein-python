@@ -727,10 +727,8 @@ def validate_prompt(prompt: Prompt):
 
 
 class PoetAPI:
-    """
-    This class defines a high level interface for accessing PoET.
-    See the subfunctons that are called for more detailed documentation.
-    """
+    """ API interface for calling Poet and Align endpoints"""
+
     def __init__(self, session: APISession):
         self.session = session
 
