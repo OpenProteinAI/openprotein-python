@@ -37,8 +37,8 @@ def test_create_predict_job():
     # configure 
     session.post.return_value.json.return_value = {
             'job_id': job.job_id,
-            'status': 'PENDING',  # Or any valid status
-            'job_type': '/workflow/predict',  # Or any valid job type
+            'status': 'PENDING',  
+            'job_type': '/workflow/predict', 
         }
     predict_api = PredictAPI(session)
     predict_api.create_predict_job(sequences, train_future)
@@ -63,8 +63,8 @@ def test_create_predict_single_site():
     # configure 
     session.post.return_value.json.return_value = {
             'job_id': job.job_id,
-            'status': 'PENDING',  # Or any valid status
-            'job_type': '/workflow/predict',  # Or any valid job type
+            'status': 'PENDING',  
+            'job_type': '/workflow/predict', 
         }
     predict_api = PredictAPI(session)
     predict_api.create_predict_single_site(sequence, train_future)
@@ -74,7 +74,6 @@ def test_create_predict_single_site():
     # Check that post was called with the correct arguments.
     session.post.assert_called_with('v1/workflow/predict/single_site', json=payload)
 
-# testing the functions get_prediction_results and get_single_site_prediction_results
 def test_get_prediction_results():
     # Given
     job_id = '1234'

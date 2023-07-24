@@ -128,8 +128,6 @@ def test_assaydata_put(api_session_mock, assay_metadata_mock):
     assert isinstance(result, AssayMetadata)
     assert result.assay_name == new_assay_name
 
-
-# Test the assaydata_page_get function
 def test_assaydata_page_get(api_session_mock, assay_metadata_mock):
     response_mock = ResponseMock()
     assay_data_row = {"mut_sequence": "sequence", "measurement_values": [1.0, None]}

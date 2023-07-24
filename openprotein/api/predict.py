@@ -89,8 +89,7 @@ def _create_predict_job(session: APISession,
         payload["train_job_id"] = train_job_id
 
     response = session.post(endpoint, json=payload)
-    response.raise_for_status()  # raises HTTPError if the request fails
-    return pydantic.parse_obj_as(Job, response.json())  # raises ValidationError if parsing fails
+    return pydantic.parse_obj_as(Job, response.json()) 
 
 
 

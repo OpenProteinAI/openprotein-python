@@ -86,8 +86,6 @@ def test_create_train_job_not_enough_data_points(mock_setup):
     with pytest.raises(InvalidParameterError):
         create_train_job(session_mock, dataset_mock, 'm1')
 
-
-# As for pytest, you typically have test functions in the global namespace, not inside a class.
 def test_get_training_results(mock_setup):
     session_mock, _, _ = mock_setup
     response_data = {
@@ -121,23 +119,17 @@ def test_get_training_results(mock_setup):
     assert train_graph.job_id == '5678'
 
 def test_get_training_results2():
-    # mock session and job_id
     session = MagicMock(spec=APISession)
     job_id = '1234'
 
-    # mock expected TrainGraph object
     expected_train_graph = TrainGraph(traingraph=[], created_date=datetime.now(), job_id='1234')
 
-    # Mock the session.get method to return expected_train_graph
     session.get.return_value.json.return_value = expected_train_graph.dict()
 
-    # Initialize TrainingAPI
     training_api = TrainingAPI(session)
 
-    # Call method
     result = training_api.get_training_results(job_id)
 
-    # Assertions
     assert isinstance(result, TrainFuture)
     session.get.assert_called_once_with(f'v1/workflow/train/{job_id}')
 
@@ -151,16 +143,12 @@ def test_create_training_job(job_creator, endpoint):
     model_name = 'test_model'
     force_preprocess = False
 
-    # Set up mocked response
     mocked_response = MagicMock()
     mocked_response.json.return_value = {
         'status': 'PENDING',
         'job_id': 'mock_id',
-        'job_type': 'workflow/assaydata',
-        # Add other fields as necessary
-    }
+        'job_type': 'workflow/assaydata'    }
 
-    # mock session and create real AssayDataset with AssayMetadata
     session = MagicMock(spec=APISession)
     session.post.return_value = mocked_response
 
@@ -176,19 +164,15 @@ def test_create_training_job(job_creator, endpoint):
     )
     dataset_mock = AssayDataset(session, metadata_mock)
 
-    # Initialize TrainingAPI
+    # Ini
     training_api = TrainingAPI(session)
 
-    # Call method
     result = job_creator(training_api, dataset_mock, measurement_name, model_name, force_preprocess)
 
-    # Assertions
     assert isinstance(result, TrainFuture)
     assert result.status == 'PENDING'
     assert result.id == 'mock_id'
 
-    # Check that post was called with the correct arguments.
-    # Note: replace 'endpoint' and 'data' with the actual values expected.
     session.post.assert_called_once_with(endpoint,
             params={'force_preprocess': 'false'},
             json={'assay_id': '1234', 'measurement_name': ['test_measurement'], 'model_name': 'test_model'} 
