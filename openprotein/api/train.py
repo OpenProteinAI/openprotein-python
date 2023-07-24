@@ -3,7 +3,7 @@ import pydantic
 from openprotein.base import APISession
 from openprotein.api.jobs import AsyncJobFuture, Job
 
-from openprotein.models import (TrainGraph, JobType,Jobplus)
+from openprotein.models import (TrainGraph, JobType,Jobplus, CVResults)
 from openprotein.errors import InvalidParameterError, APIError, InvalidJob
 from openprotein.api.data import AssayDataset, AssayMetadata
 
@@ -27,6 +27,41 @@ def list_models(session: APISession, job_id: str) -> List:
     endpoint = "v1/models"
     response = session.get(endpoint, params={"job_id":job_id})
     return response.json()
+
+
+def crossvalidate(session: APISession, train_job_id: str, n_splits:int=5) -> Job :
+    """
+    Submit a cross-validation job. 
+
+    Args:
+        session (APISession): auth session
+        job_id (str): job id 
+        n_splits (int, optional): N of CV splits. Defaults to 5.
+
+    Returns:
+        Job: 
+    """
+    endpoint = "v1/workflow/crossvalidate"
+    response = session.post(endpoint, json={"train_job_id":train_job_id, "n_splits":n_splits})
+    return pydantic.parse_obj_as(Job, response.json())
+
+def get_crossvalidation(session: APISession, job_id: str,  page_size: Optional[int] = None, page_offset: Optional[int] = 0) -> CVResults:
+    """
+    Get CV results
+
+    Args:
+        session (APISession): auth'd session
+        job_id (str): Job id 
+
+    Returns:
+        _type_: _description_
+    """
+    endpoint = f"v1/workflow/crossvalidate/{job_id}"
+    params = {"page_size": page_size, "page_offset": page_offset}
+    response = session.get(endpoint, params=params)
+    if response.status_code == 404:
+        raise InvalidJob("No CV job has been submitted for this job!")
+    return pydantic.parse_obj_as(CVResults, response.json())
 
 def _train_job(session: APISession,
                      endpoint:str,
@@ -206,13 +241,93 @@ def load_job(session: APISession, job_id: str) -> Jobplus:
     response = session.get(endpoint)
     return pydantic.parse_obj_as(Jobplus, response.json())
 
+
+class CVFutureMixin:
+    session: APISession
+    train_job_id: str
+    job: Job
+
+    def crossvalidate(self):
+        """
+        Submit cross validation job
+        """
+        if self.job is None:
+            self.job = crossvalidate(self.session, self.train_job_id)
+            return self.job
+        else:
+            raise InvalidJob("CV Job has already been submitted. Use get_crossvalidation() instead.")
+
+    def get_crossvalidation(self,  page_size: Optional[int] = None, page_offset: Optional[int] = 0):
+        if self.job is not None:
+            return get_crossvalidation(self.session, self.job.job_id, page_size, page_offset)
+        else:
+            raise InvalidJob("No CV Job has been submitted! Call crossvalidate() and try again.")
+    
+    #def wait(self):
+    #    self.job.wait(self.session)
+
+class CVFuture(CVFutureMixin, AsyncJobFuture):
+    def __init__(self,
+                 session: APISession,
+                 train_job_id: str, 
+                 job: Job = None):
+        super().__init__(session, job)
+        self.train_job_id = train_job_id
+        self.page_size = 1000
+
+    def __str__(self) -> str:
+        return str(self.job)
+
+    def __repr__(self) -> str:
+        return repr(self.job)
+
+    @property
+    def id(self):
+        return self.job.job_id
+
+    def get(self, verbose:bool=False) ->  CVResults:
+        """
+        Get all the results of the predict job.
+
+        Args:
+            verbose (bool, optional): If True, print verbose output. Defaults False.
+
+        Raises:
+            APIError: If there is an issue with the API request.
+
+        Returns:
+            PredictJob: A list of predict objects representing the results.
+        """
+        step = self.page_size
+
+        results = []
+        num_returned = step
+        offset = 0
+
+        while num_returned >= step:
+            try:
+                response = self.get_crossvalidation(
+                        page_offset=offset,
+                        page_size=step)
+                results += response.result
+                num_returned = len(response.result)
+                offset += num_returned
+            except APIError as exc:
+                if verbose:
+                    print(f"Failed to get results: {exc}")
+                return results
+        return results
+    
+
 class TrainFutureMixin:
     session: APISession
     job: Job
+    crossvalidation: Optional[CVFuture] = None
 
     def get_results(self) -> TrainGraph:
         """ Get results of training job (e.g. loss etc)."""
         return get_training_results(self.session, self.job.job_id)
+
 
     def get_assay_data(self):
         """
@@ -242,7 +357,12 @@ class TrainFutureMixin:
             List of models
         """
         return list_models(self.session, self.job.job_id)
-    
+
+    def crossvalidate(self):
+        if self.crossvalidation is None:
+            self.crossvalidation = CVFuture(self.session, self.job.job_id)
+        return self.crossvalidation.crossvalidate()
+
 
 class TrainFuture(TrainFutureMixin, AsyncJobFuture):
     def __init__(self,
@@ -251,6 +371,7 @@ class TrainFuture(TrainFutureMixin, AsyncJobFuture):
                  assaymetadata: Optional[AssayMetadata] = None):
         super().__init__(session, job)
         self.assaymetadata = assaymetadata
+        #self.crossvalidation = CVFutureMixin(session, job)
 
     def __str__(self) -> str:
         return str(self.job)
