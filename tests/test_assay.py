@@ -99,7 +99,6 @@ def test_assaydata_post(api_session_mock, assay_metadata_mock):
     assert isinstance(result, AssayMetadata)
     assert result == assay_metadata_mock
 
-# Test the assaydata_list function
 def test_assaydata_list(api_session_mock, assay_metadata_mock):
     response_mock = ResponseMock()
     response_mock._json = [assay_metadata_mock.dict()]
@@ -112,7 +111,6 @@ def test_assaydata_list(api_session_mock, assay_metadata_mock):
     assert isinstance(result[0], AssayMetadata)
     assert result[0] == assay_metadata_mock
 
-# Test the assaydata_put function
 def test_assaydata_put(api_session_mock, assay_metadata_mock):
     new_assay_name = 'New Test Assay'
     response_mock = ResponseMock()
@@ -128,8 +126,6 @@ def test_assaydata_put(api_session_mock, assay_metadata_mock):
     assert isinstance(result, AssayMetadata)
     assert result.assay_name == new_assay_name
 
-
-# Test the assaydata_page_get function
 def test_assaydata_page_get(api_session_mock, assay_metadata_mock):
     response_mock = ResponseMock()
     assay_data_row = {"mut_sequence": "sequence", "measurement_values": [1.0, None]}
@@ -198,7 +194,6 @@ def test_assaydata_api_len(api_session_mock):
 
     assert len(data_api) == 2
 
-
 def test_assaydata_api_get_error(api_session_mock):
     metadata_mock = AssayMetadata(
         assay_name='Test Assay',
@@ -211,15 +206,18 @@ def test_assaydata_api_get_error(api_session_mock):
         measurement_names=['m1', 'm2']
     )
     response_mock = ResponseMock()
-    response_mock._json = [metadata_mock]
-    api_session_mock.get = MagicMock(return_value=response_mock)
+    response_mock._json = metadata_mock.dict()
+
+    # Mock the get method to raise a BE APIError
+    api_session_mock.get = MagicMock(side_effect=APIError('Request failed with status 400 and message {"detail":"NoDataFound(\'No such assay 487 found for user\')"}'))
 
     data_api = DataAPI(api_session_mock)
 
-    with pytest.raises(KeyError) as exc_info:
-        data_api.get('5678')
+    with pytest.raises(APIError) as exc_info:
+        data_api.get('487')
 
-    assert "No assay with id=5678 found".lower() in str(exc_info.value).lower()
+    assert str(exc_info.value) == 'Request failed with status 400 and message {"detail":"NoDataFound(\'No such assay 487 found for user\')"}'
+
 
 def test_assaydata_api_get_400(api_session_mock):
     metadata_mock = AssayMetadata(
@@ -234,7 +232,7 @@ def test_assaydata_api_get_400(api_session_mock):
     )
     response_mock = ResponseMock()
     response_mock.status_code = 400
-    response_mock._json = [metadata_mock]
+    response_mock._json = metadata_mock
     api_session_mock.get = MagicMock(return_value=response_mock)
 
     data_api = DataAPI(api_session_mock)

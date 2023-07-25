@@ -4,24 +4,26 @@ import openprotein.config as config
 from enum import Enum
 import pydantic
 from datetime import datetime
-from typing import List, Optional, Dict, Union
-import time
+from typing import List, Optional, Union
 import tqdm
-
 import concurrent.futures
 from requests import HTTPError
+from openprotein.errors import TimeoutException
+import time
 
 
 class JobStatus(str, Enum):
-    PENDING: str = 'PENDING'
-    RUNNING: str = 'RUNNING'
-    SUCCESS: str = 'SUCCESS'
-    FAILURE: str = 'FAILURE'
-    RETRYING: str = 'RETRYING'
-    CANCELED: str = 'CANCELED'
+    PENDING: str = "PENDING"
+    RUNNING: str = "RUNNING"
+    SUCCESS: str = "SUCCESS"
+    FAILURE: str = "FAILURE"
+    RETRYING: str = "RETRYING"
+    CANCELED: str = "CANCELED"
 
     def done(self):
-        return (self is self.SUCCESS) or (self is self.FAILURE) or (self is self.CANCELED)
+        return (
+            (self is self.SUCCESS) or (self is self.FAILURE) or (self is self.CANCELED)
+        )  # noqa: E501
 
     def cancelled(self):
         return self is self.CANCELED
@@ -40,95 +42,181 @@ class Job(pydantic.BaseModel):
     num_records: Optional[int]
 
     def refresh(self, session: APISession):
+        """refresh job status"""
         return job_get(session, self.job_id)
 
-    def done(self):
+    def done(self) -> bool:
+        """Check if job is complete"""
         return self.status.done()
 
-    def cancelled(self):
+    def cancelled(self) -> bool:
+        """check if job is cancelled"""
         return self.status.cancelled()
 
-    def wait(self, session: APISession, interval=config.POLLING_INTERVAL, timeout=None, verbose=False):
+    def wait(
+        self,
+        session: APISession,
+        interval: int = config.POLLING_INTERVAL,
+        timeout: Optional[int] = None,
+        verbose: bool = False,
+    ):
+        """
+        Wait for a job to finish, and then get the results.
+
+        Args:
+            session (APISession): Auth'd APIsession
+            interval (int): Wait between polls (secs). Defaults to POLLING_INTERVAL
+            timeout (int): Max. time to wait before raising error. Defaults to unlimited.
+            verbose (bool, optional): print status updates. Defaults to False.
+
+        Raises:
+            TimeoutException: _description_
+
+        Returns:
+            _type_: _description_
+        """
         start_time = time.time()
-        
+
         def is_done(job: Job):
             if timeout is not None:
                 elapsed_time = time.time() - start_time
                 if elapsed_time >= timeout:
-                    raise TimeoutException(f'Wait time exceeded timeout {timeout}, waited {elapsed_time}')
+                    raise TimeoutException(
+                        f"Wait time exceeded timeout {timeout}, waited {elapsed_time}"
+                    )
             return job.done()
-        
+
         pbar = None
         if verbose:
-            pbar = tqdm.tqdm(total=100, desc='Waiting', position=0)
+            pbar = tqdm.tqdm(total=100, desc="Waiting", position=0)
 
         job = self.refresh(session)
         while not is_done(job):
             if verbose:
                 progress = job.progress_counter
                 pbar.n = progress
-                pbar.set_postfix({'status': job.status})
-                #pbar.refresh()
-                #print(f'Retry {retries}, status={self.job.status}, time elapsed {time.time() - start_time:.2f}')
+                pbar.set_postfix({"status": job.status})
+                # pbar.refresh()
+                # print(f'Retry {retries}, status={self.job.status}, time elapsed {time.time() - start_time:.2f}')
             time.sleep(interval)
             job = job.refresh(session)
-        
+
         if verbose:
-            #pbar.update(1)
+            # pbar.update(1)
             progress = job.progress_counter
             pbar.n = progress
-            pbar.set_postfix({'status': job.status})
+            pbar.set_postfix({"status": job.status})
 
         return job
-    
+
     wait_until_done = wait
 
 
-def jobs_list(
-        session: APISession,
-        status=None,
-        job_type=None,
-        assay_id=None,
-        more_recent_than=None
-    ) -> List[Job]:
-    endpoint = 'v1/jobs'
+def load_job(session: APISession, job_id: str) -> Job:
+    """
+    Reload a Submitted job to resume from where you left off!
 
-    params = {}
-    if status is not None:
-        params['status'] = status
-    if job_type is not None:
-        params['job_type'] = job_type
-    if assay_id is not None:
-        params['assay_id'] = assay_id
-    if more_recent_than is not None:
-        params['more_recent_than'] = more_recent_than
-    
-    response = session.get(endpoint, params=params)
-    return pydantic.parse_obj_as(List[Job], response.json())
+
+    Parameters
+    ----------
+    session : APISession
+        The current API session for communication with the server.
+    job_id : str
+        The identifier of the job whose details are to be loaded.
+
+    Returns
+    -------
+    Job
+        Job
+
+    Raises
+    ------
+    HTTPError
+        If the request to the server fails.
+
+    """
+    endpoint = f"v1/jobs/{job_id}"
+    response = session.get(endpoint)
+    return pydantic.parse_obj_as(Job, response.json())
 
 
 def job_get(session: APISession, job_id) -> Job:
-    endpoint = f'v1/jobs/{job_id}'
+    """Get job."""
+    endpoint = f"v1/jobs/{job_id}"
     response = session.get(endpoint)
     return Job(**response.json())
 
 
+def jobs_list(
+    session: APISession,
+    status=None,
+    job_type=None,
+    assay_id=None,
+    more_recent_than=None,
+) -> List[Job]:
+    """
+    Retrieve a list of jobs filtered by specific criteria.
+
+    Parameters
+    ----------
+    session : APISession
+        The current API session for communication with the server.
+    status : str, optional
+        Filter by job status. If None, jobs of all statuses are retrieved. Default is None.
+    job_type : str, optional
+        Filter by Filter. If None, jobs of all types are retrieved. Default is None.
+    assay_id : str, optional
+        Filter by assay. If None, jobs for all assays are retrieved. Default is None.
+    more_recent_than : str, optional
+        Retrieve jobs that are more recent than a specified date. If None, no date filtering is applied. Default is None.
+
+    Returns
+    -------
+    List[Job]
+        A list of Job instances that match the specified criteria.
+    """
+    endpoint = "v1/jobs"
+
+    params = {}
+    if status is not None:
+        params["status"] = status
+    if job_type is not None:
+        params["job_type"] = job_type
+    if assay_id is not None:
+        params["assay_id"] = assay_id
+    if more_recent_than is not None:
+        params["more_recent_than"] = more_recent_than
+
+    response = session.get(endpoint, params=params)
+    return pydantic.parse_obj_as(List[Job], response.json())
+
+
 class JobsAPI:
+    """API wrapper to get jobs."""
+
     def __init__(self, session: APISession):
         self.session = session
 
-    def list(self, status=None, job_type=None, assay_id=None, more_recent_than=None) -> List[Job]:
-        return jobs_list(self.session, status=status, job_type=job_type, assay_id=assay_id, more_recent_than=more_recent_than)
+    def list(
+        self, status=None, job_type=None, assay_id=None, more_recent_than=None
+    ) -> List[Job]:
+        return jobs_list(
+            self.session,
+            status=status,
+            job_type=job_type,
+            assay_id=assay_id,
+            more_recent_than=more_recent_than,
+        )
 
     def get(self, job_id) -> Job:
         return job_get(self.session, job_id)
 
-    def wait(self, job: Job, interval=config.POLLING_INTERVAL, timeout=None, verbose=False):
-        return job.wait(self.session, interval=interval, timeout=timeout, verbose=verbose)
-
-
-class TimeoutException(Exception):
-    pass
+    def wait(
+        self, job: Job, interval=config.POLLING_INTERVAL, timeout=None, verbose=False
+    ):
+        return job.wait(
+            self.session, interval=interval, timeout=timeout, verbose=verbose
+        )
 
 
 class AsyncJobFuture:
@@ -144,11 +232,11 @@ class AsyncJobFuture:
     @property
     def status(self):
         return self.job.status
-    
+
     @property
     def progress(self):
         return self.job.progress_counter
-    
+
     @property
     def num_records(self):
         return self.job.num_records
@@ -161,14 +249,20 @@ class AsyncJobFuture:
 
     def get(self, verbose=False):
         raise NotImplementedError()
-    
-    def wait_until_done(self, interval=config.POLLING_INTERVAL, timeout=None, verbose=False):
-        job = self.job.wait(self.session, interval=interval, timeout=timeout, verbose=verbose)
+
+    def wait_until_done(
+        self, interval=config.POLLING_INTERVAL, timeout=None, verbose=False
+    ):
+        job = self.job.wait(
+            self.session, interval=interval, timeout=timeout, verbose=verbose
+        )
         self.job = job
         return self.done()
 
     def wait(self, interval=config.POLLING_INTERVAL, timeout=None, verbose=False):
-        job = self.job.wait(self.session, interval=interval, timeout=timeout, verbose=verbose)
+        job = self.job.wait(
+            self.session, interval=interval, timeout=timeout, verbose=verbose
+        )
         self.job = job
         return self.get(verbose=verbose)
 
@@ -181,27 +275,31 @@ class StreamingAsyncJobFuture(AsyncJobFuture):
         generator = self.stream()
         if verbose:
             total = None
-            if hasattr(self, '__len__'):
+            if hasattr(self, "__len__"):
                 total = len(self)
-            generator = tqdm.tqdm(generator, desc='Retrieving', total=total, position=0, mininterval=1.0)
+            generator = tqdm.tqdm(
+                generator, desc="Retrieving", total=total, position=0, mininterval=1.0
+            )
         return [entry for entry in generator]
 
 
 class MappedAsyncJobFuture(StreamingAsyncJobFuture):
-    def __init__(self, session: APISession, job: Job, max_workers=config.MAX_CONCURRENT_WORKERS):
+    def __init__(
+        self, session: APISession, job: Job, max_workers=config.MAX_CONCURRENT_WORKERS
+    ):
         """
         Retrieve results from asynchronous, mapped endpoints. Use `max_workers` > 0 to enable concurrent retrieval of multiple pages.
         """
         super().__init__(session, job)
         self.max_workers = max_workers
         self._cache = {}
-    
+
     def keys(self):
         raise NotImplementedError()
-    
+
     def get_item(self, k):
         raise NotImplementedError()
-    
+
     def stream_sync(self):
         for k in self.keys():
             v = self[k]
@@ -225,22 +323,22 @@ class MappedAsyncJobFuture(StreamingAsyncJobFuture):
 
             for f in concurrent.futures.as_completed(futures):
                 yield f.result()
-    
+
     def stream(self):
         if self.max_workers > 0:
             return self.stream_parallel()
         return self.stream_sync()
-    
+
     def __getitem__(self, k):
         if k in self._cache:
             return self._cache[k]
         v = self.get_item(k)
         self._cache[k] = v
         return v
-    
+
     def __len__(self):
         return len(self.keys())
-    
+
     def __iter__(self):
         return self.stream()
 
@@ -248,7 +346,14 @@ class MappedAsyncJobFuture(StreamingAsyncJobFuture):
 class PagedAsyncJobFuture(StreamingAsyncJobFuture):
     DEFAULT_PAGE_SIZE = 1024
 
-    def __init__(self, session: APISession, job: Job, page_size=None, num_records=None, max_workers=config.MAX_CONCURRENT_WORKERS):
+    def __init__(
+        self,
+        session: APISession,
+        job: Job,
+        page_size=None,
+        num_records=None,
+        max_workers=config.MAX_CONCURRENT_WORKERS,
+    ):
         """
         Retrieve results from asynchronous, paged endpoints. Use `max_workers` > 0 to enable concurrent retrieval of multiple pages.
         """
@@ -261,7 +366,7 @@ class PagedAsyncJobFuture(StreamingAsyncJobFuture):
 
     def get_slice(self, start, end):
         raise NotImplementedError()
-    
+
     def stream_sync(self):
         step = self.page_size
         num_returned = step
@@ -284,11 +389,11 @@ class PagedAsyncJobFuture(StreamingAsyncJobFuture):
         with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
             # submit the paged requests
             futures = []
-            for _ in range(num_workers*2):
-                f = executor.submit(self.get_slice, offset, offset+step)
+            for _ in range(num_workers * 2):
+                f = executor.submit(self.get_slice, offset, offset + step)
                 futures.append(f)
                 offset += step
-            
+
             # until we've retrieved all pages (known by retrieving a page with less than the requested number of records)
             done = False
             while not done:
@@ -297,10 +402,10 @@ class PagedAsyncJobFuture(StreamingAsyncJobFuture):
                 for f in concurrent.futures.as_completed(futures):
                     result_page = f.result()
                     # check if we're done, meaning the result page is not full
-                    done = (done or len(result_page) < step)
+                    done = done or len(result_page) < step
                     # if we aren't done, submit another request
                     if not done:
-                        f = executor.submit(self.get_slice, offset, offset+step)
+                        f = executor.submit(self.get_slice, offset, offset + step)
                         futures_next.append(f)
                         offset += step
                     # yield the results from this page
