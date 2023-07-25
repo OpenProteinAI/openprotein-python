@@ -1,19 +1,15 @@
-from typing import Optional, List, Dict, Union, BinaryIO, Iterator
-from io import BytesIO
-import random
-import csv
-import codecs
-import requests
+from typing import Optional
 import pydantic
 
 from openprotein.base import APISession
-from openprotein.api.jobs import AsyncJobFuture, StreamingAsyncJobFuture, job_get, Job
+from openprotein.api.jobs import AsyncJobFuture, Job
 import openprotein.config as config
 
-from openprotein.models import (DesignJobCreate, DesignJob, JobType, DesignResults)
-from openprotein.errors import InvalidParameterError, MissingParameterError, APIError, InvalidJob
-from openprotein.api.data import AssayDataset, AssayMetadata
-
+from openprotein.models import DesignJobCreate, JobType, DesignResults
+from openprotein.errors import (
+    APIError,
+    InvalidJob,
+)
 
 def load_job(session: APISession, job_id: str) -> Job:
     """
@@ -38,9 +34,10 @@ def load_job(session: APISession, job_id: str) -> Job:
         If the request to the server fails.
 
     """
-    endpoint = f'v1/jobs/{job_id}'
+    endpoint = f"v1/jobs/{job_id}"
     response = session.get(endpoint)
     return pydantic.parse_obj_as(Job, response.json())
+
 
 def create_design_job(session: APISession, design_job: DesignJobCreate) -> Job:
     """
@@ -68,11 +65,17 @@ def create_design_job(session: APISession, design_job: DesignJobCreate) -> Job:
         The created job as a Job instance.
     """
     params = design_job.dict(exclude_none=True)
-    #print(f"sending design: {params}")
-    response = session.post('v1/workflow/design/genetic-algorithm', json=params)
+    # print(f"sending design: {params}")
+    response = session.post("v1/workflow/design/genetic-algorithm", json=params)
     return Job(**response.json())
 
-def get_design_results(session: APISession, job_id: str, page_size: Optional[int] = None, page_offset: Optional[int] = None) -> DesignResults:
+
+def get_design_results(
+    session: APISession,
+    job_id: str,
+    page_size: Optional[int] = None,
+    page_offset: Optional[int] = None,
+) -> DesignResults:
     """
     Retrieves the results of a Design job.
 
@@ -99,12 +102,12 @@ def get_design_results(session: APISession, job_id: str, page_size: Optional[int
     HTTPError
         If the GET request does not succeed.
     """
-    endpoint = f'v1/workflow/design/{job_id}'
+    endpoint = f"v1/workflow/design/{job_id}"
     params = {}
     if page_size is not None:
-        params['page_size'] = page_size
+        params["page_size"] = page_size
     if page_offset is not None:
-        params['page_offset'] = page_offset
+        params["page_offset"] = page_offset
 
     response = session.get(endpoint, params=params)
 
@@ -115,7 +118,9 @@ class DesignFutureMixin:
     session: APISession
     job: Job
 
-    def get_results(self, page_size: Optional[int] = None, page_offset: Optional[int] = None) -> DesignResults:
+    def get_results(
+        self, page_size: Optional[int] = None, page_offset: Optional[int] = None
+    ) -> DesignResults:
         """
         Retrieves the results of a Design job.
 
@@ -140,6 +145,7 @@ class DesignFutureMixin:
         """
         return get_design_results(self.session, self.job.job_id, page_size, page_offset)
 
+
 class DesignFuture(DesignFutureMixin, AsyncJobFuture):
     def __init__(self, session: APISession, job: Job, page_size=1000):
         super().__init__(session, job)
@@ -154,8 +160,8 @@ class DesignFuture(DesignFutureMixin, AsyncJobFuture):
     @property
     def id(self):
         return self.job.job_id
-    
-    def get(self, verbose:bool=False):
+
+    def get(self, verbose: bool = False):
         """
         Get all the results of the design job.
 
@@ -176,9 +182,7 @@ class DesignFuture(DesignFutureMixin, AsyncJobFuture):
 
         while num_returned >= step:
             try:
-                response = self.get_results(
-                        page_offset=offset,
-                        page_size=step)
+                response = self.get_results(page_offset=offset, page_size=step)
                 results += response.result
                 num_returned = len(response.result)
                 offset += num_returned
@@ -188,8 +192,10 @@ class DesignFuture(DesignFutureMixin, AsyncJobFuture):
                 return results
         return results
 
+
 class DesignAPI:
-    """ API interface for calling Design endpoints"""
+    """API interface for calling Design endpoints"""
+
     session: APISession
 
     def __init__(self, session: APISession):
@@ -197,7 +203,7 @@ class DesignAPI:
 
     def create_design_job(self, design_job: DesignJobCreate) -> DesignFuture:
         """
-        Start a protein design job based on your assaydata, a trained ML model and Criteria (specified here). 
+        Start a protein design job based on your assaydata, a trained ML model and Criteria (specified here).
 
         Parameters
         ----------
@@ -221,13 +227,18 @@ class DesignAPI:
         job = create_design_job(self.session, design_job)
         return DesignFuture(self.session, job)
 
-    def get_design_results(self, job_id: str, page_size: Optional[int] = None, page_offset: Optional[int] = None) -> DesignResults:
+    def get_design_results(
+        self,
+        job_id: str,
+        page_size: Optional[int] = None,
+        page_offset: Optional[int] = None,
+    ) -> DesignResults:
         """
         Retrieves the results of a Design job.
 
         Parameters
         ----------
-        job_id : str 
+        job_id : str
             The ID for the design job
         page_size : Optional[int], default is None
             The number of results to be returned per page. If None, all results are returned.
@@ -246,7 +257,7 @@ class DesignAPI:
         """
         return get_design_results(self.session, job_id, page_size, page_offset)
 
-    def load_job(self, job_id:str) -> Job:
+    def load_job(self, job_id: str) -> Job:
         """
         Reload a Submitted job to resume from where you left off!
 

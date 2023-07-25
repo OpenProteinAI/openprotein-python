@@ -4,9 +4,10 @@ from typing import Optional, List
 from io import BytesIO
 
 from openprotein.models import AssayMetadata, AssayDataPage
-from openprotein.errors import APIError, InvalidJob
+from openprotein.errors import APIError
 from openprotein.base import APISession
 import openprotein.config as config
+
 
 def list_models(session: APISession, assay_id: str) -> List:
     """
@@ -25,10 +26,16 @@ def list_models(session: APISession, assay_id: str) -> List:
         List of models
     """
     endpoint = "v1/models"
-    response = session.get(endpoint, params={"assay_id":assay_id})
+    response = session.get(endpoint, params={"assay_id": assay_id})
     return response.json()
 
-def assaydata_post(session: APISession, assay_file, assay_name: str, assay_description: Optional[str] = '') -> AssayMetadata:
+
+def assaydata_post(
+    session: APISession,
+    assay_file,
+    assay_name: str,
+    assay_description: Optional[str] = "",
+) -> AssayMetadata:
     """
     Post assay data.
 
@@ -48,10 +55,10 @@ def assaydata_post(session: APISession, assay_file, assay_name: str, assay_descr
     AssayMetadata
         Metadata of the posted assay data.
     """
-    endpoint = 'v1/assaydata'
+    endpoint = "v1/assaydata"
 
-    files = {'assay_data': assay_file}
-    data = {'assay_name': assay_name, 'assay_description': assay_description}
+    files = {"assay_data": assay_file}
+    data = {"assay_name": assay_name, "assay_description": assay_description}
 
     response = session.post(endpoint, files=files, data=data)
     if response.status_code == 200:
@@ -73,20 +80,21 @@ def assaydata_list(session: APISession) -> List[AssayMetadata]:
     -------
     List[AssayMetadata]
         List of all assay metadata.
-    
+
     Raises
     ------
     APIError
         If an error occurs during the API request.
     """
-    endpoint = 'v1/assaydata'
+    endpoint = "v1/assaydata"
     response = session.get(endpoint)
     if response.status_code == 200:
         return pydantic.parse_obj_as(List[AssayMetadata], response.json())
     else:
         raise APIError(f"Unable to list assay data: {response.text}")
 
-def get_assay_metadata(session: APISession, assay_id:str) -> AssayMetadata:
+
+def get_assay_metadata(session: APISession, assay_id: str) -> AssayMetadata:
     """
     Retrieve metadata for a specified assay.
 
@@ -109,8 +117,8 @@ def get_assay_metadata(session: APISession, assay_id:str) -> AssayMetadata:
         If no assay metadata with the specified assay_id is found.
     """
 
-    endpoint = f'v1/assaydata/metadata'
-    response = session.get(endpoint, params={"assay_id":assay_id})
+    endpoint = f"v1/assaydata/metadata"
+    response = session.get(endpoint, params={"assay_id": assay_id})
     if response.status_code == 200:
         data = pydantic.parse_obj_as(AssayMetadata, response.json())
     else:
@@ -118,11 +126,14 @@ def get_assay_metadata(session: APISession, assay_id:str) -> AssayMetadata:
     if data == []:
         raise APIError(f"No assay with id={assay_id} found")
     return data
-    
-def assaydata_put(session: APISession,
-                  assay_id: str,
-                  assay_name: Optional[str] = None,
-                  assay_description: Optional[str] = None) -> AssayMetadata:
+
+
+def assaydata_put(
+    session: APISession,
+    assay_id: str,
+    assay_name: Optional[str] = None,
+    assay_description: Optional[str] = None,
+) -> AssayMetadata:
     """
     Update assay metadata.
 
@@ -147,12 +158,12 @@ def assaydata_put(session: APISession,
     APIError
         If an error occurs during the API request.
     """
-    endpoint = f'v1/assaydata/{assay_id}'
+    endpoint = f"v1/assaydata/{assay_id}"
     data = {}
     if assay_name is not None:
-        data['assay_name'] = assay_name
+        data["assay_name"] = assay_name
     if assay_description is not None:
-        data['assay_description'] = assay_description
+        data["assay_description"] = assay_description
 
     response = session.put(endpoint, data=data)
     if response.status_code == 200:
@@ -167,7 +178,7 @@ def assaydata_page_get(
     measurement_name: Optional[str] = None,
     page_offset: int = 0,
     page_size: int = 1000,
-    data_format: str = 'wide',
+    data_format: str = "wide",
 ) -> AssayDataPage:
     """
     Get a page of assay data.
@@ -197,11 +208,11 @@ def assaydata_page_get(
     APIError
         If an error occurs during the API request.
     """
-    endpoint = f'v1/assaydata/{assay_id}'
+    endpoint = f"v1/assaydata/{assay_id}"
 
-    params = {'page_offset': page_offset, 'page_size': page_size, 'format': data_format}
+    params = {"page_offset": page_offset, "page_size": page_size, "format": data_format}
     if measurement_name is not None:
-        params['measurement_name'] = measurement_name
+        params["measurement_name"] = measurement_name
 
     response = session.get(endpoint, params=params)
     if response.status_code == 200:
@@ -225,9 +236,8 @@ class AssayDataset:
         self.session = session
         self.metadata = metadata
         self.page_size = config.BASE_PAGE_SIZE
-        if self.page_size>1000:
+        if self.page_size > 1000:
             self.page_size = 1000
-
 
     def __str__(self) -> str:
         return str(self.metadata)
@@ -250,7 +260,7 @@ class AssayDataset:
     @property
     def measurement_names(self):
         return self.metadata.measurement_names
-    
+
     @property
     def sequence_length(self):
         return self.metadata.sequence_length
@@ -272,8 +282,10 @@ class AssayDataset:
             List of models
         """
         return list_models(self.session, self.id)
-    
-    def update(self, assay_name: Optional[str] = None, assay_description: Optional[str] = None) -> None:
+
+    def update(
+        self, assay_name: Optional[str] = None, assay_description: Optional[str] = None
+    ) -> None:
         """
         Update the assay metadata.
 
@@ -288,11 +300,15 @@ class AssayDataset:
         -------
         None
         """
-        metadata = assaydata_put(self.session, self.id, assay_name=assay_name, assay_description=assay_description)
+        metadata = assaydata_put(
+            self.session,
+            self.id,
+            assay_name=assay_name,
+            assay_description=assay_description,
+        )
         self.metadata = metadata
 
-
-    def _get_all(self, verbose:bool=False) -> pd.DataFrame:
+    def _get_all(self, verbose: bool = False) -> pd.DataFrame:
         """
         Get all assay data.
 
@@ -309,9 +325,7 @@ class AssayDataset:
 
         while num_returned >= step:
             try:
-                result = self.get_slice(
-                        offset,
-                        offset+step)
+                result = self.get_slice(offset, offset + step)
                 results.append(result)
                 num_returned = len(result)
                 offset += num_returned
@@ -320,15 +334,6 @@ class AssayDataset:
                     print(f"Failed to get results: {exc}")
                 return pd.concat(results)
         return pd.concat(results)
-    
-        rows = []
-        entries = assaydata_page_get(self.session, self.id, page_offset=0, page_size=None)
-        for row in entries.assaydata:
-            row = [row.mut_sequence] + row.measurement_values
-            rows.append(row)
-        table = pd.DataFrame(rows, columns=['sequence'] + self.measurement_names)
-        return table
-
 
     def get_first(self) -> pd.DataFrame:
         """
@@ -351,9 +356,9 @@ class AssayDataset:
         for row in entries.assaydata:
             row = [row.mut_sequence] + row.measurement_values
             rows.append(row)
-        table = pd.DataFrame(rows, columns=['sequence'] + self.measurement_names)
+        table = pd.DataFrame(rows, columns=["sequence"] + self.measurement_names)
         return table
-    
+
     def get_slice(self, start: int, end: int) -> pd.DataFrame:
         """
         Get a slice of assay data.
@@ -377,18 +382,21 @@ class AssayDataset:
             # the last page might be smaller than the page size
             current_page_size = min(page_size, end - i)
 
-            entries = assaydata_page_get(self.session, self.id, page_offset=i, page_size=current_page_size)
+            entries = assaydata_page_get(
+                self.session, self.id, page_offset=i, page_size=current_page_size
+            )
 
             for row in entries.assaydata:
                 row = [row.mut_sequence] + row.measurement_values
                 rows.append(row)
 
-        table = pd.DataFrame(rows, columns=['sequence'] + self.measurement_names)
+        table = pd.DataFrame(rows, columns=["sequence"] + self.measurement_names)
         return table
 
 
 class DataAPI:
-    """ API interface for calling AssayData endpoints"""
+    """API interface for calling AssayData endpoints"""
+
     def __init__(self, session: APISession):
         """
         init the DataAPI.
@@ -412,7 +420,9 @@ class DataAPI:
         metadata = assaydata_list(self.session)
         return [AssayDataset(self.session, x) for x in metadata]
 
-    def create(self, table: pd.DataFrame, name: str, description: Optional[str] = None) -> AssayDataset:
+    def create(
+        self, table: pd.DataFrame, name: str, description: Optional[str] = None
+    ) -> AssayDataset:
         """
         Create a new assay dataset.
 
@@ -433,10 +443,12 @@ class DataAPI:
         stream = BytesIO()
         table.to_csv(stream, index=False)
         stream.seek(0)
-        metadata = assaydata_post(self.session, stream, name, assay_description=description)
-        metadata.sequence_length = len(table['sequence'].values[0])
+        metadata = assaydata_post(
+            self.session, stream, name, assay_description=description
+        )
+        metadata.sequence_length = len(table["sequence"].values[0])
         return AssayDataset(self.session, metadata)
-    
+
     def get(self, assay_id: str) -> AssayDataset:
         """
         Get an assay dataset by its ID.
@@ -457,8 +469,8 @@ class DataAPI:
             If no assay dataset with the given ID is found.
         """
         return get_assay_metadata(self.session, assay_id)
-    
-    def load_job(self, assay_id:str) -> AssayDataset:
+
+    def load_job(self, assay_id: str) -> AssayDataset:
         """
         Reload a Submitted job to resume from where you left off!
 
@@ -482,10 +494,13 @@ class DataAPI:
 
         """
         metadata = self.get(assay_id)
-        #if job_details.job_type != JobType.train:
+        # if job_details.job_type != JobType.train:
         #    raise InvalidJob(f"Job {job_id} is not of type {JobType.train}")
-        return AssayDataset(self.session, metadata,)
-    
+        return AssayDataset(
+            self.session,
+            metadata,
+        )
+
     def __len__(self) -> int:
         """
         Get the number of assay datasets.

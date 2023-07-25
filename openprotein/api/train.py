@@ -3,7 +3,7 @@ import pydantic
 from openprotein.base import APISession
 from openprotein.api.jobs import AsyncJobFuture, Job
 
-from openprotein.models import (TrainGraph, JobType,Jobplus, CVResults)
+from openprotein.models import TrainGraph, JobType, Jobplus, CVResults
 from openprotein.errors import InvalidParameterError, APIError, InvalidJob
 from openprotein.api.data import AssayDataset, AssayMetadata
 
@@ -25,33 +25,41 @@ def list_models(session: APISession, job_id: str) -> List:
         List of models
     """
     endpoint = "v1/models"
-    response = session.get(endpoint, params={"job_id":job_id})
+    response = session.get(endpoint, params={"job_id": job_id})
     return response.json()
 
 
-def crossvalidate(session: APISession, train_job_id: str, n_splits:int=5) -> Job :
+def crossvalidate(session: APISession, train_job_id: str, n_splits: int = 5) -> Job:
     """
-    Submit a cross-validation job. 
+    Submit a cross-validation job.
 
     Args:
         session (APISession): auth session
-        job_id (str): job id 
+        job_id (str): job id
         n_splits (int, optional): N of CV splits. Defaults to 5.
 
     Returns:
-        Job: 
+        Job:
     """
     endpoint = "v1/workflow/crossvalidate"
-    response = session.post(endpoint, json={"train_job_id":train_job_id, "n_splits":n_splits})
+    response = session.post(
+        endpoint, json={"train_job_id": train_job_id, "n_splits": n_splits}
+    )
     return pydantic.parse_obj_as(Job, response.json())
 
-def get_crossvalidation(session: APISession, job_id: str,  page_size: Optional[int] = None, page_offset: Optional[int] = 0) -> CVResults:
+
+def get_crossvalidation(
+    session: APISession,
+    job_id: str,
+    page_size: Optional[int] = None,
+    page_offset: Optional[int] = 0,
+) -> CVResults:
     """
     Get CV results
 
     Args:
         session (APISession): auth'd session
-        job_id (str): Job id 
+        job_id (str): Job id
 
     Returns:
         _type_: _description_
@@ -63,17 +71,20 @@ def get_crossvalidation(session: APISession, job_id: str,  page_size: Optional[i
         raise InvalidJob("No CV job has been submitted for this job!")
     return pydantic.parse_obj_as(CVResults, response.json())
 
-def _train_job(session: APISession,
-                     endpoint:str,
-                     assaydataset: AssayDataset,
-                     measurement_name: Union[str, List[str]],
-                     model_name: str = "",
-                     force_preprocess: Optional[bool] = False) -> Jobplus:
+
+def _train_job(
+    session: APISession,
+    endpoint: str,
+    assaydataset: AssayDataset,
+    measurement_name: Union[str, List[str]],
+    model_name: str = "",
+    force_preprocess: Optional[bool] = False,
+) -> Jobplus:
     """
     Create a training job.
 
     Validate inputs, format  data, sends the job training request to the endpoint,
-    
+
     Parses the response into a `Job` object.
 
     Parameters
@@ -113,15 +124,15 @@ def _train_job(session: APISession,
     for measurement in measurement_name:
         if measurement not in assaydataset.measurement_names:
             raise InvalidParameterError(f"No {measurement} in measurement names")
-    if assaydataset.shape[0] <3:
+    if assaydataset.shape[0] < 3:
         raise InvalidParameterError("Assaydata must have >=3 data points for training!")
     if model_name is None:
         model_name = ""
 
     data = {
         "assay_id": assaydataset.id,
-        "measurement_name": measurement_name, 
-        "model_name": model_name
+        "measurement_name": measurement_name,
+        "model_name": model_name,
     }
     params = {"force_preprocess": str(force_preprocess).lower()}
 
@@ -129,16 +140,19 @@ def _train_job(session: APISession,
     response.raise_for_status()
     return pydantic.parse_obj_as(Jobplus, response.json())
 
-def create_train_job(session: APISession,
-                     assaydataset: AssayDataset,
-                     measurement_name: Union[str, List[str]],
-                     model_name: str = "",
-                     force_preprocess: Optional[bool] = False):
+
+def create_train_job(
+    session: APISession,
+    assaydataset: AssayDataset,
+    measurement_name: Union[str, List[str]],
+    model_name: str = "",
+    force_preprocess: Optional[bool] = False,
+):
     """
     Create a training job.
 
     Validate inputs, format  data, sends the job training request to the endpoint,
-    
+
     Parses the response into a `Job` object.
 
     Parameters
@@ -170,49 +184,46 @@ def create_train_job(session: APISession,
     HTTPError
         If the request to the server fails.
     """
-    endpoint = 'v1/workflow/train'
-    return _train_job(session,
-                      endpoint,
-                      assaydataset,
-                      measurement_name,
-                      model_name, force_preprocess)
+    endpoint = "v1/workflow/train"
+    return _train_job(
+        session, endpoint, assaydataset, measurement_name, model_name, force_preprocess
+    )
 
 
-def _create_train_job_br(session: APISession,
-                     assaydataset: AssayDataset,
-                     measurement_name: Union[str, List[str]],
-                     model_name: str = "",
-                     force_preprocess: Optional[bool] = False):
-    """ Alias for create_train_job"""
-    endpoint = 'v1/workflow/train/br'
-    return _train_job(session,
-                      endpoint,
-                      assaydataset,
-                      measurement_name,
-                      model_name,
-                      force_preprocess)
+def _create_train_job_br(
+    session: APISession,
+    assaydataset: AssayDataset,
+    measurement_name: Union[str, List[str]],
+    model_name: str = "",
+    force_preprocess: Optional[bool] = False,
+):
+    """Alias for create_train_job"""
+    endpoint = "v1/workflow/train/br"
+    return _train_job(
+        session, endpoint, assaydataset, measurement_name, model_name, force_preprocess
+    )
 
 
-def _create_train_job_gp(session: APISession,
-                     assaydataset: AssayDataset,
-                     measurement_name: Union[str, List[str]],
-                     model_name: str = "",
-                     force_preprocess: Optional[bool] = False):
-    """ Alias for create_train_job"""
-    endpoint = 'v1/workflow/train/gp'
-    return _train_job(session,
-                      endpoint,
-                      assaydataset,
-                      measurement_name,
-                      model_name,
-                      force_preprocess)
+def _create_train_job_gp(
+    session: APISession,
+    assaydataset: AssayDataset,
+    measurement_name: Union[str, List[str]],
+    model_name: str = "",
+    force_preprocess: Optional[bool] = False,
+):
+    """Alias for create_train_job"""
+    endpoint = "v1/workflow/train/gp"
+    return _train_job(
+        session, endpoint, assaydataset, measurement_name, model_name, force_preprocess
+    )
 
 
 def get_training_results(session: APISession, job_id: str) -> TrainGraph:
     """Get Training results (e.g. loss etc) of job."""
-    endpoint = f'v1/workflow/train/{job_id}'
+    endpoint = f"v1/workflow/train/{job_id}"
     response = session.get(endpoint)
-    return TrainGraph( ** response.json() )
+    return TrainGraph(**response.json())
+
 
 def load_job(session: APISession, job_id: str) -> Jobplus:
     """
@@ -237,7 +248,7 @@ def load_job(session: APISession, job_id: str) -> Jobplus:
         If the request to the server fails.
 
     """
-    endpoint = f'v1/workflow/train/job/{job_id}'
+    endpoint = f"v1/workflow/train/job/{job_id}"
     response = session.get(endpoint)
     return pydantic.parse_obj_as(Jobplus, response.json())
 
@@ -262,6 +273,7 @@ class CVFutureMixin:
     get_crossvalidation(page_size: Optional[int] = None, page_offset: Optional[int] = 0):
         Retrieves the results of the cross-validation job.
     """
+
     session: APISession
     train_job_id: str
     job: Job
@@ -286,9 +298,13 @@ class CVFutureMixin:
             self.job = crossvalidate(self.session, self.train_job_id)
             return self.job
         else:
-            raise InvalidJob("CV Job has already been submitted. Use get_crossvalidation() instead.")
+            raise InvalidJob(
+                "CV Job has already been submitted. Use get_crossvalidation() instead."
+            )
 
-    def get_crossvalidation(self, page_size: Optional[int] = None, page_offset: Optional[int] = 0):
+    def get_crossvalidation(
+        self, page_size: Optional[int] = None, page_offset: Optional[int] = 0
+    ):
         """
         Retrieves the results of the cross-validation job.
 
@@ -297,7 +313,7 @@ class CVFutureMixin:
         Parameters
         ----------
         page_size : int, optional
-            The number of items to retrieve in a single request. If None, all items are retrieved.
+            The number of items to retrieve in a single request..
         page_offset : int, optional
             The offset to start retrieving items from. Default is 0.
 
@@ -312,9 +328,14 @@ class CVFutureMixin:
             If no job has been submitted.
         """
         if self.job is not None:
-            return get_crossvalidation(self.session, self.job.job_id, page_size, page_offset)
+            return get_crossvalidation(
+                self.session, self.job.job_id, page_size, page_offset
+            )
         else:
-            raise InvalidJob("No CV Job has been submitted! Call crossvalidate() and try again.")
+            raise InvalidJob(
+                "No CV Job has been submitted! Call crossvalidate() and try again."
+            )
+
 
 class CVFuture(CVFutureMixin, AsyncJobFuture):
     """
@@ -340,10 +361,7 @@ class CVFuture(CVFutureMixin, AsyncJobFuture):
         Returns a detailed representation of the cross-validation job.
     """
 
-    def __init__(self,
-                 session: APISession,
-                 train_job_id: str, 
-                 job: Job = None):
+    def __init__(self, session: APISession, train_job_id: str, job: Job = None):
         """
         Constructs a new CVFuture instance.
 
@@ -370,7 +388,7 @@ class CVFuture(CVFutureMixin, AsyncJobFuture):
     def id(self):
         return self.job.job_id
 
-    def get(self, verbose:bool=False) ->  CVResults:
+    def get(self, verbose: bool = False) -> CVResults:
         """
         Get all the results of the CV job.
 
@@ -391,9 +409,7 @@ class CVFuture(CVFutureMixin, AsyncJobFuture):
 
         while num_returned >= step:
             try:
-                response = self.get_crossvalidation(
-                        page_offset=offset,
-                        page_size=step)
+                response = self.get_crossvalidation(page_offset=offset, page_size=step)
                 results += response.result
                 num_returned = len(response.result)
                 offset += num_returned
@@ -402,7 +418,7 @@ class CVFuture(CVFutureMixin, AsyncJobFuture):
                     print(f"Failed to get results: {exc}")
                 return results
         return results
-    
+
 
 class TrainFutureMixin:
     """
@@ -460,8 +476,8 @@ class TrainFutureMixin:
     def get_assay_data(self):
         """
         NOT IMPLEMENTED.
-        
-        Get the assay data used for the training job. 
+
+        Get the assay data used for the training job.
 
         Returns:
             The assay data.
@@ -486,11 +502,14 @@ class TrainFutureMixin:
         """
         return list_models(self.session, self.job.job_id)
 
+
 class TrainFuture(TrainFutureMixin, AsyncJobFuture):
-    def __init__(self,
-                 session: APISession,
-                 job: Job,
-                 assaymetadata: Optional[AssayMetadata] = None):
+    def __init__(
+        self,
+        session: APISession,
+        job: Job,
+        assaymetadata: Optional[AssayMetadata] = None,
+    ):
         super().__init__(session, job)
         self.assaymetadata = assaymetadata
         self.crossvalidation: Optional[CVFuture] = CVFuture(session, job.job_id, None)
@@ -508,16 +527,15 @@ class TrainFuture(TrainFutureMixin, AsyncJobFuture):
     def get_assay_data(self):
         """
         NOT IMPLEMENTED.
-        
-        Get the assay data used for the training job. 
+
+        Get the assay data used for the training job.
 
         Returns:
             The assay data.
         """
         return self.get_assay_data()
 
-    def get(self, verbose:bool=False) -> TrainGraph:
-
+    def get(self, verbose: bool = False) -> TrainGraph:
         try:
             results = self.get_results()
         except APIError as exc:
@@ -527,23 +545,27 @@ class TrainFuture(TrainFutureMixin, AsyncJobFuture):
         return results
 
 
-
 class TrainingAPI:
-    """ API interface for calling Train endpoints"""
-    def __init__(self, session: APISession, ):
-        self.session = session
-        self.assay= None
-        
+    """API interface for calling Train endpoints"""
 
-    def create_training_job(self,
-                    assaydataset: AssayDataset,
-                    measurement_name: Union[str, List[str]],
-                    model_name:str ="",
-                    force_preprocess: Optional[bool]=False) -> TrainFuture:
+    def __init__(
+        self,
+        session: APISession,
+    ):
+        self.session = session
+        self.assay = None
+
+    def create_training_job(
+        self,
+        assaydataset: AssayDataset,
+        measurement_name: Union[str, List[str]],
+        model_name: str = "",
+        force_preprocess: Optional[bool] = False,
+    ) -> TrainFuture:
         """
         Create a training job on your data.
 
-        This function validates the inputs, formats the data, and sends the job. 
+        This function validates the inputs, formats the data, and sends the job.
 
         Parameters
         ----------
@@ -572,37 +594,35 @@ class TrainingAPI:
         """
         if isinstance(measurement_name, str):
             measurement_name = [measurement_name]
-        job_details = create_train_job(self.session,
-                                       assaydataset,
-                                       measurement_name,
-                                       model_name,
-                                       force_preprocess)
+        job_details = create_train_job(
+            self.session, assaydataset, measurement_name, model_name, force_preprocess
+        )
         return TrainFuture(self.session, job_details, assaydataset)
 
-    def _create_training_job_br(self,
-                    assaydataset: AssayDataset,
-                    measurement_name: Union[str, List[str]],
-                    model_name:str="",
-                    force_preprocess: Optional[bool]=False) -> TrainFuture:
+    def _create_training_job_br(
+        self,
+        assaydataset: AssayDataset,
+        measurement_name: Union[str, List[str]],
+        model_name: str = "",
+        force_preprocess: Optional[bool] = False,
+    ) -> TrainFuture:
         """Same as create_training_job."""
-        job_details = _create_train_job_br(self.session,
-                                           assaydataset,
-                                           measurement_name,
-                                           model_name,
-                                           force_preprocess)
+        job_details = _create_train_job_br(
+            self.session, assaydataset, measurement_name, model_name, force_preprocess
+        )
         return TrainFuture(self.session, job_details, assaydataset)
 
-    def _create_training_job_gp(self,
-                    assaydataset: AssayDataset,
-                    measurement_name: Union[str, List[str]],
-                    model_name:str="",
-                    force_preprocess: Optional[bool]=False) -> TrainFuture:
+    def _create_training_job_gp(
+        self,
+        assaydataset: AssayDataset,
+        measurement_name: Union[str, List[str]],
+        model_name: str = "",
+        force_preprocess: Optional[bool] = False,
+    ) -> TrainFuture:
         """Same as create_training_job."""
-        job_details = _create_train_job_gp(self.session,
-                                           assaydataset,
-                                           measurement_name,
-                                           model_name,
-                                           force_preprocess)
+        job_details = _create_train_job_gp(
+            self.session, assaydataset, measurement_name, model_name, force_preprocess
+        )
         return TrainFuture(self.session, job_details, assaydataset)
 
     def get_training_results(self, job_id: str) -> TrainFuture:
@@ -618,12 +638,12 @@ class TrainingAPI:
         Returns
         -------
         TrainFuture
-            A TrainFuture Job 
+            A TrainFuture Job
         """
         job_details = get_training_results(self.session, job_id)
         return TrainFuture(self.session, job_details)
 
-    def load_job(self, job_id:str) -> Jobplus:
+    def load_job(self, job_id: str) -> Jobplus:
         """
         Reload a Submitted job to resume from where you left off!
 
