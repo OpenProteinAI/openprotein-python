@@ -1,3 +1,4 @@
+# Errors for OpenProtein
 class InvalidParameterError(Exception):
     """InvalidParameterError"""
     def __init__(self, message="Invalid parameter"):

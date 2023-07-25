@@ -1,5 +1,3 @@
-from enum import Enum
-
 POLLING_INTERVAL = 5
 POLLING_TIMEOUT = 900
 

@@ -1,32 +1,31 @@
-
 from typing import Optional, List, Union, Dict, Literal
-from datetime import datetime 
-import time 
+from datetime import datetime
 from enum import Enum
 from pydantic import BaseModel, Field
-import tqdm
-from openprotein.errors import TimeoutException
-import openprotein.config as config
-from openprotein.base import APISession
-from openprotein.api.jobs import Job, JobStatus
 
 
 class DesignMetadata(BaseModel):
     y_mu: Optional[float]
     y_var: Optional[float]
 
+
 class DesignSubscore(BaseModel):
     score: int
     metadata: DesignMetadata
+
 
 class DesignStep(BaseModel):
     step: int
     sample_index: int
     sequence: str
-    #scores: List[int]
-    #subscores_metadata: List[List[DesignSubscore]]
-    initial_scores: List[int] = Field(..., alias='scores')  # renaming 'scores' to 'initial_scores'  # noqa: E501
-    scores: List[List[DesignSubscore]] = Field(..., alias='subscores_metadata')  # renaming 'subscores_metadata' to 'scores'  # noqa: E501
+    # scores: List[int]
+    # subscores_metadata: List[List[DesignSubscore]]
+    initial_scores: List[int] = Field(
+        ..., alias="scores"
+    )  # renaming 'scores' to 'initial_scores'  # noqa: E501
+    scores: List[List[DesignSubscore]] = Field(
+        ..., alias="subscores_metadata"
+    )  # renaming 'subscores_metadata' to 'scores'  # noqa: E501
     umap1: float
     umap2: float
 
@@ -44,14 +43,16 @@ class DesignResults(BaseModel):
 
 
 class DirectionEnum(str, Enum):
-    gt = '>'
-    lt = '<'
-    eq = '='
+    gt = ">"
+    lt = "<"
+    eq = "="
+
 
 class Criterion(BaseModel):
     target: float
     weight: float
     direction: str
+
 
 class ModelCriterion(BaseModel):
     criterion_type: Literal["model"]
@@ -59,22 +60,26 @@ class ModelCriterion(BaseModel):
     measurement_name: str
     criterion: Criterion
 
+
 class NMutationCriterion(BaseModel):
     criterion_type: Literal["n_mutations"]
-    #sequences: Optional[List[str]]
+    # sequences: Optional[List[str]]
+
 
 CriterionItem = Union[ModelCriterion, NMutationCriterion]
+
 
 class DesignJobCreate(BaseModel):
     assay_id: str
     criteria: List[List[CriterionItem]]
     num_steps: Optional[int] = 8
     pop_size: Optional[int] = None
-    n_offsprings:  Optional[int] = None
+    n_offsprings: Optional[int] = None
     crossover_prob: Optional[float] = None
     crossover_prob_pointwise: Optional[float] = None
-    mutation_average_mutations_per_seq: Optional[int] =None
+    mutation_average_mutations_per_seq: Optional[int] = None
     mutation_positions: Optional[List[int]] = None
+
 
 class JobType(str, Enum):
     """
@@ -105,28 +110,38 @@ class JobType(str, Enum):
     attn = "/embeddings/attn"
     logits = "/embeddings/logits"
 
+
 class Jobplus(Job):
     sequence_length: Optional[int]
- 
+
+
 class TrainStep(BaseModel):
     step: int
     loss: float
     tag: str
     tags: dict
 
+
 class TrainGraph(BaseModel):
     traingraph: List[TrainStep]
     created_date: datetime
     job_id: str
 
+
 class SequenceData(BaseModel):
     sequence: str
+
+
 class SequenceDataset(BaseModel):
     sequences: List[str]
+
+
 class JobDetails(BaseModel):
     job_id: str
     job_type: str
     status: str
+
+
 class AssayMetadata(BaseModel):
     assay_name: str
     assay_description: str
@@ -137,6 +152,7 @@ class AssayMetadata(BaseModel):
     num_entries: int
     measurement_names: List[str]
     sequence_length: Optional[int] = None
+
 
 class AssayDataRow(BaseModel):
     mut_sequence: str
@@ -149,23 +165,28 @@ class AssayDataPage(BaseModel):
     page_offset: int
     assaydata: List[AssayDataRow]
 
+
 class MSAJob(Job):
     msa_id: str
+
 
 class PromptJob(Job):
     prompt_id: str
 
+
 class MSASamplingMethod(str, Enum):
-    RANDOM = 'RANDOM'
-    NEIGHBORS = 'NEIGHBORS'
-    NEIGHBORS_NO_LIMIT = 'NEIGHBORS_NO_LIMIT'
-    NEIGHBORS_NONGAP_NORM_NO_LIMIT = 'NEIGHBORS_NONGAP_NORM_NO_LIMIT'
-    TOP = 'TOP'
+    RANDOM = "RANDOM"
+    NEIGHBORS = "NEIGHBORS"
+    NEIGHBORS_NO_LIMIT = "NEIGHBORS_NO_LIMIT"
+    NEIGHBORS_NONGAP_NORM_NO_LIMIT = "NEIGHBORS_NONGAP_NORM_NO_LIMIT"
+    TOP = "TOP"
+
 
 class PoetSiteResult(BaseModel):
     sequence: bytes
     score: List[float]
     name: Optional[str]
+
 
 class PromptPostParams(BaseModel):
     msa_id: str
@@ -179,6 +200,7 @@ class PromptPostParams(BaseModel):
     num_ensemble_prompts: int = 1
     random_seed: Optional[int] = None
 
+
 class PoetSingleSiteJob(Job):
     parent_id: Optional[str]
     s3prefix: Optional[str]
@@ -186,17 +208,20 @@ class PoetSingleSiteJob(Job):
     page_offset: Optional[int]
     num_rows: Optional[int]
     result: Optional[List[PoetSiteResult]]
-    #n_completed: Optional[int]
+    # n_completed: Optional[int]
+
 
 class PoetInputType(str, Enum):
-    INPUT = 'RAW'
-    MSA = 'GENERATED'
-    PROMPT = 'PROMPT'
+    INPUT = "RAW"
+    MSA = "GENERATED"
+    PROMPT = "PROMPT"
+
 
 class PoetScoreResult(BaseModel):
     sequence: bytes
     score: List[float]
     name: Optional[str]
+
 
 class PoetScoreJob(Job):
     parent_id: Optional[str]
@@ -207,12 +232,14 @@ class PoetScoreJob(Job):
     result: Optional[List[PoetScoreResult]]
     n_completed: Optional[int]
 
+
 class Prediction(BaseModel):
     """Prediction details."""
 
     model_id: str
     model_name: str
     properties: Dict[str, Dict[str, float]]
+
 
 class PredictJobBase(BaseModel):
     """Shared properties for predict job outputs."""
@@ -222,10 +249,12 @@ class PredictJobBase(BaseModel):
     job_type: str
     status: str
 
+
 class DesignJob(BaseModel):
     job_id: Optional[str] = None
     job_type: str
     status: str
+
 
 class PredictJob(PredictJobBase):
     """Properties about predict job returned via API."""
@@ -237,6 +266,7 @@ class PredictJob(PredictJobBase):
         predictions: List[Prediction] = []
 
     result: Optional[List[SequencePrediction]] = None
+
 
 class PredictSingleSiteJob(PredictJobBase):
     """Properties about single-site prediction job returned via API."""
@@ -260,9 +290,9 @@ class CVItem(BaseModel):
     y_mu: float
     y_var: float
 
+
 class CVResults(Job):
     num_rows: int
     page_size: int
     page_offset: int
     result: List[CVItem]
-
