@@ -2,7 +2,7 @@ from typing import Optional, List, Union, Dict, Literal
 from datetime import datetime
 from enum import Enum
 from pydantic import BaseModel, Field
-
+from openprotein.api.jobs import Job
 
 class DesignMetadata(BaseModel):
     y_mu: Optional[float]
