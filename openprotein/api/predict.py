@@ -95,7 +95,8 @@ def _create_predict_job(session: APISession,
 
 def create_predict_job(session: APISession,
                        sequences:SequenceDataset,
-                       train_job: TrainFuture) -> Job:
+                       train_job: TrainFuture, 
+                       model_ids: Optional[List[str]]=None) -> Job:
     """
     Creates a predict job with a given set of sequences and a train job.
 
@@ -109,6 +110,8 @@ def create_predict_job(session: APISession,
         The dataset containing the sequences to predict
     train_job : TrainFuture
         The Train job: this model will be used for making Predicts.
+    model_ids: List[str]
+        specific IDs for models
 
     Returns
     -------
@@ -118,22 +121,27 @@ def create_predict_job(session: APISession,
     Raises
     ------
     InvalidParameterError
-        If neither 'model_ids' nor 'train_job_id' is provided.
+        If neither 'model_ids' nor 'train_job' is provided.
+    InvalidParameterError
+        If BOTH `model_ids` and `train_job` is provided
     HTTPError
         If the post request does not succeed.
     ValidationError
         If the response cannot be parsed into a 'Job' object.
     """
+    if isinstance(model_ids, str):
+        model_ids = [model_ids]
     endpoint = 'v1/workflow/predict'
     payload = {
         "sequences": sequences.sequences
     }
-    return _create_predict_job(session, endpoint, payload, model_ids=None, train_job_id=train_job.id)
+    return _create_predict_job(session, endpoint, payload, model_ids=model_ids, train_job_id=train_job.id)
 
 
 def create_predict_single_site(session: APISession,
                                sequence: SequenceData,
-                               train_job: TrainFuture) -> Job:
+                               train_job: TrainFuture,
+                               model_ids: Optional[List[str]]=None) -> Job:
     """
     Creates a predict job for single site mutants with a given sequence and a train job.
 
@@ -145,6 +153,8 @@ def create_predict_single_site(session: APISession,
         The sequence for which single site mutants predictions will be made.
     train_job : TrainFuture
         The train job whose model will be used for making Predicts.
+    model_ids: List[str]
+        specific IDs for models
 
     Returns
     -------
@@ -154,7 +164,9 @@ def create_predict_single_site(session: APISession,
     Raises
     ------
     InvalidParameterError
-        If neither 'model_ids' nor 'train_job_id' is provided.
+        If neither 'model_ids' nor 'train_job' is provided.
+    InvalidParameterError
+        If BOTH `model_ids` and `train_job` is provided
     HTTPError
         If the post request does not succeed.
     ValidationError
@@ -164,7 +176,10 @@ def create_predict_single_site(session: APISession,
     payload = {
         "sequence": sequence.sequence
     }
-    return _create_predict_job(session, endpoint, payload, model_ids=None, train_job_id=train_job.id)
+    return _create_predict_job(session, endpoint,
+                               payload,
+                               model_ids=model_ids,
+                               train_job_id=train_job.id)
 
 def get_prediction_results(session: APISession, job_id: str, page_size: Optional[int] = None, page_offset: Optional[int] = None) -> PredictJob:
     """
@@ -357,7 +372,9 @@ class PredictAPI:
 
     def create_predict_job(self,
                            sequences: List,
-                           train_job: TrainFuture) -> PredictFuture:
+                           train_job: TrainFuture,
+                           model_ids: Optional[List[str]] = None
+                           ) -> PredictFuture:
         """
         Creates a new Predict job for a given list of sequences and a trained model.
 
@@ -367,6 +384,8 @@ class PredictAPI:
             The list of sequences to be used for the Predict job.
         train_job : TrainFuture
             The train job object representing the trained model.
+        model_ids : List[str], optional
+            The list of model ids to be used for Predict. Default is None.
 
         Returns
         -------
@@ -377,6 +396,12 @@ class PredictAPI:
         ------
         InvalidParameterError
             If the sequences are not of the same length as the assay data or if the train job has not completed successfully.
+        InvalidParameterError
+            If BOTH train_job and model_ids are specified 
+        InvalidParameterError
+            If NEITHER train_job or model_ids is specified
+        APIError
+            If the backend refuses the job (due to sequence length or invalid inputs)
         """
         if train_job.assaymetadata is not None:
             if train_job.assaymetadata.sequence_length is not None:
@@ -391,7 +416,9 @@ class PredictAPI:
 
     def create_predict_single_site(self,
                                    sequence: str,
-                                   train_job: TrainFuture) -> PredictFuture:
+                                   train_job: TrainFuture,
+                                   model_ids: Optional[List[str]] = None
+                                   ) -> PredictFuture:
         """
         Creates a new Predict job for single site mutation analysis with a trained model.
 
@@ -401,6 +428,8 @@ class PredictAPI:
             The sequence for single site analysis.
         train_job : TrainFuture
             The train job object representing the trained model.
+        model_ids : List[str], optional
+            The list of model ids to be used for Predict. Default is None.
 
         Returns
         -------
@@ -410,7 +439,13 @@ class PredictAPI:
         Raises
         ------
         InvalidParameterError
-            If the sequence is not of the same length as the assay data or if the train job has not completed yet.
+            If the sequences are not of the same length as the assay data or if the train job has not completed successfully.
+        InvalidParameterError
+            If BOTH train_job and model_ids are specified 
+        InvalidParameterError
+            If NEITHER train_job or model_ids is specified
+        APIError
+            If the backend refuses the job (due to sequence length or invalid inputs)
         """
         if train_job.assaymetadata is not None:
             if train_job.assaymetadata.sequence_length is not None:

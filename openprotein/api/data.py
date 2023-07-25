@@ -101,7 +101,7 @@ def get_assay_metadata(session: APISession, assay_id:str) -> AssayMetadata:
     Returns
     -------
     AssayMetadata
-        An AssayMetadata instance that contains the metadata for the specified assay.
+        An AssayMetadata  that contains the metadata for the specified assay.
 
     Raises
     ------
@@ -112,9 +112,12 @@ def get_assay_metadata(session: APISession, assay_id:str) -> AssayMetadata:
     endpoint = f'v1/assaydata/metadata'
     response = session.get(endpoint, params={"assay_id":assay_id})
     if response.status_code == 200:
-        return pydantic.parse_obj_as(AssayMetadata, response.json())
+        data = pydantic.parse_obj_as(AssayMetadata, response.json())
     else:
         raise APIError(f"Unable to list assay data: {response.text}")
+    if data == []:
+        raise APIError(f"No assay with id={assay_id} found")
+    return data
     
 def assaydata_put(session: APISession,
                   assay_id: str,
@@ -454,16 +457,16 @@ class DataAPI:
             If no assay dataset with the given ID is found.
         """
         return get_assay_metadata(self.session, assay_id)
-
-    def load_job(self, assay_id: str) -> AssayDataset:
+    
+    def load_job(self, assay_id:str) -> AssayDataset:
         """
         Reload a Submitted job to resume from where you left off!
 
 
         Parameters
         ----------
-        assay_id : str
-            The identifier of the assay to be loaded.
+        job_id : str
+            The identifier of the job whose details are to be loaded.
 
         Returns
         -------
@@ -478,7 +481,10 @@ class DataAPI:
             If the Job is of the wrong type
 
         """
-        return self.get(assay_id=assay_id)
+        metadata = self.get(assay_id)
+        #if job_details.job_type != JobType.train:
+        #    raise InvalidJob(f"Job {job_id} is not of type {JobType.train}")
+        return AssayDataset(self.session, metadata,)
     
     def __len__(self) -> int:
         """
