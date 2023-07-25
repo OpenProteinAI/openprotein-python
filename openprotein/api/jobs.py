@@ -112,6 +112,33 @@ class Job(pydantic.BaseModel):
     wait_until_done = wait
 
 
+def load_job(session: APISession, job_id: str) -> Job:
+    """
+    Reload a Submitted job to resume from where you left off!
+
+
+    Parameters
+    ----------
+    session : APISession
+        The current API session for communication with the server.
+    job_id : str
+        The identifier of the job whose details are to be loaded.
+
+    Returns
+    -------
+    Job
+        Job
+
+    Raises
+    ------
+    HTTPError
+        If the request to the server fails.
+
+    """
+    endpoint = f"v1/jobs/{job_id}"
+    response = session.get(endpoint)
+    return pydantic.parse_obj_as(Job, response.json())
+
 def job_get(session: APISession, job_id) -> Job:
     """Get job."""
     endpoint = f"v1/jobs/{job_id}"

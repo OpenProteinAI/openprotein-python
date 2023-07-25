@@ -4,40 +4,12 @@ import pydantic
 from openprotein.base import APISession
 from openprotein.api.jobs import AsyncJobFuture, Job
 import openprotein.config as config
-
+from openprotein.api.jobs import load_job
 from openprotein.models import DesignJobCreate, JobType, DesignResults
 from openprotein.errors import (
     APIError,
     InvalidJob,
 )
-
-def load_job(session: APISession, job_id: str) -> Job:
-    """
-    Reload a Submitted job to resume from where you left off!
-
-
-    Parameters
-    ----------
-    session : APISession
-        The current API session for communication with the server.
-    job_id : str
-        The identifier of the job whose details are to be loaded.
-
-    Returns
-    -------
-    Job
-        Job
-
-    Raises
-    ------
-    HTTPError
-        If the request to the server fails.
-
-    """
-    endpoint = f"v1/jobs/{job_id}"
-    response = session.get(endpoint)
-    return pydantic.parse_obj_as(Job, response.json())
-
 
 def create_design_job(session: APISession, design_job: DesignJobCreate) -> Job:
     """
