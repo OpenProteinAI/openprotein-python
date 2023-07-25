@@ -88,27 +88,27 @@ class Job(pydantic.BaseModel):
 
         pbar = None
         if verbose:
-            pbar = tqdm.tqdm(total=100, desc='Waiting', position=0)
+            pbar = tqdm.tqdm(total=100, desc="Waiting", position=0)
 
         job = self.refresh(session)
         while not is_done(job):
             if verbose:
                 progress = job.progress_counter
                 pbar.n = progress
-                pbar.set_postfix({'status': job.status})
-                #pbar.refresh()
-                #print(f'Retry {retries}, status={self.job.status}, time elapsed {time.time() - start_time:.2f}')
+                pbar.set_postfix({"status": job.status})
+                # pbar.refresh()
+                # print(f'Retry {retries}, status={self.job.status}, time elapsed {time.time() - start_time:.2f}')
             time.sleep(interval)
             job = job.refresh(session)
 
         if verbose:
-            #pbar.update(1)
+            # pbar.update(1)
             progress = job.progress_counter
             pbar.n = progress
-            pbar.set_postfix({'status': job.status})
+            pbar.set_postfix({"status": job.status})
 
         return job
-    
+
     wait_until_done = wait
 
 
@@ -138,6 +138,7 @@ def load_job(session: APISession, job_id: str) -> Job:
     endpoint = f"v1/jobs/{job_id}"
     response = session.get(endpoint)
     return pydantic.parse_obj_as(Job, response.json())
+
 
 def job_get(session: APISession, job_id) -> Job:
     """Get job."""
@@ -191,7 +192,8 @@ def jobs_list(
 
 
 class JobsAPI:
-    """ API wrapper to get jobs."""
+    """API wrapper to get jobs."""
+
     def __init__(self, session: APISession):
         self.session = session
 
@@ -230,11 +232,11 @@ class AsyncJobFuture:
     @property
     def status(self):
         return self.job.status
-    
+
     @property
     def progress(self):
         return self.job.progress_counter
-    
+
     @property
     def num_records(self):
         return self.job.num_records
@@ -273,27 +275,31 @@ class StreamingAsyncJobFuture(AsyncJobFuture):
         generator = self.stream()
         if verbose:
             total = None
-            if hasattr(self, '__len__'):
+            if hasattr(self, "__len__"):
                 total = len(self)
-            generator = tqdm.tqdm(generator, desc='Retrieving', total=total, position=0, mininterval=1.0)
+            generator = tqdm.tqdm(
+                generator, desc="Retrieving", total=total, position=0, mininterval=1.0
+            )
         return [entry for entry in generator]
 
 
 class MappedAsyncJobFuture(StreamingAsyncJobFuture):
-    def __init__(self, session: APISession, job: Job, max_workers=config.MAX_CONCURRENT_WORKERS):
+    def __init__(
+        self, session: APISession, job: Job, max_workers=config.MAX_CONCURRENT_WORKERS
+    ):
         """
         Retrieve results from asynchronous, mapped endpoints. Use `max_workers` > 0 to enable concurrent retrieval of multiple pages.
         """
         super().__init__(session, job)
         self.max_workers = max_workers
         self._cache = {}
-    
+
     def keys(self):
         raise NotImplementedError()
-    
+
     def get_item(self, k):
         raise NotImplementedError()
-    
+
     def stream_sync(self):
         for k in self.keys():
             v = self[k]
@@ -317,22 +323,22 @@ class MappedAsyncJobFuture(StreamingAsyncJobFuture):
 
             for f in concurrent.futures.as_completed(futures):
                 yield f.result()
-    
+
     def stream(self):
         if self.max_workers > 0:
             return self.stream_parallel()
         return self.stream_sync()
-    
+
     def __getitem__(self, k):
         if k in self._cache:
             return self._cache[k]
         v = self.get_item(k)
         self._cache[k] = v
         return v
-    
+
     def __len__(self):
         return len(self.keys())
-    
+
     def __iter__(self):
         return self.stream()
 
@@ -340,7 +346,14 @@ class MappedAsyncJobFuture(StreamingAsyncJobFuture):
 class PagedAsyncJobFuture(StreamingAsyncJobFuture):
     DEFAULT_PAGE_SIZE = 1024
 
-    def __init__(self, session: APISession, job: Job, page_size=None, num_records=None, max_workers=config.MAX_CONCURRENT_WORKERS):
+    def __init__(
+        self,
+        session: APISession,
+        job: Job,
+        page_size=None,
+        num_records=None,
+        max_workers=config.MAX_CONCURRENT_WORKERS,
+    ):
         """
         Retrieve results from asynchronous, paged endpoints. Use `max_workers` > 0 to enable concurrent retrieval of multiple pages.
         """
