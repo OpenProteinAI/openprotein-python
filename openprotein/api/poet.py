@@ -171,7 +171,6 @@ def get_msa(self: APISession, job: Job) -> csv.reader:
     """
     return get_input(self, job, PoetInputType.MSA)
 
-
 def msa_post(session: APISession, msa_file=None, seed=None):
     """
     Create an MSA.
@@ -552,6 +551,8 @@ def poet_single_site_get(
         raise APIError(
             f"Failed to get poet single-site analysis results: {exc}"
         ) from exc
+
+
 
 
 class PoetSingleSiteFuture(PoetFutureMixin, AsyncJobFuture):

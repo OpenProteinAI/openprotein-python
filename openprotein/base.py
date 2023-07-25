@@ -3,11 +3,7 @@ import openprotein.config as config
 import requests
 from urllib.parse import urljoin
 from typing import Union
-from openprotein.errors import (
-    APIError,
-    AuthError,
-)
-
+from openprotein.errors import APIError, InvalidParameterError, MissingParameterError, AuthError
 
 class BearerAuth(requests.auth.AuthBase):
     """
