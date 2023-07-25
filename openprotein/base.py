@@ -21,16 +21,18 @@ class BearerAuth(requests.auth.AuthBase):
 class APISession(requests.Session):
     """Connection session."""
 
-    def __init__(self, username, password):
+    def __init__(self, username:str,
+                 password:str,
+                 backend:str = "https://dev.api.openprotein.ai/api/" ):
         super().__init__()
-        self.backend = "https://dev.api.openprotein.ai/api/"
+        self.backend = backend
         self.login(username, password)
         self.verify = True
 
-    def login(self, username, password):
+    def login(self, username:str, password:str):
         self.auth = self.get_auth_token(username, password)
 
-    def get_auth_token(self, username, password):
+    def get_auth_token(self, username:str, password:str):
         endpoint = "v1/login/user-access-token"
         url = urljoin(self.backend, endpoint)
         response = requests.post(
