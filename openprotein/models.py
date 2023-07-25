@@ -1,18 +1,75 @@
 from typing import Optional, List, Union, Dict, Literal
 from datetime import datetime
 from enum import Enum
+import numpy as np
 from pydantic import BaseModel, Field
-from openprotein.api.jobs import Job
+from openprotein.api.jobs import Job, JobStatus
 
+class ModelDescription(BaseModel):
+    citation_title: Optional[str]
+    doi: Optional[str]
+    summary: str
+
+class TokenInfo(BaseModel):
+    id: int
+    token: str
+    primary: bool
+    description: str
+
+class ModelMetadata(BaseModel):
+    model_id: str
+    description: ModelDescription
+    max_sequence_length: Optional[int]
+    dimension: int
+    output_types: List[str]
+    input_tokens: List[str]
+    output_tokens: List[str]
+    token_descriptions: List[List[TokenInfo]]
+
+class EmbeddedSequence(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
+
+    sequence: bytes
+    embedding: np.ndarray
+
+    def __iter__(self):
+        yield self.sequence
+        yield self.embedding
+
+    def __len__(self):
+        return 2
+    
+    def __getitem__(self, i):
+        if i == 0:
+            return self.sequence
+        elif i == 1:
+            return self.embedding
+    
+
+class SVDJob(Job):
+    pass
+
+
+class SVDMetadata(BaseModel):
+    id: str
+    status: JobStatus
+    created_date: Optional[datetime]
+    model_id: str
+    n_components: int
+    reduction: Optional[str]
+    sequence_length: Optional[int]
+
+    def is_done(self):
+        return self.status.done()
+    
 class DesignMetadata(BaseModel):
     y_mu: Optional[float]
     y_var: Optional[float]
 
-
 class DesignSubscore(BaseModel):
     score: int
     metadata: DesignMetadata
-
 
 class DesignStep(BaseModel):
     step: int

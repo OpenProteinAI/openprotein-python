@@ -1,7 +1,8 @@
 from openprotein.base import APISession
 from openprotein.api.jobs import Job, MappedAsyncJobFuture, PagedAsyncJobFuture, job_get, JobStatus
+from openprotein.errors import InvalidJob
 import openprotein.config as config
-
+from openprotein.models import (ModelDescription, TokenInfo, ModelMetadata, EmbeddedSequence, SVDMetadata, SVDJob, JobType)
 import pydantic
 import numpy as np
 from datetime import datetime
@@ -12,6 +13,34 @@ import io
 
 
 PATH_PREFIX = 'v1/embeddings'
+
+
+def load_job(session: APISession, job_id: str) -> Job:
+    """
+    Reload a Submitted job to resume from where you left off!
+
+
+    Parameters
+    ----------
+    session : APISession
+        The current API session for communication with the server.
+    job_id : str
+        The identifier of the job whose details are to be loaded.
+
+    Returns
+    -------
+    Job
+        Job
+
+    Raises
+    ------
+    HTTPError
+        If the request to the server fails.
+
+    """
+    endpoint = f"v1/jobs/{job_id}"
+    response = session.get(endpoint)
+    return pydantic.parse_obj_as(Job, response.json())
 
 def embedding_models_get(session: APISession) -> List[str]:
     """
@@ -31,31 +60,6 @@ def embedding_models_get(session: APISession) -> List[str]:
 
 # alias embedding_models_list_get to embedding_models_get
 embedding_models_list_get = embedding_models_get
-
-
-class ModelDescription(pydantic.BaseModel):
-    citation_title: Optional[str]
-    doi: Optional[str]
-    summary: str
-
-
-class TokenInfo(pydantic.BaseModel):
-    id: int
-    token: str
-    primary: bool
-    description: str
-
-
-class ModelMetadata(pydantic.BaseModel):
-    model_id: str
-    description: ModelDescription
-    max_sequence_length: Optional[int]
-    dimension: int
-    output_types: List[str]
-    input_tokens: List[str]
-    output_tokens: List[str]
-    token_descriptions: List[List[TokenInfo]]
-
 
 def embedding_model_get(session: APISession, model_id: str) -> ModelMetadata:
     endpoint = PATH_PREFIX + f'/models/{model_id}'
@@ -141,28 +145,6 @@ def decode_embedding(data: bytes) -> np.ndarray:
     s = io.BytesIO(data)
     return np.load(s, allow_pickle=False)
 
-
-class EmbeddedSequence(pydantic.BaseModel):
-    class Config:
-        arbitrary_types_allowed = True
-
-    sequence: bytes
-    embedding: np.ndarray
-
-    def __iter__(self):
-        yield self.sequence
-        yield self.embedding
-
-    def __len__(self):
-        return 2
-    
-    def __getitem__(self, i):
-        if i == 0:
-            return self.sequence
-        elif i == 1:
-            return self.embedding
-    
-
 class EmbeddingResultFuture(MappedAsyncJobFuture):
     """
     This class defines a future result from an inference request. Results are viewed as a mapping from
@@ -181,12 +163,16 @@ class EmbeddingResultFuture(MappedAsyncJobFuture):
         if self._sequences is None:
             self._sequences = embedding_get_sequences(self.session, self.job.job_id)
         return self._sequences
-    
+
+    @property
+    def id(self):
+        return self.job.job_id
+ 
     def keys(self):
         return self.sequences
     
-    def get_item(self, k):
-        data = embedding_get_sequence_result(self.session, self.job.job_id, k)
+    def get_item(self, sequence):
+        data = embedding_get_sequence_result(self.session, self.job.job_id, sequence)
         return decode_embedding(data)
 
 
@@ -246,24 +232,6 @@ def embedding_model_attn_post(session: APISession, model_id: str, sequences: Lis
     }
     response = session.post(endpoint, json=body)
     return Job(**response.json())
-
-
-class SVDJob(Job):
-    pass
-
-
-class SVDMetadata(pydantic.BaseModel):
-    id: str
-    status: JobStatus
-    created_date: Optional[datetime]
-    model_id: str
-    n_components: int
-    reduction: Optional[str]
-    sequence_length: Optional[int]
-
-    def is_done(self):
-        return self.status.done()
-
 
 def svd_list_get(session: APISession) -> List[SVDMetadata]:
     endpoint = PATH_PREFIX + '/svd'
@@ -460,7 +428,7 @@ class SVDModel:
         return job_get(self.session, self.id)
     
     def get_inputs(self) -> List[bytes]:
-        return embedding_get_sequences(self.id)
+        return embedding_get_sequences(self.session, job_id=self.id)
     
     def get_embeddings(self) -> EmbeddingResultFuture:
         return EmbeddingResultFuture(self.session, self.get_job())
@@ -521,3 +489,36 @@ class EmbeddingAPI:
     
     def get_svd_results(self, job):
         return EmbeddingResultFuture(self.session, job)
+
+    def load_job(self, job_id: str) -> Job:
+        """
+        Reload a Submitted job to resume from where you left off!
+
+
+        Parameters
+        ----------
+        job_id : str
+            The identifier of the job whose details are to be loaded.
+
+        Returns
+        -------
+        Job
+            Job
+
+        Raises
+        ------
+        HTTPError
+            If the request to the server fails.
+        InvalidJob
+            If the Job is of the wrong type
+
+        """
+        job_details = load_job(self.session, job_id)
+        sequences = embedding_get_sequences(self.session, job_id=job_id)
+        if "embed" not in job_details.job_type:
+            raise InvalidJob(
+                f"Job {job_id} is of type {job_details.job_type} not embeddings"
+            )
+        if len(sequences)==0:
+            raise InvalidJob(f"Unable to load sequences for job {job_id}")
+        return EmbeddingResultFuture(self.session, job_details, sequences=sequences)
