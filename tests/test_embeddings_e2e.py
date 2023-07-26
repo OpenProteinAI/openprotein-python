@@ -4,7 +4,10 @@ change seeds at the appropriate places to avoid backend caching
 set --longrun flag when running pytest to run these tests
 """
 import json
+import os
 import time
+from pathlib import Path
+from typing import Union
 
 import numpy as np
 
@@ -15,6 +18,9 @@ from fsspec.implementations.dirfs import DirFileSystem
 
 import pytest
 
+from esm import ESM2, ProteinBertModel
+from esm.pretrained import load_model_and_alphabet_core, _has_regression_weights
+
 from protembed.alphabets import Uniprot21
 from protembed.datasets import pad_tensor_1d
 from protembed.factory import ProtembedModelLoader
@@ -24,6 +30,19 @@ from openprotein import OpenProtein
 
 
 ALPHABET = Uniprot21()
+
+
+def load_model_and_alphabet_local(model_location, device):
+    """Load from local path. The regression weights need to be co-located"""
+    model_location = Path(model_location)
+    model_data = torch.load(str(model_location), map_location=device)
+    model_name = model_location.stem
+    if _has_regression_weights(model_name):
+        regression_location = str(model_location.with_suffix("")) + "-contact-regression.pt"
+        regression_data = torch.load(regression_location, map_location=device)
+    else:
+        regression_data = None
+    return load_model_and_alphabet_core(model_name, model_data, regression_data)
 
 
 @pytest.fixture()
@@ -44,6 +63,19 @@ def loader() -> ProtembedModelLoader:
     return ProtembedModelLoader(dir_fs)
 
 
+@pytest.fixture()
+def sequences() -> list[bytes]:
+    np.random.seed(188501)
+    return [
+        ALPHABET.decode(np.random.randint(
+            low=0,
+            high=21,
+            size=np.random.randint(250, 500),
+        ))
+        for _ in range(5)
+    ]
+
+
 @pytest.mark.longrun
 @pytest.mark.parametrize("local_model_id,model_id", [
     ("prosst", "prot-seq"),
@@ -55,18 +87,9 @@ def test_protembed(
     local_model_id: str,
     session: OpenProtein,
     model_id: str,
+    sequences: list[bytes],
 ):
     print("testing...", model_id)
-    np.random.seed(188256)
-    sequences = [
-        ALPHABET.decode(np.random.randint(
-            low=0,
-            high=21,
-            size=np.random.randint(250, 500),
-        ))
-        for _ in range(5)
-    ]
-
     local_model = loader.load_model(local_model_id, device=torch.device("cuda"))
     model = session.embedding.get_model(model_id=model_id)
 
@@ -81,6 +104,10 @@ def test_protembed(
         )
         embeddings = local_model.embed(sequences_as_idxs, padding_mask=mask)
         logits = local_model.logits(embeddings)
+    if isinstance(attn, list):
+        # TODO: kinda hacky. doing this b/c inferface of prosst and rotaformer are not
+        # the same
+        attn = torch.stack(attn, dim=1)
     attn = [
         x.float().cpu().numpy()[-1][:, :len(s), :len(s)]
         for s, x in zip(sequences, attn)
@@ -99,8 +126,16 @@ def test_protembed(
     result = {s: x for s, x in future.get()}
     for s, actual in zip(sequences, attn):
         mean_delta = np.abs(result[s] - actual).mean()
-        print("attn", mean_delta)
-        assert np.abs(result[s] - actual).mean() < 1e-2
+        random_mean_delta = np.abs(
+            result[s] - actual[np.random.permutation(len(actual))]
+        ).mean()
+        print(
+            "attn",
+            mean_delta,
+            random_mean_delta,
+            random_mean_delta / mean_delta,
+        )
+        assert np.abs(result[s] - actual).mean() < 1e-4
 
     for reduction in [None, "MEAN", "SUM"]:
         future = model.embed(sequences, reduction=reduction)
@@ -113,6 +148,129 @@ def test_protembed(
             elif reduction == "SUM":
                 # compare means to average out errors
                 actual = actual.mean(axis=0)
+                result[s] = result[s] / len(s)
+            mean_delta = np.abs(result[s] - actual).mean()
+            print("embed", reduction, mean_delta)
+            assert np.abs(result[s] - actual).mean() < 1e-2
+
+    future = model.logits(sequences)
+    time.sleep(1)
+    future.wait_until_done()
+    result = {s: x for s, x in future.get()}
+    for s, actual in zip(sequences, logits):
+        mean_delta = np.abs(result[s] - actual).mean()
+        print("logits", mean_delta)
+        assert np.abs(result[s] - actual).mean() < 1e-2
+
+
+@pytest.mark.longrun
+@pytest.mark.parametrize(
+    "model_id", ["esm1b_t33_650M_UR50S", "esm1v_t33_650M_UR90S_1", "esm2_t6_8M_UR50D"]
+)
+@torch.inference_mode()
+def test_esm(session: OpenProtein, model_id: str, sequences: list[bytes]):
+    print("testing...", model_id)
+    device = (
+        torch.device("cpu")  # using cpu in case of low vram
+        if model_id != "esm2_t6_8M_UR50D" else torch.device("cuda")
+    )
+    local_model: Union[ESM2, ProteinBertModel]
+    model_dir = "data/models"
+    model_pt_path = os.path.join(model_dir, f"{model_id}.pt")
+    local_model, alphabet = load_model_and_alphabet_local(
+        model_pt_path, device
+    )
+    batch_converter = alphabet.get_batch_converter()
+    local_model = local_model.eval()  # disables dropout for deterministic results
+    if isinstance(local_model, ESM2):
+        # half precision inference should be safe, per https://github.com/facebookresearch/esm/issues/283#issuecomment-1254283417
+        local_model = local_model.half()
+    local_model = local_model.to(device)
+    can_predict_contacts = _has_regression_weights(model_id)
+
+    _, _, batch_tokens = batch_converter(list(zip(
+        [f"{i}" for i in range(len(sequences))],
+        [s.decode().replace("X", "<mask>") for s in sequences],
+    )))
+    results = local_model(
+        batch_tokens.to(device),
+        repr_layers=[local_model.num_layers],
+        need_head_weights=True,
+        return_contacts=can_predict_contacts,
+    )
+
+    embeddings = results["representations"][local_model.num_layers].float()
+    attn = results["attentions"].float()
+    logits = results["logits"].float()
+    if can_predict_contacts:
+        contacts = results["contacts"].float()
+    else:
+        contacts = None
+
+    batch_lens = (batch_tokens != alphabet.padding_idx).sum(1)
+    embeddings = [
+        embeddings[i, :tokens_len]
+        for i, tokens_len in enumerate(batch_lens)
+    ]
+    mean_embeddings = torch.vstack([e[1:-1].mean(dim=0) for e in embeddings])
+    sum_embeddings = torch.vstack([e[1:-1].sum(dim=0) for e in embeddings])
+    attn = [
+        attn[i, -1, :, :tokens_len, :tokens_len]
+        for i, tokens_len in enumerate(batch_lens)
+    ]
+    logits = [
+        logits[i, :tokens_len]
+        for i, tokens_len in enumerate(batch_lens)
+    ]
+    if contacts is not None:
+        contacts = [
+            contacts[i, :tokens_len-2, :tokens_len-2]
+            for i, tokens_len in enumerate(batch_lens)
+        ]
+    else:
+        contacts = None
+
+    embeddings = [x.float().cpu().numpy() for x in embeddings]
+    mean_embeddings = [x.float().cpu().numpy() for x in mean_embeddings]
+    sum_embeddings = [x.float().cpu().numpy() for x in sum_embeddings]
+    attn = [x.float().cpu().numpy() for x in attn]
+    logits = [x.float().cpu().numpy() for x in logits]
+    contacts = (
+        [x.float().cpu().numpy() for x in contacts]
+        if contacts is not None else None
+    )
+
+    model = session.embedding.get_model(model_id=model_id)
+    future = model.attn(sequences)
+    time.sleep(1)
+    future.wait_until_done()
+    result = {s: x for s, x in future.get()}
+    for s, actual in zip(sequences, attn):
+        mean_delta = np.abs(result[s] - actual).mean()
+        random_mean_delta = np.abs(
+            result[s] - actual[np.random.permutation(len(actual))]
+        ).mean()
+        print(
+            "attn",
+            mean_delta,
+            random_mean_delta,
+            random_mean_delta / mean_delta,
+        )
+        assert np.abs(result[s] - actual).mean() < 1e-4
+
+    for reduction in [None, "MEAN", "SUM"]:
+        future = model.embed(sequences, reduction=reduction)
+        time.sleep(1)
+        future.wait_until_done()
+        result = {s: x for s, x in future.get()}
+        for i, s in enumerate(sequences):
+            if reduction is None:
+                actual = embeddings[i]
+            elif reduction == "MEAN":
+                actual = mean_embeddings[i]
+            elif reduction == "SUM":
+                # compare means to average out errors
+                actual = sum_embeddings[i] / len(s)
                 result[s] = result[s] / len(s)
             mean_delta = np.abs(result[s] - actual).mean()
             print("embed", reduction, mean_delta)
