@@ -82,7 +82,7 @@ def test_poet_single_site_post(api_session_mock):
 
 def test_poet_single_site_get(api_session_mock):
     job_id = '12345'
-    results =   {"score": [ -1.0],"name": "name1", "sequence": b"X0X"}
+    results =   {"score": [ -1.0],"name": "name1", "sequence": b"input"}
     response_mock = ResponseMock()
     response_mock._json = {'result': [results], 'status':'SUCCESS','job_type':"/poet/single_site", "job_id":job_id}
     api_session_mock.get = MagicMock(return_value=response_mock)

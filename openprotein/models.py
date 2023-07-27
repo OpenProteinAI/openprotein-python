@@ -1,8 +1,9 @@
+# pydantic models
 from typing import Optional, List, Union, Dict, Literal
 from datetime import datetime
 from enum import Enum
 import numpy as np
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from openprotein.api.jobs import Job, JobStatus
 
 class ModelDescription(BaseModel):
@@ -39,13 +40,13 @@ class EmbeddedSequence(BaseModel):
 
     def __len__(self):
         return 2
-    
+
     def __getitem__(self, i):
         if i == 0:
             return self.sequence
         elif i == 1:
             return self.embedding
-    
+
 
 class SVDJob(Job):
     pass
@@ -224,11 +225,11 @@ class AssayDataPage(BaseModel):
 
 
 class MSAJob(Job):
-    msa_id: str
+    msa_id: Optional[str]
 
 
-class PromptJob(Job):
-    prompt_id: str
+class PromptJob(MSAJob):
+    prompt_id: Optional[str]
 
 
 class MSASamplingMethod(str, Enum):
@@ -239,10 +240,7 @@ class MSASamplingMethod(str, Enum):
     TOP = "TOP"
 
 
-class PoetSiteResult(BaseModel):
-    sequence: bytes
-    score: List[float]
-    name: Optional[str]
+
 
 
 class PromptPostParams(BaseModel):
@@ -257,16 +255,21 @@ class PromptPostParams(BaseModel):
     num_ensemble_prompts: int = 1
     random_seed: Optional[int] = None
 
+#class PoetSiteResult(BaseModel):
+#    # obsolete
+#    sequence: bytes
+#    score: List[float]
+#    name: Optional[str]
 
-class PoetSingleSiteJob(Job):
-    parent_id: Optional[str]
-    s3prefix: Optional[str]
-    page_size: Optional[int]
-    page_offset: Optional[int]
-    num_rows: Optional[int]
-    result: Optional[List[PoetSiteResult]]
-    # n_completed: Optional[int]
-
+#class PoetSingleSiteJob(Job):
+#    # obsolete
+#    parent_id: Optional[str]
+#    s3prefix: Optional[str]
+#    page_size: Optional[int]
+#    page_offset: Optional[int]
+#    num_rows: Optional[int]
+#    result: Optional[List[PoetSiteResult]]
+#    # n_completed: Optional[int]
 
 class PoetInputType(str, Enum):
     INPUT = "RAW"
@@ -279,7 +282,6 @@ class PoetScoreResult(BaseModel):
     score: List[float]
     name: Optional[str]
 
-
 class PoetScoreJob(Job):
     parent_id: Optional[str]
     s3prefix: Optional[str]
@@ -289,6 +291,26 @@ class PoetScoreJob(Job):
     result: Optional[List[PoetScoreResult]]
     n_completed: Optional[int]
 
+class PoetSSPResult(BaseModel):
+    sequence: bytes
+    score: List[float]
+    name: Optional[str]
+
+    @validator('sequence', pre=True, always=True)
+    def replacename(cls, value):
+        """rename X0X"""
+        if "X0X" in str(value):
+            return b'input'
+        return value
+
+class PoetSSPJob(PoetScoreJob):
+    parent_id: Optional[str]
+    s3prefix: Optional[str]
+    page_size: Optional[int]
+    page_offset: Optional[int]
+    num_rows: Optional[int]
+    result: Optional[List[PoetSSPResult]]
+    n_completed: Optional[int]
 
 class Prediction(BaseModel):
     """Prediction details."""
