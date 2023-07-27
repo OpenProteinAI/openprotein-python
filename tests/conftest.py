@@ -1,5 +1,4 @@
 def pytest_addoption(parser):
-
     # adapted from https://stackoverflow.com/a/33181491
     parser.addoption('--longrun', action='store_true', dest="longrun",
                  default=False, help="enable longrundecorated tests")
