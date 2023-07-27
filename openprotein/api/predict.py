@@ -416,7 +416,7 @@ class PredictAPI:
             )
 
         sequence_dataset = SequenceDataset(sequences=sequences)
-        job = create_predict_job(self.session, sequence_dataset, train_job)
+        job = create_predict_job(self.session, sequence_dataset, train_job, model_ids=model_ids)
         return PredictFuture(self.session, job)
 
     def create_predict_single_site(
@@ -466,7 +466,7 @@ class PredictAPI:
             )
 
         sequence_dataset = SequenceData(sequence=sequence)
-        job = create_predict_single_site(self.session, sequence_dataset, train_job)
+        job = create_predict_single_site(self.session, sequence_dataset, train_job, model_ids=model_ids)
         return PredictFuture(self.session, job)
 
     def get_prediction_results(
