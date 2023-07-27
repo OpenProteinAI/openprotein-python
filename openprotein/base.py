@@ -3,6 +3,10 @@ import openprotein.config as config
 import requests
 from urllib.parse import urljoin
 from typing import Union
+
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+
 from openprotein.errors import APIError, InvalidParameterError, MissingParameterError, AuthError
 
 class BearerAuth(requests.auth.AuthBase):
@@ -26,8 +30,17 @@ class APISession(requests.Session):
                  backend:str = "https://dev.api.openprotein.ai/api/" ):
         super().__init__()
         self.backend = backend
-        self.login(username, password)
         self.verify = True
+
+        # Custom retry strategies
+        #auto retry for pesky connection reset errors and others
+        # 503 will catch if BE is refreshing
+        retry = Retry(total=4,
+                      backoff_factor=3, #0,1,4,13s
+                      status_forcelist=[500, 502, 503, 504, 101, 104]) 
+        adapter = HTTPAdapter(max_retries=retry)
+        self.mount('https://', adapter)
+        self.login(username, password)
 
     def login(self, username:str, password:str):
         self.auth = self.get_auth_token(username, password)
@@ -35,7 +48,7 @@ class APISession(requests.Session):
     def get_auth_token(self, username:str, password:str):
         endpoint = "v1/login/user-access-token"
         url = urljoin(self.backend, endpoint)
-        response = requests.post(
+        response = self.post(
             url, params={"username": username, "password": password}, timeout=3
         )
         if response.status_code == 200:
@@ -54,7 +67,7 @@ class APISession(requests.Session):
         response = super().request(method, full_url, *args, **kwargs)
         if response.status_code not in [200, 201, 202]:
             raise APIError(
-                f"Request failed with status {response.status_code} and message {response.text} "
+                f"Request failed: \n\t status: {response.status_code} \n\t message: {response.text} "
             )
         return response
 
