@@ -41,9 +41,9 @@ class Job(BaseModel):
     start_date: Optional[datetime]
     end_date: Optional[datetime]
     prerequisite_job_id: Optional[str]
-    progress_message: Optional[str]
+    progress_message: Optional[str] = None
     progress_counter: Optional[int]
-    num_records: Optional[int]
+    num_records: Optional[int] = None
 
     def refresh(self, session: APISession):
         """refresh job status"""

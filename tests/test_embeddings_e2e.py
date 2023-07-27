@@ -7,7 +7,7 @@ import json
 import os
 import time
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
 import numpy as np
 
@@ -27,6 +27,8 @@ from protembed.factory import ProtembedModelLoader
 
 import openprotein
 from openprotein import OpenProtein
+from openprotein.api.embedding import SVDModel
+from tests.utils.svd import TorchLowRankSVDTransform
 
 
 ALPHABET = Uniprot21()
@@ -65,13 +67,22 @@ def loader() -> ProtembedModelLoader:
 
 @pytest.fixture()
 def sequences() -> list[bytes]:
-    np.random.seed(188501)
+    rng = np.random.default_rng(188501)
     return [
-        ALPHABET.decode(np.random.randint(
+        ALPHABET.decode(rng.integers(
             low=0,
             high=21,
-            size=np.random.randint(250, 500),
+            size=rng.integers(250, 500),
         ))
+        for _ in range(5)
+    ]
+
+
+@pytest.fixture()
+def same_length_sequences() -> list[bytes]:
+    rng = np.random.default_rng(376735)
+    return [
+        ALPHABET.decode(rng.integers(low=0, high=21, size=331))
         for _ in range(5)
     ]
 
@@ -284,3 +295,64 @@ def test_esm(session: OpenProtein, model_id: str, sequences: list[bytes]):
         mean_delta = np.abs(result[s] - actual).mean()
         print("logits", mean_delta)
         assert np.abs(result[s] - actual).mean() < 1e-2
+
+
+@pytest.mark.parametrize("reduction", [None, "MEAN", "SUM"])
+@pytest.mark.parametrize("random_state,should_fail", [(47, False), (100, True)])
+def test_svd(
+    session: OpenProtein,
+    same_length_sequences: list[bytes],
+    reduction: Optional[str],
+    random_state: int,
+    should_fail: bool,
+):
+    print("testing svd...", reduction, random_state, should_fail)
+    sequences = same_length_sequences
+    # this is an extremely strong test!
+    # it depends on the svd random_state being the same
+    model_id = "prot-seq"
+    n_components = 1024
+    model = session.embedding.get_model(model_id=model_id)
+
+    # get embeddings to svd
+    future = model.embed(sequences, reduction=reduction)
+    time.sleep(1)
+    future.wait_until_done()
+    result = {s: x for s, x in future.get()}
+    embeddings = np.stack([result[s] for s in sequences])
+    if embeddings.ndim > 2:
+        assert embeddings.ndim == 3
+        embeddings = embeddings.reshape(len(sequences), -1)
+    assert embeddings.ndim == 2
+
+    # compute svd locally
+    local_svd = TorchLowRankSVDTransform(
+        n_components=n_components, random_state=random_state, device="cpu"
+    )
+    reduced_embeddings = local_svd.fit_transform(
+        torch.from_numpy(embeddings).float()
+    ).cpu().numpy()
+
+    # get svd from remote
+    svd: SVDModel = model.fit_svd(sequences, n_components=n_components, reduction=reduction)
+    time.sleep(1)
+    svd.get_job().wait_until_done(session=session)
+    future = svd.embed(sequences)
+    time.sleep(1)
+    future.wait_until_done()
+    result = {s: x for s, x in future.get()}
+    for s, actual in zip(sequences, reduced_embeddings):
+        mean_delta = np.abs(result[s] - actual).mean()
+        random_mean_delta = np.abs(
+            result[s] - actual[np.random.permutation(len(actual))]
+        ).mean()
+        print(
+            "svd embed",
+            mean_delta,
+            random_mean_delta,
+            random_mean_delta / mean_delta,
+        )
+        if not should_fail:
+            assert random_mean_delta / mean_delta > 1e4
+        else:
+            assert random_mean_delta / mean_delta < 1e2
