@@ -65,7 +65,8 @@ class APISession(requests.Session):
     ):
         full_url = urljoin(self.backend, url)
         response = super().request(method, full_url, *args, **kwargs)
-        if response.status_code not in [200, 201, 202]:
+        # allow 400 to pass to get caught by autherror
+        if response.status_code not in [200, 201, 202, 400]:
             raise APIError(
                 f"Request failed: \n\t status: {response.status_code} \n\t message: {response.text} "
             )
