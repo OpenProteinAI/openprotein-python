@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict, Union, BinaryIO, Iterator
+from typing import Optional, List, Union, BinaryIO, Iterator
 from io import BytesIO
 import random
 import csv
@@ -6,7 +6,14 @@ import codecs
 import requests
 
 from openprotein.base import APISession
-from openprotein.api.jobs import Job, AsyncJobFuture, StreamingAsyncJobFuture, job_get
+from openprotein.api.jobs import (
+    Job,
+    AsyncJobFuture,
+    StreamingAsyncJobFuture,
+    job_get,
+    job_args_get,
+)
+from openprotein.api.jobs import load_job #as base_load_job
 import openprotein.config as config
 
 from openprotein.models import (
@@ -15,10 +22,21 @@ from openprotein.models import (
     PoetScoreJob,
     PoetScoreResult,
     PromptJob,
-    PoetSingleSiteJob,
     MSAJob,
+    JobType,
+    PoetSSPJob,
+    PoetSSPResult,
 )
-from openprotein.errors import InvalidParameterError, MissingParameterError, APIError
+from openprotein.errors import (
+    InvalidParameterError,
+    MissingParameterError,
+    APIError,
+    InvalidJob,
+)
+
+
+#def load_job(session, job_id):
+#    return base_load_job(session, job_id)
 
 
 def csv_stream(response: requests.Response) -> csv.reader:
@@ -170,6 +188,7 @@ def get_msa(self: APISession, job: Job) -> csv.reader:
         A CSV reader for the MSA data.
     """
     return get_input(self, job, PoetInputType.MSA)
+
 
 def msa_post(session: APISession, msa_file=None, seed=None):
     """
@@ -412,6 +431,162 @@ class PoetFutureMixin:
         """See child function docs."""
         return get_msa(self.session, self.job)
 
+    @property
+    def id(self):
+        return self.job.job_id
+
+
+class MSAFuture(PoetFutureMixin, AsyncJobFuture):
+    """
+    Represents a result of a MSA job.
+
+    Attributes:
+        session (APISession): An instance of APISession for API interactions.
+        job (Job): The PoET scoring job.
+        page_size (int): The number of results to fetch in a single page.
+
+    Methods:
+        get(verbose=False) -> List[PoetScoreResult]:
+            Get the final results of the PoET scoring job.
+
+    """
+
+    def __init__(self, session: APISession, job: Job, page_size=config.POET_PAGE_SIZE):
+        """
+        init a PoetScoreFuture instance.
+
+        Args:
+            session (APISession): An instance of APISession for API interactions.
+            job (Job): The PoET scoring job.
+            page_size (int, optional): The number of results to fetch in a single page. Defaults to config.POET_PAGE_SIZE.
+
+        """
+        super().__init__(session, job)
+        self.page_size = page_size
+        self._msa_id = None
+        self._prompt_id = None
+
+    def __str__(self) -> str:
+        return str(self.job)
+
+    def __repr__(self) -> str:
+        return repr(self.job)
+    
+    @property
+    def id(self):
+        return self.job.id
+
+    @property
+    def prompt_id(self):
+        if self.job.job_type == "/align/prompt" and self._prompt_id is None:
+            self._prompt_id = self.job.job_id
+        return self._prompt_id
+
+    @property
+    def msa_id(self):
+        if self.job.job_type == "/align/align" and self._msa_id is None:
+            self._msa_id = self.job.job_id
+        return self._msa_id
+
+    def wait(self, verbose: bool = False):
+        _ = self.job.wait(self.session,
+                             interval=config.POLLING_INTERVAL,
+                             timeout=config.POLLING_TIMEOUT,
+                             verbose=False)  # no progress to track
+        return self.get()
+
+    def get(self, verbose: bool = False):
+        return self.get_msa()
+
+
+class PromptFuture(MSAFuture):
+    """
+    Represents a result of a prompt job.
+
+    Attributes:
+        session (APISession): An instance of APISession for API interactions.
+        job (Job): The PoET scoring job.
+        page_size (int): The number of results to fetch in a single page.
+
+    Methods:
+        get(verbose=False) -> List[PoetScoreResult]:
+            Get the final results of the PoET scoring job.
+
+    """
+
+    def __init__(
+        self,
+        session: APISession,
+        job: Job,
+        page_size=config.POET_PAGE_SIZE,
+        msa_id: Optional[str] = None,
+    ):
+        """
+        init a PoetScoreFuture instance.
+
+        Args:
+            session (APISession): An instance of APISession for API interactions.
+            job (Job): The PoET scoring job.
+            page_size (int, optional): The number of results to fetch in a single page. Defaults to config.POET_PAGE_SIZE.
+
+        """
+        super().__init__(session, job)
+        self.page_size = page_size
+        self._msa_id = msa_id
+
+    def sample_prompt(
+        self,
+        num_sequences: Optional[int] = None,
+        num_residues: Optional[int] = None,
+        method: MSASamplingMethod = MSASamplingMethod.NEIGHBORS_NONGAP_NORM_NO_LIMIT,
+        homology_level: float = 0.8,
+        max_similarity: float = 1.0,
+        min_similarity: float = 0.0,
+        always_include_seed_sequence: bool = False,
+        num_ensemble_prompts: int = 1,
+        random_seed: Optional[int] = None,
+    ):
+        """
+        Create a protein sequence prompt from a linked MSA (Multiple Sequence Alignment) for PoET Jobs.
+
+        Args:
+            msa (str): The msa Job to use in prompt creation.
+            num_sequences (int, optional): Maximum number of sequences in the prompt. Must be  <100.
+            num_residues (int, optional): Maximum number of residues (tokens) in the prompt. Must be less than 24577.
+            method (MSASamplingMethod, optional): Method to use for MSA sampling. Defaults to NEIGHBORS_NONGAP_NORM_NO_LIMIT.
+            homology_level (float, optional): Level of homology for sequences in the MSA (neighbors methods only). Must be between 0 and 1. Defaults to 0.8.
+            max_similarity (float, optional): Maximum similarity between sequences in the MSA and the seed. Must be between 0 and 1. Defaults to 1.0.
+            min_similarity (float, optional): Minimum similarity between sequences in the MSA and the seed. Must be between 0 and 1. Defaults to 0.0.
+            always_include_seed_sequence (bool, optional): Whether to always include the seed sequence in the MSA. Defaults to False.
+            num_ensemble_prompts (int, optional): Number of ensemble jobs to run. Defaults to 1.
+            random_seed (int, optional): Seed for random number generation. Defaults to a random number between 0 and 2**32-1.
+
+        Raises:
+            InvalidParameterError: If provided parameter values are not in the allowed range.
+            MissingParameterError: If both or none of 'num_sequences', 'num_residues' is specified.
+
+        Returns:
+            PromptJob
+        """
+        msa_id = self.msa_id
+        job = prompt_post(
+            self.session,
+            msa_id,
+            num_sequences=num_sequences,
+            num_residues=num_residues,
+            method=method,
+            homology_level=homology_level,
+            max_similarity=max_similarity,
+            min_similarity=min_similarity,
+            always_include_seed_sequence=always_include_seed_sequence,
+            num_ensemble_prompts=num_ensemble_prompts,
+            random_seed=random_seed,
+        )
+        return PromptFuture(self.session, job, self.msa_id)
+
+    def get(self, verbose: bool = False):
+        return self.get_prompt()
+
 
 class PoetScoreFuture(PoetFutureMixin, AsyncJobFuture):
     """
@@ -481,7 +656,7 @@ class PoetScoreFuture(PoetFutureMixin, AsyncJobFuture):
 
 def poet_single_site_post(
     session: APISession, variant, parent_id=None, prompt_id=None
-) -> PoetSingleSiteJob:
+) -> PoetSSPJob:
     """
     Request PoET single-site analysis for a variant.
 
@@ -499,7 +674,7 @@ def poet_single_site_post(
         APIError: If the input parameters are invalid or there is an issue with the API request.
 
     Returns:
-        PoetSingleSiteJob: An object representing the status and results of the PoET single-site analysis job.
+        PoetSSPJob: An object representing the status and results of the PoET single-site analysis job.
         Note that the input variant score is given as `X0X`
     """
     endpoint = "v1/poet/single_site"
@@ -517,14 +692,14 @@ def poet_single_site_post(
 
     try:
         response = session.post(endpoint, params=params)
-        return PoetSingleSiteJob(**response.json())
+        return PoetSSPJob(**response.json())
     except Exception as exc:
         raise APIError(f"Failed to post poet single-site analysis: {exc}") from exc
 
 
 def poet_single_site_get(
     session: APISession, job_id: str, page_size: int = 100, page_offset: int = 0
-) -> PoetSingleSiteJob:
+) -> PoetSSPJob:
     """
     Fetch paged results of a PoET single-site analysis job.
 
@@ -538,7 +713,7 @@ def poet_single_site_get(
         APIError: If there is an issue with the API request.
 
     Returns:
-        PoetSingleSiteJob: An object representing the status and results of the PoET single-site analysis job.
+        PoetSSPJob: An object representing the status and results of the PoET single-site analysis job.
     """
     endpoint = "v1/poet/single_site"
 
@@ -546,13 +721,11 @@ def poet_single_site_get(
 
     try:
         response = session.get(endpoint, params=params)
-        return PoetSingleSiteJob(**response.json())
+        return PoetSSPJob(**response.json())
     except Exception as exc:
         raise APIError(
             f"Failed to get poet single-site analysis results: {exc}"
         ) from exc
-
-
 
 
 class PoetSingleSiteFuture(PoetFutureMixin, AsyncJobFuture):
@@ -583,7 +756,7 @@ class PoetSingleSiteFuture(PoetFutureMixin, AsyncJobFuture):
         super().__init__(session, job)
         self.page_size = page_size
 
-    def get(self, verbose=False) -> Dict[bytes, float]:
+    def get(self, verbose=False) -> List[PoetSSPResult]:
         """
         Get the results of a PoET single-site analysis job.
 
@@ -599,9 +772,10 @@ class PoetSingleSiteFuture(PoetFutureMixin, AsyncJobFuture):
         """
         job_id = self.job.job_id
         step = self.page_size
-        results = {}
-        offset = 0
+
+        results = []
         num_returned = step
+        offset = 0
 
         while num_returned >= step:
             try:
@@ -611,15 +785,13 @@ class PoetSingleSiteFuture(PoetFutureMixin, AsyncJobFuture):
                     page_offset=offset,
                     page_size=step,
                 )
-                for r in response.result:
-                    results[r.sequence] = r.score
-                offset += step
+                results += response.result
                 num_returned = len(response.result)
+                offset += num_returned
             except APIError as exc:
                 if verbose:
                     print(f"Failed to get results: {exc}")
                 return results
-
         return results
 
 
@@ -756,13 +928,13 @@ class PoetGenerateFuture(PoetFutureMixin, StreamingAsyncJobFuture):
             print(f"Failed to stream PoET generation results: {exc}")
 
 
-Prompt = Union[PromptJob, str]
+Prompt = Union[PromptFuture, str]
 
 
 def validate_prompt(prompt: Prompt):
     """helper function to validate prompt_id is prompt type"""
     prompt_id = prompt
-    if isinstance(prompt, PromptJob):
+    if isinstance(prompt, PromptFuture):
         prompt_id = prompt.prompt_id
     return prompt_id
 
@@ -773,7 +945,71 @@ class PoetAPI:
     def __init__(self, session: APISession):
         self.session = session
 
-    def upload_msa(self, msa_file) -> MSAJob:
+    def load_prompt_job(self, prompt_id: str) -> PromptFuture:
+        """
+        Reload a previously ran prompt job to resume where you left off.
+
+        Args:
+            prompt_id (str): ID for job
+
+        Raises:
+            InvalidJob: if job is of incorrect type
+
+        Returns:
+            PromptFuture: Job to resume workflows
+        """
+        job = load_job(self.session, prompt_id)
+        if job.job_type != JobType.align_prompt:
+            raise InvalidJob(f"job {prompt_id} is not a prompt job!")
+        msa_id = job_args_get(self.session, prompt_id).get("root_msa")
+        return PromptFuture(self.session, job, msa_id=msa_id)
+
+    def load_msa_job(self, msa_id: str) -> PromptFuture:
+        """
+        Reload a previously ran MSA job to resume where you left off.
+
+        Args:
+            msa_id (str): ID for job
+
+        Raises:
+            InvalidJob: if job is of incorrect type
+
+        Returns:
+            PromptFuture: Job to resume workflows
+        """
+        job = load_job(self.session, msa_id)
+        if job.job_type != JobType.align:
+            raise InvalidJob(f"job {msa_id} is not a MSA job!")
+        return PromptFuture(self.session, job)
+
+    def load_poet_job(self,
+                      job_id: str
+                      ) -> Union[PoetSingleSiteFuture,
+                                 PoetScoreFuture,
+                                 PoetGenerateFuture]:
+        """
+        Reload a previously ran poet job to resume where you left off.
+
+        Args:
+            job_id (str): ID for job
+
+        Raises:
+            InvalidJob: if job is of incorrect type
+
+        Returns:
+            PromptFuture: Job to resume workflows
+        """
+        job = load_job(self.session, job_id)
+        if job.job_type == JobType.prots2prot_single_site:
+            return PoetSingleSiteFuture(self.session, job)
+        if job.job_type == JobType.prots2prot_generate:
+            return PoetScoreFuture(self.session, job)
+        if job.job_type == JobType.prots2prot_generate:
+            return PoetGenerateFuture(self.session, job)
+        else:
+            raise InvalidJob(f"job {job_id} is not a PoET job!")
+
+    def upload_msa(self, msa_file) -> PromptFuture:
         """
         Upload an MSA from file.
 
@@ -786,9 +1022,10 @@ class PoetAPI:
         Returns:
             MSAJob:
         """
-        return msa_post(self.session, msa_file=msa_file)
+        job = msa_post(self.session, msa_file=msa_file)
+        return PromptFuture(self.session, job)
 
-    def create_msa(self, seed: bytes) -> MSAJob:
+    def create_msa(self, seed: bytes) -> PromptFuture:
         """
         Construct an MSA via homology search with the seed sequence.
 
@@ -802,9 +1039,10 @@ class PoetAPI:
             MSAJob
         """
 
-        return msa_post(self.session, seed=seed)
+        job = msa_post(self.session, seed=seed)
+        return PromptFuture(self.session, job)
 
-    def upload_prompt(self, prompt_file) -> PromptJob:
+    def upload_prompt(self, prompt_file) -> PromptFuture:
         """
         Directly upload a prompt.
 
@@ -820,59 +1058,8 @@ class PoetAPI:
         Returns:
             PromptJob: An object representing the status and results of the prompt job.
         """
-        return upload_prompt_post(self.session, prompt_file)
-
-    def sample_prompt(
-        self,
-        msa: Union[MSAJob, str],
-        num_sequences: Optional[int] = None,
-        num_residues: Optional[int] = None,
-        method: MSASamplingMethod = MSASamplingMethod.NEIGHBORS_NONGAP_NORM_NO_LIMIT,
-        homology_level: float = 0.8,
-        max_similarity: float = 1.0,
-        min_similarity: float = 0.0,
-        always_include_seed_sequence: bool = False,
-        num_ensemble_prompts: int = 1,
-        random_seed: Optional[int] = None,
-    ) -> PromptJob:
-        """
-        Create a protein sequence prompt from a linked MSA (Multiple Sequence Alignment) for PoET Jobs.
-
-        Args:
-            msa (str): The msa Job to use in prompt creation.
-            num_sequences (int, optional): Maximum number of sequences in the prompt. Must be  <100.
-            num_residues (int, optional): Maximum number of residues (tokens) in the prompt. Must be less than 24577.
-            method (MSASamplingMethod, optional): Method to use for MSA sampling. Defaults to NEIGHBORS_NONGAP_NORM_NO_LIMIT.
-            homology_level (float, optional): Level of homology for sequences in the MSA (neighbors methods only). Must be between 0 and 1. Defaults to 0.8.
-            max_similarity (float, optional): Maximum similarity between sequences in the MSA and the seed. Must be between 0 and 1. Defaults to 1.0.
-            min_similarity (float, optional): Minimum similarity between sequences in the MSA and the seed. Must be between 0 and 1. Defaults to 0.0.
-            always_include_seed_sequence (bool, optional): Whether to always include the seed sequence in the MSA. Defaults to False.
-            num_ensemble_prompts (int, optional): Number of ensemble jobs to run. Defaults to 1.
-            random_seed (int, optional): Seed for random number generation. Defaults to a random number between 0 and 2**32-1.
-
-        Raises:
-            InvalidParameterError: If provided parameter values are not in the allowed range.
-            MissingParameterError: If both or none of 'num_sequences', 'num_residues' is specified.
-
-        Returns:
-            PromptJob
-        """
-        msa_id = msa
-        if isinstance(msa, MSAJob):
-            msa_id = msa.msa_id
-        return prompt_post(
-            self.session,
-            msa_id,
-            num_sequences=num_sequences,
-            num_residues=num_residues,
-            method=method,
-            homology_level=homology_level,
-            max_similarity=max_similarity,
-            min_similarity=min_similarity,
-            always_include_seed_sequence=always_include_seed_sequence,
-            num_ensemble_prompts=num_ensemble_prompts,
-            random_seed=random_seed,
-        )
+        job = upload_prompt_post(self.session, prompt_file)
+        return PromptFuture(self.session, job)
 
     def get_prompt(self, job: Job, prompt_index: Optional[int] = None) -> csv.reader:
         """

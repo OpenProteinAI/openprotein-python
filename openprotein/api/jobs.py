@@ -1,15 +1,19 @@
-from openprotein.base import APISession
-import openprotein.config as config
+# Jobs and job centric flows
 
-from enum import Enum
-import pydantic
+
 from datetime import datetime
 from typing import List, Optional, Union
-import tqdm
 import concurrent.futures
-from requests import HTTPError
-from openprotein.errors import TimeoutException
 import time
+from enum import Enum
+
+import tqdm
+import pydantic
+from pydantic import BaseModel
+
+from openprotein.errors import TimeoutException
+from openprotein.base import APISession
+import openprotein.config as config
 
 
 class JobStatus(str, Enum):
@@ -29,7 +33,7 @@ class JobStatus(str, Enum):
         return self is self.CANCELED
 
 
-class Job(pydantic.BaseModel):
+class Job(BaseModel):
     status: JobStatus
     job_id: str
     job_type: str
@@ -146,6 +150,11 @@ def job_get(session: APISession, job_id) -> Job:
     response = session.get(endpoint)
     return Job(**response.json())
 
+def job_args_get(session: APISession, job_id) -> dict:
+    """Get job."""
+    endpoint = f"v1/jobs/{job_id}/args"
+    response = session.get(endpoint)
+    return dict(**response.json())
 
 def jobs_list(
     session: APISession,
@@ -200,6 +209,7 @@ class JobsAPI:
     def list(
         self, status=None, job_type=None, assay_id=None, more_recent_than=None
     ) -> List[Job]:
+        """ List jobs"""
         return jobs_list(
             self.session,
             status=status,
@@ -209,6 +219,7 @@ class JobsAPI:
         )
 
     def get(self, job_id) -> Job:
+        """get Job by ID"""
         return job_get(self.session, job_id)
 
     def wait(
@@ -221,12 +232,13 @@ class JobsAPI:
 
 class AsyncJobFuture:
     def __init__(self, session: APISession, job: Union[Job, str]):
-        if type(job) is str:
+        if isinstance(job, str):
             job = job_get(session, job)
         self.session = session
         self.job = job
 
     def refresh(self):
+        """ refresh job status"""
         self.job = self.job.refresh(self.session)
 
     @property
@@ -253,13 +265,35 @@ class AsyncJobFuture:
     def wait_until_done(
         self, interval=config.POLLING_INTERVAL, timeout=None, verbose=False
     ):
+        """
+        Wait for job to complete. Do not fetch results (unlike wait())
+
+        Args:
+            interval (int, optional): time between polling. Defaults to config.POLLING_INTERVAL.
+            timeout (int, optional): max time to wait. Defaults to None.
+            verbose (bool, optional): verbosity flag. Defaults to False.
+
+        Returns:
+            results: results of job
+        """
         job = self.job.wait(
             self.session, interval=interval, timeout=timeout, verbose=verbose
         )
         self.job = job
         return self.done()
 
-    def wait(self, interval=config.POLLING_INTERVAL, timeout=None, verbose=False):
+    def wait(self, interval: int=config.POLLING_INTERVAL, timeout: int=None, verbose:bool=False):
+        """
+        Wait for job to complete, then fetch results.
+
+        Args:
+            interval (int, optional): time between polling. Defaults to config.POLLING_INTERVAL.
+            timeout (int, optional): max time to wait. Defaults to None.
+            verbose (bool, optional): verbosity flag. Defaults to False.
+
+        Returns:
+            results: results of job
+        """
         job = self.job.wait(
             self.session, interval=interval, timeout=timeout, verbose=verbose
         )
