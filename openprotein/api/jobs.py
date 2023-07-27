@@ -33,6 +33,7 @@ class JobStatus(str, Enum):
         return self is self.CANCELED
 
 
+
 class Job(BaseModel):
     status: JobStatus
     job_id: str
@@ -42,7 +43,7 @@ class Job(BaseModel):
     end_date: Optional[datetime]
     prerequisite_job_id: Optional[str]
     progress_message: Optional[str]
-    progress_counter: Optional[int]
+    progress_counter: Optional[int] = 0
     num_records: Optional[int]
 
     def refresh(self, session: APISession):
@@ -56,6 +57,18 @@ class Job(BaseModel):
     def cancelled(self) -> bool:
         """check if job is cancelled"""
         return self.status.cancelled()
+
+    def _update_progress(self, job) -> int:
+        """update rules for jobs without counters"""
+        progress = job.progress_counter
+        #if progress is not None:  # Check None before comparison
+        if job.status == JobStatus.PENDING and progress is None:
+            progress = 5
+        if job.status == JobStatus.RUNNING and progress is None:
+            progress = 25
+        if job.status in [JobStatus.SUCCESS, JobStatus.FAILURE]:
+            progress = 100
+        return progress or 0 # never None
 
     def wait(
         self,
@@ -97,19 +110,24 @@ class Job(BaseModel):
         job = self.refresh(session)
         while not is_done(job):
             if verbose:
-                progress = job.progress_counter
+                #pbar.update(1)
+                #pbar.set_postfix({"status": job.status})
+                progress = self._update_progress(job)
                 pbar.n = progress
                 pbar.set_postfix({"status": job.status})
-                # pbar.refresh()
+                #pbar.refresh()
                 # print(f'Retry {retries}, status={self.job.status}, time elapsed {time.time() - start_time:.2f}')
             time.sleep(interval)
             job = job.refresh(session)
 
         if verbose:
-            # pbar.update(1)
-            progress = job.progress_counter
+            #pbar.update(1)
+            #pbar.set_postfix({"status": job.status})
+            
+            progress = self._update_progress(job)
             pbar.n = progress
             pbar.set_postfix({"status": job.status})
+            #pbar.refresh()
 
         return job
 
@@ -247,8 +265,7 @@ class AsyncJobFuture:
 
     @property
     def progress(self):
-        return self.job.progress_counter
-
+        return self.job.progress_counter or 0
     @property
     def num_records(self):
         return self.job.num_records
