@@ -474,7 +474,7 @@ class MSAFuture(PoetFutureMixin, AsyncJobFuture):
     
     @property
     def id(self):
-        return self.job.id
+        return self.job.job_id
 
     @property
     def prompt_id(self):
@@ -497,42 +497,6 @@ class MSAFuture(PoetFutureMixin, AsyncJobFuture):
 
     def get(self, verbose: bool = False):
         return self.get_msa()
-
-
-class PromptFuture(MSAFuture):
-    """
-    Represents a result of a prompt job.
-
-    Attributes:
-        session (APISession): An instance of APISession for API interactions.
-        job (Job): The PoET scoring job.
-        page_size (int): The number of results to fetch in a single page.
-
-    Methods:
-        get(verbose=False) -> List[PoetScoreResult]:
-            Get the final results of the PoET scoring job.
-
-    """
-
-    def __init__(
-        self,
-        session: APISession,
-        job: Job,
-        page_size=config.POET_PAGE_SIZE,
-        msa_id: Optional[str] = None,
-    ):
-        """
-        init a PoetScoreFuture instance.
-
-        Args:
-            session (APISession): An instance of APISession for API interactions.
-            job (Job): The PoET scoring job.
-            page_size (int, optional): The number of results to fetch in a single page. Defaults to config.POET_PAGE_SIZE.
-
-        """
-        super().__init__(session, job)
-        self.page_size = page_size
-        self._msa_id = msa_id
 
     def sample_prompt(
         self,
@@ -583,6 +547,40 @@ class PromptFuture(MSAFuture):
             random_seed=random_seed,
         )
         return PromptFuture(self.session, job, self.msa_id)
+
+class PromptFuture(MSAFuture):
+    """
+    Represents a result of a prompt job.
+
+    Attributes:
+        session (APISession): An instance of APISession for API interactions.
+        job (Job): The PoET scoring job.
+        page_size (int): The number of results to fetch in a single page.
+
+    Methods:
+        get(verbose=False) -> List[PoetScoreResult]:
+            Get the final results of the PoET scoring job.
+
+    """
+    def __init__(
+        self,
+        session: APISession,
+        job: Job,
+        page_size=config.POET_PAGE_SIZE,
+        msa_id: Optional[str] = None,
+    ):
+        """
+        init a PoetScoreFuture instance.
+
+        Args:
+            session (APISession): An instance of APISession for API interactions.
+            job (Job): The PoET scoring job.
+            page_size (int, optional): The number of results to fetch in a single page. Defaults to config.POET_PAGE_SIZE.
+
+        """
+        super().__init__(session, job)
+        self.page_size = page_size
+        self._msa_id = msa_id
 
     def get(self, verbose: bool = False):
         return self.get_prompt()
@@ -964,7 +962,7 @@ class PoetAPI:
         msa_id = job_args_get(self.session, prompt_id).get("root_msa")
         return PromptFuture(self.session, job, msa_id=msa_id)
 
-    def load_msa_job(self, msa_id: str) -> PromptFuture:
+    def load_msa_job(self, msa_id: str) -> MSAFuture:
         """
         Reload a previously ran MSA job to resume where you left off.
 
@@ -980,7 +978,7 @@ class PoetAPI:
         job = load_job(self.session, msa_id)
         if job.job_type != JobType.align:
             raise InvalidJob(f"job {msa_id} is not a MSA job!")
-        return PromptFuture(self.session, job)
+        return MSAFuture(self.session, job)
 
     def load_poet_job(self,
                       job_id: str
@@ -997,7 +995,7 @@ class PoetAPI:
             InvalidJob: if job is of incorrect type
 
         Returns:
-            PromptFuture: Job to resume workflows
+            PoetFuture: Job to resume workflows
         """
         job = load_job(self.session, job_id)
         if job.job_type == JobType.prots2prot_single_site:
@@ -1009,7 +1007,7 @@ class PoetAPI:
         else:
             raise InvalidJob(f"job {job_id} is not a PoET job!")
 
-    def upload_msa(self, msa_file) -> PromptFuture:
+    def upload_msa(self, msa_file) -> MSAFuture:
         """
         Upload an MSA from file.
 
@@ -1023,9 +1021,9 @@ class PoetAPI:
             MSAJob:
         """
         job = msa_post(self.session, msa_file=msa_file)
-        return PromptFuture(self.session, job)
+        return MSAFuture(self.session, job)
 
-    def create_msa(self, seed: bytes) -> PromptFuture:
+    def create_msa(self, seed: bytes) -> MSAFuture:
         """
         Construct an MSA via homology search with the seed sequence.
 
@@ -1040,7 +1038,7 @@ class PoetAPI:
         """
 
         job = msa_post(self.session, seed=seed)
-        return PromptFuture(self.session, job)
+        return MSAFuture(self.session, job)
 
     def upload_prompt(self, prompt_file) -> PromptFuture:
         """
