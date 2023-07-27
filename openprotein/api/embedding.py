@@ -185,12 +185,10 @@ class EmbeddingResultFuture(MappedAsyncJobFuture):
         return decode_embedding(data)
 
 
-def embedding_model_post(
-    session: APISession,
-    model_id: str,
-    sequences: List[bytes],
-    reduction: Optional[str] = None,
-) -> Job:
+def embedding_model_post(session: APISession,
+                         model_id: str,
+                         sequences: List[bytes],
+                         reduction: Optional[str]="MEAN"):
     """
     POST a request for embeddings from the given model ID. Returns a Job object referring to this request
     that can be used to retrieve results later.
@@ -204,7 +202,7 @@ def embedding_model_post(
     sequences : List[bytes]
         sequences to request results for
     reduction : Optional[str]
-        reduction to apply to the embeddings. options are None, "MEAN", or "SUM". defaul: None
+        reduction to apply to the embeddings. options are None, "MEAN", or "SUM". defaul: "MEAN"
 
     Returns
     -------
@@ -216,8 +214,7 @@ def embedding_model_post(
     body = {
         "sequences": sequences,
     }
-    if reduction is not None:
-        body["reduction"] = reduction
+    body['reduction'] = reduction
     response = session.post(endpoint, json=body)
     return Job(**response.json())
 
@@ -429,7 +426,7 @@ class ProtembedModel:
         self._metadata = embedding_model_get(self.session, self.id)
         return self._metadata
 
-    def embed(self, sequences: List[bytes], reduction=None) -> EmbeddingResultFuture:
+    def embed(self, sequences: List[bytes], reduction=None):
         """
         Embed sequences using this model.
 
@@ -444,9 +441,10 @@ class ProtembedModel:
         -------
             EmbeddingResultFuture
         """
-        job = embedding_model_post(
-            self.session, self.id, sequences, reduction=reduction
-        )
+        job = embedding_model_post(self.session,
+                                   model_id=self.id,
+                                   sequences=sequences,
+                                   reduction=reduction)
         return EmbeddingResultFuture(self.session, job, sequences=sequences)
 
     def logits(self, sequences: List[bytes]) -> EmbeddingResultFuture:
@@ -654,12 +652,10 @@ class EmbeddingAPI:
         """
         return ProtembedModel(self.session, model_id)
 
-    def embed(
-        self,
-        model: Union[ProtembedModel, SVDModel, str],
-        sequences: List[bytes],
-        reduction=None,
-    ) -> EmbeddingResultFuture:
+    def embed(self,
+              model: Union[ProtembedModel,SVDModel, str],
+                           sequences: List[bytes],
+                           reduction="MEAN"):
         """
         Embed sequences using the specified model.
 
@@ -689,7 +685,7 @@ class EmbeddingAPI:
             job = embedding_model_post(
                 self.session, model_id, sequences, reduction=reduction
             )
-        elif type(model) is SVDModel:
+        elif isinstance(model, SVDModel):
             svd_id = model.id
             job = svd_embed_post(self.session, svd_id, sequences)
         else:
