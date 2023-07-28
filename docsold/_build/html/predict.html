@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Predict workflows &mdash; OpenProtein-Python  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Design workflows" href="design.html" />
+    <link rel="prev" title="Train workflows" href="train.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            OpenProtein-Python
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data.html">AssayData workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train.html">Train workflows</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Predict workflows</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#openprotein.api.predict.PredictAPI"><code class="docutils literal notranslate"><span class="pre">PredictAPI</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.predict.PredictAPI.create_predict_job"><code class="docutils literal notranslate"><span class="pre">PredictAPI.create_predict_job()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.predict.PredictAPI.create_predict_single_site"><code class="docutils literal notranslate"><span class="pre">PredictAPI.create_predict_single_site()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.predict.PredictAPI.get_prediction_results"><code class="docutils literal notranslate"><span class="pre">PredictAPI.get_prediction_results()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.predict.PredictAPI.get_single_site_prediction_results"><code class="docutils literal notranslate"><span class="pre">PredictAPI.get_single_site_prediction_results()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.predict.PredictAPI.load_job"><code class="docutils literal notranslate"><span class="pre">PredictAPI.load_job()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#openprotein.api.predict.PredictFuture"><code class="docutils literal notranslate"><span class="pre">PredictFuture</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.predict.PredictFuture.get"><code class="docutils literal notranslate"><span class="pre">PredictFuture.get()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="design.html">Design workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="poet.html">PoET workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="embedding.html">Embedding workflows</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">OpenProtein-Python</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Predict workflows</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/predict.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="predict-workflows">
+<h1>Predict workflows<a class="headerlink" href="#predict-workflows" title="Permalink to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="openprotein.api.predict.PredictAPI">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.predict.</span></span><span class="sig-name descname"><span class="pre">PredictAPI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">APISession</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/predict.html#PredictAPI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.predict.PredictAPI" title="Permalink to this definition"></a></dt>
+<dd><p>API interface for calling Predict endpoints</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="openprotein.api.predict.PredictAPI.create_predict_job">
+<span class="sig-name descname"><span class="pre">create_predict_job</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sequences</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="train.html#openprotein.api.train.TrainFuture" title="openprotein.api.train.TrainFuture"><span class="pre">TrainFuture</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#openprotein.api.predict.PredictFuture" title="openprotein.api.predict.PredictFuture"><span class="pre">PredictFuture</span></a></span></span><a class="reference internal" href="_modules/openprotein/api/predict.html#PredictAPI.create_predict_job"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.predict.PredictAPI.create_predict_job" title="Permalink to this definition"></a></dt>
+<dd><p>Creates a new Predict job for a given list of sequences and a trained model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sequences</strong> (<em>List</em>) – The list of sequences to be used for the Predict job.</p></li>
+<li><p><strong>train_job</strong> (<a class="reference internal" href="train.html#openprotein.api.train.TrainFuture" title="openprotein.api.train.TrainFuture"><em>TrainFuture</em></a>) – The train job object representing the trained model.</p></li>
+<li><p><strong>model_ids</strong> (<em>List</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – The list of model ids to be used for Predict. Default is None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The job object representing the Predict job.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#openprotein.api.predict.PredictFuture" title="openprotein.api.predict.PredictFuture">PredictFuture</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>InvalidParameterError</strong> – If the sequences are not of the same length as the assay data or if the train job has not completed successfully.</p></li>
+<li><p><strong>InvalidParameterError</strong> – If BOTH train_job and model_ids are specified</p></li>
+<li><p><strong>InvalidParameterError</strong> – If NEITHER train_job or model_ids is specified</p></li>
+<li><p><strong>APIError</strong> – If the backend refuses the job (due to sequence length or invalid inputs)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="openprotein.api.predict.PredictAPI.create_predict_single_site">
+<span class="sig-name descname"><span class="pre">create_predict_single_site</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sequence</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="train.html#openprotein.api.train.TrainFuture" title="openprotein.api.train.TrainFuture"><span class="pre">TrainFuture</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#openprotein.api.predict.PredictFuture" title="openprotein.api.predict.PredictFuture"><span class="pre">PredictFuture</span></a></span></span><a class="reference internal" href="_modules/openprotein/api/predict.html#PredictAPI.create_predict_single_site"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.predict.PredictAPI.create_predict_single_site" title="Permalink to this definition"></a></dt>
+<dd><p>Creates a new Predict job for single site mutation analysis with a trained model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sequence</strong> (<em>str</em>) – The sequence for single site analysis.</p></li>
+<li><p><strong>train_job</strong> (<a class="reference internal" href="train.html#openprotein.api.train.TrainFuture" title="openprotein.api.train.TrainFuture"><em>TrainFuture</em></a>) – The train job object representing the trained model.</p></li>
+<li><p><strong>model_ids</strong> (<em>List</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – The list of model ids to be used for Predict. Default is None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The job object representing the Predict job.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#openprotein.api.predict.PredictFuture" title="openprotein.api.predict.PredictFuture">PredictFuture</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>InvalidParameterError</strong> – If the sequences are not of the same length as the assay data or if the train job has not completed successfully.</p></li>
+<li><p><strong>InvalidParameterError</strong> – If BOTH train_job and model_ids are specified</p></li>
+<li><p><strong>InvalidParameterError</strong> – If NEITHER train_job or model_ids is specified</p></li>
+<li><p><strong>APIError</strong> – If the backend refuses the job (due to sequence length or invalid inputs)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="openprotein.api.predict.PredictAPI.get_prediction_results">
+<span class="sig-name descname"><span class="pre">get_prediction_results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_offset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PredictJob</span></span></span><a class="reference internal" href="_modules/openprotein/api/predict.html#PredictAPI.get_prediction_results"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.predict.PredictAPI.get_prediction_results" title="Permalink to this definition"></a></dt>
+<dd><p>Retrieves the results of a Predict job.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>job_id</strong> (<em>str</em>) – The ID of the Predict job.</p></li>
+<li><p><strong>page_size</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em><em>, </em><em>default is None</em>) – The number of results to be returned per page. If None, all results are returned.</p></li>
+<li><p><strong>page_offset</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em><em>, </em><em>default is None</em>) – The number of results to skip. If None, defaults to 0.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The job object representing the Predict job.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>PredictJob</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>HTTPError</strong> – If the GET request does not succeed.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="openprotein.api.predict.PredictAPI.get_single_site_prediction_results">
+<span class="sig-name descname"><span class="pre">get_single_site_prediction_results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_offset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PredictSingleSiteJob</span></span></span><a class="reference internal" href="_modules/openprotein/api/predict.html#PredictAPI.get_single_site_prediction_results"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.predict.PredictAPI.get_single_site_prediction_results" title="Permalink to this definition"></a></dt>
+<dd><p>Retrieves the results of a single site Predict job.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>job_id</strong> (<em>str</em>) – The ID of the Predict job.</p></li>
+<li><p><strong>page_size</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em><em>, </em><em>default is None</em>) – The number of results to be returned per page. If None, all results are returned.</p></li>
+<li><p><strong>page_offset</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em><em>, </em><em>default is None</em>) – The page number to start retrieving results from. If None, defaults to 0.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The job object representing the single site Predict job.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>PredictSingleSiteJob</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>HTTPError</strong> – If the GET request does not succeed.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="openprotein.api.predict.PredictAPI.load_job">
+<span class="sig-name descname"><span class="pre">load_job</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Job</span></span></span><a class="reference internal" href="_modules/openprotein/api/predict.html#PredictAPI.load_job"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.predict.PredictAPI.load_job" title="Permalink to this definition"></a></dt>
+<dd><p>Reload a Submitted job to resume from where you left off!</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>job_id</strong> (<em>str</em>) – The identifier of the job whose details are to be loaded.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Job</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Job</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>HTTPError</strong> – If the request to the server fails.</p></li>
+<li><p><strong>InvalidJob</strong> – If the Job is of the wrong type</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="openprotein.api.predict.PredictFuture">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.predict.</span></span><span class="sig-name descname"><span class="pre">PredictFuture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">APISession</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/predict.html#PredictFuture"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.predict.PredictFuture" title="Permalink to this definition"></a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="openprotein.api.predict.PredictFuture.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PredictSingleSiteJob</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">PredictJob</span></span></span><a class="reference internal" href="_modules/openprotein/api/predict.html#PredictFuture.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.predict.PredictFuture.get" title="Permalink to this definition"></a></dt>
+<dd><p>Get all the results of the predict job.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, print verbose output. Defaults False.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>APIError</strong> – If there is an issue with the API request.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A list of predict objects representing the results.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>PredictJob</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="train.html" class="btn btn-neutral float-left" title="Train workflows" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="design.html" class="btn btn-neutral float-right" title="Design workflows" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, NE47.bio.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

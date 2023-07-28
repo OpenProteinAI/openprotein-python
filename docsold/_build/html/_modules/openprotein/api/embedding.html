@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>openprotein.api.embedding &mdash; OpenProtein-Python  documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            OpenProtein-Python
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../data.html">Data Class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train.html">Train Class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../predict.html">Train Class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../design.html">Train Class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../poet.html">Train Class</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">OpenProtein-Python</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../../openprotein.html">openprotein</a></li>
+      <li class="breadcrumb-item active">openprotein.api.embedding</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for openprotein.api.embedding</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">openprotein.base</span> <span class="kn">import</span> <span class="n">APISession</span>
+<span class="kn">from</span> <span class="nn">openprotein.api.jobs</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Job</span><span class="p">,</span>
+    <span class="n">MappedAsyncJobFuture</span><span class="p">,</span>
+    <span class="n">PagedAsyncJobFuture</span><span class="p">,</span>
+    <span class="n">job_get</span><span class="p">,</span>
+    <span class="n">JobStatus</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">openprotein.errors</span> <span class="kn">import</span> <span class="n">InvalidJob</span>
+<span class="kn">import</span> <span class="nn">openprotein.config</span> <span class="k">as</span> <span class="nn">config</span>
+<span class="kn">from</span> <span class="nn">openprotein.api.jobs</span> <span class="kn">import</span> <span class="n">load_job</span>
+<span class="kn">from</span> <span class="nn">openprotein.models</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ModelDescription</span><span class="p">,</span>
+    <span class="n">TokenInfo</span><span class="p">,</span>
+    <span class="n">ModelMetadata</span><span class="p">,</span>
+    <span class="n">EmbeddedSequence</span><span class="p">,</span>
+    <span class="n">SVDMetadata</span><span class="p">,</span>
+    <span class="n">SVDJob</span><span class="p">,</span>
+    <span class="n">JobType</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">import</span> <span class="nn">pydantic</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">base64</span> <span class="kn">import</span> <span class="n">b64decode</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Any</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">namedtuple</span>
+<span class="kn">import</span> <span class="nn">io</span>
+
+
+<span class="n">PATH_PREFIX</span> <span class="o">=</span> <span class="s2">&quot;v1/embeddings&quot;</span>
+
+
+<span class="k">def</span> <span class="nf">embedding_models_get</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    List available embeddings models.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        session (APISession): API session</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List[str]: list of model names.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="n">PATH_PREFIX</span> <span class="o">+</span> <span class="s2">&quot;/models&quot;</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">endpoint</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">result</span>
+
+
+<span class="c1"># alias embedding_models_list_get to embedding_models_get</span>
+<span class="n">embedding_models_list_get</span> <span class="o">=</span> <span class="n">embedding_models_get</span>
+
+
+<span class="k">def</span> <span class="nf">embedding_model_get</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ModelMetadata</span><span class="p">:</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="n">PATH_PREFIX</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;/models/</span><span class="si">{</span><span class="n">model_id</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">endpoint</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">ModelMetadata</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">embedding_get</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span> <span class="n">job_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get sequences associated with the given request ID.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        Session object for API communication.</span>
+<span class="sd">    job_id : str</span>
+<span class="sd">        job ID to fetch</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    sequences : List[bytes]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="n">PATH_PREFIX</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;/</span><span class="si">{</span><span class="n">job_id</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">endpoint</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">pydantic</span><span class="o">.</span><span class="n">parse_obj_as</span><span class="p">(</span><span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">],</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+
+
+<span class="k">def</span> <span class="nf">embedding_get_sequences</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span> <span class="n">job_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get results associated with the given request ID.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        Session object for API communication.</span>
+<span class="sd">    job_id : str</span>
+<span class="sd">        job ID to fetch</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    sequences : List[bytes]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="n">PATH_PREFIX</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;/</span><span class="si">{</span><span class="n">job_id</span><span class="si">}</span><span class="s2">/sequences&quot;</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">endpoint</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">pydantic</span><span class="o">.</span><span class="n">parse_obj_as</span><span class="p">(</span><span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">],</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+
+
+<span class="k">def</span> <span class="nf">embedding_get_sequence_result</span><span class="p">(</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span> <span class="n">job_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sequence</span><span class="p">:</span> <span class="nb">bytes</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get encoded result for a sequence from the request ID.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        Session object for API communication.</span>
+<span class="sd">    job_id : str</span>
+<span class="sd">        job ID to retrieve results from</span>
+<span class="sd">    sequence : bytes</span>
+<span class="sd">        sequence to retrieve results for</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    result : bytes</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sequence</span> <span class="o">=</span> <span class="n">sequence</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="n">PATH_PREFIX</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;/</span><span class="si">{</span><span class="n">job_id</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">sequence</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">endpoint</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">content</span>
+
+
+<span class="k">def</span> <span class="nf">decode_embedding</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Decode embedding.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data (bytes): raw bytes encoding the array received over the API</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        np.ndarray: decoded array</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">allow_pickle</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">EmbeddingResultFuture</span><span class="p">(</span><span class="n">MappedAsyncJobFuture</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class defines a future result from an inference request. Results are viewed as a mapping from</span>
+<span class="sd">    sequences to result arrays, which can be queried using the `Map` interface. The status of the job</span>
+<span class="sd">    can be checked using the `AsyncJobFuture` interface and all results can be retrieved as a list of</span>
+<span class="sd">    tuples of (sequence, result) pairs from the `.get()` function. Individual results can be retrieved</span>
+<span class="sd">    with `__getitem__(sequence)` and the object can be iterated like a dictionary. Results are cached</span>
+<span class="sd">    so repeated indexing of the same result will not result in additional `GET` requests against the server.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span>
+        <span class="n">job</span><span class="p">:</span> <span class="n">Job</span><span class="p">,</span>
+        <span class="n">sequences</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_workers</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">MAX_CONCURRENT_WORKERS</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="n">max_workers</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sequences</span> <span class="o">=</span> <span class="n">sequences</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">sequences</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sequences</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sequences</span> <span class="o">=</span> <span class="n">embedding_get_sequences</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">job_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sequences</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">job_id</span>
+
+    <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sequences</span>
+
+    <span class="k">def</span> <span class="nf">get_item</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequence</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get embedding results for specified sequence.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sequence (bytes): sequence to fetch results for</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            np.ndarray: embeddings</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">embedding_get_sequence_result</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">job_id</span><span class="p">,</span> <span class="n">sequence</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">decode_embedding</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">embedding_model_post</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span>
+                         <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                         <span class="n">sequences</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">],</span>
+                         <span class="n">reduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span><span class="o">=</span><span class="s2">&quot;MEAN&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    POST a request for embeddings from the given model ID. Returns a Job object referring to this request</span>
+<span class="sd">    that can be used to retrieve results later.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        Session object for API communication.</span>
+<span class="sd">    model_id : str</span>
+<span class="sd">        model ID to request results from</span>
+<span class="sd">    sequences : List[bytes]</span>
+<span class="sd">        sequences to request results for</span>
+<span class="sd">    reduction : Optional[str]</span>
+<span class="sd">        reduction to apply to the embeddings. options are None, &quot;MEAN&quot;, or &quot;SUM&quot;. defaul: &quot;MEAN&quot;</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    job : Job</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="n">PATH_PREFIX</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;/models/</span><span class="si">{</span><span class="n">model_id</span><span class="si">}</span><span class="s2">/embed&quot;</span>
+
+    <span class="n">sequences</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sequences</span><span class="p">]</span>
+    <span class="n">body</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;sequences&quot;</span><span class="p">:</span> <span class="n">sequences</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="n">body</span><span class="p">[</span><span class="s1">&#39;reduction&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">reduction</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">body</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Job</span><span class="p">(</span><span class="o">**</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+
+
+<span class="c1"># alias embedding_post to embedding_model_post</span>
+<span class="n">embedding_post</span> <span class="o">=</span> <span class="n">embedding_model_post</span>
+
+
+<span class="k">def</span> <span class="nf">embedding_model_logits_post</span><span class="p">(</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span>
+    <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">sequences</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Job</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    POST a request for logits from the given model ID. Returns a Job object referring to this request</span>
+<span class="sd">    that can be used to retrieve results later.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        Session object for API communication.</span>
+<span class="sd">    model_id : str</span>
+<span class="sd">        model ID to request results from</span>
+<span class="sd">    sequences : List[bytes]</span>
+<span class="sd">        sequences to request results for</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    job : Job</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="n">PATH_PREFIX</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;/models/</span><span class="si">{</span><span class="n">model_id</span><span class="si">}</span><span class="s2">/logits&quot;</span>
+
+    <span class="n">sequences</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sequences</span><span class="p">]</span>
+    <span class="n">body</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;sequences&quot;</span><span class="p">:</span> <span class="n">sequences</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">body</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Job</span><span class="p">(</span><span class="o">**</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+
+
+<span class="k">def</span> <span class="nf">embedding_model_attn_post</span><span class="p">(</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span>
+    <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">sequences</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Job</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    POST a request for attention embeddings from the given model ID. \</span>
+<span class="sd">        Returns a Job object referring to this request \</span>
+<span class="sd">            that can be used to retrieve results later.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        Session object for API communication.</span>
+<span class="sd">    model_id : str</span>
+<span class="sd">        model ID to request results from</span>
+<span class="sd">    sequences : List[bytes]</span>
+<span class="sd">        sequences to request results for</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    job : Job</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="n">PATH_PREFIX</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;/models/</span><span class="si">{</span><span class="n">model_id</span><span class="si">}</span><span class="s2">/attn&quot;</span>
+
+    <span class="n">sequences</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sequences</span><span class="p">]</span>
+    <span class="n">body</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;sequences&quot;</span><span class="p">:</span> <span class="n">sequences</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">body</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Job</span><span class="p">(</span><span class="o">**</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+
+
+<span class="k">def</span> <span class="nf">svd_list_get</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">SVDMetadata</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get SVD job metadata for all SVDs. Including SVD dimension and sequence lengths.&quot;&quot;&quot;</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="n">PATH_PREFIX</span> <span class="o">+</span> <span class="s2">&quot;/svd&quot;</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">endpoint</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">pydantic</span><span class="o">.</span><span class="n">parse_obj_as</span><span class="p">(</span><span class="n">List</span><span class="p">[</span><span class="n">SVDMetadata</span><span class="p">],</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+
+
+<span class="k">def</span> <span class="nf">svd_get</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span> <span class="n">svd_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SVDMetadata</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get SVD job metadata. Including SVD dimension and sequence lengths.&quot;&quot;&quot;</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="n">PATH_PREFIX</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;/svd/</span><span class="si">{</span><span class="n">svd_id</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">endpoint</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">SVDMetadata</span><span class="p">(</span><span class="o">**</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+
+
+<span class="k">def</span> <span class="nf">svd_delete</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span> <span class="n">svd_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Delete and SVD model.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        Session object for API communication.</span>
+<span class="sd">    svd_id : str</span>
+<span class="sd">        SVD model to delete</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="n">PATH_PREFIX</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;/svd/</span><span class="si">{</span><span class="n">svd_id</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">endpoint</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">True</span>
+
+
+<span class="k">def</span> <span class="nf">svd_fit_post</span><span class="p">(</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span>
+    <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">sequences</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">],</span>
+    <span class="n">n_components</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1024</span><span class="p">,</span>
+    <span class="n">reduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create SVD fit job.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        Session object for API communication.</span>
+<span class="sd">    model_id : str</span>
+<span class="sd">        model to use</span>
+<span class="sd">    sequences : List[bytes]</span>
+<span class="sd">        sequences to SVD</span>
+<span class="sd">    n_components : int</span>
+<span class="sd">        number of SVD components to fit. default = 1024</span>
+<span class="sd">    reduction : Optional[str]</span>
+<span class="sd">        embedding reduction to use for fitting the SVD. default = None</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    SVDJob</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="n">PATH_PREFIX</span> <span class="o">+</span> <span class="s2">&quot;/svd&quot;</span>
+
+    <span class="n">sequences</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sequences</span><span class="p">]</span>
+    <span class="n">body</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;model_id&quot;</span><span class="p">:</span> <span class="n">model_id</span><span class="p">,</span>
+        <span class="s2">&quot;sequences&quot;</span><span class="p">:</span> <span class="n">sequences</span><span class="p">,</span>
+        <span class="s2">&quot;n_components&quot;</span><span class="p">:</span> <span class="n">n_components</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="n">reduction</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">body</span><span class="p">[</span><span class="s2">&quot;reduction&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">reduction</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">body</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">SVDJob</span><span class="p">(</span><span class="o">**</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+
+
+<span class="k">def</span> <span class="nf">svd_embed_post</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span> <span class="n">svd_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sequences</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Job</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    POST a request for embeddings from the given SVD model.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        Session object for API communication.</span>
+<span class="sd">    svd_id : str</span>
+<span class="sd">        SVD model to use</span>
+<span class="sd">    sequences : List[bytes]</span>
+<span class="sd">        sequences to SVD</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Job</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="n">PATH_PREFIX</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;/svd/</span><span class="si">{</span><span class="n">svd_id</span><span class="si">}</span><span class="s2">/embed&quot;</span>
+
+    <span class="n">sequences</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sequences</span><span class="p">]</span>
+    <span class="n">body</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;sequences&quot;</span><span class="p">:</span> <span class="n">sequences</span><span class="p">}</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">body</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Job</span><span class="p">(</span><span class="o">**</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+
+
+<div class="viewcode-block" id="ProtembedModel"><a class="viewcode-back" href="../../../embeddings.html#openprotein.api.embedding.ProtembedModel">[docs]</a><span class="k">class</span> <span class="nc">ProtembedModel</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class providing inference endpoints for protein embedding models served by OpenProtein.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">,</span> <span class="n">model_id</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">session</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">model_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span> <span class="o">=</span> <span class="n">metadata</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_metadata</span><span class="p">()</span>
+
+<div class="viewcode-block" id="ProtembedModel.get_metadata"><a class="viewcode-back" href="../../../embeddings.html#openprotein.api.embedding.ProtembedModel.get_metadata">[docs]</a>    <span class="k">def</span> <span class="nf">get_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ModelMetadata</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get model metadata for this model.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            None</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            ModelMetadata</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span> <span class="o">=</span> <span class="n">embedding_model_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span></div>
+
+<div class="viewcode-block" id="ProtembedModel.embed"><a class="viewcode-back" href="../../../embeddings.html#openprotein.api.embedding.ProtembedModel.embed">[docs]</a>    <span class="k">def</span> <span class="nf">embed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequences</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">],</span> <span class="n">reduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span><span class="o">=</span><span class="s2">&quot;MEAN&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Embed sequences using this model.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        sequences : List[bytes]</span>
+<span class="sd">            sequences to SVD</span>
+<span class="sd">        reduction: str</span>
+<span class="sd">            embeddings reduction to use (e.g. mean)</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            EmbeddingResultFuture</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">job</span> <span class="o">=</span> <span class="n">embedding_model_post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span>
+                                   <span class="n">model_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                                   <span class="n">sequences</span><span class="o">=</span><span class="n">sequences</span><span class="p">,</span>
+                                   <span class="n">reduction</span><span class="o">=</span><span class="n">reduction</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">EmbeddingResultFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="n">sequences</span><span class="o">=</span><span class="n">sequences</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ProtembedModel.logits"><a class="viewcode-back" href="../../../embeddings.html#openprotein.api.embedding.ProtembedModel.logits">[docs]</a>    <span class="k">def</span> <span class="nf">logits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequences</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">EmbeddingResultFuture</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        logit embeddings for sequences using this model.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        sequences : List[bytes]</span>
+<span class="sd">            sequences to SVD</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            EmbeddingResultFuture</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">job</span> <span class="o">=</span> <span class="n">embedding_model_logits_post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">sequences</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">EmbeddingResultFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="n">sequences</span><span class="o">=</span><span class="n">sequences</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ProtembedModel.attn"><a class="viewcode-back" href="../../../embeddings.html#openprotein.api.embedding.ProtembedModel.attn">[docs]</a>    <span class="k">def</span> <span class="nf">attn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequences</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">EmbeddingResultFuture</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Attention embeddings for sequences using this model.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        sequences : List[bytes]</span>
+<span class="sd">            sequences to SVD</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            EmbeddingResultFuture</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">job</span> <span class="o">=</span> <span class="n">embedding_model_attn_post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">sequences</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">EmbeddingResultFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="n">sequences</span><span class="o">=</span><span class="n">sequences</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ProtembedModel.fit_svd"><a class="viewcode-back" href="../../../embeddings.html#openprotein.api.embedding.ProtembedModel.fit_svd">[docs]</a>    <span class="k">def</span> <span class="nf">fit_svd</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">sequences</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">],</span>
+        <span class="n">n_components</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1024</span><span class="p">,</span>
+        <span class="n">reduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fit an SVD on the embedding results of this model. </span>
+
+<span class="sd">        This function will create an SVDModel based on the embeddings from this model \</span>
+<span class="sd">            as well as the hyperparameters specified in the args.  </span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        sequences : List[bytes] </span>
+<span class="sd">            sequences to SVD</span>
+<span class="sd">        n_components: int </span>
+<span class="sd">            number of components in SVD. Will determine output shapes</span>
+<span class="sd">        reduction: str</span>
+<span class="sd">            embeddings reduction to use (e.g. mean)</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            SVDModel</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">model_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span>
+        <span class="n">job</span> <span class="o">=</span> <span class="n">svd_fit_post</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span>
+            <span class="n">model_id</span><span class="p">,</span>
+            <span class="n">sequences</span><span class="p">,</span>
+            <span class="n">n_components</span><span class="o">=</span><span class="n">n_components</span><span class="p">,</span>
+            <span class="n">reduction</span><span class="o">=</span><span class="n">reduction</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">metadata</span> <span class="o">=</span> <span class="n">svd_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">job_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">SVDModel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">metadata</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="SVDModel"><a class="viewcode-back" href="../../../embeddings.html#openprotein.api.embedding.SVDModel">[docs]</a><span class="k">class</span> <span class="nc">SVDModel</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class providing embedding endpoint for SVD models. \</span>
+<span class="sd">        Also allows retrieving embeddings of sequences used to fit the SVD with `get`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="n">SVDMetadata</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">session</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span> <span class="o">=</span> <span class="n">metadata</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_refresh_metadata</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span>
+
+    <span class="k">def</span> <span class="nf">_refresh_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="o">.</span><span class="n">is_done</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="n">svd_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="o">.</span><span class="n">id</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">n_components</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="o">.</span><span class="n">n_components</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">sequence_length</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="o">.</span><span class="n">sequence_length</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">reduction</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="o">.</span><span class="n">reduction</span>
+
+<div class="viewcode-block" id="SVDModel.get_model"><a class="viewcode-back" href="../../../embeddings.html#openprotein.api.embedding.SVDModel.get_model">[docs]</a>    <span class="k">def</span> <span class="nf">get_model</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProtembedModel</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetch embeddings model&quot;&quot;&quot;</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">ProtembedModel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="o">.</span><span class="n">model_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">model</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">model</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProtembedModel</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_model</span><span class="p">()</span>
+
+<div class="viewcode-block" id="SVDModel.delete"><a class="viewcode-back" href="../../../embeddings.html#openprotein.api.embedding.SVDModel.delete">[docs]</a>    <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Delete this SVD model.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">svd_delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SVDModel.get_job"><a class="viewcode-back" href="../../../embeddings.html#openprotein.api.embedding.SVDModel.get_job">[docs]</a>    <span class="k">def</span> <span class="nf">get_job</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Job</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get job associated with this SVD model&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">job_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SVDModel.get_inputs"><a class="viewcode-back" href="../../../embeddings.html#openprotein.api.embedding.SVDModel.get_inputs">[docs]</a>    <span class="k">def</span> <span class="nf">get_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get sequences used for embeddings job.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            List[bytes]: list of sequences</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">embedding_get_sequences</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SVDModel.get_embeddings"><a class="viewcode-back" href="../../../embeddings.html#openprotein.api.embedding.SVDModel.get_embeddings">[docs]</a>    <span class="k">def</span> <span class="nf">get_embeddings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EmbeddingResultFuture</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get SVD embedding results for this model.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            EmbeddingResultFuture: class for futher job manipulation</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">EmbeddingResultFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_job</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="SVDModel.embed"><a class="viewcode-back" href="../../../embeddings.html#openprotein.api.embedding.SVDModel.embed">[docs]</a>    <span class="k">def</span> <span class="nf">embed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequences</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">EmbeddingResultFuture</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Use this SVD model to reduce embeddings results. </span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            sequences (List[bytes]): list of protein sequences</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            EmbeddingResultFuture: class for futher job manipulation</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">job</span> <span class="o">=</span> <span class="n">svd_embed_post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">sequences</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">EmbeddingResultFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="n">sequences</span><span class="o">=</span><span class="n">sequences</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="EmbeddingAPI"><a class="viewcode-back" href="../../../embeddings.html#openprotein.api.embedding.EmbeddingAPI">[docs]</a><span class="k">class</span> <span class="nc">EmbeddingAPI</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class defines a high level interface for accessing the embeddings API.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">session</span>
+
+<div class="viewcode-block" id="EmbeddingAPI.list_models"><a class="viewcode-back" href="../../../embeddings.html#openprotein.api.embedding.EmbeddingAPI.list_models">[docs]</a>    <span class="k">def</span> <span class="nf">list_models</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ProtembedModel</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;list models available for creating embeddings of your sequences&quot;&quot;&quot;</span>
+        <span class="n">models</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">model_id</span> <span class="ow">in</span> <span class="n">embedding_models_list_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">):</span>
+            <span class="n">models</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ProtembedModel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">model_id</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">models</span></div>
+
+<div class="viewcode-block" id="EmbeddingAPI.get_model"><a class="viewcode-back" href="../../../embeddings.html#openprotein.api.embedding.EmbeddingAPI.get_model">[docs]</a>    <span class="k">def</span> <span class="nf">get_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProtembedModel</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get model by model_id. </span>
+
+<span class="sd">        ProtembedModel allows all the usual job manipulation: \</span>
+<span class="sd">            e.g. making POST and GET requests for this model specifically. </span>
+
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model_id : str</span>
+<span class="sd">            the model identifier</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ProtembedModel</span>
+<span class="sd">            The model</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        HTTPError</span>
+<span class="sd">            If the GET request does not succeed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">ProtembedModel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">model_id</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EmbeddingAPI.embed"><a class="viewcode-back" href="../../../embeddings.html#openprotein.api.embedding.EmbeddingAPI.embed">[docs]</a>    <span class="k">def</span> <span class="nf">embed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+              <span class="n">model</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ProtembedModel</span><span class="p">,</span><span class="n">SVDModel</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+                           <span class="n">sequences</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">],</span>
+                           <span class="n">reduction</span><span class="o">=</span><span class="s2">&quot;MEAN&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Embed sequences using the specified model.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model : Union[ProtembedModel, SVDModel, str]</span>
+<span class="sd">            The model to use for embedding. This can be an instance of ProtembedModel, SVDModel,</span>
+<span class="sd">            or a string representing the model_id.</span>
+<span class="sd">        sequences : List[bytes]</span>
+<span class="sd">            List of byte sequences to be embedded.</span>
+<span class="sd">        reduction : str, optional</span>
+<span class="sd">            The reduction operation to be applied on the embeddings.</span>
+<span class="sd">            Options are None, &quot;MEAN&quot;, or &quot;SUM&quot;. Default is None.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        EmbeddingResultFuture</span>
+<span class="sd">            An instance of EmbeddingResultFuture</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        TypeError</span>
+<span class="sd">            If the input model is neither ProtembedModel, SVDModel, nor str.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">ProtembedModel</span><span class="p">):</span>
+            <span class="n">model_id</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">id</span>
+            <span class="n">job</span> <span class="o">=</span> <span class="n">embedding_model_post</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">model_id</span><span class="p">,</span> <span class="n">sequences</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="n">reduction</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">SVDModel</span><span class="p">):</span>
+            <span class="n">svd_id</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">id</span>
+            <span class="n">job</span> <span class="o">=</span> <span class="n">svd_embed_post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">svd_id</span><span class="p">,</span> <span class="n">sequences</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># we assume model is the model_id</span>
+            <span class="n">model_id</span> <span class="o">=</span> <span class="n">model</span>
+            <span class="n">job</span> <span class="o">=</span> <span class="n">embedding_model_post</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">model_id</span><span class="p">,</span> <span class="n">sequences</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="n">reduction</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">EmbeddingResultFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="n">sequences</span><span class="o">=</span><span class="n">sequences</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EmbeddingAPI.get_results"><a class="viewcode-back" href="../../../embeddings.html#openprotein.api.embedding.EmbeddingAPI.get_results">[docs]</a>    <span class="k">def</span> <span class="nf">get_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EmbeddingResultFuture</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieves the results of an embedding job.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        job : Job</span>
+<span class="sd">            The embedding job whose results are to be retrieved.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        EmbeddingResultFuture</span>
+<span class="sd">            An instance of EmbeddingResultFuture</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">EmbeddingResultFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EmbeddingAPI.fit_svd"><a class="viewcode-back" href="../../../embeddings.html#openprotein.api.embedding.EmbeddingAPI.fit_svd">[docs]</a>    <span class="k">def</span> <span class="nf">fit_svd</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">sequences</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">],</span>
+        <span class="n">n_components</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1024</span><span class="p">,</span>
+        <span class="n">reduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fit an SVD on the sequences with the specified model_id and hyperparameters (n_components).</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model_id : str</span>
+<span class="sd">            The ID of the model to fit the SVD on.</span>
+<span class="sd">        sequences : List[bytes]</span>
+<span class="sd">            The list of sequences to use for the SVD fitting.</span>
+<span class="sd">        n_components : int, optional</span>
+<span class="sd">            The number of components for the SVD, by default 1024.</span>
+<span class="sd">        reduction : Optional[str], optional</span>
+<span class="sd">            The reduction method to apply to the embeddings, by default None.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        SVDModel</span>
+<span class="sd">            The model with the SVD fit.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_model</span><span class="p">(</span><span class="n">model_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">fit_svd</span><span class="p">(</span>
+            <span class="n">sequences</span><span class="o">=</span><span class="n">sequences</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="n">n_components</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="n">reduction</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="EmbeddingAPI.get_svd"><a class="viewcode-back" href="../../../embeddings.html#openprotein.api.embedding.EmbeddingAPI.get_svd">[docs]</a>    <span class="k">def</span> <span class="nf">get_svd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">svd_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SVDModel</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get SVD job results. Including SVD dimension and sequence lengths.</span>
+
+<span class="sd">        Requires a successful SVD job from fit_svd</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        svd_id : str</span>
+<span class="sd">            The ID of the SVD  job.</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        SVDModel</span>
+<span class="sd">            The model with the SVD fit.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">metadata</span> <span class="o">=</span> <span class="n">svd_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">svd_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">SVDModel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">metadata</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EmbeddingAPI.delete_svd"><a class="viewcode-back" href="../../../embeddings.html#openprotein.api.embedding.EmbeddingAPI.delete_svd">[docs]</a>    <span class="k">def</span> <span class="nf">delete_svd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">svd_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Delete SVD model.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        svd_id : str</span>
+<span class="sd">            The ID of the SVD  job.</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bool</span>
+<span class="sd">            True: successful deletion</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">svd_delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">svd_id</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EmbeddingAPI.list_svd"><a class="viewcode-back" href="../../../embeddings.html#openprotein.api.embedding.EmbeddingAPI.list_svd">[docs]</a>    <span class="k">def</span> <span class="nf">list_svd</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">SVDModel</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        List SVD models made by user.</span>
+
+<span class="sd">        Takes no args.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            None</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list[SVDModel]</span>
+<span class="sd">            SVDModels</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">SVDModel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">metadata</span><span class="p">)</span> <span class="k">for</span> <span class="n">metadata</span> <span class="ow">in</span> <span class="n">svd_list_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">)</span>
+        <span class="p">]</span></div>
+
+<div class="viewcode-block" id="EmbeddingAPI.get_svd_results"><a class="viewcode-back" href="../../../embeddings.html#openprotein.api.embedding.EmbeddingAPI.get_svd_results">[docs]</a>    <span class="k">def</span> <span class="nf">get_svd_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="p">:</span> <span class="n">Job</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get SVD job results. Including SVD dimension and sequence lengths.</span>
+
+<span class="sd">        Requires a successful SVD job from fit_svd</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        job : Job</span>
+<span class="sd">            SVD JobFuture</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        SVDModel</span>
+<span class="sd">            The model with the SVD fit.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">EmbeddingResultFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EmbeddingAPI.load_job"><a class="viewcode-back" href="../../../embeddings.html#openprotein.api.embedding.EmbeddingAPI.load_job">[docs]</a>    <span class="k">def</span> <span class="nf">load_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Job</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Reload a Submitted job to resume from where you left off!</span>
+
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        job_id : str</span>
+<span class="sd">            The identifier of the job whose details are to be loaded.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Job</span>
+<span class="sd">            Job</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        HTTPError</span>
+<span class="sd">            If the request to the server fails.</span>
+<span class="sd">        InvalidJob</span>
+<span class="sd">            If the Job is of the wrong type</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">job_details</span> <span class="o">=</span> <span class="n">load_job</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job_id</span><span class="p">)</span>
+        <span class="n">sequences</span> <span class="o">=</span> <span class="n">embedding_get_sequences</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job_id</span><span class="o">=</span><span class="n">job_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;embed&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">job_details</span><span class="o">.</span><span class="n">job_type</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidJob</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Job </span><span class="si">{</span><span class="n">job_id</span><span class="si">}</span><span class="s2"> is of type </span><span class="si">{</span><span class="n">job_details</span><span class="o">.</span><span class="n">job_type</span><span class="si">}</span><span class="s2"> not embeddings&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sequences</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidJob</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unable to load sequences for job </span><span class="si">{</span><span class="n">job_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">EmbeddingResultFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job_details</span><span class="p">,</span> <span class="n">sequences</span><span class="o">=</span><span class="n">sequences</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, NE47.bio.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
