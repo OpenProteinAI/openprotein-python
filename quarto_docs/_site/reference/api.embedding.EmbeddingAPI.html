@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>api.embedding.protembedmodel</title>
+<title>api.embedding.embeddingapi</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -72,7 +72,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../reference/api.embedding.EmbeddingAPI.html">Some functions</a></li><li class="breadcrumb-item"><a href="../reference/api.embedding.ProtembedModel.html">api.embedding.ProtembedModel</a></li></ol></nav>
+      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../reference/api.embedding.EmbeddingAPI.html">Embeddings</a></li><li class="breadcrumb-item"><a href="../reference/api.embedding.EmbeddingAPI.html">api.embedding.EmbeddingAPI</a></li></ol></nav>
       <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
       </a>
       <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
@@ -101,12 +101,29 @@ ul.task-list li input[type="checkbox"] {
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
- <span class="menu-text">Some functions</span></a>
+ <span class="menu-text">Overview</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/base.APISession.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">base.APISession</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">Assay Data</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../reference/api.data.DataAPI.html" class="sidebar-item-text sidebar-link">
@@ -123,13 +140,13 @@ ul.task-list li input[type="checkbox"] {
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
- <span class="menu-text">Some functions</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="Toggle section">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text">Train</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../reference/api.train.TrainingAPI.html" class="sidebar-item-text sidebar-link">
@@ -146,13 +163,13 @@ ul.task-list li input[type="checkbox"] {
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
- <span class="menu-text">Some functions</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="Toggle section">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text">Design</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../reference/api.design.DesignAPI.html" class="sidebar-item-text sidebar-link">
@@ -169,13 +186,13 @@ ul.task-list li input[type="checkbox"] {
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true">
- <span class="menu-text">Some functions</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true" aria-label="Toggle section">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text">Predict</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../reference/api.predict.PredictAPI.html" class="sidebar-item-text sidebar-link">
@@ -192,13 +209,13 @@ ul.task-list li input[type="checkbox"] {
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true">
- <span class="menu-text">Some functions</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true" aria-label="Toggle section">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text">Protein Evolutionary Transformer (PoET)</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../reference/api.poet.PoetAPI.html" class="sidebar-item-text sidebar-link">
@@ -239,16 +256,16 @@ ul.task-list li input[type="checkbox"] {
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true">
- <span class="menu-text">Some functions</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true" aria-label="Toggle section">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text">Embeddings</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../reference/api.embedding.EmbeddingAPI.html" class="sidebar-item-text sidebar-link">
+  <a href="../reference/api.embedding.EmbeddingAPI.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">api.embedding.EmbeddingAPI</span></a>
   </div>
 </li>
@@ -260,7 +277,7 @@ ul.task-list li input[type="checkbox"] {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../reference/api.embedding.ProtembedModel.html" class="sidebar-item-text sidebar-link active">
+  <a href="../reference/api.embedding.ProtembedModel.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">api.embedding.ProtembedModel</span></a>
   </div>
 </li>
@@ -283,10 +300,10 @@ ul.task-list li input[type="checkbox"] {
 
 
 
-<section id="openprotein.api.embedding.ProtembedModel" class="level1">
-<h1>api.embedding.ProtembedModel</h1>
-<p><code>api.embedding.ProtembedModel(self, session, model_id, metadata=None)</code></p>
-<p>Class providing inference endpoints for protein embedding models served by OpenProtein.</p>
+<section id="openprotein.api.embedding.EmbeddingAPI" class="level1">
+<h1>api.embedding.EmbeddingAPI</h1>
+<p><code>api.embedding.EmbeddingAPI(self, session)</code></p>
+<p>This class defines a high level interface for accessing the embeddings API.</p>
 <section id="methods" class="level2">
 <h2 class="anchored" data-anchor-id="methods">Methods</h2>
 <table class="table">
@@ -298,31 +315,51 @@ ul.task-list li input[type="checkbox"] {
 </thead>
 <tbody>
 <tr class="odd">
-<td><a href="#openprotein.api.embedding.ProtembedModel.attn">attn</a></td>
-<td>Attention embeddings for sequences using this model.</td>
+<td><a href="#openprotein.api.embedding.EmbeddingAPI.delete_svd">delete_svd</a></td>
+<td>Delete SVD model.</td>
 </tr>
 <tr class="even">
-<td><a href="#openprotein.api.embedding.ProtembedModel.embed">embed</a></td>
-<td>Embed sequences using this model.</td>
+<td><a href="#openprotein.api.embedding.EmbeddingAPI.embed">embed</a></td>
+<td>Embed sequences using the specified model.</td>
 </tr>
 <tr class="odd">
-<td><a href="#openprotein.api.embedding.ProtembedModel.fit_svd">fit_svd</a></td>
-<td>Fit an SVD on the embedding results of this model.</td>
+<td><a href="#openprotein.api.embedding.EmbeddingAPI.fit_svd">fit_svd</a></td>
+<td>Fit an SVD on the sequences with the specified model_id and hyperparameters (n_components).</td>
 </tr>
 <tr class="even">
-<td><a href="#openprotein.api.embedding.ProtembedModel.get_metadata">get_metadata</a></td>
-<td>Get model metadata for this model.</td>
+<td><a href="#openprotein.api.embedding.EmbeddingAPI.get_model">get_model</a></td>
+<td>Get model by model_id.</td>
 </tr>
 <tr class="odd">
-<td><a href="#openprotein.api.embedding.ProtembedModel.logits">logits</a></td>
-<td>logit embeddings for sequences using this model.</td>
+<td><a href="#openprotein.api.embedding.EmbeddingAPI.get_results">get_results</a></td>
+<td>Retrieves the results of an embedding job.</td>
+</tr>
+<tr class="even">
+<td><a href="#openprotein.api.embedding.EmbeddingAPI.get_svd">get_svd</a></td>
+<td>Get SVD job results. Including SVD dimension and sequence lengths.</td>
+</tr>
+<tr class="odd">
+<td><a href="#openprotein.api.embedding.EmbeddingAPI.get_svd_results">get_svd_results</a></td>
+<td>Get SVD job results. Including SVD dimension and sequence lengths.</td>
+</tr>
+<tr class="even">
+<td><a href="#openprotein.api.embedding.EmbeddingAPI.list_models">list_models</a></td>
+<td>list models available for creating embeddings of your sequences</td>
+</tr>
+<tr class="odd">
+<td><a href="#openprotein.api.embedding.EmbeddingAPI.list_svd">list_svd</a></td>
+<td>List SVD models made by user.</td>
+</tr>
+<tr class="even">
+<td><a href="#openprotein.api.embedding.EmbeddingAPI.load_job">load_job</a></td>
+<td>Reload a Submitted job to resume from where you left off!</td>
 </tr>
 </tbody>
 </table>
-<section id="openprotein.api.embedding.ProtembedModel.attn" class="level3">
-<h3 class="anchored" data-anchor-id="openprotein.api.embedding.ProtembedModel.attn">attn</h3>
-<p><code>api.embedding.ProtembedModel.attn(self, sequences)</code></p>
-<p>Attention embeddings for sequences using this model.</p>
+<section id="openprotein.api.embedding.EmbeddingAPI.delete_svd" class="level3">
+<h3 class="anchored" data-anchor-id="openprotein.api.embedding.EmbeddingAPI.delete_svd">delete_svd</h3>
+<p><code>api.embedding.EmbeddingAPI.delete_svd(self, svd_id)</code></p>
+<p>Delete SVD model.</p>
 <section id="parameters" class="level4">
 <h4 class="anchored" data-anchor-id="parameters">Parameters</h4>
 <table class="table">
@@ -336,9 +373,9 @@ ul.task-list li input[type="checkbox"] {
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>sequences</code></td>
-<td>typing.List[bytes]</td>
-<td>sequences to SVD</td>
+<td><code>svd_id</code></td>
+<td>str</td>
+<td>The ID of the SVD job.</td>
 <td><em>required</em></td>
 </tr>
 </tbody>
@@ -355,25 +392,25 @@ ul.task-list li input[type="checkbox"] {
 </thead>
 <tbody>
 <tr class="odd">
-<td>EmbeddingResultFuture</td>
-<td></td>
+<td>bool</td>
+<td>True: successful deletion</td>
 </tr>
 </tbody>
 </table>
 </section>
 </section>
-<section id="openprotein.api.embedding.ProtembedModel.embed" class="level3">
-<h3 class="anchored" data-anchor-id="openprotein.api.embedding.ProtembedModel.embed">embed</h3>
-<p><code>api.embedding.ProtembedModel.embed(self, sequences, reduction='MEAN')</code></p>
-<p>Embed sequences using this model.</p>
+<section id="openprotein.api.embedding.EmbeddingAPI.embed" class="level3">
+<h3 class="anchored" data-anchor-id="openprotein.api.embedding.EmbeddingAPI.embed">embed</h3>
+<p><code>api.embedding.EmbeddingAPI.embed(self, model, sequences, reduction='MEAN')</code></p>
+<p>Embed sequences using the specified model.</p>
 <section id="parameters-1" class="level4">
 <h4 class="anchored" data-anchor-id="parameters-1">Parameters</h4>
 <table class="table">
 <colgroup>
-<col style="width: 14%">
-<col style="width: 26%">
-<col style="width: 45%">
-<col style="width: 13%">
+<col style="width: 5%">
+<col style="width: 39%">
+<col style="width: 50%">
+<col style="width: 4%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -385,15 +422,21 @@ ul.task-list li input[type="checkbox"] {
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>sequences</code></td>
-<td>typing.List[bytes]</td>
-<td>sequences to SVD</td>
+<td><code>model</code></td>
+<td>typing.Union[openprotein.api.embedding.ProtembedModel, openprotein.api.embedding.SVDModel, str]</td>
+<td>The model to use for embedding. This can be an instance of ProtembedModel, SVDModel, or a string representing the model_id.</td>
 <td><em>required</em></td>
 </tr>
 <tr class="even">
+<td><code>sequences</code></td>
+<td>typing.List[bytes]</td>
+<td>List of byte sequences to be embedded.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="odd">
 <td><code>reduction</code></td>
-<td>typing.Optional[str]</td>
-<td>embeddings reduction to use (e.g.&nbsp;mean)</td>
+<td>str</td>
+<td>The reduction operation to be applied on the embeddings. Options are None, “MEAN”, or “SUM”. Default is None.</td>
 <td><code>'MEAN'</code></td>
 </tr>
 </tbody>
@@ -411,24 +454,44 @@ ul.task-list li input[type="checkbox"] {
 <tbody>
 <tr class="odd">
 <td>EmbeddingResultFuture</td>
-<td></td>
+<td>An instance of EmbeddingResultFuture</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="raises" class="level4">
+<h4 class="anchored" data-anchor-id="raises">Raises</h4>
+<table class="table">
+<colgroup>
+<col style="width: 14%">
+<col style="width: 85%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>TypeError</td>
+<td>If the input model is neither ProtembedModel, SVDModel, nor str.</td>
 </tr>
 </tbody>
 </table>
 </section>
 </section>
-<section id="openprotein.api.embedding.ProtembedModel.fit_svd" class="level3">
-<h3 class="anchored" data-anchor-id="openprotein.api.embedding.ProtembedModel.fit_svd">fit_svd</h3>
-<p><code>api.embedding.ProtembedModel.fit_svd(self, sequences, n_components=1024, reduction=None)</code></p>
-<p>Fit an SVD on the embedding results of this model.</p>
-<p>This function will create an SVDModel based on the embeddings from this model as well as the hyperparameters specified in the args.</p>
+<section id="openprotein.api.embedding.EmbeddingAPI.fit_svd" class="level3">
+<h3 class="anchored" data-anchor-id="openprotein.api.embedding.EmbeddingAPI.fit_svd">fit_svd</h3>
+<p><code>api.embedding.EmbeddingAPI.fit_svd(self, model_id, sequences, n_components=1024, reduction=None)</code></p>
+<p>Fit an SVD on the sequences with the specified model_id and hyperparameters (n_components).</p>
 <section id="parameters-2" class="level4">
 <h4 class="anchored" data-anchor-id="parameters-2">Parameters</h4>
 <table class="table">
 <colgroup>
-<col style="width: 14%">
-<col style="width: 21%">
-<col style="width: 53%">
+<col style="width: 13%">
+<col style="width: 20%">
+<col style="width: 56%">
 <col style="width: 10%">
 </colgroup>
 <thead>
@@ -441,21 +504,27 @@ ul.task-list li input[type="checkbox"] {
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>sequences</code></td>
-<td>typing.List[bytes]</td>
-<td>sequences to SVD</td>
+<td><code>model_id</code></td>
+<td>str</td>
+<td>The ID of the model to fit the SVD on.</td>
 <td><em>required</em></td>
 </tr>
 <tr class="even">
-<td><code>n_components</code></td>
-<td>int</td>
-<td>number of components in SVD. Will determine output shapes</td>
-<td><code>1024</code></td>
+<td><code>sequences</code></td>
+<td>typing.List[bytes]</td>
+<td>The list of sequences to use for the SVD fitting.</td>
+<td><em>required</em></td>
 </tr>
 <tr class="odd">
+<td><code>n_components</code></td>
+<td>int</td>
+<td>The number of components for the SVD, by default 1024.</td>
+<td><code>1024</code></td>
+</tr>
+<tr class="even">
 <td><code>reduction</code></td>
 <td>typing.Optional[str]</td>
-<td>embeddings reduction to use (e.g.&nbsp;mean)</td>
+<td>The reduction method to apply to the embeddings, by default None.</td>
 <td><code>None</code></td>
 </tr>
 </tbody>
@@ -473,38 +542,17 @@ ul.task-list li input[type="checkbox"] {
 <tbody>
 <tr class="odd">
 <td>SVDModel</td>
-<td></td>
+<td>The model with the SVD fit.</td>
 </tr>
 </tbody>
 </table>
 </section>
 </section>
-<section id="openprotein.api.embedding.ProtembedModel.get_metadata" class="level3">
-<h3 class="anchored" data-anchor-id="openprotein.api.embedding.ProtembedModel.get_metadata">get_metadata</h3>
-<p><code>api.embedding.ProtembedModel.get_metadata(self)</code></p>
-<p>Get model metadata for this model.</p>
-<section id="returns-3" class="level4">
-<h4 class="anchored" data-anchor-id="returns-3">Returns</h4>
-<table class="table">
-<thead>
-<tr class="header">
-<th>Type</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>ModelMetadata</td>
-<td></td>
-</tr>
-</tbody>
-</table>
-</section>
-</section>
-<section id="openprotein.api.embedding.ProtembedModel.logits" class="level3">
-<h3 class="anchored" data-anchor-id="openprotein.api.embedding.ProtembedModel.logits">logits</h3>
-<p><code>api.embedding.ProtembedModel.logits(self, sequences)</code></p>
-<p>logit embeddings for sequences using this model.</p>
+<section id="openprotein.api.embedding.EmbeddingAPI.get_model" class="level3">
+<h3 class="anchored" data-anchor-id="openprotein.api.embedding.EmbeddingAPI.get_model">get_model</h3>
+<p><code>api.embedding.EmbeddingAPI.get_model(self, model_id)</code></p>
+<p>Get model by model_id.</p>
+<p>ProtembedModel allows all the usual job manipulation: e.g.&nbsp;making POST and GET requests for this model specifically.</p>
 <section id="parameters-3" class="level4">
 <h4 class="anchored" data-anchor-id="parameters-3">Parameters</h4>
 <table class="table">
@@ -518,9 +566,75 @@ ul.task-list li input[type="checkbox"] {
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>sequences</code></td>
-<td>typing.List[bytes]</td>
-<td>sequences to SVD</td>
+<td><code>model_id</code></td>
+<td>str</td>
+<td>the model identifier</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-3" class="level4">
+<h4 class="anchored" data-anchor-id="returns-3">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>ProtembedModel</td>
+<td>The model</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="raises-1" class="level4">
+<h4 class="anchored" data-anchor-id="raises-1">Raises</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>HTTPError</td>
+<td>If the GET request does not succeed.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="openprotein.api.embedding.EmbeddingAPI.get_results" class="level3">
+<h3 class="anchored" data-anchor-id="openprotein.api.embedding.EmbeddingAPI.get_results">get_results</h3>
+<p><code>api.embedding.EmbeddingAPI.get_results(self, job)</code></p>
+<p>Retrieves the results of an embedding job.</p>
+<section id="parameters-4" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-4">Parameters</h4>
+<table class="table">
+<colgroup>
+<col style="width: 9%">
+<col style="width: 9%">
+<col style="width: 65%">
+<col style="width: 14%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>job</code></td>
+<td>Job</td>
+<td>The embedding job whose results are to be retrieved.</td>
 <td><em>required</em></td>
 </tr>
 </tbody>
@@ -538,7 +652,193 @@ ul.task-list li input[type="checkbox"] {
 <tbody>
 <tr class="odd">
 <td>EmbeddingResultFuture</td>
-<td></td>
+<td>An instance of EmbeddingResultFuture</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="openprotein.api.embedding.EmbeddingAPI.get_svd" class="level3">
+<h3 class="anchored" data-anchor-id="openprotein.api.embedding.EmbeddingAPI.get_svd">get_svd</h3>
+<p><code>api.embedding.EmbeddingAPI.get_svd(self, svd_id)</code></p>
+<p>Get SVD job results. Including SVD dimension and sequence lengths.</p>
+<p>Requires a successful SVD job from fit_svd</p>
+<section id="parameters-5" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-5">Parameters</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>svd_id</code></td>
+<td>str</td>
+<td>The ID of the SVD job.</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-5" class="level4">
+<h4 class="anchored" data-anchor-id="returns-5">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>SVDModel</td>
+<td>The model with the SVD fit.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="openprotein.api.embedding.EmbeddingAPI.get_svd_results" class="level3">
+<h3 class="anchored" data-anchor-id="openprotein.api.embedding.EmbeddingAPI.get_svd_results">get_svd_results</h3>
+<p><code>api.embedding.EmbeddingAPI.get_svd_results(self, job)</code></p>
+<p>Get SVD job results. Including SVD dimension and sequence lengths.</p>
+<p>Requires a successful SVD job from fit_svd</p>
+<section id="parameters-6" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-6">Parameters</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>job</code></td>
+<td>Job</td>
+<td>SVD JobFuture</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-6" class="level4">
+<h4 class="anchored" data-anchor-id="returns-6">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>SVDModel</td>
+<td>The model with the SVD fit.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="openprotein.api.embedding.EmbeddingAPI.list_models" class="level3">
+<h3 class="anchored" data-anchor-id="openprotein.api.embedding.EmbeddingAPI.list_models">list_models</h3>
+<p><code>api.embedding.EmbeddingAPI.list_models(self)</code></p>
+<p>list models available for creating embeddings of your sequences</p>
+</section>
+<section id="openprotein.api.embedding.EmbeddingAPI.list_svd" class="level3">
+<h3 class="anchored" data-anchor-id="openprotein.api.embedding.EmbeddingAPI.list_svd">list_svd</h3>
+<p><code>api.embedding.EmbeddingAPI.list_svd(self)</code></p>
+<p>List SVD models made by user.</p>
+<p>Takes no args.</p>
+<section id="returns-7" class="level4">
+<h4 class="anchored" data-anchor-id="returns-7">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>list[openprotein.api.embedding.SVDModel]</td>
+<td>SVDModels</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="openprotein.api.embedding.EmbeddingAPI.load_job" class="level3">
+<h3 class="anchored" data-anchor-id="openprotein.api.embedding.EmbeddingAPI.load_job">load_job</h3>
+<p><code>api.embedding.EmbeddingAPI.load_job(self, job_id)</code></p>
+<p>Reload a Submitted job to resume from where you left off!</p>
+<section id="parameters-7" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-7">Parameters</h4>
+<table class="table">
+<colgroup>
+<col style="width: 11%">
+<col style="width: 8%">
+<col style="width: 66%">
+<col style="width: 13%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>job_id</code></td>
+<td>str</td>
+<td>The identifier of the job whose details are to be loaded.</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-8" class="level4">
+<h4 class="anchored" data-anchor-id="returns-8">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Job</td>
+<td>Job</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="raises-2" class="level4">
+<h4 class="anchored" data-anchor-id="raises-2">Raises</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>HTTPError</td>
+<td>If the request to the server fails.</td>
+</tr>
+<tr class="even">
+<td>InvalidJob</td>
+<td>If the Job is of the wrong type</td>
 </tr>
 </tbody>
 </table>

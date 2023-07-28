@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>api.design.designfuture</title>
+<title>api.poet.promptfuture</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -72,7 +72,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../reference/api.design.DesignAPI.html">Design new sequences!</a></li><li class="breadcrumb-item"><a href="../reference/api.design.DesignFuture.html">api.design.DesignFuture</a></li></ol></nav>
+      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../reference/api.poet.PoetAPI.html">Protein Evolutionary Transformer (PoET)</a></li><li class="breadcrumb-item"><a href="../reference/api.poet.PromptFuture.html">api.poet.PromptFuture</a></li></ol></nav>
       <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
       </a>
       <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
@@ -141,7 +141,7 @@ ul.task-list li input[type="checkbox"] {
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
- <span class="menu-text">Train ML models</span></a>
+ <span class="menu-text">Train</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
@@ -164,7 +164,7 @@ ul.task-list li input[type="checkbox"] {
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true">
- <span class="menu-text">Design new sequences!</span></a>
+ <span class="menu-text">Design</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
@@ -178,7 +178,7 @@ ul.task-list li input[type="checkbox"] {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../reference/api.design.DesignFuture.html" class="sidebar-item-text sidebar-link active">
+  <a href="../reference/api.design.DesignFuture.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">api.design.DesignFuture</span></a>
   </div>
 </li>
@@ -187,7 +187,7 @@ ul.task-list li input[type="checkbox"] {
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true">
- <span class="menu-text">Predict protein attributes!</span></a>
+ <span class="menu-text">Predict</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
@@ -242,7 +242,7 @@ ul.task-list li input[type="checkbox"] {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../reference/api.poet.PromptFuture.html" class="sidebar-item-text sidebar-link">
+  <a href="../reference/api.poet.PromptFuture.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">api.poet.PromptFuture</span></a>
   </div>
 </li>
@@ -257,7 +257,7 @@ ul.task-list li input[type="checkbox"] {
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true">
- <span class="menu-text">Protein Embeddings</span></a>
+ <span class="menu-text">Embeddings</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
@@ -300,36 +300,70 @@ ul.task-list li input[type="checkbox"] {
 
 
 
-<section id="openprotein.api.design.DesignFuture" class="level1">
-<h1>api.design.DesignFuture</h1>
-<p><code>api.design.DesignFuture(self, session, job, page_size=1000)</code></p>
-<p>Future Job for manipulating results</p>
-<section id="methods" class="level2">
-<h2 class="anchored" data-anchor-id="methods">Methods</h2>
+<section id="openprotein.api.poet.PromptFuture" class="level1">
+<h1>api.poet.PromptFuture</h1>
+<p><code>api.poet.PromptFuture(self, session, job, page_size=config.POET_PAGE_SIZE, msa_id=None)</code></p>
+<p>Represents a result of a prompt job.</p>
+<section id="attributes" class="level2">
+<h2 class="anchored" data-anchor-id="attributes">Attributes</h2>
 <table class="table">
+<colgroup>
+<col style="width: 15%">
+<col style="width: 16%">
+<col style="width: 68%">
+</colgroup>
 <thead>
 <tr class="header">
 <th>Name</th>
+<th>Type</th>
 <th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td><a href="#openprotein.api.design.DesignFuture.get">get</a></td>
-<td>Get all the results of the design job.</td>
+<td>session</td>
+<td>APISession</td>
+<td>An instance of APISession for API interactions.</td>
+</tr>
+<tr class="even">
+<td>job</td>
+<td>Job</td>
+<td>The PoET scoring job.</td>
+</tr>
+<tr class="odd">
+<td>page_size</td>
+<td>int</td>
+<td>The number of results to fetch in a single page.</td>
 </tr>
 </tbody>
 </table>
-<section id="openprotein.api.design.DesignFuture.get" class="level3">
-<h3 class="anchored" data-anchor-id="openprotein.api.design.DesignFuture.get">get</h3>
-<p><code>api.design.DesignFuture.get(self, verbose=False)</code></p>
-<p>Get all the results of the design job.</p>
-<p>Args: verbose (bool, optional): If True, print verbose output. Defaults False.</p>
-<p>Raises: APIError: If there is an issue with the API request.</p>
-<p>Returns: DesignJob: A list of predict objects representing the results.</p>
-
-
 </section>
+<section id="methods" class="level2">
+<h2 class="anchored" data-anchor-id="methods">Methods</h2>
+<p>get(verbose=False) Get the final results of the PoET scoring job.</p>
+</section>
+<section id="returns" class="level2">
+<h2 class="anchored" data-anchor-id="returns">Returns</h2>
+<table class="table">
+<colgroup>
+<col style="width: 51%">
+<col style="width: 48%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>typing.List[openprotein.models.PoetScoreResult]</td>
+<td>The list of results from the PoET scoring job.</td>
+</tr>
+</tbody>
+</table>
+
+
 </section>
 </section>
 

@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>get_object</title>
+<title>api.poet.msafuture</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -19,40 +19,6 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
-}
-/* CSS for syntax highlighting */
-pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
-pre > code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-div.sourceCode { margin: 1em 0; }
-pre.sourceCode { margin: 0; }
-@media screen {
-div.sourceCode { overflow: auto; }
-}
-@media print {
-pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
-}
-pre.numberSource code
-  { counter-reset: source-line 0; }
-pre.numberSource code > span
-  { position: relative; left: -4em; counter-increment: source-line; }
-pre.numberSource code > span > a:first-child::before
-  { content: counter(source-line);
-    position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; display: inline-block;
-    -webkit-touch-callout: none; -webkit-user-select: none;
-    -khtml-user-select: none; -moz-user-select: none;
-    -ms-user-select: none; user-select: none;
-    padding: 0 4px; width: 4em;
-  }
-pre.numberSource { margin-left: 3em;  padding-left: 4px; }
-div.sourceCode
-  {   }
-@media screen {
-pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -106,7 +72,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../reference/get_object.html">Some functions</a></li><li class="breadcrumb-item"><a href="../reference/get_object.html">get_object</a></li></ol></nav>
+      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../reference/api.poet.PoetAPI.html">Protein Evolutionary Transformer (PoET)</a></li><li class="breadcrumb-item"><a href="../reference/api.poet.MSAFuture.html">api.poet.MSAFuture</a></li></ol></nav>
       <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
       </a>
       <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
@@ -135,7 +101,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
- <span class="menu-text">Some functions</span></a>
+ <span class="menu-text">Overview</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
@@ -143,14 +109,182 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../reference/get_object.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text">get_object</span></a>
+  <a href="../reference/base.APISession.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">base.APISession</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">Assay Data</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/api.data.DataAPI.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">api.data.DataAPI</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../reference/preview.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">preview</span></a>
+  <a href="../reference/api.data.AssayDataset.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">api.data.AssayDataset</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text">Train</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/api.train.TrainingAPI.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">api.train.TrainingAPI</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/api.train.TrainFuture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">api.train.TrainFuture</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text">Design</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/api.design.DesignAPI.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">api.design.DesignAPI</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/api.design.DesignFuture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">api.design.DesignFuture</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text">Predict</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/api.predict.PredictAPI.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">api.predict.PredictAPI</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/api.predict.PredictFuture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">api.predict.PredictFuture</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text">Protein Evolutionary Transformer (PoET)</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/api.poet.PoetAPI.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">api.poet.PoetAPI</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/api.poet.PoetScoreFuture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">api.poet.PoetScoreFuture</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/api.poet.PoetSingleSiteFuture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">api.poet.PoetSingleSiteFuture</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/api.poet.PoetGenerateFuture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">api.poet.PoetGenerateFuture</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/api.poet.PromptFuture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">api.poet.PromptFuture</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/api.poet.MSAFuture.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">api.poet.MSAFuture</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text">Embeddings</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/api.embedding.EmbeddingAPI.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">api.embedding.EmbeddingAPI</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/api.embedding.EmbeddingResultFuture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">api.embedding.EmbeddingResultFuture</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/api.embedding.ProtembedModel.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">api.embedding.ProtembedModel</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/api.embedding.SVDModel.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">api.embedding.SVDModel</span></a>
   </div>
 </li>
       </ul>
@@ -166,18 +300,97 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 
-<section id="quartodoc.get_object" class="level1">
-<h1>get_object</h1>
-<p><code>get_object(path, object_name=None, parser='numpy', load_aliases=True, dynamic=False, loader=None)</code></p>
-<p>Fetch a griffe object.</p>
-<section id="parameters" class="level2">
-<h2 class="anchored" data-anchor-id="parameters">Parameters</h2>
+<section id="openprotein.api.poet.MSAFuture" class="level1">
+<h1>api.poet.MSAFuture</h1>
+<p><code>api.poet.MSAFuture(self, session, job, page_size=config.POET_PAGE_SIZE)</code></p>
+<p>Represents a result of a MSA job.</p>
+<section id="attributes" class="level2">
+<h2 class="anchored" data-anchor-id="attributes">Attributes</h2>
 <table class="table">
 <colgroup>
+<col style="width: 15%">
+<col style="width: 16%">
+<col style="width: 68%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>session</td>
+<td>APISession</td>
+<td>An instance of APISession for API interactions.</td>
+</tr>
+<tr class="even">
+<td>job</td>
+<td>Job</td>
+<td>The PoET scoring job.</td>
+</tr>
+<tr class="odd">
+<td>page_size</td>
+<td>int</td>
+<td>The number of results to fetch in a single page.</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="methods" class="level2">
+<h2 class="anchored" data-anchor-id="methods">Methods</h2>
+<p>get(verbose=False) Get the final results of the PoET scoring job.</p>
+</section>
+<section id="returns" class="level2">
+<h2 class="anchored" data-anchor-id="returns">Returns</h2>
+<table class="table">
+<colgroup>
+<col style="width: 51%">
+<col style="width: 48%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>typing.List[openprotein.models.PoetScoreResult]</td>
+<td>The list of results from the PoET scoring job.</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="methods-1" class="level2">
+<h2 class="anchored" data-anchor-id="methods-1">Methods</h2>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="#openprotein.api.poet.MSAFuture.sample_prompt">sample_prompt</a></td>
+<td>Create a protein sequence prompt from a linked MSA (Multiple Sequence Alignment) for PoET Jobs.</td>
+</tr>
+</tbody>
+</table>
+<section id="openprotein.api.poet.MSAFuture.sample_prompt" class="level3">
+<h3 class="anchored" data-anchor-id="openprotein.api.poet.MSAFuture.sample_prompt">sample_prompt</h3>
+<p><code>api.poet.MSAFuture.sample_prompt(self, num_sequences=None, num_residues=None, method=MSASamplingMethod.NEIGHBORS_NONGAP_NORM_NO_LIMIT, homology_level=0.8, max_similarity=1.0, min_similarity=0.0, always_include_seed_sequence=False, num_ensemble_prompts=1, random_seed=None)</code></p>
+<p>Create a protein sequence prompt from a linked MSA (Multiple Sequence Alignment) for PoET Jobs.</p>
+<section id="parameters" class="level4">
+<h4 class="anchored" data-anchor-id="parameters">Parameters</h4>
+<table class="table">
+<colgroup>
+<col style="width: 14%">
 <col style="width: 8%">
-<col style="width: 7%">
-<col style="width: 78%">
-<col style="width: 6%">
+<col style="width: 52%">
+<col style="width: 24%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -189,49 +402,89 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>path</code></td>
-<td>str</td>
-<td>An import path to the object. This should have the form <code>path.to.module:object</code>. For example, <code>quartodoc:get_object</code> or <code>quartodoc:MdRenderer.render</code>.</td>
-<td><em>required</em></td>
+<td><code>num_sequences</code></td>
+<td>int</td>
+<td>Maximum number of sequences in the prompt. Must be &lt;100.</td>
+<td><code>None</code></td>
 </tr>
 <tr class="even">
-<td><code>object_name</code></td>
-<td>’str</td>
-<td>None’</td>
-<td>(Deprecated). A function name.</td>
+<td><code>num_residues</code></td>
+<td>int</td>
+<td>Maximum number of residues (tokens) in the prompt. Must be less than 24577.</td>
+<td><code>None</code></td>
 </tr>
 <tr class="odd">
-<td><code>parser</code></td>
-<td>str</td>
-<td>A docstring parser to use.</td>
-<td><code>'numpy'</code></td>
+<td><code>method</code></td>
+<td>MSASamplingMethod</td>
+<td>Method to use for MSA sampling. Defaults to NEIGHBORS_NONGAP_NORM_NO_LIMIT.</td>
+<td><code>MSASamplingMethod.NEIGHBORS_NONGAP_NORM_NO_LIMIT</code></td>
 </tr>
 <tr class="even">
-<td><code>load_aliases</code></td>
-<td></td>
-<td>For aliases that were imported from other modules, should we load that module?</td>
-<td><code>True</code></td>
+<td><code>homology_level</code></td>
+<td>float</td>
+<td>Level of homology for sequences in the MSA (neighbors methods only). Must be between 0 and 1. Defaults to 0.8.</td>
+<td><code>0.8</code></td>
 </tr>
 <tr class="odd">
-<td><code>dynamic</code></td>
-<td></td>
-<td>Whether to dynamically import object. Useful if docstring is not hard-coded, but was set on object by running python code.</td>
+<td><code>max_similarity</code></td>
+<td>float</td>
+<td>Maximum similarity between sequences in the MSA and the seed. Must be between 0 and 1. Defaults to 1.0.</td>
+<td><code>1.0</code></td>
+</tr>
+<tr class="even">
+<td><code>min_similarity</code></td>
+<td>float</td>
+<td>Minimum similarity between sequences in the MSA and the seed. Must be between 0 and 1. Defaults to 0.0.</td>
+<td><code>0.0</code></td>
+</tr>
+<tr class="odd">
+<td><code>always_include_seed_sequence</code></td>
+<td>bool</td>
+<td>Whether to always include the seed sequence in the MSA. Defaults to False.</td>
 <td><code>False</code></td>
+</tr>
+<tr class="even">
+<td><code>num_ensemble_prompts</code></td>
+<td>int</td>
+<td>Number of ensemble jobs to run. Defaults to 1.</td>
+<td><code>1</code></td>
+</tr>
+<tr class="odd">
+<td><code>random_seed</code></td>
+<td>int</td>
+<td>Seed for random number generation. Defaults to a random number between 0 and 2**32-1.</td>
+<td><code>None</code></td>
 </tr>
 </tbody>
 </table>
 </section>
-<section id="see-also" class="level2">
-<h2 class="anchored" data-anchor-id="see-also">See Also</h2>
-<p>preview: print a user-friendly preview of a griffe object.</p>
+<section id="raises" class="level4">
+<h4 class="anchored" data-anchor-id="raises">Raises</h4>
+<table class="table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 74%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>InvalidParameterError</td>
+<td>If provided parameter values are not in the allowed range.</td>
+</tr>
+<tr class="even">
+<td>MissingParameterError</td>
+<td>If both or none of ‘num_sequences’, ‘num_residues’ is specified.</td>
+</tr>
+</tbody>
+</table>
 </section>
-<section id="examples" class="level2">
-<h2 class="anchored" data-anchor-id="examples">Examples</h2>
-<div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> get_function(<span class="st">"quartodoc"</span>, <span class="st">"get_function"</span>)</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>Function(<span class="st">'get_function'</span>, ...</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</section>
-<section id="returns" class="level2">
-<h2 class="anchored" data-anchor-id="returns">Returns</h2>
+<section id="returns-1" class="level4">
+<h4 class="anchored" data-anchor-id="returns-1">Returns</h4>
 <table class="table">
 <thead>
 <tr class="header">
@@ -241,13 +494,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </thead>
 <tbody>
 <tr class="odd">
-<td>griffe.dataclasses.Object</td>
-<td>abc</td>
+<td>PromptJob</td>
+<td></td>
 </tr>
 </tbody>
 </table>
 
 
+</section>
+</section>
 </section>
 </section>
 
