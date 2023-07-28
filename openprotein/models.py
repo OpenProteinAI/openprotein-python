@@ -59,7 +59,7 @@ class SVDMetadata(BaseModel):
     model_id: str
     n_components: int
     reduction: Optional[str]
-    sequence_length: Optional[int]
+    sequence_length: Optional[int] = None
 
     def is_done(self):
         return self.status.done()

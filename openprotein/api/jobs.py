@@ -42,9 +42,9 @@ class Job(BaseModel):
     start_date: Optional[datetime]
     end_date: Optional[datetime]
     prerequisite_job_id: Optional[str]
-    progress_message: Optional[str]
+    progress_message: Optional[str] = None
     progress_counter: Optional[int] = 0
-    num_records: Optional[int]
+    num_records: Optional[int] = None
 
     def refresh(self, session: APISession):
         """refresh job status"""
@@ -62,10 +62,11 @@ class Job(BaseModel):
         """update rules for jobs without counters"""
         progress = job.progress_counter
         #if progress is not None:  # Check None before comparison
-        if job.status == JobStatus.PENDING and progress is None:
-            progress = 5
-        if job.status == JobStatus.RUNNING and progress is None:
-            progress = 25
+        if progress is None:
+            if job.status == JobStatus.PENDING:
+                progress = 5
+            if job.status == JobStatus.RUNNING:
+                progress = 25
         if job.status in [JobStatus.SUCCESS, JobStatus.FAILURE]:
             progress = 100
         return progress or 0 # never None
