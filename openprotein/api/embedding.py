@@ -426,7 +426,7 @@ class ProtembedModel:
         self._metadata = embedding_model_get(self.session, self.id)
         return self._metadata
 
-    def embed(self, sequences: List[bytes], reduction=None):
+    def embed(self, sequences: List[bytes], reduction: Optional[str]="MEAN"):
         """
         Embed sequences using this model.
 
