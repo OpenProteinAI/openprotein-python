@@ -1,0 +1,214 @@
+# api.embedding.EmbeddingAPI { #openprotein.api.embedding.EmbeddingAPI }
+
+`api.embedding.EmbeddingAPI(self, session)`
+
+This class defines a high level interface for accessing the embeddings API.
+
+## Methods
+
+| Name | Description |
+| --- | --- |
+| [delete_svd](#openprotein.api.embedding.EmbeddingAPI.delete_svd) | Delete SVD model. |
+| [embed](#openprotein.api.embedding.EmbeddingAPI.embed) | Embed sequences using the specified model. |
+| [fit_svd](#openprotein.api.embedding.EmbeddingAPI.fit_svd) | Fit an SVD on the sequences with the specified model_id and hyperparameters (n_components). |
+| [get_model](#openprotein.api.embedding.EmbeddingAPI.get_model) | Get model by model_id.  |
+| [get_results](#openprotein.api.embedding.EmbeddingAPI.get_results) | Retrieves the results of an embedding job. |
+| [get_svd](#openprotein.api.embedding.EmbeddingAPI.get_svd) | Get SVD job results. Including SVD dimension and sequence lengths. |
+| [get_svd_results](#openprotein.api.embedding.EmbeddingAPI.get_svd_results) | Get SVD job results. Including SVD dimension and sequence lengths. |
+| [list_models](#openprotein.api.embedding.EmbeddingAPI.list_models) | list models available for creating embeddings of your sequences |
+| [list_svd](#openprotein.api.embedding.EmbeddingAPI.list_svd) | List SVD models made by user. |
+| [load_job](#openprotein.api.embedding.EmbeddingAPI.load_job) | Reload a Submitted job to resume from where you left off! |
+
+### delete_svd { #openprotein.api.embedding.EmbeddingAPI.delete_svd }
+
+`api.embedding.EmbeddingAPI.delete_svd(self, svd_id)`
+
+Delete SVD model.
+
+#### Parameters
+
+| Name     | Type   | Description             | Default    |
+|----------|--------|-------------------------|------------|
+| `svd_id` | str    | The ID of the SVD  job. | _required_ |
+
+#### Returns
+
+| Type   | Description               |
+|--------|---------------------------|
+| bool   | True: successful deletion |
+
+### embed { #openprotein.api.embedding.EmbeddingAPI.embed }
+
+`api.embedding.EmbeddingAPI.embed(self, model, sequences, reduction='MEAN')`
+
+Embed sequences using the specified model.
+
+#### Parameters
+
+| Name        | Type                                                                                              | Description                                                                                                                 | Default    |
+|-------------|---------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|------------|
+| `model`     | typing.Union\[openprotein.api.embedding.ProtembedModel, openprotein.api.embedding.SVDModel, str\] | The model to use for embedding. This can be an instance of ProtembedModel, SVDModel, or a string representing the model_id. | _required_ |
+| `sequences` | typing.List\[bytes\]                                                                              | List of byte sequences to be embedded.                                                                                      | _required_ |
+| `reduction` | str                                                                                               | The reduction operation to be applied on the embeddings. Options are None, "MEAN", or "SUM". Default is None.               | `'MEAN'`   |
+
+#### Returns
+
+| Type                  | Description                          |
+|-----------------------|--------------------------------------|
+| EmbeddingResultFuture | An instance of EmbeddingResultFuture |
+
+#### Raises
+
+| Type      | Description                                                      |
+|-----------|------------------------------------------------------------------|
+| TypeError | If the input model is neither ProtembedModel, SVDModel, nor str. |
+
+### fit_svd { #openprotein.api.embedding.EmbeddingAPI.fit_svd }
+
+`api.embedding.EmbeddingAPI.fit_svd(self, model_id, sequences, n_components=1024, reduction=None)`
+
+Fit an SVD on the sequences with the specified model_id and hyperparameters (n_components).
+
+#### Parameters
+
+| Name           | Type                   | Description                                                       | Default    |
+|----------------|------------------------|-------------------------------------------------------------------|------------|
+| `model_id`     | str                    | The ID of the model to fit the SVD on.                            | _required_ |
+| `sequences`    | typing.List\[bytes\]   | The list of sequences to use for the SVD fitting.                 | _required_ |
+| `n_components` | int                    | The number of components for the SVD, by default 1024.            | `1024`     |
+| `reduction`    | typing.Optional\[str\] | The reduction method to apply to the embeddings, by default None. | `None`     |
+
+#### Returns
+
+| Type     | Description                 |
+|----------|-----------------------------|
+| SVDModel | The model with the SVD fit. |
+
+### get_model { #openprotein.api.embedding.EmbeddingAPI.get_model }
+
+`api.embedding.EmbeddingAPI.get_model(self, model_id)`
+
+Get model by model_id. 
+
+ProtembedModel allows all the usual job manipulation:             e.g. making POST and GET requests for this model specifically. 
+
+#### Parameters
+
+| Name       | Type   | Description          | Default    |
+|------------|--------|----------------------|------------|
+| `model_id` | str    | the model identifier | _required_ |
+
+#### Returns
+
+| Type           | Description   |
+|----------------|---------------|
+| ProtembedModel | The model     |
+
+#### Raises
+
+| Type      | Description                          |
+|-----------|--------------------------------------|
+| HTTPError | If the GET request does not succeed. |
+
+### get_results { #openprotein.api.embedding.EmbeddingAPI.get_results }
+
+`api.embedding.EmbeddingAPI.get_results(self, job)`
+
+Retrieves the results of an embedding job.
+
+#### Parameters
+
+| Name   | Type   | Description                                          | Default    |
+|--------|--------|------------------------------------------------------|------------|
+| `job`  | Job    | The embedding job whose results are to be retrieved. | _required_ |
+
+#### Returns
+
+| Type                  | Description                          |
+|-----------------------|--------------------------------------|
+| EmbeddingResultFuture | An instance of EmbeddingResultFuture |
+
+### get_svd { #openprotein.api.embedding.EmbeddingAPI.get_svd }
+
+`api.embedding.EmbeddingAPI.get_svd(self, svd_id)`
+
+Get SVD job results. Including SVD dimension and sequence lengths.
+
+Requires a successful SVD job from fit_svd
+
+#### Parameters
+
+| Name     | Type   | Description             | Default    |
+|----------|--------|-------------------------|------------|
+| `svd_id` | str    | The ID of the SVD  job. | _required_ |
+
+#### Returns
+
+| Type     | Description                 |
+|----------|-----------------------------|
+| SVDModel | The model with the SVD fit. |
+
+### get_svd_results { #openprotein.api.embedding.EmbeddingAPI.get_svd_results }
+
+`api.embedding.EmbeddingAPI.get_svd_results(self, job)`
+
+Get SVD job results. Including SVD dimension and sequence lengths.
+
+Requires a successful SVD job from fit_svd
+
+#### Parameters
+
+| Name   | Type   | Description   | Default    |
+|--------|--------|---------------|------------|
+| `job`  | Job    | SVD JobFuture | _required_ |
+
+#### Returns
+
+| Type     | Description                 |
+|----------|-----------------------------|
+| SVDModel | The model with the SVD fit. |
+
+### list_models { #openprotein.api.embedding.EmbeddingAPI.list_models }
+
+`api.embedding.EmbeddingAPI.list_models(self)`
+
+list models available for creating embeddings of your sequences
+
+### list_svd { #openprotein.api.embedding.EmbeddingAPI.list_svd }
+
+`api.embedding.EmbeddingAPI.list_svd(self)`
+
+List SVD models made by user.
+
+Takes no args.
+
+#### Returns
+
+| Type                                       | Description   |
+|--------------------------------------------|---------------|
+| list\[openprotein.api.embedding.SVDModel\] | SVDModels     |
+
+### load_job { #openprotein.api.embedding.EmbeddingAPI.load_job }
+
+`api.embedding.EmbeddingAPI.load_job(self, job_id)`
+
+Reload a Submitted job to resume from where you left off!
+
+#### Parameters
+
+| Name     | Type   | Description                                               | Default    |
+|----------|--------|-----------------------------------------------------------|------------|
+| `job_id` | str    | The identifier of the job whose details are to be loaded. | _required_ |
+
+#### Returns
+
+| Type   | Description   |
+|--------|---------------|
+| Job    | Job           |
+
+#### Raises
+
+| Type       | Description                         |
+|------------|-------------------------------------|
+| HTTPError  | If the request to the server fails. |
+| InvalidJob | If the Job is of the wrong type     |

@@ -43,9 +43,18 @@ class APISession(requests.Session):
         self.login(username, password)
 
     def login(self, username:str, password:str):
-        self.auth = self.get_auth_token(username, password)
+        """ Authenticate connection to OpenProtein with your credentials.
+        
+        Parameters
+        -----------
+        username: str
+            username 
+        password: str
+            password
+        """
+        self.auth = self._get_auth_token(username, password)
 
-    def get_auth_token(self, username:str, password:str):
+    def _get_auth_token(self, username:str, password:str):
         endpoint = "v1/login/user-access-token"
         url = urljoin(self.backend, endpoint)
         response = self.post(

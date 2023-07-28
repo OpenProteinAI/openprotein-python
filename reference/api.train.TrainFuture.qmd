@@ -1,0 +1,22 @@
+# api.train.TrainFuture { #openprotein.api.train.TrainFuture }
+
+`api.train.TrainFuture(self, session, job, assaymetadata=None)`
+
+Future Job for manipulating results
+
+## Methods
+
+| Name | Description |
+| --- | --- |
+| [get_assay_data](#openprotein.api.train.TrainFuture.get_assay_data) | NOT IMPLEMENTED. |
+
+### get_assay_data { #openprotein.api.train.TrainFuture.get_assay_data }
+
+`api.train.TrainFuture.get_assay_data(self)`
+
+NOT IMPLEMENTED.
+
+Get the assay data used for the training job.
+
+Returns:
+    The assay data.

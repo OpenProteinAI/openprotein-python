@@ -1,0 +1,63 @@
+# api.poet.MSAFuture { #openprotein.api.poet.MSAFuture }
+
+`api.poet.MSAFuture(self, session, job, page_size=config.POET_PAGE_SIZE)`
+
+Represents a result of a MSA job.
+
+## Attributes
+
+| Name      | Type       | Description                                      |
+|-----------|------------|--------------------------------------------------|
+| session   | APISession | An instance of APISession for API interactions.  |
+| job       | Job        | The PoET scoring job.                            |
+| page_size | int        | The number of results to fetch in a single page. |
+
+## Methods
+
+get(verbose=False)
+    Get the final results of the PoET scoring job.
+
+## Returns
+
+| Type                                              | Description                                    |
+|---------------------------------------------------|------------------------------------------------|
+| typing.List\[openprotein.models.PoetScoreResult\] | The list of results from the PoET scoring job. |
+
+## Methods
+
+| Name | Description |
+| --- | --- |
+| [sample_prompt](#openprotein.api.poet.MSAFuture.sample_prompt) | Create a protein sequence prompt from a linked MSA (Multiple Sequence Alignment) for PoET Jobs. |
+
+### sample_prompt { #openprotein.api.poet.MSAFuture.sample_prompt }
+
+`api.poet.MSAFuture.sample_prompt(self, num_sequences=None, num_residues=None, method=MSASamplingMethod.NEIGHBORS_NONGAP_NORM_NO_LIMIT, homology_level=0.8, max_similarity=1.0, min_similarity=0.0, always_include_seed_sequence=False, num_ensemble_prompts=1, random_seed=None)`
+
+Create a protein sequence prompt from a linked MSA (Multiple Sequence Alignment) for PoET Jobs.
+
+#### Parameters
+
+| Name                           | Type              | Description                                                                                                    | Default                                            |
+|--------------------------------|-------------------|----------------------------------------------------------------------------------------------------------------|----------------------------------------------------|
+| `num_sequences`                | int               | Maximum number of sequences in the prompt. Must be  <100.                                                      | `None`                                             |
+| `num_residues`                 | int               | Maximum number of residues (tokens) in the prompt. Must be less than 24577.                                    | `None`                                             |
+| `method`                       | MSASamplingMethod | Method to use for MSA sampling. Defaults to NEIGHBORS_NONGAP_NORM_NO_LIMIT.                                    | `MSASamplingMethod.NEIGHBORS_NONGAP_NORM_NO_LIMIT` |
+| `homology_level`               | float             | Level of homology for sequences in the MSA (neighbors methods only). Must be between 0 and 1. Defaults to 0.8. | `0.8`                                              |
+| `max_similarity`               | float             | Maximum similarity between sequences in the MSA and the seed. Must be between 0 and 1. Defaults to 1.0.        | `1.0`                                              |
+| `min_similarity`               | float             | Minimum similarity between sequences in the MSA and the seed. Must be between 0 and 1. Defaults to 0.0.        | `0.0`                                              |
+| `always_include_seed_sequence` | bool              | Whether to always include the seed sequence in the MSA. Defaults to False.                                     | `False`                                            |
+| `num_ensemble_prompts`         | int               | Number of ensemble jobs to run. Defaults to 1.                                                                 | `1`                                                |
+| `random_seed`                  | int               | Seed for random number generation. Defaults to a random number between 0 and 2**32-1.                          | `None`                                             |
+
+#### Raises
+
+| Type                  | Description                                                      |
+|-----------------------|------------------------------------------------------------------|
+| InvalidParameterError | If provided parameter values are not in the allowed range.       |
+| MissingParameterError | If both or none of 'num_sequences', 'num_residues' is specified. |
+
+#### Returns
+
+| Type      | Description   |
+|-----------|---------------|
+| PromptJob |               |

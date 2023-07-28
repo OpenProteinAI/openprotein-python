@@ -1,0 +1,69 @@
+# Function reference
+
+## Overview
+
+Welcome to the OpenProtein python client documentation! <br><br> Our workflows follow an asynchronous POST and GET framework. Once you initiate a task the system will schedule the job for retrieval later, once the work is complete. This means that even for tasks that may take a while to complete, your request will return immediately. <br><br> The job objects contain a job ID (job_id) which can be used to resume a workflow from where you left off! See the notebooks for demonstrations.
+
+| | |
+| --- | --- |
+| [base.APISession](base.APISession.qmd#openprotein.base.APISession) | Connection session. |
+
+## Assay Data
+
+Upload your dataset to OpenProtein's engineering platform for train, predict and design tasks.
+
+| | |
+| --- | --- |
+| [api.data.DataAPI](api.data.DataAPI.qmd#openprotein.api.data.DataAPI) | API interface for calling AssayData endpoints |
+| [api.data.AssayDataset](api.data.AssayDataset.qmd#openprotein.api.data.AssayDataset) | Future Job for manipulating results |
+
+## Train
+
+Train model(s) on your measured properties to enable predictions for new sequences! These workflows can additionally perform cross-validation on your models to estimate uncertainty. /n A trained model is required before you can utilize predict or design endpoints.
+
+| | |
+| --- | --- |
+| [api.train.TrainingAPI](api.train.TrainingAPI.qmd#openprotein.api.train.TrainingAPI) | API interface for calling Train endpoints |
+| [api.train.TrainFuture](api.train.TrainFuture.qmd#openprotein.api.train.TrainFuture) | Future Job for manipulating results |
+
+## Design
+
+Design new sequences based on your stated objectives and our genetic algorithm!
+
+| | |
+| --- | --- |
+| [api.design.DesignAPI](api.design.DesignAPI.qmd#openprotein.api.design.DesignAPI) | API interface for calling Design endpoints |
+| [api.design.DesignFuture](api.design.DesignFuture.qmd#openprotein.api.design.DesignFuture) | Future Job for manipulating results |
+
+## Predict
+
+Predict properties on arbitary sequences with your OpenProtein trained models! You can make predictions for single sequences as well as single mutant variants of the sequence.<br><br> Note, that you must first train a model with the train endpoints (see above).
+
+| | |
+| --- | --- |
+| [api.predict.PredictAPI](api.predict.PredictAPI.qmd#openprotein.api.predict.PredictAPI) | API interface for calling Predict endpoints |
+| [api.predict.PredictFuture](api.predict.PredictFuture.qmd#openprotein.api.predict.PredictFuture) | Future Job for manipulating results |
+
+## Protein Evolutionary Transformer (PoET)
+
+Use our generative Protein Evolutionary Transformer (PoET) model for de novo generation of proteins, evaluation of protein fitness, and single site mutant analysis of proteins. These workflows are all possible without prior wetlab data, and therefore do not require assaydata to be pre-loaded!
+
+| | |
+| --- | --- |
+| [api.poet.PoetAPI](api.poet.PoetAPI.qmd#openprotein.api.poet.PoetAPI) | API interface for calling Poet and Align endpoints |
+| [api.poet.PoetScoreFuture](api.poet.PoetScoreFuture.qmd#openprotein.api.poet.PoetScoreFuture) | Represents a result of a PoET scoring job. |
+| [api.poet.PoetSingleSiteFuture](api.poet.PoetSingleSiteFuture.qmd#openprotein.api.poet.PoetSingleSiteFuture) | Represents a result of a PoET single-site analysis job. |
+| [api.poet.PoetGenerateFuture](api.poet.PoetGenerateFuture.qmd#openprotein.api.poet.PoetGenerateFuture) | Represents a result of a PoET generation job. |
+| [api.poet.PromptFuture](api.poet.PromptFuture.qmd#openprotein.api.poet.PromptFuture) | Represents a result of a prompt job. |
+| [api.poet.MSAFuture](api.poet.MSAFuture.qmd#openprotein.api.poet.MSAFuture) | Represents a result of a MSA job. |
+
+## Embeddings
+
+Create embeddings for your protein sequences using open-source and proprietary models!
+
+| | |
+| --- | --- |
+| [api.embedding.EmbeddingAPI](api.embedding.EmbeddingAPI.qmd#openprotein.api.embedding.EmbeddingAPI) | This class defines a high level interface for accessing the embeddings API. |
+| [api.embedding.EmbeddingResultFuture](api.embedding.EmbeddingResultFuture.qmd#openprotein.api.embedding.EmbeddingResultFuture) | Future Job for manipulating results |
+| [api.embedding.ProtembedModel](api.embedding.ProtembedModel.qmd#openprotein.api.embedding.ProtembedModel) | Class providing inference endpoints for protein embedding models served by OpenProtein. |
+| [api.embedding.SVDModel](api.embedding.SVDModel.qmd#openprotein.api.embedding.SVDModel) | Class providing embedding endpoint for SVD models.         Also allows retrieving embeddings of sequences used to fit the SVD with `get`. |

@@ -222,6 +222,7 @@ def assaydata_page_get(
 
 
 class AssayDataset:
+    """Future Job for manipulating results"""
     def __init__(self, session: APISession, metadata: AssayMetadata):
         """
         init for AssayDataset.
@@ -337,14 +338,7 @@ class AssayDataset:
 
     def get_first(self) -> pd.DataFrame:
         """
-        Get a slice of assay data.
-
-        Parameters
-        ----------
-        start : int
-            Start index of the slice.
-        end : int
-            End index of the slice.
+        Get head slice of assay data.
 
         Returns
         -------
@@ -477,7 +471,7 @@ class DataAPI:
 
         Parameters
         ----------
-        job_id : str
+        assay_id : str
             The identifier of the job whose details are to be loaded.
 
         Returns

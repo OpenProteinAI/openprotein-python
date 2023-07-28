@@ -576,8 +576,6 @@ class MSAFuture(PoetFutureMixin, AsyncJobFuture):
 
         Parameters
         ----------
-        msa : str
-            The msa Job to use in prompt creation.
         num_sequences : int, optional
             Maximum number of sequences in the prompt. Must be  <100.
         num_residues : int, optional
@@ -1051,9 +1049,9 @@ class PoetGenerateFuture(PoetFutureMixin, StreamingAsyncJobFuture):
         """
         Stream the results from the response.
 
-        Yields
+        Returns
         ------
-        PoetScoreResult
+        PoetScoreResult: Yield
             A result object containing the sequence, score, and name.
 
         Raises
@@ -1091,7 +1089,7 @@ def validate_prompt(prompt: Prompt):
 
 
 class PoetAPI:
-    """API interface for calling Poet and AlignFF endpoints"""
+    """API interface for calling Poet and Align endpoints"""
 
     def __init__(self, session: APISession):
         self.session = session

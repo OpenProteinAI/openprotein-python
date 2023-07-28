@@ -1,0 +1,86 @@
+# api.train.TrainingAPI { #openprotein.api.train.TrainingAPI }
+
+`api.train.TrainingAPI(self, session)`
+
+API interface for calling Train endpoints
+
+## Methods
+
+| Name | Description |
+| --- | --- |
+| [create_training_job](#openprotein.api.train.TrainingAPI.create_training_job) | Create a training job on your data. |
+| [get_training_results](#openprotein.api.train.TrainingAPI.get_training_results) | Get training results (e.g. loss etc). |
+| [load_job](#openprotein.api.train.TrainingAPI.load_job) | Reload a Submitted job to resume from where you left off! |
+
+### create_training_job { #openprotein.api.train.TrainingAPI.create_training_job }
+
+`api.train.TrainingAPI.create_training_job(self, assaydataset, measurement_name, model_name='', force_preprocess=False)`
+
+Create a training job on your data.
+
+This function validates the inputs, formats the data, and sends the job.
+
+#### Parameters
+
+| Name               | Type                      | Description                                                          | Default    |
+|--------------------|---------------------------|----------------------------------------------------------------------|------------|
+| `assaydataset`     | AssayDataset              | An AssayDataset object from which the assay_id is extracted.         | _required_ |
+| `measurement_name` | str or typing.List\[str\] | The name(s) of the measurement(s) to be used in the training job.    | _required_ |
+| `model_name`       | str                       | The name to give the model.                                          | `''`       |
+| `force_preprocess` | bool                      | If set to True, preprocessing is forced even if data already exists. | `False`    |
+
+#### Returns
+
+| Type        | Description       |
+|-------------|-------------------|
+| TrainFuture | A TrainFuture Job |
+
+#### Raises
+
+| Type                  | Description                                                                                                                                                                    |
+|-----------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| InvalidParameterError | If the `assaydataset` is not an AssayDataset object, If any measurement name provided does not exist in the AssayDataset, or if the AssayDataset has fewer than 3 data points. |
+| HTTPError             | If the request to the server fails.                                                                                                                                            |
+
+### get_training_results { #openprotein.api.train.TrainingAPI.get_training_results }
+
+`api.train.TrainingAPI.get_training_results(self, job_id)`
+
+Get training results (e.g. loss etc).
+
+#### Parameters
+
+| Name     | Type   | Description   | Default    |
+|----------|--------|---------------|------------|
+| `job_id` | str    | job_id to get | _required_ |
+
+#### Returns
+
+| Type        | Description       |
+|-------------|-------------------|
+| TrainFuture | A TrainFuture Job |
+
+### load_job { #openprotein.api.train.TrainingAPI.load_job }
+
+`api.train.TrainingAPI.load_job(self, job_id)`
+
+Reload a Submitted job to resume from where you left off!
+
+#### Parameters
+
+| Name     | Type   | Description                                               | Default    |
+|----------|--------|-----------------------------------------------------------|------------|
+| `job_id` | str    | The identifier of the job whose details are to be loaded. | _required_ |
+
+#### Returns
+
+| Type   | Description   |
+|--------|---------------|
+| Job    | Job           |
+
+#### Raises
+
+| Type       | Description                         |
+|------------|-------------------------------------|
+| HTTPError  | If the request to the server fails. |
+| InvalidJob | If the Job is of the wrong type     |

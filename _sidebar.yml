@@ -1,0 +1,39 @@
+website:
+  sidebar:
+  - contents:
+    - reference/index.qmd
+    - contents:
+      - reference/base.APISession.qmd
+      section: Overview
+    - contents:
+      - reference/api.data.DataAPI.qmd
+      - reference/api.data.AssayDataset.qmd
+      section: Assay Data
+    - contents:
+      - reference/api.train.TrainingAPI.qmd
+      - reference/api.train.TrainFuture.qmd
+      section: Train
+    - contents:
+      - reference/api.design.DesignAPI.qmd
+      - reference/api.design.DesignFuture.qmd
+      section: Design
+    - contents:
+      - reference/api.predict.PredictAPI.qmd
+      - reference/api.predict.PredictFuture.qmd
+      section: Predict
+    - contents:
+      - reference/api.poet.PoetAPI.qmd
+      - reference/api.poet.PoetScoreFuture.qmd
+      - reference/api.poet.PoetSingleSiteFuture.qmd
+      - reference/api.poet.PoetGenerateFuture.qmd
+      - reference/api.poet.PromptFuture.qmd
+      - reference/api.poet.MSAFuture.qmd
+      section: Protein Evolutionary Transformer (PoET)
+    - contents:
+      - reference/api.embedding.EmbeddingAPI.qmd
+      - reference/api.embedding.EmbeddingResultFuture.qmd
+      - reference/api.embedding.ProtembedModel.qmd
+      - reference/api.embedding.SVDModel.qmd
+      section: Embeddings
+    id: reference
+  - id: dummy-sidebar

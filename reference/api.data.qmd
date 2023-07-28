@@ -1,0 +1,261 @@
+# api.data { #openprotein.api.data }
+
+`api.data`
+
+## Classes
+
+| Name | Description |
+| --- | --- |
+| [DataAPI](#openprotein.api.data.DataAPI) | API interface for calling AssayData endpoints |
+
+### DataAPI { #openprotein.api.data.DataAPI }
+
+`api.data.DataAPI(self, session)`
+
+API interface for calling AssayData endpoints
+
+#### Methods
+
+| Name | Description |
+| --- | --- |
+| [create](#openprotein.api.data.DataAPI.create) | Create a new assay dataset. |
+| [get](#openprotein.api.data.DataAPI.get) | Get an assay dataset by its ID. |
+| [list](#openprotein.api.data.DataAPI.list) | List all assay datasets. |
+| [load_job](#openprotein.api.data.DataAPI.load_job) | Reload a Submitted job to resume from where you left off! |
+
+##### create { #openprotein.api.data.DataAPI.create }
+
+`api.data.DataAPI.create(self, table, name, description=None)`
+
+Create a new assay dataset.
+
+###### Parameters
+
+| Name          | Type             | Description                                        | Default    |
+|---------------|------------------|----------------------------------------------------|------------|
+| `table`       | pandas.DataFrame | DataFrame containing the assay data.               | _required_ |
+| `name`        | str              | Name of the assay dataset.                         | _required_ |
+| `description` | str              | Description of the assay dataset, by default None. | `None`     |
+
+###### Returns
+
+| Type         | Description            |
+|--------------|------------------------|
+| AssayDataset | Created assay dataset. |
+
+##### get { #openprotein.api.data.DataAPI.get }
+
+`api.data.DataAPI.get(self, assay_id)`
+
+Get an assay dataset by its ID.
+
+###### Parameters
+
+| Name       | Type   | Description              | Default    |
+|------------|--------|--------------------------|------------|
+| `assay_id` | str    | ID of the assay dataset. | _required_ |
+
+###### Returns
+
+| Type         | Description                          |
+|--------------|--------------------------------------|
+| AssayDataset | Assay dataset with the specified ID. |
+
+###### Raises
+
+| Type     | Description                                     |
+|----------|-------------------------------------------------|
+| KeyError | If no assay dataset with the given ID is found. |
+
+##### list { #openprotein.api.data.DataAPI.list }
+
+`api.data.DataAPI.list(self)`
+
+List all assay datasets.
+
+###### Returns
+
+| Type                                             | Description                 |
+|--------------------------------------------------|-----------------------------|
+| typing.List\[openprotein.api.data.AssayDataset\] | List of all assay datasets. |
+
+##### load_job { #openprotein.api.data.DataAPI.load_job }
+
+`api.data.DataAPI.load_job(self, assay_id)`
+
+Reload a Submitted job to resume from where you left off!
+
+###### Parameters
+
+| Name       | Type   | Description                                               | Default    |
+|------------|--------|-----------------------------------------------------------|------------|
+| `assay_id` | str    | The identifier of the job whose details are to be loaded. | _required_ |
+
+###### Returns
+
+| Type   | Description   |
+|--------|---------------|
+| Job    | Job           |
+
+###### Raises
+
+| Type       | Description                         |
+|------------|-------------------------------------|
+| HTTPError  | If the request to the server fails. |
+| InvalidJob | If the Job is of the wrong type     |
+
+## Functions
+
+| Name | Description |
+| --- | --- |
+| [assaydata_list](#openprotein.api.data.assaydata_list) | Get a list of all assay metadata. |
+| [assaydata_page_get](#openprotein.api.data.assaydata_page_get) | Get a page of assay data. |
+| [assaydata_post](#openprotein.api.data.assaydata_post) | Post assay data. |
+| [assaydata_put](#openprotein.api.data.assaydata_put) | Update assay metadata. |
+| [get_assay_metadata](#openprotein.api.data.get_assay_metadata) | Retrieve metadata for a specified assay. |
+| [list_models](#openprotein.api.data.list_models) | List models assoicated with assay. |
+
+### assaydata_list { #openprotein.api.data.assaydata_list }
+
+`api.data.assaydata_list(session)`
+
+Get a list of all assay metadata.
+
+#### Parameters
+
+| Name      | Type       | Description                           | Default    |
+|-----------|------------|---------------------------------------|------------|
+| `session` | APISession | Session object for API communication. | _required_ |
+
+#### Returns
+
+| Type                                            | Description                 |
+|-------------------------------------------------|-----------------------------|
+| typing.List\[openprotein.models.AssayMetadata\] | List of all assay metadata. |
+
+#### Raises
+
+| Type     | Description                                |
+|----------|--------------------------------------------|
+| APIError | If an error occurs during the API request. |
+
+### assaydata_page_get { #openprotein.api.data.assaydata_page_get }
+
+`api.data.assaydata_page_get(session, assay_id, measurement_name=None, page_offset=0, page_size=1000, data_format='wide')`
+
+Get a page of assay data.
+
+#### Parameters
+
+| Name               | Type       | Description                                 | Default    |
+|--------------------|------------|---------------------------------------------|------------|
+| `session`          | APISession | Session object for API communication.       | _required_ |
+| `assay_id`         | str        | Id of the assay.                            | _required_ |
+| `measurement_name` | str        | Name of the measurement, by default None.   | `None`     |
+| `page_offset`      | int        | Offset of the page, by default 0.           | `0`        |
+| `page_size`        | int        | Size of the page, by default 1000.          | `1000`     |
+| `data_format`      | str        | data_format of the data, by default 'wide'. | `'wide'`   |
+
+#### Returns
+
+| Type          | Description         |
+|---------------|---------------------|
+| AssayDataPage | Page of assay data. |
+
+#### Raises
+
+| Type     | Description                                |
+|----------|--------------------------------------------|
+| APIError | If an error occurs during the API request. |
+
+### assaydata_post { #openprotein.api.data.assaydata_post }
+
+`api.data.assaydata_post(session, assay_file, assay_name, assay_description='')`
+
+Post assay data.
+
+#### Parameters
+
+| Name                | Type       | Description                              | Default    |
+|---------------------|------------|------------------------------------------|------------|
+| `session`           | APISession | Session object for API communication.    | _required_ |
+| `assay_file`        | str        | Path to the assay data file.             | _required_ |
+| `assay_name`        | str        | Name of the assay.                       | _required_ |
+| `assay_description` | str        | Description of the assay, by default ''. | `''`       |
+
+#### Returns
+
+| Type          | Description                        |
+|---------------|------------------------------------|
+| AssayMetadata | Metadata of the posted assay data. |
+
+### assaydata_put { #openprotein.api.data.assaydata_put }
+
+`api.data.assaydata_put(session, assay_id, assay_name=None, assay_description=None)`
+
+Update assay metadata.
+
+#### Parameters
+
+| Name                | Type       | Description                                    | Default    |
+|---------------------|------------|------------------------------------------------|------------|
+| `session`           | APISession | Session object for API communication.          | _required_ |
+| `assay_id`          | str        | Id of the assay.                               | _required_ |
+| `assay_name`        | str        | New name of the assay, by default None.        | `None`     |
+| `assay_description` | str        | New description of the assay, by default None. | `None`     |
+
+#### Returns
+
+| Type          | Description                    |
+|---------------|--------------------------------|
+| AssayMetadata | Updated metadata of the assay. |
+
+#### Raises
+
+| Type     | Description                                |
+|----------|--------------------------------------------|
+| APIError | If an error occurs during the API request. |
+
+### get_assay_metadata { #openprotein.api.data.get_assay_metadata }
+
+`api.data.get_assay_metadata(session, assay_id)`
+
+Retrieve metadata for a specified assay.
+
+#### Parameters
+
+| Name       | Type       | Description                                                        | Default    |
+|------------|------------|--------------------------------------------------------------------|------------|
+| `session`  | APISession | The current API session for communication with the server.         | _required_ |
+| `assay_id` | str        | The identifier of the assay for which metadata is to be retrieved. | _required_ |
+
+#### Returns
+
+| Type          | Description                                                           |
+|---------------|-----------------------------------------------------------------------|
+| AssayMetadata | An AssayMetadata  that contains the metadata for the specified assay. |
+
+#### Raises
+
+| Type       | Description                                                |
+|------------|------------------------------------------------------------|
+| InvalidJob | If no assay metadata with the specified assay_id is found. |
+
+### list_models { #openprotein.api.data.list_models }
+
+`api.data.list_models(session, assay_id)`
+
+List models assoicated with assay.
+
+#### Parameters
+
+| Name       | Type       | Description                           | Default    |
+|------------|------------|---------------------------------------|------------|
+| `session`  | APISession | Session object for API communication. | _required_ |
+| `assay_id` | str        | assay ID                              | _required_ |
+
+#### Returns
+
+| Type   | Description    |
+|--------|----------------|
+| List   | List of models |
