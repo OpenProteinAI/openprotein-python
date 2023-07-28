@@ -311,6 +311,7 @@ class AsyncJobFuture:
         Returns:
             results: results of job
         """
+        time.sleep(1) # buffer for BE to register job
         job = self.job.wait(
             self.session, interval=interval, timeout=timeout, verbose=verbose
         )
