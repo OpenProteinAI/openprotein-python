@@ -1000,7 +1000,7 @@ class PoetAPI:
         job = load_job(self.session, job_id)
         if job.job_type == JobType.prots2prot_single_site:
             return PoetSingleSiteFuture(self.session, job)
-        if job.job_type == JobType.prots2prot_generate:
+        if job.job_type == JobType.prots2prot:
             return PoetScoreFuture(self.session, job)
         if job.job_type == JobType.prots2prot_generate:
             return PoetGenerateFuture(self.session, job)
