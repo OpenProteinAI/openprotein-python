@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>openprotein.api.predict &mdash; OpenProtein-Python  documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            OpenProtein-Python
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../data.html">AssayData workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../train.html">Train workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../predict.html">Predict workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../design.html">Design workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../poet.html">PoET workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../embedding.html">Embedding workflows</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">OpenProtein-Python</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">openprotein.api.predict</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for openprotein.api.predict</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">import</span> <span class="nn">pydantic</span>
+
+<span class="kn">from</span> <span class="nn">openprotein.base</span> <span class="kn">import</span> <span class="n">APISession</span>
+<span class="kn">from</span> <span class="nn">openprotein.api.jobs</span> <span class="kn">import</span> <span class="n">AsyncJobFuture</span><span class="p">,</span> <span class="n">Job</span>
+<span class="kn">from</span> <span class="nn">openprotein.models</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">SequenceDataset</span><span class="p">,</span>
+    <span class="n">SequenceData</span><span class="p">,</span>
+    <span class="n">PredictJob</span><span class="p">,</span>
+    <span class="n">PredictSingleSiteJob</span><span class="p">,</span>
+    <span class="n">JobType</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">openprotein.errors</span> <span class="kn">import</span> <span class="n">InvalidParameterError</span><span class="p">,</span> <span class="n">APIError</span><span class="p">,</span> <span class="n">InvalidJob</span>
+<span class="kn">from</span> <span class="nn">openprotein.api.train</span> <span class="kn">import</span> <span class="n">TrainFuture</span>
+<span class="kn">from</span> <span class="nn">openprotein.api.jobs</span> <span class="kn">import</span> <span class="n">load_job</span>
+
+
+<span class="k">def</span> <span class="nf">_create_predict_job</span><span class="p">(</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span>
+    <span class="n">endpoint</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">payload</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">model_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">train_job_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Job</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Creates a Predict request and returns the job object.</span>
+
+<span class="sd">    This function makes a post request to the specified endpoint with the payload.</span>
+<span class="sd">    Either &#39;model_ids&#39; or &#39;train_job_id&#39; should be provided but not both.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        APIsession with auth</span>
+<span class="sd">    endpoint : str</span>
+<span class="sd">        The endpoint to which the post request is to be made.</span>
+<span class="sd">        either predict or predict/single_site</span>
+<span class="sd">    payload : dict</span>
+<span class="sd">        The payload to be sent in the post request.</span>
+<span class="sd">    model_ids : List[str], optional</span>
+<span class="sd">        The list of model ids to be used for Predict. Default is None.</span>
+<span class="sd">    train_job_id : str, optional</span>
+<span class="sd">        The id of the train job to be used for Predict. Default is None.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Job</span>
+<span class="sd">        The job object representing the Predict job.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    InvalidParameterError</span>
+<span class="sd">        If neither &#39;model_ids&#39; nor &#39;train_job_id&#39; is provided.</span>
+<span class="sd">        If both &#39;model_ids&#39; and &#39;train_job_id&#39; are provided.</span>
+<span class="sd">    HTTPError</span>
+<span class="sd">        If the post request does not succeed.</span>
+<span class="sd">    ValidationError</span>
+<span class="sd">        If the response cannot be parsed into a &#39;Job&#39; object.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">model_ids</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">train_job_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InvalidParameterError</span><span class="p">(</span>
+            <span class="s2">&quot;Either a list of model IDs or a train job ID must be provided&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">model_ids</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">train_job_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InvalidParameterError</span><span class="p">(</span>
+            <span class="s2">&quot;Only a list of model IDs OR a train job ID must be provided, not both&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">model_ids</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;model_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">model_ids</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;train_job_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">train_job_id</span>
+
+    <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">payload</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">pydantic</span><span class="o">.</span><span class="n">parse_obj_as</span><span class="p">(</span><span class="n">Job</span><span class="p">,</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+
+
+<span class="k">def</span> <span class="nf">create_predict_job</span><span class="p">(</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span>
+    <span class="n">sequences</span><span class="p">:</span> <span class="n">SequenceDataset</span><span class="p">,</span>
+    <span class="n">train_job</span><span class="p">:</span> <span class="n">TrainFuture</span><span class="p">,</span>
+    <span class="n">model_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Job</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Creates a predict job with a given set of sequences and a train job.</span>
+
+<span class="sd">    This function will use the sequences and train job ID to create a new Predict job.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        APIsession with auth</span>
+<span class="sd">    sequences : SequenceDataset</span>
+<span class="sd">        The dataset containing the sequences to predict</span>
+<span class="sd">    train_job : TrainFuture</span>
+<span class="sd">        The Train job: this model will be used for making Predicts.</span>
+<span class="sd">    model_ids: List[str]</span>
+<span class="sd">        specific IDs for models</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Job</span>
+<span class="sd">        The job object representing the created Predict job.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    InvalidParameterError</span>
+<span class="sd">        If neither &#39;model_ids&#39; nor &#39;train_job&#39; is provided.</span>
+<span class="sd">    InvalidParameterError</span>
+<span class="sd">        If BOTH `model_ids` and `train_job` is provided</span>
+<span class="sd">    HTTPError</span>
+<span class="sd">        If the post request does not succeed.</span>
+<span class="sd">    ValidationError</span>
+<span class="sd">        If the response cannot be parsed into a &#39;Job&#39; object.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model_ids</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">model_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">model_ids</span><span class="p">]</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="s2">&quot;v1/workflow/predict&quot;</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;sequences&quot;</span><span class="p">:</span> <span class="n">sequences</span><span class="o">.</span><span class="n">sequences</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">_create_predict_job</span><span class="p">(</span>
+        <span class="n">session</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">,</span> <span class="n">payload</span><span class="p">,</span> <span class="n">model_ids</span><span class="o">=</span><span class="n">model_ids</span><span class="p">,</span> <span class="n">train_job_id</span><span class="o">=</span><span class="n">train_job</span><span class="o">.</span><span class="n">id</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">create_predict_single_site</span><span class="p">(</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span>
+    <span class="n">sequence</span><span class="p">:</span> <span class="n">SequenceData</span><span class="p">,</span>
+    <span class="n">train_job</span><span class="p">:</span> <span class="n">TrainFuture</span><span class="p">,</span>
+    <span class="n">model_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Job</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Creates a predict job for single site mutants with a given sequence and a train job.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        APIsession with auth</span>
+<span class="sd">    sequence : SequenceData</span>
+<span class="sd">        The sequence for which single site mutants predictions will be made.</span>
+<span class="sd">    train_job : TrainFuture</span>
+<span class="sd">        The train job whose model will be used for making Predicts.</span>
+<span class="sd">    model_ids: List[str]</span>
+<span class="sd">        specific IDs for models</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Job</span>
+<span class="sd">        The job object representing the created Predict job.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    InvalidParameterError</span>
+<span class="sd">        If neither &#39;model_ids&#39; nor &#39;train_job&#39; is provided.</span>
+<span class="sd">    InvalidParameterError</span>
+<span class="sd">        If BOTH `model_ids` and `train_job` is provided</span>
+<span class="sd">    HTTPError</span>
+<span class="sd">        If the post request does not succeed.</span>
+<span class="sd">    ValidationError</span>
+<span class="sd">        If the response cannot be parsed into a &#39;Job&#39; object.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="s2">&quot;v1/workflow/predict/single_site&quot;</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;sequence&quot;</span><span class="p">:</span> <span class="n">sequence</span><span class="o">.</span><span class="n">sequence</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">_create_predict_job</span><span class="p">(</span>
+        <span class="n">session</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">,</span> <span class="n">payload</span><span class="p">,</span> <span class="n">model_ids</span><span class="o">=</span><span class="n">model_ids</span><span class="p">,</span> <span class="n">train_job_id</span><span class="o">=</span><span class="n">train_job</span><span class="o">.</span><span class="n">id</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">get_prediction_results</span><span class="p">(</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span>
+    <span class="n">job_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">page_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">page_offset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PredictJob</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Retrieves the results of a Predict job.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        APIsession with auth</span>
+<span class="sd">    job_id : str</span>
+<span class="sd">        The ID of the job whose results are to be retrieved.</span>
+<span class="sd">    page_size : Optional[int], default is None</span>
+<span class="sd">        The number of results to be returned per page. If None, all results are returned.</span>
+<span class="sd">    page_offset : Optional[int], default is None</span>
+<span class="sd">        The number of results to skip. If None, defaults to 0.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    PredictJob</span>
+<span class="sd">        The job object representing the Predict job.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    HTTPError</span>
+<span class="sd">        If the GET request does not succeed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;v1/workflow/predict/</span><span class="si">{</span><span class="n">job_id</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">page_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">&quot;page_size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">page_size</span>
+    <span class="k">if</span> <span class="n">page_offset</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">&quot;page_offset&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">page_offset</span>
+
+    <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">PredictJob</span><span class="p">(</span><span class="o">**</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+
+
+<span class="k">def</span> <span class="nf">get_single_site_prediction_results</span><span class="p">(</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span>
+    <span class="n">job_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">page_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">page_offset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PredictSingleSiteJob</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Retrieves the results of a single site Predict job.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        APIsession with auth</span>
+<span class="sd">    job_id : str</span>
+<span class="sd">        The ID of the job whose results are to be retrieved.</span>
+<span class="sd">    page_size : Optional[int], default is None</span>
+<span class="sd">        The number of results to be returned per page. If None, all results are returned.</span>
+<span class="sd">    page_offset : Optional[int], default is None</span>
+<span class="sd">        The number of results to skip. If None, defaults to 0.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    PredictSingleSiteJob</span>
+<span class="sd">        The job object representing the single site Predict job.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    HTTPError</span>
+<span class="sd">        If the GET request does not succeed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;v1/workflow/predict/single_site/</span><span class="si">{</span><span class="n">job_id</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">page_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">&quot;page_size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">page_size</span>
+    <span class="k">if</span> <span class="n">page_offset</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">&quot;page_offset&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">page_offset</span>
+
+    <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">PredictSingleSiteJob</span><span class="p">(</span><span class="o">**</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+
+
+<span class="k">class</span> <span class="nc">PredictFutureMixin</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class to to retrieve results from a Predict job.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        APIsession with auth</span>
+<span class="sd">    job : Job</span>
+<span class="sd">        The job object that represents the current Predict job.</span>
+
+<span class="sd">    Methods</span>
+<span class="sd">    -------</span>
+<span class="sd">    get_results(page_size: Optional[int] = None, page_offset: Optional[int] = None) -&gt; Union[PredictSingleSiteJob, PredictJob]</span>
+<span class="sd">        Retrieves results from a Predict job.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span>
+    <span class="n">job</span><span class="p">:</span> <span class="n">Job</span>
+
+    <span class="k">def</span> <span class="nf">get_results</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">page_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">page_offset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">PredictSingleSiteJob</span><span class="p">,</span> <span class="n">PredictJob</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieves results from a Predict job.</span>
+
+<span class="sd">        it uses the appropriate method to retrieve the results based on job_type.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        page_size : Optional[int], default is None</span>
+<span class="sd">            The number of results to be returned per page. If None, all results are returned.</span>
+<span class="sd">        page_offset : Optional[int], default is None</span>
+<span class="sd">            The number of results to skip. If None, defaults to 0.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Union[PredictSingleSiteJob, PredictJob]</span>
+<span class="sd">            The job object representing the Predict job. The exact type of job depends on the job type.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        HTTPError</span>
+<span class="sd">            If the GET request does not succeed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="s2">&quot;single_site&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">job_type</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">get_single_site_prediction_results</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">page_size</span><span class="p">,</span> <span class="n">page_offset</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">get_prediction_results</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">page_size</span><span class="p">,</span> <span class="n">page_offset</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="PredictFuture"><a class="viewcode-back" href="../../../predict.html#openprotein.api.predict.PredictFuture">[docs]</a><span class="k">class</span> <span class="nc">PredictFuture</span><span class="p">(</span><span class="n">PredictFutureMixin</span><span class="p">,</span> <span class="n">AsyncJobFuture</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Future Job for manipulating results&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span> <span class="n">job</span><span class="p">:</span> <span class="n">Job</span><span class="p">,</span> <span class="n">page_size</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">page_size</span> <span class="o">=</span> <span class="n">page_size</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">job_id</span>
+
+<div class="viewcode-block" id="PredictFuture.get"><a class="viewcode-back" href="../../../predict.html#openprotein.api.predict.PredictFuture.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">PredictSingleSiteJob</span><span class="p">,</span> <span class="n">PredictJob</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get all the results of the predict job.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            verbose (bool, optional): If True, print verbose output. Defaults False.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            APIError: If there is an issue with the API request.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            PredictJob: A list of predict objects representing the results.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">step</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">page_size</span>
+
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">num_returned</span> <span class="o">=</span> <span class="n">step</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">while</span> <span class="n">num_returned</span> <span class="o">&gt;=</span> <span class="n">step</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_results</span><span class="p">(</span><span class="n">page_offset</span><span class="o">=</span><span class="n">offset</span><span class="p">,</span> <span class="n">page_size</span><span class="o">=</span><span class="n">step</span><span class="p">)</span>
+                <span class="n">results</span> <span class="o">+=</span> <span class="n">response</span><span class="o">.</span><span class="n">result</span>
+                <span class="n">num_returned</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">result</span><span class="p">)</span>
+                <span class="n">offset</span> <span class="o">+=</span> <span class="n">num_returned</span>
+            <span class="k">except</span> <span class="n">APIError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to get results: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">results</span>
+        <span class="k">return</span> <span class="n">results</span></div></div>
+
+
+<div class="viewcode-block" id="PredictAPI"><a class="viewcode-back" href="../../../predict.html#openprotein.api.predict.PredictAPI">[docs]</a><span class="k">class</span> <span class="nc">PredictAPI</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;API interface for calling Predict endpoints&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize a new instance of the PredictAPI class.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        session : APISession</span>
+<span class="sd">            APIsession with auth</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">session</span>
+
+<div class="viewcode-block" id="PredictAPI.create_predict_job"><a class="viewcode-back" href="../../../predict.html#openprotein.api.predict.PredictAPI.create_predict_job">[docs]</a>    <span class="k">def</span> <span class="nf">create_predict_job</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">sequences</span><span class="p">:</span> <span class="n">List</span><span class="p">,</span>
+        <span class="n">train_job</span><span class="p">:</span> <span class="n">TrainFuture</span><span class="p">,</span>
+        <span class="n">model_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PredictFuture</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a new Predict job for a given list of sequences and a trained model.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        sequences : List</span>
+<span class="sd">            The list of sequences to be used for the Predict job.</span>
+<span class="sd">        train_job : TrainFuture</span>
+<span class="sd">            The train job object representing the trained model.</span>
+<span class="sd">        model_ids : List[str], optional</span>
+<span class="sd">            The list of model ids to be used for Predict. Default is None.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        PredictFuture</span>
+<span class="sd">            The job object representing the Predict job.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        InvalidParameterError</span>
+<span class="sd">            If the sequences are not of the same length as the assay data or if the train job has not completed successfully.</span>
+<span class="sd">        InvalidParameterError</span>
+<span class="sd">            If BOTH train_job and model_ids are specified</span>
+<span class="sd">        InvalidParameterError</span>
+<span class="sd">            If NEITHER train_job or model_ids is specified</span>
+<span class="sd">        APIError</span>
+<span class="sd">            If the backend refuses the job (due to sequence length or invalid inputs)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">train_job</span><span class="o">.</span><span class="n">assaymetadata</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">train_job</span><span class="o">.</span><span class="n">assaymetadata</span><span class="o">.</span><span class="n">sequence_length</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">any</span><span class="p">(</span>
+                    <span class="p">[</span>
+                        <span class="n">train_job</span><span class="o">.</span><span class="n">assaymetadata</span><span class="o">.</span><span class="n">sequence_length</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sequences</span>
+                    <span class="p">]</span>
+                <span class="p">):</span>
+                    <span class="k">raise</span> <span class="n">InvalidParameterError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Predict sequences length </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">sequences</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="si">}</span><span class="s2">  != training assaydata (</span><span class="si">{</span><span class="n">train_job</span><span class="o">.</span><span class="n">assaymetadata</span><span class="o">.</span><span class="n">sequence_length</span><span class="si">}</span><span class="s2">)&quot;</span>
+                    <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">train_job</span><span class="o">.</span><span class="n">done</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">InvalidParameterError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;train job has status </span><span class="si">{</span><span class="n">train_job</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">, Predict requires status SUCCESS&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">sequence_dataset</span> <span class="o">=</span> <span class="n">SequenceDataset</span><span class="p">(</span><span class="n">sequences</span><span class="o">=</span><span class="n">sequences</span><span class="p">)</span>
+        <span class="n">job</span> <span class="o">=</span> <span class="n">create_predict_job</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">sequence_dataset</span><span class="p">,</span> <span class="n">train_job</span><span class="p">,</span> <span class="n">model_ids</span><span class="o">=</span><span class="n">model_ids</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PredictFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PredictAPI.create_predict_single_site"><a class="viewcode-back" href="../../../predict.html#openprotein.api.predict.PredictAPI.create_predict_single_site">[docs]</a>    <span class="k">def</span> <span class="nf">create_predict_single_site</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">sequence</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">train_job</span><span class="p">:</span> <span class="n">TrainFuture</span><span class="p">,</span>
+        <span class="n">model_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PredictFuture</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a new Predict job for single site mutation analysis with a trained model.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        sequence : str</span>
+<span class="sd">            The sequence for single site analysis.</span>
+<span class="sd">        train_job : TrainFuture</span>
+<span class="sd">            The train job object representing the trained model.</span>
+<span class="sd">        model_ids : List[str], optional</span>
+<span class="sd">            The list of model ids to be used for Predict. Default is None.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        PredictFuture</span>
+<span class="sd">            The job object representing the Predict job.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        InvalidParameterError</span>
+<span class="sd">            If the sequences are not of the same length as the assay data or if the train job has not completed successfully.</span>
+<span class="sd">        InvalidParameterError</span>
+<span class="sd">            If BOTH train_job and model_ids are specified</span>
+<span class="sd">        InvalidParameterError</span>
+<span class="sd">            If NEITHER train_job or model_ids is specified</span>
+<span class="sd">        APIError</span>
+<span class="sd">            If the backend refuses the job (due to sequence length or invalid inputs)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">train_job</span><span class="o">.</span><span class="n">assaymetadata</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">train_job</span><span class="o">.</span><span class="n">assaymetadata</span><span class="o">.</span><span class="n">sequence_length</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">any</span><span class="p">([</span><span class="n">train_job</span><span class="o">.</span><span class="n">assaymetadata</span><span class="o">.</span><span class="n">sequence_length</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sequence</span><span class="p">)]):</span>
+                    <span class="k">raise</span> <span class="n">InvalidParameterError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Predict sequences length </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span><span class="si">}</span><span class="s2">  != training assaydata (</span><span class="si">{</span><span class="n">train_job</span><span class="o">.</span><span class="n">assaymetadata</span><span class="o">.</span><span class="n">sequence_length</span><span class="si">}</span><span class="s2">)&quot;</span>
+                    <span class="p">)</span>
+        <span class="n">train_job</span><span class="o">.</span><span class="n">refresh</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">train_job</span><span class="o">.</span><span class="n">done</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">InvalidParameterError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;train job has status </span><span class="si">{</span><span class="n">train_job</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">, Predict requires status SUCCESS&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">sequence_dataset</span> <span class="o">=</span> <span class="n">SequenceData</span><span class="p">(</span><span class="n">sequence</span><span class="o">=</span><span class="n">sequence</span><span class="p">)</span>
+        <span class="n">job</span> <span class="o">=</span> <span class="n">create_predict_single_site</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">sequence_dataset</span><span class="p">,</span> <span class="n">train_job</span><span class="p">,</span> <span class="n">model_ids</span><span class="o">=</span><span class="n">model_ids</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PredictFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PredictAPI.get_prediction_results"><a class="viewcode-back" href="../../../predict.html#openprotein.api.predict.PredictAPI.get_prediction_results">[docs]</a>    <span class="k">def</span> <span class="nf">get_prediction_results</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">job_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">page_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">page_offset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PredictJob</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieves the results of a Predict job.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        job_id : str</span>
+<span class="sd">            The ID of the Predict job.</span>
+<span class="sd">        page_size : Optional[int], default is None</span>
+<span class="sd">            The number of results to be returned per page. If None, all results are returned.</span>
+<span class="sd">        page_offset : Optional[int], default is None</span>
+<span class="sd">            The number of results to skip. If None, defaults to 0.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        PredictJob</span>
+<span class="sd">            The job object representing the Predict job.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        HTTPError</span>
+<span class="sd">            If the GET request does not succeed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">job_details</span> <span class="o">=</span> <span class="n">get_prediction_results</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job_id</span><span class="p">,</span> <span class="n">page_size</span><span class="p">,</span> <span class="n">page_offset</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">PredictFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job_details</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PredictAPI.get_single_site_prediction_results"><a class="viewcode-back" href="../../../predict.html#openprotein.api.predict.PredictAPI.get_single_site_prediction_results">[docs]</a>    <span class="k">def</span> <span class="nf">get_single_site_prediction_results</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">job_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">page_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">page_offset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PredictSingleSiteJob</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieves the results of a single site Predict job.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        job_id : str</span>
+<span class="sd">            The ID of the Predict job.</span>
+<span class="sd">        page_size : Optional[int], default is None</span>
+<span class="sd">            The number of results to be returned per page. If None, all results are returned.</span>
+<span class="sd">        page_offset : Optional[int], default is None</span>
+<span class="sd">            The page number to start retrieving results from. If None, defaults to 0.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        PredictSingleSiteJob</span>
+<span class="sd">            The job object representing the single site Predict job.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        HTTPError</span>
+<span class="sd">            If the GET request does not succeed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">job_details</span> <span class="o">=</span> <span class="n">get_single_site_prediction_results</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job_id</span><span class="p">,</span> <span class="n">page_size</span><span class="p">,</span> <span class="n">page_offset</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">PredictFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job_details</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PredictAPI.load_job"><a class="viewcode-back" href="../../../predict.html#openprotein.api.predict.PredictAPI.load_job">[docs]</a>    <span class="k">def</span> <span class="nf">load_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Job</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Reload a Submitted job to resume from where you left off!</span>
+
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        job_id : str</span>
+<span class="sd">            The identifier of the job whose details are to be loaded.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Job</span>
+<span class="sd">            Job</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        HTTPError</span>
+<span class="sd">            If the request to the server fails.</span>
+<span class="sd">        InvalidJob</span>
+<span class="sd">            If the Job is of the wrong type</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">job_details</span> <span class="o">=</span> <span class="n">load_job</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">job_details</span><span class="o">.</span><span class="n">job_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="n">JobType</span><span class="o">.</span><span class="n">predict</span><span class="p">,</span> <span class="n">JobType</span><span class="o">.</span><span class="n">predict_single_site</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="n">InvalidJob</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Job </span><span class="si">{</span><span class="n">job_id</span><span class="si">}</span><span class="s2"> is not of type </span><span class="si">{</span><span class="n">JobType</span><span class="o">.</span><span class="n">predict</span><span class="si">}</span><span class="s2"> or </span><span class="si">{</span><span class="n">JobType</span><span class="o">.</span><span class="n">predict_single_site</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">PredictFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job_details</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, NE47.bio.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
