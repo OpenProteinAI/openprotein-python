@@ -11,11 +11,11 @@ Table of Contents
 +---------+--------------------------------+------------------------------------------------------+
 | Chapter | Content                        | Description                                          |
 +=========+================================+======================================================+
-| 1       | `Overview`_                    | Brief overview of the docs                           |
+| 1       | `Overview`_                    | Brief overview of the async jobs system              |
 +---------+--------------------------------+------------------------------------------------------+
-| 2       | `Data`_                        | How to upload your assays                            |
+| 2       | `Data`_                        | How to upload your data for use with our endpoints   |
 +---------+--------------------------------+------------------------------------------------------+
-| 3       | `Train`_                       | How to train models on your properties               |
+| 3       | `Train`_                       | How to train models on sequence properties           |
 +---------+--------------------------------+------------------------------------------------------+
 | 4       | `Predict`_                     | How to predict sequence properties                   |
 +---------+--------------------------------+------------------------------------------------------+
