@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Predict workflows &mdash; OpenProtein-Python  documentation</title>
+  <title>Predict &mdash; OpenProtein-Python  documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -19,8 +19,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Design workflows" href="design.html" />
-    <link rel="prev" title="Train workflows" href="train.html" /> 
+    <link rel="next" title="Design" href="design.html" />
+    <link rel="prev" title="Train" href="train.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -45,9 +45,9 @@
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="data.html">AssayData workflows</a></li>
-<li class="toctree-l1"><a class="reference internal" href="train.html">Train workflows</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Predict workflows</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="data.html">AssayData</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train.html">Train</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Predict</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#openprotein.api.predict.PredictAPI"><code class="docutils literal notranslate"><span class="pre">PredictAPI</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#openprotein.api.predict.PredictAPI.create_predict_job"><code class="docutils literal notranslate"><span class="pre">PredictAPI.create_predict_job()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#openprotein.api.predict.PredictAPI.create_predict_single_site"><code class="docutils literal notranslate"><span class="pre">PredictAPI.create_predict_single_site()</span></code></a></li>
@@ -62,9 +62,9 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="design.html">Design workflows</a></li>
-<li class="toctree-l1"><a class="reference internal" href="poet.html">PoET workflows</a></li>
-<li class="toctree-l1"><a class="reference internal" href="embedding.html">Embedding workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="design.html">Design</a></li>
+<li class="toctree-l1"><a class="reference internal" href="poet.html">Protein Evolutionary Transformer (PoET)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="embedding.html">Embeddings</a></li>
 </ul>
 
         </div>
@@ -81,7 +81,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Predict workflows</li>
+      <li class="breadcrumb-item active">Predict</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/predict.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -91,8 +91,9 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="predict-workflows">
-<h1>Predict workflows<a class="headerlink" href="#predict-workflows" title="Permalink to this heading"></a></h1>
+  <section id="predict">
+<h1>Predict<a class="headerlink" href="#predict" title="Permalink to this heading"></a></h1>
+<p>Predict properties on arbitary sequences with your OpenProtein trained models! You can make predictions for single sequences as well as single mutant variants of the sequence.&lt;br&gt;&lt;br&gt; Note, that you must first train a model with the train endpoints (see above).</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="openprotein.api.predict.PredictAPI">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.predict.</span></span><span class="sig-name descname"><span class="pre">PredictAPI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">APISession</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/predict.html#PredictAPI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.predict.PredictAPI" title="Permalink to this definition"></a></dt>
@@ -260,8 +261,8 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="train.html" class="btn btn-neutral float-left" title="Train workflows" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="design.html" class="btn btn-neutral float-right" title="Design workflows" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="train.html" class="btn btn-neutral float-left" title="Train" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="design.html" class="btn btn-neutral float-right" title="Design" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

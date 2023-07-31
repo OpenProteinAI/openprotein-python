@@ -1,5 +1,7 @@
-Embedding workflows
-=====================
+Embeddings
+============
+
+Create embeddings for your protein sequences using open-source and proprietary models!
 
 .. autoclass:: openprotein.api.embedding.EmbeddingAPI
    :members:

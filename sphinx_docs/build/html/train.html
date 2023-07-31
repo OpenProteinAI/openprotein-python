@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Train workflows &mdash; OpenProtein-Python  documentation</title>
+  <title>Train &mdash; OpenProtein-Python  documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -19,8 +19,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Predict workflows" href="predict.html" />
-    <link rel="prev" title="AssayData workflows" href="data.html" /> 
+    <link rel="next" title="Predict" href="predict.html" />
+    <link rel="prev" title="AssayData" href="data.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -45,8 +45,8 @@
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="data.html">AssayData workflows</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Train workflows</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="data.html">AssayData</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Train</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#openprotein.api.train.TrainingAPI"><code class="docutils literal notranslate"><span class="pre">TrainingAPI</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#openprotein.api.train.TrainingAPI.create_training_job"><code class="docutils literal notranslate"><span class="pre">TrainingAPI.create_training_job()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#openprotein.api.train.TrainingAPI.get_training_results"><code class="docutils literal notranslate"><span class="pre">TrainingAPI.get_training_results()</span></code></a></li>
@@ -59,10 +59,10 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="predict.html">Predict workflows</a></li>
-<li class="toctree-l1"><a class="reference internal" href="design.html">Design workflows</a></li>
-<li class="toctree-l1"><a class="reference internal" href="poet.html">PoET workflows</a></li>
-<li class="toctree-l1"><a class="reference internal" href="embedding.html">Embedding workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="predict.html">Predict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="design.html">Design</a></li>
+<li class="toctree-l1"><a class="reference internal" href="poet.html">Protein Evolutionary Transformer (PoET)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="embedding.html">Embeddings</a></li>
 </ul>
 
         </div>
@@ -79,7 +79,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Train workflows</li>
+      <li class="breadcrumb-item active">Train</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/train.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -89,8 +89,9 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="train-workflows">
-<h1>Train workflows<a class="headerlink" href="#train-workflows" title="Permalink to this heading"></a></h1>
+  <section id="train">
+<h1>Train<a class="headerlink" href="#train" title="Permalink to this heading"></a></h1>
+<p>Train model(s) on your measured properties to enable predictions for new sequences! These workflows can additionally perform cross-validation on your models to estimate uncertainty. /n A trained model is required before you can utilize predict or design endpoints.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="openprotein.api.train.TrainingAPI">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.train.</span></span><span class="sig-name descname"><span class="pre">TrainingAPI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">APISession</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/train.html#TrainingAPI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.train.TrainingAPI" title="Permalink to this definition"></a></dt>
@@ -192,8 +193,8 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="data.html" class="btn btn-neutral float-left" title="AssayData workflows" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="predict.html" class="btn btn-neutral float-right" title="Predict workflows" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="data.html" class="btn btn-neutral float-left" title="AssayData" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="predict.html" class="btn btn-neutral float-right" title="Predict" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
