@@ -33,3 +33,17 @@ Table of Contents
 .. _Design: design.html
 .. _Embedding: embedding.html
 .. _Poet: poet.html
+
+
+.. toctree::
+   :maxdepth: 3
+   :hidden:
+   :caption: Contents:
+
+   overview
+   data
+   train
+   predict
+   design
+   embedding
+   poet
