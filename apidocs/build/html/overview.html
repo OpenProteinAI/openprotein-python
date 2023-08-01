@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Overview &mdash; OpenProtein-Python  documentation</title>
+  <title>Welcome to the docs! &mdash; OpenProtein-Python  documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -18,9 +18,7 @@
         <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="AssayData workflows" href="data.html" />
-    <link rel="prev" title="Welcome to OpenProtein’s documentation!" href="index.html" /> 
+    <link rel="search" title="Search" href="search.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -42,17 +40,14 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="data.html">AssayData workflows</a></li>
-<li class="toctree-l1"><a class="reference internal" href="train.html">Train workflows</a></li>
-<li class="toctree-l1"><a class="reference internal" href="predict.html">Predict workflows</a></li>
-<li class="toctree-l1"><a class="reference internal" href="design.html">Design workflows</a></li>
-<li class="toctree-l1"><a class="reference internal" href="poet.html">PoET workflows</a></li>
-<li class="toctree-l1"><a class="reference internal" href="embedding.html">Embedding workflows</a></li>
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">Welcome to the docs!</a><ul>
+<li><a class="reference internal" href="#job-system">Job system</a></li>
 </ul>
-
+</li>
+</ul>
+</div>
         </div>
       </div>
     </nav>
@@ -67,7 +62,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Overview</li>
+      <li class="breadcrumb-item active">Welcome to the docs!</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/overview.md.txt" rel="nofollow"> View page source</a>
       </li>
@@ -77,18 +72,25 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="overview">
-<h1>Overview<a class="headerlink" href="#overview" title="Permalink to this heading"></a></h1>
-<p>This is an overview of OpenProtein-Python.</p>
+  <section id="welcome-to-the-docs">
+<h1>Welcome to the docs!<a class="headerlink" href="#welcome-to-the-docs" title="Permalink to this heading"></a></h1>
+<p>Welcome to OpenProtein.AI!</p>
+<p>OpenProtein.AI is a powerful platform that seamlessly integrates state-of-the-art machine learning and generative models into protein engineering workflows.</p>
+<p>We help you to design better proteins faster by giving you access to cutting-edge protein language models, prediction and design algorithms, as well as data management and model training tools. Easily build and deploy high-performance Bayesian protein function predictors, or apply generative protein language models to design sequence libraries, all via our integrated platform. OpenProtein.ai can be accessed via both web App and API, making it great for both biologists and protein engineers, as well as data scientists and software engineers.</p>
+<section id="job-system">
+<h2>Job system<a class="headerlink" href="#job-system" title="Permalink to this heading"></a></h2>
+<p>Here’s a quick overview of our jobs system.</p>
+<p>The platform operates as an asynchronous POST and GET framework. By initiating a task with our python client, the system schedules the job and promptly returns a response (including a unique Job ID). This approach ensures that tasks, even those with longer processing times, do not require immediate waiting.</p>
+<p>When you submit a task, such as <code class="docutils literal notranslate"><span class="pre">session.poet.create_msa()</span></code> you will have a Future Class returned for results tracking and access. You can check a job’s status by calling the <code class="docutils literal notranslate"><span class="pre">refresh()</span></code> and <code class="docutils literal notranslate"><span class="pre">done()</span></code> methods on this Future Class. Additionally, you can call <code class="docutils literal notranslate"><span class="pre">wait()</span></code> to wait and return the results (or <code class="docutils literal notranslate"><span class="pre">get()</span></code> if results are already completed).</p>
+<p>Additionally, you can resume a workflow by <code class="docutils literal notranslate"><span class="pre">load_job</span></code> and using the unique job ID you got at task execution. <code class="docutils literal notranslate"><span class="pre">load_job</span></code> will resume your workflow by returning a Future Class for further manipulation (as above).</p>
+<p>Read on for more specific documentation, and check our demo workflows to see more!</p>
+</section>
 </section>
 
 
            </div>
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to OpenProtein’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="data.html" class="btn btn-neutral float-right" title="AssayData workflows" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-    </div>
+          <footer>
 
   <hr/>
 

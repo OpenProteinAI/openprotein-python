@@ -18,8 +18,7 @@
         <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="Protein Evolutionary Transformer (PoET)" href="poet.html" /> 
+    <link rel="search" title="Search" href="search.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -41,53 +40,47 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="data.html">AssayData</a></li>
-<li class="toctree-l1"><a class="reference internal" href="train.html">Train</a></li>
-<li class="toctree-l1"><a class="reference internal" href="predict.html">Predict</a></li>
-<li class="toctree-l1"><a class="reference internal" href="design.html">Design</a></li>
-<li class="toctree-l1"><a class="reference internal" href="poet.html">Protein Evolutionary Transformer (PoET)</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Embeddings</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.delete_svd"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.delete_svd()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.embed"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.embed()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.fit_svd"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.fit_svd()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.get_model"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.get_model()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.get_results"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.get_results()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.get_svd"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.get_svd()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.get_svd_results"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.get_svd_results()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.list_models"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.list_models()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.list_svd"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.list_svd()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.load_job"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.load_job()</span></code></a></li>
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">Embeddings</a><ul>
+<li><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI</span></code></a><ul>
+<li><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.delete_svd"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.delete_svd()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.embed"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.embed()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.fit_svd"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.fit_svd()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.get_model"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.get_model()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.get_results"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.get_results()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.get_svd"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.get_svd()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.get_svd_results"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.get_svd_results()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.list_models"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.list_models()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.list_svd"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.list_svd()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.load_job"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.load_job()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#openprotein.api.embedding.EmbeddingResultFuture"><code class="docutils literal notranslate"><span class="pre">EmbeddingResultFuture</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.embedding.EmbeddingResultFuture.get_item"><code class="docutils literal notranslate"><span class="pre">EmbeddingResultFuture.get_item()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.embedding.EmbeddingResultFuture"><code class="docutils literal notranslate"><span class="pre">EmbeddingResultFuture</span></code></a><ul>
+<li><a class="reference internal" href="#openprotein.api.embedding.EmbeddingResultFuture.get_item"><code class="docutils literal notranslate"><span class="pre">EmbeddingResultFuture.get_item()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#openprotein.api.embedding.ProtembedModel"><code class="docutils literal notranslate"><span class="pre">ProtembedModel</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.embedding.ProtembedModel.attn"><code class="docutils literal notranslate"><span class="pre">ProtembedModel.attn()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.embedding.ProtembedModel.embed"><code class="docutils literal notranslate"><span class="pre">ProtembedModel.embed()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.embedding.ProtembedModel.fit_svd"><code class="docutils literal notranslate"><span class="pre">ProtembedModel.fit_svd()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.embedding.ProtembedModel.get_metadata"><code class="docutils literal notranslate"><span class="pre">ProtembedModel.get_metadata()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.embedding.ProtembedModel.logits"><code class="docutils literal notranslate"><span class="pre">ProtembedModel.logits()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.embedding.ProtembedModel"><code class="docutils literal notranslate"><span class="pre">ProtembedModel</span></code></a><ul>
+<li><a class="reference internal" href="#openprotein.api.embedding.ProtembedModel.attn"><code class="docutils literal notranslate"><span class="pre">ProtembedModel.attn()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.embedding.ProtembedModel.embed"><code class="docutils literal notranslate"><span class="pre">ProtembedModel.embed()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.embedding.ProtembedModel.fit_svd"><code class="docutils literal notranslate"><span class="pre">ProtembedModel.fit_svd()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.embedding.ProtembedModel.get_metadata"><code class="docutils literal notranslate"><span class="pre">ProtembedModel.get_metadata()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.embedding.ProtembedModel.logits"><code class="docutils literal notranslate"><span class="pre">ProtembedModel.logits()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#openprotein.api.embedding.SVDModel"><code class="docutils literal notranslate"><span class="pre">SVDModel</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.embedding.SVDModel.delete"><code class="docutils literal notranslate"><span class="pre">SVDModel.delete()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.embedding.SVDModel.embed"><code class="docutils literal notranslate"><span class="pre">SVDModel.embed()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.embedding.SVDModel.get_embeddings"><code class="docutils literal notranslate"><span class="pre">SVDModel.get_embeddings()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.embedding.SVDModel.get_inputs"><code class="docutils literal notranslate"><span class="pre">SVDModel.get_inputs()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.embedding.SVDModel.get_job"><code class="docutils literal notranslate"><span class="pre">SVDModel.get_job()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.embedding.SVDModel.get_model"><code class="docutils literal notranslate"><span class="pre">SVDModel.get_model()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.embedding.SVDModel"><code class="docutils literal notranslate"><span class="pre">SVDModel</span></code></a><ul>
+<li><a class="reference internal" href="#openprotein.api.embedding.SVDModel.delete"><code class="docutils literal notranslate"><span class="pre">SVDModel.delete()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.embedding.SVDModel.embed"><code class="docutils literal notranslate"><span class="pre">SVDModel.embed()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.embedding.SVDModel.get_embeddings"><code class="docutils literal notranslate"><span class="pre">SVDModel.get_embeddings()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.embedding.SVDModel.get_inputs"><code class="docutils literal notranslate"><span class="pre">SVDModel.get_inputs()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.embedding.SVDModel.get_job"><code class="docutils literal notranslate"><span class="pre">SVDModel.get_job()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.embedding.SVDModel.get_model"><code class="docutils literal notranslate"><span class="pre">SVDModel.get_model()</span></code></a></li>
 </ul>
 </li>
 </ul>
 </li>
 </ul>
-
+</div>
         </div>
       </div>
     </nav>
@@ -482,9 +475,7 @@ Options are None, “MEAN”, or “SUM”. Default is None.</p></li>
 
            </div>
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="poet.html" class="btn btn-neutral float-left" title="Protein Evolutionary Transformer (PoET)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-    </div>
+          <footer>
 
   <hr/>
 

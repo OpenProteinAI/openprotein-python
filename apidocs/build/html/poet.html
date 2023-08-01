@@ -18,9 +18,7 @@
         <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Embeddings" href="embedding.html" />
-    <link rel="prev" title="Design" href="design.html" /> 
+    <link rel="search" title="Search" href="search.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -42,75 +40,69 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="data.html">AssayData</a></li>
-<li class="toctree-l1"><a class="reference internal" href="train.html">Train</a></li>
-<li class="toctree-l1"><a class="reference internal" href="predict.html">Predict</a></li>
-<li class="toctree-l1"><a class="reference internal" href="design.html">Design</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Protein Evolutionary Transformer (PoET)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#openprotein.api.poet.PoetAPI"><code class="docutils literal notranslate"><span class="pre">PoetAPI</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PoetAPI.create_msa"><code class="docutils literal notranslate"><span class="pre">PoetAPI.create_msa()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PoetAPI.generate"><code class="docutils literal notranslate"><span class="pre">PoetAPI.generate()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PoetAPI.get_msa"><code class="docutils literal notranslate"><span class="pre">PoetAPI.get_msa()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PoetAPI.get_msa_job"><code class="docutils literal notranslate"><span class="pre">PoetAPI.get_msa_job()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PoetAPI.get_prompt"><code class="docutils literal notranslate"><span class="pre">PoetAPI.get_prompt()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PoetAPI.get_prompt_job"><code class="docutils literal notranslate"><span class="pre">PoetAPI.get_prompt_job()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PoetAPI.get_seed"><code class="docutils literal notranslate"><span class="pre">PoetAPI.get_seed()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PoetAPI.load_msa_job"><code class="docutils literal notranslate"><span class="pre">PoetAPI.load_msa_job()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PoetAPI.load_poet_job"><code class="docutils literal notranslate"><span class="pre">PoetAPI.load_poet_job()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PoetAPI.load_prompt_job"><code class="docutils literal notranslate"><span class="pre">PoetAPI.load_prompt_job()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PoetAPI.score"><code class="docutils literal notranslate"><span class="pre">PoetAPI.score()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PoetAPI.single_site"><code class="docutils literal notranslate"><span class="pre">PoetAPI.single_site()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PoetAPI.upload_msa"><code class="docutils literal notranslate"><span class="pre">PoetAPI.upload_msa()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PoetAPI.upload_prompt"><code class="docutils literal notranslate"><span class="pre">PoetAPI.upload_prompt()</span></code></a></li>
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">Protein Evolutionary Transformer (PoET)</a><ul>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI"><code class="docutils literal notranslate"><span class="pre">PoetAPI</span></code></a><ul>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI.create_msa"><code class="docutils literal notranslate"><span class="pre">PoetAPI.create_msa()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI.generate"><code class="docutils literal notranslate"><span class="pre">PoetAPI.generate()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI.get_msa"><code class="docutils literal notranslate"><span class="pre">PoetAPI.get_msa()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI.get_msa_job"><code class="docutils literal notranslate"><span class="pre">PoetAPI.get_msa_job()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI.get_prompt"><code class="docutils literal notranslate"><span class="pre">PoetAPI.get_prompt()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI.get_prompt_job"><code class="docutils literal notranslate"><span class="pre">PoetAPI.get_prompt_job()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI.get_seed"><code class="docutils literal notranslate"><span class="pre">PoetAPI.get_seed()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI.load_msa_job"><code class="docutils literal notranslate"><span class="pre">PoetAPI.load_msa_job()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI.load_poet_job"><code class="docutils literal notranslate"><span class="pre">PoetAPI.load_poet_job()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI.load_prompt_job"><code class="docutils literal notranslate"><span class="pre">PoetAPI.load_prompt_job()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI.score"><code class="docutils literal notranslate"><span class="pre">PoetAPI.score()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI.single_site"><code class="docutils literal notranslate"><span class="pre">PoetAPI.single_site()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI.upload_msa"><code class="docutils literal notranslate"><span class="pre">PoetAPI.upload_msa()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI.upload_prompt"><code class="docutils literal notranslate"><span class="pre">PoetAPI.upload_prompt()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#openprotein.api.poet.PoetScoreFuture"><code class="docutils literal notranslate"><span class="pre">PoetScoreFuture</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PoetScoreFuture.session"><code class="docutils literal notranslate"><span class="pre">PoetScoreFuture.session</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PoetScoreFuture.job"><code class="docutils literal notranslate"><span class="pre">PoetScoreFuture.job</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PoetScoreFuture.page_size"><code class="docutils literal notranslate"><span class="pre">PoetScoreFuture.page_size</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PoetScoreFuture.get"><code class="docutils literal notranslate"><span class="pre">PoetScoreFuture.get()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id0"><code class="docutils literal notranslate"><span class="pre">PoetScoreFuture.get()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetScoreFuture"><code class="docutils literal notranslate"><span class="pre">PoetScoreFuture</span></code></a><ul>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetScoreFuture.session"><code class="docutils literal notranslate"><span class="pre">PoetScoreFuture.session</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetScoreFuture.job"><code class="docutils literal notranslate"><span class="pre">PoetScoreFuture.job</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetScoreFuture.page_size"><code class="docutils literal notranslate"><span class="pre">PoetScoreFuture.page_size</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetScoreFuture.get"><code class="docutils literal notranslate"><span class="pre">PoetScoreFuture.get()</span></code></a></li>
+<li><a class="reference internal" href="#id0"><code class="docutils literal notranslate"><span class="pre">PoetScoreFuture.get()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#openprotein.api.poet.PoetSingleSiteFuture"><code class="docutils literal notranslate"><span class="pre">PoetSingleSiteFuture</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PoetSingleSiteFuture.session"><code class="docutils literal notranslate"><span class="pre">PoetSingleSiteFuture.session</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PoetSingleSiteFuture.job"><code class="docutils literal notranslate"><span class="pre">PoetSingleSiteFuture.job</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PoetSingleSiteFuture.page_size"><code class="docutils literal notranslate"><span class="pre">PoetSingleSiteFuture.page_size</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PoetSingleSiteFuture.get"><code class="docutils literal notranslate"><span class="pre">PoetSingleSiteFuture.get()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id1"><code class="docutils literal notranslate"><span class="pre">PoetSingleSiteFuture.get()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetSingleSiteFuture"><code class="docutils literal notranslate"><span class="pre">PoetSingleSiteFuture</span></code></a><ul>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetSingleSiteFuture.session"><code class="docutils literal notranslate"><span class="pre">PoetSingleSiteFuture.session</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetSingleSiteFuture.job"><code class="docutils literal notranslate"><span class="pre">PoetSingleSiteFuture.job</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetSingleSiteFuture.page_size"><code class="docutils literal notranslate"><span class="pre">PoetSingleSiteFuture.page_size</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetSingleSiteFuture.get"><code class="docutils literal notranslate"><span class="pre">PoetSingleSiteFuture.get()</span></code></a></li>
+<li><a class="reference internal" href="#id1"><code class="docutils literal notranslate"><span class="pre">PoetSingleSiteFuture.get()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#openprotein.api.poet.PoetGenerateFuture"><code class="docutils literal notranslate"><span class="pre">PoetGenerateFuture</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PoetGenerateFuture.session"><code class="docutils literal notranslate"><span class="pre">PoetGenerateFuture.session</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PoetGenerateFuture.job"><code class="docutils literal notranslate"><span class="pre">PoetGenerateFuture.job</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PoetGenerateFuture.Methods"><code class="docutils literal notranslate"><span class="pre">PoetGenerateFuture.Methods</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PoetGenerateFuture.stream"><code class="docutils literal notranslate"><span class="pre">PoetGenerateFuture.stream()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetGenerateFuture"><code class="docutils literal notranslate"><span class="pre">PoetGenerateFuture</span></code></a><ul>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetGenerateFuture.session"><code class="docutils literal notranslate"><span class="pre">PoetGenerateFuture.session</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetGenerateFuture.job"><code class="docutils literal notranslate"><span class="pre">PoetGenerateFuture.job</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetGenerateFuture.Methods"><code class="docutils literal notranslate"><span class="pre">PoetGenerateFuture.Methods</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PoetGenerateFuture.stream"><code class="docutils literal notranslate"><span class="pre">PoetGenerateFuture.stream()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#openprotein.api.poet.PromptFuture"><code class="docutils literal notranslate"><span class="pre">PromptFuture</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PromptFuture.session"><code class="docutils literal notranslate"><span class="pre">PromptFuture.session</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PromptFuture.job"><code class="docutils literal notranslate"><span class="pre">PromptFuture.job</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PromptFuture.page_size"><code class="docutils literal notranslate"><span class="pre">PromptFuture.page_size</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.PromptFuture.get"><code class="docutils literal notranslate"><span class="pre">PromptFuture.get()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PromptFuture"><code class="docutils literal notranslate"><span class="pre">PromptFuture</span></code></a><ul>
+<li><a class="reference internal" href="#openprotein.api.poet.PromptFuture.session"><code class="docutils literal notranslate"><span class="pre">PromptFuture.session</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PromptFuture.job"><code class="docutils literal notranslate"><span class="pre">PromptFuture.job</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PromptFuture.page_size"><code class="docutils literal notranslate"><span class="pre">PromptFuture.page_size</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.PromptFuture.get"><code class="docutils literal notranslate"><span class="pre">PromptFuture.get()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#openprotein.api.poet.MSAFuture"><code class="docutils literal notranslate"><span class="pre">MSAFuture</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.MSAFuture.session"><code class="docutils literal notranslate"><span class="pre">MSAFuture.session</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.MSAFuture.job"><code class="docutils literal notranslate"><span class="pre">MSAFuture.job</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.MSAFuture.page_size"><code class="docutils literal notranslate"><span class="pre">MSAFuture.page_size</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.MSAFuture.get"><code class="docutils literal notranslate"><span class="pre">MSAFuture.get()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.MSAFuture.sample_prompt"><code class="docutils literal notranslate"><span class="pre">MSAFuture.sample_prompt()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#openprotein.api.poet.MSAFuture.wait"><code class="docutils literal notranslate"><span class="pre">MSAFuture.wait()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.MSAFuture"><code class="docutils literal notranslate"><span class="pre">MSAFuture</span></code></a><ul>
+<li><a class="reference internal" href="#openprotein.api.poet.MSAFuture.session"><code class="docutils literal notranslate"><span class="pre">MSAFuture.session</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.MSAFuture.job"><code class="docutils literal notranslate"><span class="pre">MSAFuture.job</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.MSAFuture.page_size"><code class="docutils literal notranslate"><span class="pre">MSAFuture.page_size</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.MSAFuture.get"><code class="docutils literal notranslate"><span class="pre">MSAFuture.get()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.MSAFuture.sample_prompt"><code class="docutils literal notranslate"><span class="pre">MSAFuture.sample_prompt()</span></code></a></li>
+<li><a class="reference internal" href="#openprotein.api.poet.MSAFuture.wait"><code class="docutils literal notranslate"><span class="pre">MSAFuture.wait()</span></code></a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="embedding.html">Embeddings</a></li>
 </ul>
-
+</div>
         </div>
       </div>
     </nav>
@@ -768,10 +760,7 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 
            </div>
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="design.html" class="btn btn-neutral float-left" title="Design" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="embedding.html" class="btn btn-neutral float-right" title="Embeddings" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-    </div>
+          <footer>
 
   <hr/>
 
