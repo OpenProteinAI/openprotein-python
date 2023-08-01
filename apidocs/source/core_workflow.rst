@@ -1,9 +1,9 @@
 Asssay-based Sequence Learning
 =============================== 
 
-Welcome to the Core Workflow section of OpenProtein's Python client library documentation! In this part of the documentation, we describe how to use our library to perform the core tasks associated with data processing and utilizing the platform's machine learning capabilities.
+Welcome to the Asssay-based Sequence Learning section of the documentation! Here, we describe how to use our library to perform the core tasks associated with data processing and utilizing the platform's machine learning capabilities.
 
-The core functionality of OpenProtein's Python client library is divided into four main modules: AssayData, Train, Predict, and Design.
+The Asssay-based Sequence Learning functionality of OpenProtein's Python client library is divided into four main modules: AssayData, Train, Predict, and Design.
 
 AssayData
 ---------
