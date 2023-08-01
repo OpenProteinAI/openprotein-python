@@ -7,6 +7,7 @@
   <title>AssayData &mdash; OpenProtein-Python  documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
@@ -16,9 +17,12 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/sphinx_highlight.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" /> 
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Train" href="train.html" />
+    <link rel="prev" title="Asssay-based Sequence Learning" href="core_workflow.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -40,27 +44,32 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <!-- Local TOC -->
-              <div class="local-toc"><ul>
-<li><a class="reference internal" href="#">AssayData</a><ul>
-<li><a class="reference internal" href="#openprotein.api.data.DataAPI"><code class="docutils literal notranslate"><span class="pre">DataAPI</span></code></a><ul>
-<li><a class="reference internal" href="#openprotein.api.data.DataAPI.create"><code class="docutils literal notranslate"><span class="pre">DataAPI.create()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.data.DataAPI.get"><code class="docutils literal notranslate"><span class="pre">DataAPI.get()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.data.DataAPI.list"><code class="docutils literal notranslate"><span class="pre">DataAPI.list()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.data.DataAPI.load_job"><code class="docutils literal notranslate"><span class="pre">DataAPI.load_job()</span></code></a></li>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Session management</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="core_workflow.html">Asssay-based Sequence Learning</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="core_workflow.html#assaydata">AssayData</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_workflow.html#train">Train</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_workflow.html#predict">Predict</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_workflow.html#design">Design</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="core_workflow.html#index">Index</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">AssayData</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#openprotein.api.data.DataAPI"><code class="docutils literal notranslate"><span class="pre">DataAPI</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#openprotein.api.data.AssayDataset"><code class="docutils literal notranslate"><span class="pre">AssayDataset</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#openprotein.api.data.AssayDataset"><code class="docutils literal notranslate"><span class="pre">AssayDataset</span></code></a><ul>
-<li><a class="reference internal" href="#openprotein.api.data.AssayDataset.get_first"><code class="docutils literal notranslate"><span class="pre">AssayDataset.get_first()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.data.AssayDataset.get_slice"><code class="docutils literal notranslate"><span class="pre">AssayDataset.get_slice()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.data.AssayDataset.list_models"><code class="docutils literal notranslate"><span class="pre">AssayDataset.list_models()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.data.AssayDataset.update"><code class="docutils literal notranslate"><span class="pre">AssayDataset.update()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="train.html">Train</a></li>
+<li class="toctree-l3"><a class="reference internal" href="predict.html">Predict</a></li>
+<li class="toctree-l3"><a class="reference internal" href="design.html">Design</a></li>
+<li class="toctree-l3"><a class="reference internal" href="demos/core_demo.html">Demo of Core workflow functionality</a></li>
 </ul>
 </li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="poet_workflow.html">De Novo prediction &amp; generative models (PoET)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="embedding_workflow.html">Protein Language Models &amp; Embeddings</a></li>
 </ul>
-</div>
+
         </div>
       </div>
     </nav>
@@ -75,6 +84,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="core_workflow.html">Asssay-based Sequence Learning</a></li>
       <li class="breadcrumb-item active">AssayData</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/data.rst.txt" rel="nofollow"> View page source</a>
@@ -90,7 +100,7 @@
 <p>Upload your dataset to OpenProtein’s engineering platform for train, predict and design tasks.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="openprotein.api.data.DataAPI">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.data.</span></span><span class="sig-name descname"><span class="pre">DataAPI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">APISession</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/data.html#DataAPI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.data.DataAPI" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.data.</span></span><span class="sig-name descname"><span class="pre">DataAPI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.base.APISession"><span class="pre">APISession</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/data.html#DataAPI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.data.DataAPI" title="Permalink to this definition"></a></dt>
 <dd><p>API interface for calling AssayData endpoints</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="openprotein.api.data.DataAPI.create">
@@ -174,7 +184,7 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="openprotein.api.data.AssayDataset">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.data.</span></span><span class="sig-name descname"><span class="pre">AssayDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">APISession</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">AssayMetadata</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/data.html#AssayDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.data.AssayDataset" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.data.</span></span><span class="sig-name descname"><span class="pre">AssayDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.base.APISession"><span class="pre">APISession</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">AssayMetadata</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/data.html#AssayDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.data.AssayDataset" title="Permalink to this definition"></a></dt>
 <dd><p>Future Job for manipulating results</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="openprotein.api.data.AssayDataset.get_first">
@@ -248,7 +258,10 @@
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="core_workflow.html" class="btn btn-neutral float-left" title="Asssay-based Sequence Learning" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="train.html" class="btn btn-neutral float-right" title="Train" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
 
   <hr/>
 

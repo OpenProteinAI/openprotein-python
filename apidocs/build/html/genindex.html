@@ -6,6 +6,7 @@
   <title>Index &mdash; OpenProtein-Python  documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
@@ -15,6 +16,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/sphinx_highlight.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="#" />
     <link rel="search" title="Search" href="search.html" /> 
@@ -41,13 +43,10 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="overview.html">Welcome to the docs!</a></li>
-<li class="toctree-l1"><a class="reference internal" href="data.html">AssayData</a></li>
-<li class="toctree-l1"><a class="reference internal" href="train.html">Train</a></li>
-<li class="toctree-l1"><a class="reference internal" href="predict.html">Predict</a></li>
-<li class="toctree-l1"><a class="reference internal" href="design.html">Design</a></li>
-<li class="toctree-l1"><a class="reference internal" href="embedding.html">Embeddings</a></li>
-<li class="toctree-l1"><a class="reference internal" href="poet.html">Protein Evolutionary Transformer (PoET)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Session management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core_workflow.html">Asssay-based Sequence Learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="poet_workflow.html">De Novo prediction &amp; generative models (PoET)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="embedding_workflow.html">Protein Language Models &amp; Embeddings</a></li>
 </ul>
 
         </div>
@@ -86,6 +85,7 @@
  | <a href="#J"><strong>J</strong></a>
  | <a href="#L"><strong>L</strong></a>
  | <a href="#M"><strong>M</strong></a>
+ | <a href="#O"><strong>O</strong></a>
  | <a href="#P"><strong>P</strong></a>
  | <a href="#S"><strong>S</strong></a>
  | <a href="#T"><strong>T</strong></a>
@@ -96,10 +96,12 @@
 <h2 id="A">A</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="data.html#openprotein.api.data.AssayDataset">AssayDataset (class in openprotein.api.data)</a>
+      <li><a href="basics.html#openprotein.APISession">APISession (class in openprotein)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="data.html#openprotein.api.data.AssayDataset">AssayDataset (class in openprotein.api.data)</a>
+</li>
       <li><a href="embedding.html#openprotein.api.embedding.ProtembedModel.attn">attn() (openprotein.api.embedding.ProtembedModel method)</a>
 </li>
   </ul></td>
@@ -128,6 +130,8 @@
 <h2 id="D">D</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="basics.html#openprotein.OpenProtein.data">data (openprotein.OpenProtein property)</a>
+</li>
       <li><a href="data.html#openprotein.api.data.DataAPI">DataAPI (class in openprotein.api.data)</a>
 </li>
       <li><a href="embedding.html#openprotein.api.embedding.SVDModel.delete">delete() (openprotein.api.embedding.SVDModel method)</a>
@@ -135,6 +139,8 @@
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="embedding.html#openprotein.api.embedding.EmbeddingAPI.delete_svd">delete_svd() (openprotein.api.embedding.EmbeddingAPI method)</a>
+</li>
+      <li><a href="basics.html#openprotein.OpenProtein.design">design (openprotein.OpenProtein property)</a>
 </li>
       <li><a href="design.html#openprotein.api.design.DesignAPI">DesignAPI (class in openprotein.api.design)</a>
 </li>
@@ -156,6 +162,8 @@
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="basics.html#openprotein.OpenProtein.embedding">embedding (openprotein.OpenProtein property)</a>
+</li>
       <li><a href="embedding.html#openprotein.api.embedding.EmbeddingAPI">EmbeddingAPI (class in openprotein.api.embedding)</a>
 </li>
       <li><a href="embedding.html#openprotein.api.embedding.EmbeddingResultFuture">EmbeddingResultFuture (class in openprotein.api.embedding)</a>
@@ -263,6 +271,10 @@
 </li>
       </ul></li>
   </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="basics.html#openprotein.OpenProtein.jobs">jobs (openprotein.OpenProtein property)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="L">L</h2>
@@ -298,6 +310,8 @@
 </li>
       <li><a href="poet.html#openprotein.api.poet.PoetAPI.load_prompt_job">load_prompt_job() (openprotein.api.poet.PoetAPI method)</a>
 </li>
+      <li><a href="basics.html#openprotein.APISession.login">login() (openprotein.APISession method)</a>
+</li>
       <li><a href="embedding.html#openprotein.api.embedding.ProtembedModel.logits">logits() (openprotein.api.embedding.ProtembedModel method)</a>
 </li>
   </ul></td>
@@ -315,6 +329,14 @@
   </ul></td>
 </tr></table>
 
+<h2 id="O">O</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="basics.html#openprotein.OpenProtein">OpenProtein (class in openprotein)</a>
+</li>
+  </ul></td>
+</tr></table>
+
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
@@ -328,6 +350,8 @@
         <li><a href="poet.html#openprotein.api.poet.PromptFuture.page_size">(openprotein.api.poet.PromptFuture attribute)</a>
 </li>
       </ul></li>
+      <li><a href="basics.html#openprotein.OpenProtein.poet">poet (openprotein.OpenProtein property)</a>
+</li>
       <li><a href="poet.html#openprotein.api.poet.PoetAPI">PoetAPI (class in openprotein.api.poet)</a>
 </li>
       <li><a href="poet.html#openprotein.api.poet.PoetGenerateFuture">PoetGenerateFuture (class in openprotein.api.poet)</a>
@@ -337,6 +361,8 @@
       <li><a href="poet.html#openprotein.api.poet.PoetScoreFuture">PoetScoreFuture (class in openprotein.api.poet)</a>
 </li>
       <li><a href="poet.html#openprotein.api.poet.PoetSingleSiteFuture">PoetSingleSiteFuture (class in openprotein.api.poet)</a>
+</li>
+      <li><a href="basics.html#openprotein.OpenProtein.predict">predict (openprotein.OpenProtein property)</a>
 </li>
       <li><a href="predict.html#openprotein.api.predict.PredictAPI">PredictAPI (class in openprotein.api.predict)</a>
 </li>
@@ -382,10 +408,12 @@
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="train.html#openprotein.api.train.TrainFuture">TrainFuture (class in openprotein.api.train)</a>
+      <li><a href="basics.html#openprotein.OpenProtein.train">train (openprotein.OpenProtein property)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="train.html#openprotein.api.train.TrainFuture">TrainFuture (class in openprotein.api.train)</a>
+</li>
       <li><a href="train.html#openprotein.api.train.TrainingAPI">TrainingAPI (class in openprotein.api.train)</a>
 </li>
   </ul></td>

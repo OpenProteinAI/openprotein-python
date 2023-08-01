@@ -7,6 +7,7 @@
   <title>Embeddings &mdash; OpenProtein-Python  documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
@@ -16,9 +17,12 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/sphinx_highlight.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" /> 
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Demo of Embeddings workflow functionality" href="demos/embedding_demo.html" />
+    <link rel="prev" title="Protein Language Models &amp; Embeddings" href="embedding_workflow.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -40,47 +44,27 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <!-- Local TOC -->
-              <div class="local-toc"><ul>
-<li><a class="reference internal" href="#">Embeddings</a><ul>
-<li><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI</span></code></a><ul>
-<li><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.delete_svd"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.delete_svd()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.embed"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.embed()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.fit_svd"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.fit_svd()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.get_model"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.get_model()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.get_results"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.get_results()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.get_svd"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.get_svd()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.get_svd_results"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.get_svd_results()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.list_models"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.list_models()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.list_svd"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.list_svd()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI.load_job"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI.load_job()</span></code></a></li>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Session management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core_workflow.html">Asssay-based Sequence Learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="poet_workflow.html">De Novo prediction &amp; generative models (PoET)</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="embedding_workflow.html">Protein Language Models &amp; Embeddings</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="embedding_workflow.html#index">Index</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Embeddings</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#openprotein.api.embedding.EmbeddingAPI"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPI</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#openprotein.api.embedding.EmbeddingResultFuture"><code class="docutils literal notranslate"><span class="pre">EmbeddingResultFuture</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#openprotein.api.embedding.ProtembedModel"><code class="docutils literal notranslate"><span class="pre">ProtembedModel</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#openprotein.api.embedding.SVDModel"><code class="docutils literal notranslate"><span class="pre">SVDModel</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#openprotein.api.embedding.EmbeddingResultFuture"><code class="docutils literal notranslate"><span class="pre">EmbeddingResultFuture</span></code></a><ul>
-<li><a class="reference internal" href="#openprotein.api.embedding.EmbeddingResultFuture.get_item"><code class="docutils literal notranslate"><span class="pre">EmbeddingResultFuture.get_item()</span></code></a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#openprotein.api.embedding.ProtembedModel"><code class="docutils literal notranslate"><span class="pre">ProtembedModel</span></code></a><ul>
-<li><a class="reference internal" href="#openprotein.api.embedding.ProtembedModel.attn"><code class="docutils literal notranslate"><span class="pre">ProtembedModel.attn()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.embedding.ProtembedModel.embed"><code class="docutils literal notranslate"><span class="pre">ProtembedModel.embed()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.embedding.ProtembedModel.fit_svd"><code class="docutils literal notranslate"><span class="pre">ProtembedModel.fit_svd()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.embedding.ProtembedModel.get_metadata"><code class="docutils literal notranslate"><span class="pre">ProtembedModel.get_metadata()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.embedding.ProtembedModel.logits"><code class="docutils literal notranslate"><span class="pre">ProtembedModel.logits()</span></code></a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#openprotein.api.embedding.SVDModel"><code class="docutils literal notranslate"><span class="pre">SVDModel</span></code></a><ul>
-<li><a class="reference internal" href="#openprotein.api.embedding.SVDModel.delete"><code class="docutils literal notranslate"><span class="pre">SVDModel.delete()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.embedding.SVDModel.embed"><code class="docutils literal notranslate"><span class="pre">SVDModel.embed()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.embedding.SVDModel.get_embeddings"><code class="docutils literal notranslate"><span class="pre">SVDModel.get_embeddings()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.embedding.SVDModel.get_inputs"><code class="docutils literal notranslate"><span class="pre">SVDModel.get_inputs()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.embedding.SVDModel.get_job"><code class="docutils literal notranslate"><span class="pre">SVDModel.get_job()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.embedding.SVDModel.get_model"><code class="docutils literal notranslate"><span class="pre">SVDModel.get_model()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="demos/embedding_demo.html">Demo of Embeddings workflow functionality</a></li>
 </ul>
 </li>
 </ul>
 </li>
 </ul>
-</div>
+
         </div>
       </div>
     </nav>
@@ -95,6 +79,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="embedding_workflow.html">Protein Language Models &amp; Embeddings</a></li>
       <li class="breadcrumb-item active">Embeddings</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/embedding.rst.txt" rel="nofollow"> View page source</a>
@@ -110,7 +95,7 @@
 <p>Create embeddings for your protein sequences using open-source and proprietary models!</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="openprotein.api.embedding.EmbeddingAPI">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.embedding.</span></span><span class="sig-name descname"><span class="pre">EmbeddingAPI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">APISession</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/embedding.html#EmbeddingAPI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.embedding.EmbeddingAPI" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.embedding.</span></span><span class="sig-name descname"><span class="pre">EmbeddingAPI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.base.APISession"><span class="pre">APISession</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/embedding.html#EmbeddingAPI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.embedding.EmbeddingAPI" title="Permalink to this definition"></a></dt>
 <dd><p>This class defines a high level interface for accessing the embeddings API.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="openprotein.api.embedding.EmbeddingAPI.delete_svd">
@@ -299,7 +284,7 @@ Options are None, “MEAN”, or “SUM”. Default is None.</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="openprotein.api.embedding.EmbeddingResultFuture">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.embedding.</span></span><span class="sig-name descname"><span class="pre">EmbeddingResultFuture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">APISession</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequences</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_workers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/embedding.html#EmbeddingResultFuture"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.embedding.EmbeddingResultFuture" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.embedding.</span></span><span class="sig-name descname"><span class="pre">EmbeddingResultFuture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.base.APISession"><span class="pre">APISession</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequences</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_workers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/embedding.html#EmbeddingResultFuture"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.embedding.EmbeddingResultFuture" title="Permalink to this definition"></a></dt>
 <dd><p>Future Job for manipulating results</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="openprotein.api.embedding.EmbeddingResultFuture.get_item">
@@ -403,7 +388,7 @@ Options are None, “MEAN”, or “SUM”. Default is None.</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="openprotein.api.embedding.SVDModel">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.embedding.</span></span><span class="sig-name descname"><span class="pre">SVDModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">APISession</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">SVDMetadata</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/embedding.html#SVDModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.embedding.SVDModel" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.embedding.</span></span><span class="sig-name descname"><span class="pre">SVDModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.base.APISession"><span class="pre">APISession</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">SVDMetadata</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/embedding.html#SVDModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.embedding.SVDModel" title="Permalink to this definition"></a></dt>
 <dd><p>Class providing embedding endpoint for SVD models.         Also allows retrieving embeddings of sequences used to fit the SVD with <cite>get</cite>.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="openprotein.api.embedding.SVDModel.delete">
@@ -475,7 +460,10 @@ Options are None, “MEAN”, or “SUM”. Default is None.</p></li>
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="embedding_workflow.html" class="btn btn-neutral float-left" title="Protein Language Models &amp; Embeddings" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="demos/embedding_demo.html" class="btn btn-neutral float-right" title="Demo of Embeddings workflow functionality" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
 
   <hr/>
 

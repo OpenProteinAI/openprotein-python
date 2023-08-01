@@ -27,10 +27,16 @@ class OpenProtein(APISession):
     
     @property
     def data(self):
+        """
+        The data submodule gives access to functionality for uploading and accessing user data. 
+        """
         return DataAPI(self)
     
     @property 
     def train(self):
+        """
+        The train submodule gives access to functionality for training and validating ML models. 
+        """
         return TrainingAPI(self)
 
     @property
@@ -49,10 +55,16 @@ class OpenProtein(APISession):
 
     @property 
     def predict(self):
+        """
+        The predict submodule gives access to sequence predictions using models from train. 
+        """
         return PredictAPI(self)
     
     @property
     def design(self):
+        """
+        The design submodule gives access to functionality for designing new sequences using models from train. 
+        """
         return DesignAPI(self)
 
 connect = OpenProtein

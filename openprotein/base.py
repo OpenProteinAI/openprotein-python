@@ -23,7 +23,20 @@ class BearerAuth(requests.auth.AuthBase):
 
 
 class APISession(requests.Session):
-    """Connection session."""
+    """
+    A class to handle API sessions. This class provides a connection session to the OpenProtein API.
+
+    Parameters
+    ----------
+    username : str
+        The username of the user.
+    password : str
+        The password of the user.
+
+    Examples
+    --------
+    >>> session = APISession("username", "password")
+    """
 
     def __init__(self, username:str,
                  password:str,
@@ -43,7 +56,8 @@ class APISession(requests.Session):
         self.login(username, password)
 
     def login(self, username:str, password:str):
-        """ Authenticate connection to OpenProtein with your credentials.
+        """ 
+        Authenticate connection to OpenProtein with your credentials.
         
         Parameters
         -----------

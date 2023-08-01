@@ -7,6 +7,7 @@
   <title>Welcome to OpenProtein’s documentation! &mdash; OpenProtein-Python  documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
@@ -16,10 +17,11 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/sphinx_highlight.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Welcome to the docs!" href="overview.html" /> 
+    <link rel="next" title="Session management" href="overview.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -43,13 +45,10 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="overview.html">Welcome to the docs!</a></li>
-<li class="toctree-l1"><a class="reference internal" href="data.html">AssayData</a></li>
-<li class="toctree-l1"><a class="reference internal" href="train.html">Train</a></li>
-<li class="toctree-l1"><a class="reference internal" href="predict.html">Predict</a></li>
-<li class="toctree-l1"><a class="reference internal" href="design.html">Design</a></li>
-<li class="toctree-l1"><a class="reference internal" href="embedding.html">Embeddings</a></li>
-<li class="toctree-l1"><a class="reference internal" href="poet.html">Protein Evolutionary Transformer (PoET)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Session management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core_workflow.html">Asssay-based Sequence Learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="poet_workflow.html">De Novo prediction &amp; generative models (PoET)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="embedding_workflow.html">Protein Language Models &amp; Embeddings</a></li>
 </ul>
 
         </div>
@@ -78,46 +77,39 @@
              
   <section id="welcome-to-openprotein-s-documentation">
 <h1>Welcome to OpenProtein’s documentation!<a class="headerlink" href="#welcome-to-openprotein-s-documentation" title="Permalink to this heading"></a></h1>
-<blockquote>
-<div><p>The documentation is divided into each core workflow below:</p>
-</div></blockquote>
+<p>Welcome to OpenProtein.AI!</p>
+<p>OpenProtein.AI is a powerful platform that seamlessly integrates state-of-the-art machine learning and generative models into protein engineering workflows.</p>
+<p>We help you to design better proteins faster by giving you access to cutting-edge protein language models, prediction and design algorithms, as well as data management and model training tools. Easily build and deploy high-performance Bayesian protein function predictors, or apply generative protein language models to design sequence libraries, all via our integrated platform. OpenProtein.ai can be accessed via web App, API and this python client, making it great for both biologists and protein engineers, as well as data scientists and software engineers.</p>
+<p>The documentation is divided into workflows below. For each workflow you can read the docs and see a demo of usage.</p>
 <section id="table-of-contents">
 <h2>Table of Contents<a class="headerlink" href="#table-of-contents" title="Permalink to this heading"></a></h2>
 <table class="docutils align-default">
 <thead>
-<tr class="row-odd"><th class="head"><p>Chapter</p></th>
-<th class="head"><p>Content</p></th>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>Workflow</p></th>
 <th class="head"><p>Description</p></th>
 </tr>
 </thead>
 <tbody>
 <tr class="row-even"><td><p>1</p></td>
-<td><p><a class="reference external" href="overview.html">Overview</a></p></td>
-<td><p>Brief overview of the async jobs system</p></td>
+<td><p><a class="reference external" href="overview.html">Session management</a></p></td>
+<td><p>An overview of the OpenProtein Python Client
+&amp; the asynchronous jobs system.</p></td>
 </tr>
 <tr class="row-odd"><td><p>2</p></td>
-<td><p><a class="reference external" href="data.html">Data</a></p></td>
-<td><p>How to upload your data for use with our endpoints</p></td>
+<td><p><a class="reference external" href="core_workflow.html">Asssay-based Sequence Learning</a></p></td>
+<td><p>Covers core tasks such as data upload,
+model training &amp; prediction, and sequence design</p></td>
 </tr>
 <tr class="row-even"><td><p>3</p></td>
-<td><p><a class="reference external" href="train.html">Train</a></p></td>
-<td><p>How to train models on sequence properties</p></td>
+<td><p><a class="reference external" href="poet_workflow.html">De Novo prediction &amp; generative models (PoET)</a></p></td>
+<td><p>Covers PoET, a protein LLM for <em>de novo</em> scoring,
+as well as sequence generation.</p></td>
 </tr>
 <tr class="row-odd"><td><p>4</p></td>
-<td><p><a class="reference external" href="predict.html">Predict</a></p></td>
-<td><p>How to predict sequence properties</p></td>
-</tr>
-<tr class="row-even"><td><p>5</p></td>
-<td><p><a class="reference external" href="design.html">Design</a></p></td>
-<td><p>How to design new sequences</p></td>
-</tr>
-<tr class="row-odd"><td><p>6</p></td>
-<td><p><a class="reference external" href="embedding.html">Embedding</a></p></td>
-<td><p>How to create embeddings for your sequences</p></td>
-</tr>
-<tr class="row-even"><td><p>7</p></td>
-<td><p><a class="reference external" href="poet.html">Poet</a></p></td>
-<td><p>How to use our generative LLM</p></td>
+<td><p><a class="reference external" href="embedding_workflow.html">Protein Language Models &amp; Embeddings</a></p></td>
+<td><p>Covers methods for creating sequence
+embeddings with proprietary &amp; open-source models</p></td>
 </tr>
 </tbody>
 </table>
@@ -130,7 +122,7 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="overview.html" class="btn btn-neutral float-right" title="Welcome to the docs!" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="overview.html" class="btn btn-neutral float-right" title="Session management" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

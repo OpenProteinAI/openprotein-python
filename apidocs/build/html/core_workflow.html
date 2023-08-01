@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Asssay-based Sequence Learning &mdash; OpenProtein-Python  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="AssayData" href="data.html" />
+    <link rel="prev" title="APISession" href="basics.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            OpenProtein-Python
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Session management</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Asssay-based Sequence Learning</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#assaydata">AssayData</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#train">Train</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#predict">Predict</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#design">Design</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#index">Index</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="data.html">AssayData</a></li>
+<li class="toctree-l3"><a class="reference internal" href="train.html">Train</a></li>
+<li class="toctree-l3"><a class="reference internal" href="predict.html">Predict</a></li>
+<li class="toctree-l3"><a class="reference internal" href="design.html">Design</a></li>
+<li class="toctree-l3"><a class="reference internal" href="demos/core_demo.html">Demo of Core workflow functionality</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="poet_workflow.html">De Novo prediction &amp; generative models (PoET)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="embedding_workflow.html">Protein Language Models &amp; Embeddings</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">OpenProtein-Python</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Asssay-based Sequence Learning</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/core_workflow.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="asssay-based-sequence-learning">
+<h1>Asssay-based Sequence Learning<a class="headerlink" href="#asssay-based-sequence-learning" title="Permalink to this heading"></a></h1>
+<p>Welcome to the Core Workflow section of OpenProtein’s Python client library documentation! In this part of the documentation, we describe how to use our library to perform the core tasks associated with data processing and utilizing the platform’s machine learning capabilities.</p>
+<p>The core functionality of OpenProtein’s Python client library is divided into four main modules: AssayData, Train, Predict, and Design.</p>
+<section id="assaydata">
+<h2>AssayData<a class="headerlink" href="#assaydata" title="Permalink to this heading"></a></h2>
+<p>Our AssayData module allows you to upload your dataset to OpenProtein’s engineering platform. This dataset forms the basis for training, predicting, and evaluating tasks. Your data should be formatted as a 2-column CSV, including the full sequence of each variant and one or more columns for your measured properties.</p>
+<p>See the <a class="reference internal" href="data.html"><span class="doc">AssayData documentation</span></a> for more details.</p>
+</section>
+<section id="train">
+<h2>Train<a class="headerlink" href="#train" title="Permalink to this heading"></a></h2>
+<p>Our Train module provides functions to train models on your measured properties. This step is essential for enabling predictions for new sequences. These workflows also perform cross-validation on your models to estimate uncertainty.</p>
+<p>See the <a class="reference internal" href="train.html"><span class="doc">Train documentation</span></a> for more details.</p>
+</section>
+<section id="predict">
+<h2>Predict<a class="headerlink" href="#predict" title="Permalink to this heading"></a></h2>
+<p>With the Predict module, you can make predictions on arbitrary sequences using your trained OpenProtein models. This includes predictions for single sequences as well as single mutant variants of the sequence.</p>
+<p>See the <a class="reference internal" href="predict.html"><span class="doc">Predict documentation</span></a> for more details.</p>
+</section>
+<section id="design">
+<h2>Design<a class="headerlink" href="#design" title="Permalink to this heading"></a></h2>
+<p>The Design module provides the capability to design new sequences based on your objectives using our genetic algorithm.</p>
+<p>See the <a class="reference internal" href="design.html"><span class="doc">Design documentation</span></a> for more details.</p>
+<p>Remember that these workflows require you to first upload your datasets using the AssayData module and train your models using the Train module.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For a practical example of using this workflow, see the <a class="reference internal" href="demos/core_demo.html"><span class="doc">core workflow notebook</span></a>.</p>
+</div>
+<p>In addition to this documentation, we offer demos of key workflows and provide demo datasets to help you familiarize yourself with our workflows. Happy learning and exploring!</p>
+</section>
+<section id="index">
+<h2>Index<a class="headerlink" href="#index" title="Permalink to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="data.html">AssayData</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="data.html#openprotein.api.data.DataAPI"><code class="docutils literal notranslate"><span class="pre">DataAPI</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="data.html#openprotein.api.data.AssayDataset"><code class="docutils literal notranslate"><span class="pre">AssayDataset</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="train.html">Train</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="train.html#openprotein.api.train.TrainingAPI"><code class="docutils literal notranslate"><span class="pre">TrainingAPI</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="train.html#openprotein.api.train.TrainFuture"><code class="docutils literal notranslate"><span class="pre">TrainFuture</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="predict.html">Predict</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="predict.html#openprotein.api.predict.PredictAPI"><code class="docutils literal notranslate"><span class="pre">PredictAPI</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="predict.html#openprotein.api.predict.PredictFuture"><code class="docutils literal notranslate"><span class="pre">PredictFuture</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="design.html">Design</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="design.html#openprotein.api.design.DesignAPI"><code class="docutils literal notranslate"><span class="pre">DesignAPI</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="design.html#openprotein.api.design.DesignFuture"><code class="docutils literal notranslate"><span class="pre">DesignFuture</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="demos/core_demo.html">Demo of Core workflow functionality</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="demos/core_demo.html#Setup">Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="demos/core_demo.html#Data-Upload">Data Upload</a></li>
+<li class="toctree-l2"><a class="reference internal" href="demos/core_demo.html#Model-training">Model training</a></li>
+<li class="toctree-l2"><a class="reference internal" href="demos/core_demo.html#Sequence-design">Sequence design</a></li>
+<li class="toctree-l2"><a class="reference internal" href="demos/core_demo.html#Sequence-predictions">Sequence predictions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="demos/core_demo.html#Resume-workflows">Resume workflows</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="basics.html" class="btn btn-neutral float-left" title="APISession" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="data.html" class="btn btn-neutral float-right" title="AssayData" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, NE47.bio.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

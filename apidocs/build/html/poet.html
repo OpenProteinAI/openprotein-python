@@ -7,6 +7,7 @@
   <title>Protein Evolutionary Transformer (PoET) &mdash; OpenProtein-Python  documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
@@ -16,9 +17,12 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/sphinx_highlight.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" /> 
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Demo of PoET functionality" href="demos/poet_demo.html" />
+    <link rel="prev" title="De Novo prediction &amp; generative models (PoET)" href="poet_workflow.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -40,69 +44,30 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <!-- Local TOC -->
-              <div class="local-toc"><ul>
-<li><a class="reference internal" href="#">Protein Evolutionary Transformer (PoET)</a><ul>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI"><code class="docutils literal notranslate"><span class="pre">PoetAPI</span></code></a><ul>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI.create_msa"><code class="docutils literal notranslate"><span class="pre">PoetAPI.create_msa()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI.generate"><code class="docutils literal notranslate"><span class="pre">PoetAPI.generate()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI.get_msa"><code class="docutils literal notranslate"><span class="pre">PoetAPI.get_msa()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI.get_msa_job"><code class="docutils literal notranslate"><span class="pre">PoetAPI.get_msa_job()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI.get_prompt"><code class="docutils literal notranslate"><span class="pre">PoetAPI.get_prompt()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI.get_prompt_job"><code class="docutils literal notranslate"><span class="pre">PoetAPI.get_prompt_job()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI.get_seed"><code class="docutils literal notranslate"><span class="pre">PoetAPI.get_seed()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI.load_msa_job"><code class="docutils literal notranslate"><span class="pre">PoetAPI.load_msa_job()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI.load_poet_job"><code class="docutils literal notranslate"><span class="pre">PoetAPI.load_poet_job()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI.load_prompt_job"><code class="docutils literal notranslate"><span class="pre">PoetAPI.load_prompt_job()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI.score"><code class="docutils literal notranslate"><span class="pre">PoetAPI.score()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI.single_site"><code class="docutils literal notranslate"><span class="pre">PoetAPI.single_site()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI.upload_msa"><code class="docutils literal notranslate"><span class="pre">PoetAPI.upload_msa()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetAPI.upload_prompt"><code class="docutils literal notranslate"><span class="pre">PoetAPI.upload_prompt()</span></code></a></li>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Session management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core_workflow.html">Asssay-based Sequence Learning</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="poet_workflow.html">De Novo prediction &amp; generative models (PoET)</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="poet_workflow.html#creating-a-prompt">Creating a prompt</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="poet_workflow.html#index">Index</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Protein Evolutionary Transformer (PoET)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#openprotein.api.poet.PoetAPI"><code class="docutils literal notranslate"><span class="pre">PoetAPI</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#openprotein.api.poet.PoetScoreFuture"><code class="docutils literal notranslate"><span class="pre">PoetScoreFuture</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#openprotein.api.poet.PoetSingleSiteFuture"><code class="docutils literal notranslate"><span class="pre">PoetSingleSiteFuture</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#openprotein.api.poet.PoetGenerateFuture"><code class="docutils literal notranslate"><span class="pre">PoetGenerateFuture</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#openprotein.api.poet.PromptFuture"><code class="docutils literal notranslate"><span class="pre">PromptFuture</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#openprotein.api.poet.MSAFuture"><code class="docutils literal notranslate"><span class="pre">MSAFuture</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetScoreFuture"><code class="docutils literal notranslate"><span class="pre">PoetScoreFuture</span></code></a><ul>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetScoreFuture.session"><code class="docutils literal notranslate"><span class="pre">PoetScoreFuture.session</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetScoreFuture.job"><code class="docutils literal notranslate"><span class="pre">PoetScoreFuture.job</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetScoreFuture.page_size"><code class="docutils literal notranslate"><span class="pre">PoetScoreFuture.page_size</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetScoreFuture.get"><code class="docutils literal notranslate"><span class="pre">PoetScoreFuture.get()</span></code></a></li>
-<li><a class="reference internal" href="#id0"><code class="docutils literal notranslate"><span class="pre">PoetScoreFuture.get()</span></code></a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetSingleSiteFuture"><code class="docutils literal notranslate"><span class="pre">PoetSingleSiteFuture</span></code></a><ul>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetSingleSiteFuture.session"><code class="docutils literal notranslate"><span class="pre">PoetSingleSiteFuture.session</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetSingleSiteFuture.job"><code class="docutils literal notranslate"><span class="pre">PoetSingleSiteFuture.job</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetSingleSiteFuture.page_size"><code class="docutils literal notranslate"><span class="pre">PoetSingleSiteFuture.page_size</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetSingleSiteFuture.get"><code class="docutils literal notranslate"><span class="pre">PoetSingleSiteFuture.get()</span></code></a></li>
-<li><a class="reference internal" href="#id1"><code class="docutils literal notranslate"><span class="pre">PoetSingleSiteFuture.get()</span></code></a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetGenerateFuture"><code class="docutils literal notranslate"><span class="pre">PoetGenerateFuture</span></code></a><ul>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetGenerateFuture.session"><code class="docutils literal notranslate"><span class="pre">PoetGenerateFuture.session</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetGenerateFuture.job"><code class="docutils literal notranslate"><span class="pre">PoetGenerateFuture.job</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetGenerateFuture.Methods"><code class="docutils literal notranslate"><span class="pre">PoetGenerateFuture.Methods</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.PoetGenerateFuture.stream"><code class="docutils literal notranslate"><span class="pre">PoetGenerateFuture.stream()</span></code></a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#openprotein.api.poet.PromptFuture"><code class="docutils literal notranslate"><span class="pre">PromptFuture</span></code></a><ul>
-<li><a class="reference internal" href="#openprotein.api.poet.PromptFuture.session"><code class="docutils literal notranslate"><span class="pre">PromptFuture.session</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.PromptFuture.job"><code class="docutils literal notranslate"><span class="pre">PromptFuture.job</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.PromptFuture.page_size"><code class="docutils literal notranslate"><span class="pre">PromptFuture.page_size</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.PromptFuture.get"><code class="docutils literal notranslate"><span class="pre">PromptFuture.get()</span></code></a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#openprotein.api.poet.MSAFuture"><code class="docutils literal notranslate"><span class="pre">MSAFuture</span></code></a><ul>
-<li><a class="reference internal" href="#openprotein.api.poet.MSAFuture.session"><code class="docutils literal notranslate"><span class="pre">MSAFuture.session</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.MSAFuture.job"><code class="docutils literal notranslate"><span class="pre">MSAFuture.job</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.MSAFuture.page_size"><code class="docutils literal notranslate"><span class="pre">MSAFuture.page_size</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.MSAFuture.get"><code class="docutils literal notranslate"><span class="pre">MSAFuture.get()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.MSAFuture.sample_prompt"><code class="docutils literal notranslate"><span class="pre">MSAFuture.sample_prompt()</span></code></a></li>
-<li><a class="reference internal" href="#openprotein.api.poet.MSAFuture.wait"><code class="docutils literal notranslate"><span class="pre">MSAFuture.wait()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="demos/poet_demo.html">Demo of PoET functionality</a></li>
 </ul>
 </li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="embedding_workflow.html">Protein Language Models &amp; Embeddings</a></li>
 </ul>
-</div>
+
         </div>
       </div>
     </nav>
@@ -117,6 +82,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="poet_workflow.html">De Novo prediction &amp; generative models (PoET)</a></li>
       <li class="breadcrumb-item active">Protein Evolutionary Transformer (PoET)</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/poet.rst.txt" rel="nofollow"> View page source</a>
@@ -132,7 +98,7 @@
 <p>Use our generative Protein Evolutionary Transformer (PoET) model for de novo generation of proteins, evaluation of protein fitness, and single site mutant analysis of proteins. These workflows are all possible without prior wetlab data, and therefore do not require assaydata to be pre-loaded!</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="openprotein.api.poet.PoetAPI">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.poet.</span></span><span class="sig-name descname"><span class="pre">PoetAPI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">APISession</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetAPI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetAPI" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.poet.</span></span><span class="sig-name descname"><span class="pre">PoetAPI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.base.APISession"><span class="pre">APISession</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetAPI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetAPI" title="Permalink to this definition"></a></dt>
 <dd><p>API interface for calling Poet and Align endpoints</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="openprotein.api.poet.PoetAPI.create_msa">
@@ -416,7 +382,7 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 
 <dl class="py class">
 <dt class="sig sig-object py" id="openprotein.api.poet.PoetScoreFuture">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.poet.</span></span><span class="sig-name descname"><span class="pre">PoetScoreFuture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">APISession</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetScoreFuture"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetScoreFuture" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.poet.</span></span><span class="sig-name descname"><span class="pre">PoetScoreFuture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.base.APISession"><span class="pre">APISession</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetScoreFuture"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetScoreFuture" title="Permalink to this definition"></a></dt>
 <dd><p>Represents a result of a PoET scoring job.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="openprotein.api.poet.PoetScoreFuture.session">
@@ -424,7 +390,7 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 <dd><p>An instance of APISession for API interactions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>APISession</p>
+<dd class="field-odd"><p><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.APISession">APISession</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -481,7 +447,7 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 
 <dl class="py class">
 <dt class="sig sig-object py" id="openprotein.api.poet.PoetSingleSiteFuture">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.poet.</span></span><span class="sig-name descname"><span class="pre">PoetSingleSiteFuture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">APISession</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetSingleSiteFuture"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetSingleSiteFuture" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.poet.</span></span><span class="sig-name descname"><span class="pre">PoetSingleSiteFuture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.base.APISession"><span class="pre">APISession</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetSingleSiteFuture"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetSingleSiteFuture" title="Permalink to this definition"></a></dt>
 <dd><p>Represents a result of a PoET single-site analysis job.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="openprotein.api.poet.PoetSingleSiteFuture.session">
@@ -489,7 +455,7 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 <dd><p>An instance of APISession for API interactions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>APISession</p>
+<dd class="field-odd"><p><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.APISession">APISession</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -546,7 +512,7 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 
 <dl class="py class">
 <dt class="sig sig-object py" id="openprotein.api.poet.PoetGenerateFuture">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.poet.</span></span><span class="sig-name descname"><span class="pre">PoetGenerateFuture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">APISession</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetGenerateFuture"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetGenerateFuture" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.poet.</span></span><span class="sig-name descname"><span class="pre">PoetGenerateFuture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.base.APISession"><span class="pre">APISession</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetGenerateFuture"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetGenerateFuture" title="Permalink to this definition"></a></dt>
 <dd><p>Represents a result of a PoET generation job.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="openprotein.api.poet.PoetGenerateFuture.session">
@@ -554,7 +520,7 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 <dd><p>An instance of APISession for API interactions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>APISession</p>
+<dd class="field-odd"><p><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.APISession">APISession</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -600,7 +566,7 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 
 <dl class="py class">
 <dt class="sig sig-object py" id="openprotein.api.poet.PromptFuture">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.poet.</span></span><span class="sig-name descname"><span class="pre">PromptFuture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">APISession</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msa_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/poet.html#PromptFuture"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PromptFuture" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.poet.</span></span><span class="sig-name descname"><span class="pre">PromptFuture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.base.APISession"><span class="pre">APISession</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msa_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/poet.html#PromptFuture"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PromptFuture" title="Permalink to this definition"></a></dt>
 <dd><p>Represents a result of a prompt job.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="openprotein.api.poet.PromptFuture.session">
@@ -608,7 +574,7 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 <dd><p>An instance of APISession for API interactions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>APISession</p>
+<dd class="field-odd"><p><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.APISession">APISession</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -653,7 +619,7 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 
 <dl class="py class">
 <dt class="sig sig-object py" id="openprotein.api.poet.MSAFuture">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.poet.</span></span><span class="sig-name descname"><span class="pre">MSAFuture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">APISession</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/poet.html#MSAFuture"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.MSAFuture" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.poet.</span></span><span class="sig-name descname"><span class="pre">MSAFuture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.base.APISession"><span class="pre">APISession</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/poet.html#MSAFuture"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.MSAFuture" title="Permalink to this definition"></a></dt>
 <dd><p>Represents a result of a MSA job.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="openprotein.api.poet.MSAFuture.session">
@@ -661,7 +627,7 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 <dd><p>An instance of APISession for API interactions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>APISession</p>
+<dd class="field-odd"><p><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.APISession">APISession</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -760,7 +726,10 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="poet_workflow.html" class="btn btn-neutral float-left" title="De Novo prediction &amp; generative models (PoET)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="demos/poet_demo.html" class="btn btn-neutral float-right" title="Demo of PoET functionality" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
 
   <hr/>
 

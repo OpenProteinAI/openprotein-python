@@ -18,12 +18,12 @@ author = 'NE47.bio'
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = [
-    #'recommonmark',
-    'sphinx_markdown_tables',
-    'myst_parser',
-    "sphinx_markdown_builder",
-]
+#extensions = [
+#    #'recommonmark',
+#    'sphinx_markdown_tables',
+#    'myst_parser',
+#    "sphinx_markdown_builder",
+#]
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
@@ -33,10 +33,18 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-#html_theme = 'alabaster' #default
-html_theme = 'sphinx_rtd_theme'
+#html_theme = 'sphinx_rtd_theme'
+html_theme = 'sphinx_rtd_theme' #sphinx_rtd_theme or  agogo
 
 html_static_path = ['_static']
+html_css_files = [
+    'custom.css',
+]
+
+html_sidebars = {
+    '**': ['globaltoc.html', 'sourcelink.html', 'searchbox.html'],
+}
+
 
 # add the extensions to the list of extensions
 extensions = [
@@ -45,10 +53,12 @@ extensions = [
     'sphinx.ext.viewcode',
     'recommonmark',
     'sphinx_markdown_tables',
-    'sphinx_markdown_builder'
+    'sphinx_markdown_builder',
+    'nbsphinx'
     #'myst_parser'
 ]
 
+nbsphinx_execute = 'never'
 
 # ... the rest of your configuration
 
