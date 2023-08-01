@@ -7,9 +7,9 @@ PoET is a generative protein language model that allows controllable design of p
 Creating a prompt
 -------------------
 
-You can create a prompt either from an MSA (see below), or by directly uploading a *de novo* :py:meth:`openprotein.api.poet.PoetAPI.upload_prompt`. 
+You can create a prompt either from an MSA (see below), or by directly uploading a *de novo* prompt :py:meth:`openprotein.api.poet.PoetAPI.upload_prompt`. 
 
-To create an MSA based prompt, you can first request an MSA with :py:meth:`openprotein.api.poet.PoetAPI.create_msa` and then filter (sample) it with :py:meth:`openprotein.api.poet.MSAFuture.sample_prompt`.
+To create an MSA based prompt, you can first request an MSA with :py:meth:`openprotein.api.poet.PoetAPI.create_msa` and then filter it with :py:meth:`openprotein.api.poet.MSAFuture.sample_prompt`.
 
 Once you have a viable prompt, you can execute the PoET workflows:
 
