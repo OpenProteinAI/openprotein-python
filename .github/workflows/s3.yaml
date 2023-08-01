@@ -4,6 +4,7 @@ on:
   push:
     branches:
     - develop
+    - prod
 
 jobs:
   build_and_sync:
@@ -38,6 +39,19 @@ jobs:
         echo $bucket; \
         echo "bucket=$bucket" >> $GITHUB_OUTPUT
       id: bucket_name
+
+    - name: Get distribution ID
+      shell: bash
+      run: |
+        branch=$(echo ${GITHUB_REF#refs/heads/}); \
+        if [ $branch == 'develop' ]; \
+        then dist=E3SMW2DYY71HHW; \
+        elif [ $branch == 'prod' ]; \
+        then dist=E1CUT1CP31D5NK; \
+        else exit 1; fi; \
+        echo $dist; \
+        echo "dist=$dist" >> $GITHUB_OUTPUT
+      id: dist_id
       
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
@@ -52,3 +66,9 @@ jobs:
       shell: bash
       run: |
         aws s3 sync apidocs/_build/html s3://${AWS_S3_BUCKET}/apidocs/
+
+    - name: Invalidate CloudFront cache
+      env:
+        DISTRIBUTION_ID: ${{ steps.dist_id.outputs.dist }}
+      run: |
+        aws cloudfront create-invalidation --distribution-id ${DISTRIBUTION_ID} --paths "/apidocs/*"
