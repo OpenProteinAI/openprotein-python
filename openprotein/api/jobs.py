@@ -38,10 +38,10 @@ class Job(BaseModel):
     status: JobStatus
     job_id: str
     job_type: str
-    created_date: Optional[datetime]
-    start_date: Optional[datetime]
-    end_date: Optional[datetime]
-    prerequisite_job_id: Optional[str]
+    created_date: Optional[datetime] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    prerequisite_job_id: Optional[str]  = None
     progress_message: Optional[str] = None
     progress_counter: Optional[int] = 0
     num_records: Optional[int] = None

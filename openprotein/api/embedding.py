@@ -139,15 +139,7 @@ def decode_embedding(data: bytes) -> np.ndarray:
 
 
 class EmbeddingResultFuture(MappedAsyncJobFuture):
-    """
-    This class defines a future result from an inference request. Results are viewed as a mapping from
-    sequences to result arrays, which can be queried using the `Map` interface. The status of the job
-    can be checked using the `AsyncJobFuture` interface and all results can be retrieved as a list of
-    tuples of (sequence, result) pairs from the `.get()` function. Individual results can be retrieved
-    with `__getitem__(sequence)` and the object can be iterated like a dictionary. Results are cached
-    so repeated indexing of the same result will not result in additional `GET` requests against the server.
-    """
-
+    """Future Job for manipulating results"""
     def __init__(
         self,
         session: APISession,
@@ -413,10 +405,6 @@ class ProtembedModel:
         """
         Get model metadata for this model.
 
-        Parameters
-        ----------
-            None
-
         Returns
         -------
             ModelMetadata
@@ -602,11 +590,13 @@ class SVDModel:
 
         Parameters
         ----------
-            sequences (List[bytes]): list of protein sequences
+        sequences : List[bytes]
+            List of protein sequences.
 
         Returns
         -------
-            EmbeddingResultFuture: class for futher job manipulation
+        EmbeddingResultFuture
+            Class for further job manipulation.
         """
         job = svd_embed_post(self.session, self.id, sequences)
         return EmbeddingResultFuture(self.session, job, sequences=sequences)
@@ -782,10 +772,6 @@ class EmbeddingAPI:
         List SVD models made by user.
 
         Takes no args.
-
-        Parameters
-        ----------
-            None
 
         Returns
         -------

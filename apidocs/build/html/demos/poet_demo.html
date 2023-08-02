@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demo of PoET functionality &mdash; OpenProtein-Python  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/nbsphinx-code-cells.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Protein Language Models &amp; Embeddings" href="../embedding_workflow.html" />
+    <link rel="prev" title="Protein Evolutionary Transformer (PoET)" href="../poet.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            OpenProtein-Python
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Session management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core_workflow.html">Asssay-based Sequence Learning</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../poet_workflow.html">De Novo prediction &amp; generative models (PoET)</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../poet_workflow.html#creating-a-prompt">Creating a prompt</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../poet_workflow.html#index">Index</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../poet.html">Protein Evolutionary Transformer (PoET)</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Demo of PoET functionality</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Setup">Setup</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Create-an-MSA">Create an MSA</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Prompt">Prompt</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Scoring-with-PoET">Scoring with PoET</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Single-site-analysis-with-PoET">Single site analysis with PoET</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Generate-de-novo-sequences">Generate <em>de novo</em> sequences</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Resuming-work">Resuming work</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../embedding_workflow.html">Protein Language Models &amp; Embeddings</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">OpenProtein-Python</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../poet_workflow.html">De Novo prediction &amp; generative models (PoET)</a></li>
+      <li class="breadcrumb-item active">Demo of PoET functionality</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/demos/poet_demo.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="k">matplotlib</span> inline
+</pre></div>
+</div>
+</div>
+<section id="Demo-of-PoET-functionality">
+<h1>Demo of PoET functionality<a class="headerlink" href="#Demo-of-PoET-functionality" title="Permalink to this heading"></a></h1>
+<p>This notebook will briefly cover how to run <code class="docutils literal notranslate"><span class="pre">align</span></code> and <code class="docutils literal notranslate"><span class="pre">PoET</span></code> workflows.</p>
+<p>For more information please <a class="reference external" href="https://docs.openprotein.ai/">read the docs</a>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+
+<span class="kn">from</span> <span class="nn">AWSTools.Batchtools.batch_utils</span> <span class="kn">import</span> <span class="n">fakeseq</span> <span class="c1"># Used for creating fake protein sequences for testing</span>
+<br/></pre></div>
+</div>
+</div>
+<section id="Setup">
+<h2>Setup<a class="headerlink" href="#Setup" title="Permalink to this heading"></a></h2>
+<p>Connect to the OpenProtein backend with your credentials:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">openprotein</span>
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;../../../secrets.config&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+<span class="n">session</span> <span class="o">=</span> <span class="n">openprotein</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">username</span><span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;username&#39;</span><span class="p">],</span> <span class="n">password</span><span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;password&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dataset</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;./data/core.csv&quot;</span><span class="p">)[[</span><span class="s1">&#39;sequence&#39;</span><span class="p">]]</span>
+<span class="n">dataset</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>sequence</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>WRHGDISSSNDTVGVAVVNYKMPRLHTAAEVLDNARKIAEMIVGMK...</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>WRHGDISSSNDTVGVAVVNYKMPRLHTAAEVLDNARKIAEMIVGMK...</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+</section>
+<section id="Create-an-MSA">
+<h2>Create an MSA<a class="headerlink" href="#Create-an-MSA" title="Permalink to this heading"></a></h2>
+<p>We can create an MSA either from a seed, or by uploading a ready-made file. Here we will explore the seed workflow:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create an MSA from a seed sequence</span>
+<span class="n">seed</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">sequence</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<p>Start a ColabFold job to create an MSA:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">msa</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">poet</span><span class="o">.</span><span class="n">create_msa</span><span class="p">(</span><span class="n">seed</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">msa</span><span class="p">)</span>
+<br/><br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt; job_id=&#39;c8708fa8-e44f-4137-9b12-fec2db2bcb11&#39; job_type=&#39;/align/align&#39; created_date=datetime.datetime(2023, 7, 27, 8, 17, 27, 340881) start_date=None end_date=datetime.datetime(2023, 7, 27, 8, 17, 27, 350439) prerequisite_job_id=None progress_message=None progress_counter=None num_records=None msa_id=&#39;c8708fa8-e44f-4137-9b12-fec2db2bcb11&#39;
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">r</span> <span class="o">=</span> <span class="n">msa</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+<span class="nb">list</span><span class="p">(</span><span class="n">r</span><span class="p">)[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[[&#39;seed&#39;,
+  &#39;WRHGDISSSNDTVGVAVVNYKMPRLHTAAEVLDNARKIAEMIVGMKQGLPGMDLVVFPEYSLQGIMYDPAEMMETAVAIPGEETEIFSRACRKANVWGVFSLTGERHEEHPRKAPYNTLVLIDNNGEIVQKYRKIIPWCPIEGWYPGGQTYVSEGPKGMKISLIICDDGNYPEIWRDCAMKGAELIVRCQGYMYPAKDQQVMMAKAMAWANNCYVAVANAAGFDGVYSYFGHSAIIGFDGRTLGECGEEEMGIQYAQLSLSQIRDARANDQSQNHLFKILHRGYSGLQASGDGDRGLAECPFEFYRTWVTDAEKARENVERLTRSTTGVAQCPVGRLPYEGLEKEA&#39;],
+ [&#39;UniRef100_UPI0004660BEB&#39;,
+  &#39;-RHGDISSSNDTVGVAVVNYKMPRLHTVAEVLDNARKIADMIVGMKQGLPGMDLVVFPEYSLQGIMYDPAEMMETAVAIPGEETEIFSRACRKANVWGVFSLTGERHEEHPRKAPYNTLVLIDNNGEIVQKYRKIIPWCPIEGWYPGGQTYVSEGPKGMKISLIICDDGNYPEIWRDCAMKGAELIVRCQGYMYPAKDQQVMMAKAMAWANNCYVAVANAAGFDGVYSYFGHSAIIGFDGRTLGECGEEEMGIQYAQLSLSQIRDARSNDQSQNHLFKILHRGYSGLQASGDGDRGLAECPFEFYRTWVTDAEKARENVERLTRSTTGVAQCPVGRLPYEGLEKEA&#39;],
+ [&#39;UniRef100_UPI000730B3B9&#39;,
+  &#39;-RHGDISSSNDTVGVAVVNYKMPRLHSREEVLANAQKIADMVVGMKQGLPGMDLVIFPEYSLQGIMYDPAEMMETAVAIPGDETELLARACRKANVWGVFSLTGERHEEHPNKAPYNTLVLIDNKGEVVQKYRKIIPWCPIEGWYPGGQTYVSEGPKGMKISMIICDDGNYPEIWRDCAMKGAELIVRCQGYMYPAKEQQVLMAKAMAWANNTYVAVANAAGFDGVYSYFGHSAIIGFDGRTLGECGEEEMGIQYAQLSVSQIRDARANDQSQNHLYKILHRGYTGLNNSGEGDRGLAECPFEFYKTWVTDAEKARENVEKITRSTSGVAQCPVGRLPYEGEEKEA&#39;]]
+</pre></div></div>
+</div>
+<p>We can examine our inputs:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">list</span><span class="p">(</span><span class="n">msa</span><span class="o">.</span><span class="n">get_input</span><span class="p">(</span><span class="s2">&quot;RAW&quot;</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[[&#39;seed&#39;,
+  &#39;WRHGDISSSNDTVGVAVVNYKMPRLHTAAEVLDNARKIAEMIVGMKQGLPGMDLVVFPEYSLQGIMYDPAEMMETAVAIPGEETEIFSRACRKANVWGVFSLTGERHEEHPRKAPYNTLVLIDNNGEIVQKYRKIIPWCPIEGWYPGGQTYVSEGPKGMKISLIICDDGNYPEIWRDCAMKGAELIVRCQGYMYPAKDQQVMMAKAMAWANNCYVAVANAAGFDGVYSYFGHSAIIGFDGRTLGECGEEEMGIQYAQLSLSQIRDARANDQSQNHLFKILHRGYSGLQASGDGDRGLAECPFEFYRTWVTDAEKARENVERLTRSTTGVAQCPVGRLPYEGLEKEA&#39;]]
+</pre></div></div>
+</div>
+<p>and the resulting MSA (limited here to 4 sequences for brevity):</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">list</span><span class="p">(</span><span class="n">msa</span><span class="o">.</span><span class="n">get_input</span><span class="p">(</span><span class="s2">&quot;GENERATED&quot;</span><span class="p">))[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[[&#39;seed&#39;,
+  &#39;WRHGDISSSNDTVGVAVVNYKMPRLHTAAEVLDNARKIAEMIVGMKQGLPGMDLVVFPEYSLQGIMYDPAEMMETAVAIPGEETEIFSRACRKANVWGVFSLTGERHEEHPRKAPYNTLVLIDNNGEIVQKYRKIIPWCPIEGWYPGGQTYVSEGPKGMKISLIICDDGNYPEIWRDCAMKGAELIVRCQGYMYPAKDQQVMMAKAMAWANNCYVAVANAAGFDGVYSYFGHSAIIGFDGRTLGECGEEEMGIQYAQLSLSQIRDARANDQSQNHLFKILHRGYSGLQASGDGDRGLAECPFEFYRTWVTDAEKARENVERLTRSTTGVAQCPVGRLPYEGLEKEA&#39;],
+ [&#39;UniRef100_UPI0004660BEB&#39;,
+  &#39;-RHGDISSSNDTVGVAVVNYKMPRLHTVAEVLDNARKIADMIVGMKQGLPGMDLVVFPEYSLQGIMYDPAEMMETAVAIPGEETEIFSRACRKANVWGVFSLTGERHEEHPRKAPYNTLVLIDNNGEIVQKYRKIIPWCPIEGWYPGGQTYVSEGPKGMKISLIICDDGNYPEIWRDCAMKGAELIVRCQGYMYPAKDQQVMMAKAMAWANNCYVAVANAAGFDGVYSYFGHSAIIGFDGRTLGECGEEEMGIQYAQLSLSQIRDARSNDQSQNHLFKILHRGYSGLQASGDGDRGLAECPFEFYRTWVTDAEKARENVERLTRSTTGVAQCPVGRLPYEGLEKEA&#39;],
+ [&#39;UniRef100_UPI000730B3B9&#39;,
+  &#39;-RHGDISSSNDTVGVAVVNYKMPRLHSREEVLANAQKIADMVVGMKQGLPGMDLVIFPEYSLQGIMYDPAEMMETAVAIPGDETELLARACRKANVWGVFSLTGERHEEHPNKAPYNTLVLIDNKGEVVQKYRKIIPWCPIEGWYPGGQTYVSEGPKGMKISMIICDDGNYPEIWRDCAMKGAELIVRCQGYMYPAKEQQVLMAKAMAWANNTYVAVANAAGFDGVYSYFGHSAIIGFDGRTLGECGEEEMGIQYAQLSVSQIRDARANDQSQNHLYKILHRGYTGLNNSGEGDRGLAECPFEFYKTWVTDAEKARENVEKITRSTSGVAQCPVGRLPYEGEEKEA&#39;],
+ [&#39;UniRef100_UPI00235F2AA4&#39;,
+  &#39;-RHGDISSSNDTVGVAVVNYKMPRLHNREQVLDNAERIAAMIVGMKQGLPGMDLVIFPEYSLQGIMYDPAEMYETAVSIPGDETEIFSRACRKAGTWGVFSLTGERHEEHPRKAPYNTLVLINNKGEVVQKYRKIIPWCPIEGWYPGNQTFVSEGPKGLKISLIICDDGNYPEIWRDCAMKGAELIVRCQGYMYPAKEQQVLMAKAMAWANNCYVAVANAAGFDGVYSYFGHSAIIGFDGRTLGECGEEEMGIQYAQLSLSQIRDARANDQSQNHLFKILHRGYSGLHASGEGDKGLAECPFEFYKTWVNDAEKAREQVQAITRTTSGVAQCPVGKLPYDGLEKQA&#39;]]
+</pre></div></div>
+</div>
+</section>
+<section id="Prompt">
+<h2>Prompt<a class="headerlink" href="#Prompt" title="Permalink to this heading"></a></h2>
+<p>We can use this MSA to create a prompt with a sampling regime (see the docs for details):</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">prompt</span> <span class="o">=</span> <span class="n">msa</span><span class="o">.</span><span class="n">sample_prompt</span><span class="p">(</span><span class="n">num_ensemble_prompts</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">random_seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">prompt</span><span class="o">.</span><span class="n">id</span> <span class="c1"># or prompt.job.job_id</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&#39;83c816d8-a65d-4c6d-b939-d58db669793a&#39;
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># We can wait, or not, for the prompt to create</span>
+<span class="n">prompt</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span> <span class="c1">#not necessary but can</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;_csv.reader at 0x7f16876be2e0&gt;
+</pre></div></div>
+</div>
+<p>As we specified 3 prompts above we will have 3 different prompts all drawn from the same MSA:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">list</span><span class="p">(</span><span class="n">prompt</span><span class="o">.</span><span class="n">get_prompt</span><span class="p">(</span><span class="mi">1</span><span class="p">))[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[[&#39;UniRef100_A0A959K4C9&#39;,
+  &#39;GLMICYDTRFPEMARSLALAGAEIIIVPTAWPFPRVEHWQLLSRARAIENQCYVVTANRVGKDGQAIFCGNSRVIDPHGVVVSSASEDQEEIIYAEIKRDKLDFIRTRMPVFEHRRPDVY&#39;],
+ [&#39;UniRef100_UPI00041A74DE&#39;,
+  &#39;GSVSAWDEALLIAAIQYPVPVIKRPEDIQVQVQQICKTIDSTKAGYPDLDLIVFPEYSAQGLNTKIWTYDEMLLSLESPEVDSFRQACIRNNIWGVFSLMERNEDPSQPPYNTAIIINNSGEIVLHYRKLQPWVPIEPWMPGNGMPVCGGPKGAKLAVCICHDGMFPELAREAAYKGCNVFIRISGYSTQVNDQWIWTNRTNAWQNLMYTVSVNLAGYDE&#39;],
+ [&#39;UniRef100_A0A7W9FMQ2&#39;,
+  &#39;GGLNKSENGVVIGLVQLQLPVTVTRDDLARQTKRIVELVGKARRNNAGMDLVVFPEYALHGLSMDTNPAIMCDLDGPEVAAFKAACAEHRIWGCFSIMERNPGGNPYNSGIVIDDQGALKLYYRKLHPWVPVEPWEPGDGIPVIDGPKGAKLALIICHDGMFPEMARECAYKGAEIMIRTAGYTAPIRESWRFTNQANAFQNLMVTANVCMCGSDGTFDSMGEGMIVNFDGTVIAHGVTGRPEIITAEVRPDLVREARAGWGVENNIYQLWHRGYVAVKGGAMDCPYTFMQDMVAG&#39;]]
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">list</span><span class="p">(</span><span class="n">prompt</span><span class="o">.</span><span class="n">get_prompt</span><span class="p">(</span><span class="mi">2</span><span class="p">))[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[[&#39;UniRef100_A0A194RN05&#39;,
+  &#39;FNTHIIIDNKGDIVQTYRKLHLFDESDFTSPGSHVVTPVDTPVGRIGLEICYDMRFPELSTTLGSMRADILTFPSAFTYTGMAHWHLLLRARAIENQCYVLAAAQTGHNAKRRSYGHALCVDPWGEVLADCEEEGPCYKIAEISLEKLADVRRNMPVFQHR&#39;],
+ [&#39;UniRef100_A0A7W0G9W8&#39;,
+  &#39;GGSAILGPDGAYLAGPLYDEEGILYAELDPTRLAEERQRDPAGHYHRPDV&#39;],
+ [&#39;UniRef100_A0A6F9EEE2&#39;,
+  &#39;RHGDISSSPDTVGVAVVNYKMPRLHTREQVLDNARKIADMIVGMKQGLPGMDLVVFPEYSTMGIMYDPDEMFETACTVPGEETEIFGRACREANTWGVFSLTGERHEEHPRKSPYNTLVLINNRGEIVQKYRKILPWAPIEGWYPGDKTYVSDGPKGLKVSLIICDDGNYPEIWRDCAMKGAELIVRPQGYMYPAKEQQIMMAKTMAWANNVYVAVANATGFDGVYSYFGHSAIIGFDGRTLGECGEEEYGIQYAELSISAIRDARQNWQSQNQLFKLLHRGYTGIYNSGDGDKGLAECPFDFYRTWVLDAKKAQENVEKITRTELTTACCPVGGLPYNGAEREA&#39;]]
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">list</span><span class="p">(</span><span class="n">prompt</span><span class="o">.</span><span class="n">get_prompt</span><span class="p">(</span><span class="mi">3</span><span class="p">))[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[[&#39;UniRef100_UPI0009488FB3&#39;,
+  &#39;RHGDISSSPDTVGVAVVNYKMPRLHTKSDVLANAEQIADMIIGIKQGLPGMDLIVFPEYSTMGIMYDKDEMMATATTIPGEETAIFSAACKKANTWGVFSLTGEQHEEHPHKSPYNTLVLINNEGEIVQKYRKCIPWCPIEGWYPGDRTYVTTGPKGMKISLIICDDGNYPEIWRDCAMRGAELIVRCQGYMYPAKEQQVMMAKTMAWANNCYVAVANAAGFDGVYSYFGHSAIVGFDGRTLGECGEEDMGIQYAQLSVSQIRDARANDQSQNHLFKLLHRGYTGVHNSGDGDKGIADCPFEFYRTWVMDAEKAQSDVEAMTRDTIGVVDCPVGNLPAGASEKE&#39;],
+ [&#39;UniRef100_UPI001BD4A459&#39;,
+  &#39;GSVSAWDEALLIAAIQYPVPVIKVPEDIQVQVRQICKTIDSTKAGYPDLDLIVFPEYSAQGLNTKIWTYDEMLLSLDSPEVDCFRQACIRNDIWGVFSVMERNEDSSQPPYNAAIIINNNGEIALHYRKLQPWVPIEPWMPGNGMPVCEGPKGAKLAVCICHDGMFPELAREAAYKGCNVFIRISGYSTQVNDQWIWTNRTNAWQNLMYTVSVNLAGYDEVFYYFGEGTICNYDGNVIQQGQRNPWEIVTAELFPRLADKARENWALENSIFNLGCRGYVGKPGGERANYLTWVRDLANGEYK&#39;],
+ [&#39;UniRef100_UPI000248378F&#39;,
+  &#39;HGDISSSYDSVGVAVVNYKMPRLHTQDEVLANCNNIAEVIDGMKQGLPGLDLVIFPEYSTHGIMYDSQEMMDTASSIPGPETDIFSEACIRNKVWGVFSLTGERHEQHPDKVPYNTLILMNDQGDIVQKYRKIMPWTPIEGWYPGNCTYVTDGPKGLKISLIICDDGNYPEIWRDCVMKGAELVIRCQGYMYPAKEQQIIVSKAMAWMNNTYVAVANAAGFDGVYSYFGHSAIVGFDGRTLGECGEEENGIQYAALSKFSIRDFRKHAQSQNHLFKLLHRGYTGIINSGEGDQGMMECPYDFYREWVLDPESTKKKVEALTRPTVGTHECPIDGIP&#39;]]
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">prompt1_seqs</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">prompt</span><span class="o">.</span><span class="n">get_prompt</span><span class="p">(</span><span class="mi">1</span><span class="p">))]</span>
+<span class="n">prompt2_seqs</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">prompt</span><span class="o">.</span><span class="n">get_prompt</span><span class="p">(</span><span class="mi">2</span><span class="p">))]</span>
+<span class="n">prompt3_seqs</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">prompt</span><span class="o">.</span><span class="n">get_prompt</span><span class="p">(</span><span class="mi">3</span><span class="p">))]</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;N seqs in prompt1: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">prompt1_seqs</span><span class="p">)</span><span class="si">}</span><span class="s2">, prompt2: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">prompt2_seqs</span><span class="p">)</span><span class="si">}</span><span class="s2"> prompt3: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">prompt3_seqs</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Seqs found in all 3 prompts: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">prompt1_seqs</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="nb">set</span><span class="p">(</span><span class="n">prompt2_seqs</span><span class="p">)</span><span class="w">  </span><span class="o">&amp;</span><span class="w"> </span><span class="nb">set</span><span class="p">(</span><span class="n">prompt3_seqs</span><span class="p">))</span><span class="si">}</span><span class="s2"> &quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+N seqs in prompt1: 44, prompt2: 44 prompt3: 46
+Seqs found in all 3 prompts: 0
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">msa</span><span class="o">.</span><span class="n">msa_id</span><span class="p">,</span> <span class="n">prompt</span><span class="o">.</span><span class="n">prompt_id</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+(&#39;c8708fa8-e44f-4137-9b12-fec2db2bcb11&#39;,
+ &#39;83c816d8-a65d-4c6d-b939-d58db669793a&#39;)
+</pre></div></div>
+</div>
+</section>
+<section id="Scoring-with-PoET">
+<h2>Scoring with PoET<a class="headerlink" href="#Scoring-with-PoET" title="Permalink to this heading"></a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">seqs</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">sequence</span><span class="p">]</span> <span class="c1"># prepare seqs from our dataset</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">scorejob</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">poet</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">prompt</span><span class="o">.</span><span class="n">prompt_id</span><span class="p">,</span> <span class="n">queries</span><span class="o">=</span><span class="n">seqs</span> <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">score_results</span> <span class="o">=</span> <span class="n">scorejob</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+<span class="n">score_results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+PoetScoreResult(sequence=b&#39;WRHGDISSSNDTVGVAVVNYKMPRLHTAAEVLDNARKIAEMIVGMKQGLPGMDLVVFPEYSLQGIMYDPAEMMETAVAIPGEETEIFSRACRKANVWGVFSLTGERHEEHPRKAPYNTLVLIDNNGEIVQKYRKIIPWCPIEGWYPGGQTYVSEGPKGMKISLIICDDGNYPEIWRDCAMKGAELIVRCQGYMYPAKDQQVMMAKAMAWANNCYVAVANAAGFDGVYSYFGHSAIIGFDGRTLGECGEEEMGIQYAQLSLSQIRDARANDQSQNHLFKILHRGYSGLQASGDGDRGLAECPFEFYRTWVTDAEKARENVERLTRSTTGVAQCPVGRLPYEGLEKEA&#39;, score=[-67.385009765625, -161.78848266601562, -173.0670166015625], name=&#39;sequence-01&#39;)
+</pre></div></div>
+</div>
+</section>
+<section id="Single-site-analysis-with-PoET">
+<h2>Single site analysis with PoET<a class="headerlink" href="#Single-site-analysis-with-PoET" title="Permalink to this heading"></a></h2>
+<p>A similar flow yields a single site mutation analysis of a sequence:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sspjob</span>   <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">poet</span><span class="o">.</span><span class="n">single_site</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">sequence</span><span class="o">=</span><span class="s2">&quot;AAPLAA&quot;</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ssp_results</span> <span class="o">=</span> <span class="n">sspjob</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+<span class="n">ssp_results</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[PoetSSPResult(sequence=b&#39;input&#39;, score=[-28.7412109375, -28.05859375, -28.6044921875], name=None),
+ PoetSSPResult(sequence=b&#39;A1R&#39;, score=[-30.0703125, -29.6171875, -29.744140625], name=None),
+ PoetSSPResult(sequence=b&#39;A1N&#39;, score=[-30.44921875, -30.638671875, -31.3056640625], name=None)]
+</pre></div></div>
+</div>
+</section>
+<section id="Generate-de-novo-sequences">
+<h2>Generate <em>de novo</em> sequences<a class="headerlink" href="#Generate-de-novo-sequences" title="Permalink to this heading"></a></h2>
+<p>Lastly, we can use the generation workflow:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">genjob</span>  <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">poet</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">prompt</span><span class="o">.</span><span class="n">prompt_id</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span> <span class="c1">#make 10 sequences based on our prompt</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><br/><span></span><span class="n">gen_results</span> <span class="o">=</span> <span class="n">genjob</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+<span class="n">gen_results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+PoetScoreResult(sequence=b&#39;NWKMPRFHHSEEIVANCRKVADYVAGLKKGIPGLDLIIFPEYSTEGILYDINEMLSLNTSIPGQETEIFSRACIENKVWGVFSITGERHEDHPNKVPYNTLILINNQGEIVQKYRKMIPWTPIEGWYPGDKTYVSEGPKGLKISLIICDDGNYPEIWRDCAARGAELIVRCQGYMYPACDEQIKIVPVMAWCNNIYAAVANASGNDGVYSYFGHSSVVDFDGRVLGICGTEENSYQYAELSISAIRDARGNWQSQNHLYKLLHRGYTGTINSHEERQGIPECQFEFYKSWVTDPAGTQAKVEELTREAPGVKYAPIAGIPHE&#39;, score=[-348.2950134277344, -158.5674591064453, -277.7309875488281], name=&#39;generated-sequence-1&#39;)
+</pre></div></div>
+</div>
+</section>
+<section id="Resuming-work">
+<h2>Resuming work<a class="headerlink" href="#Resuming-work" title="Permalink to this heading"></a></h2>
+<p>You can reload a prompt, MSA or PoET job to resume where you left off:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">old_msa</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">poet</span><span class="o">.</span><span class="n">load_msa_job</span><span class="p">(</span><span class="n">msa</span><span class="o">.</span><span class="n">msa_id</span><span class="p">)</span>
+<span class="n">old_msa</span><span class="o">.</span><span class="n">job</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Job(status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt;, job_id=&#39;c8708fa8-e44f-4137-9b12-fec2db2bcb11&#39;, job_type=&#39;/align/align&#39;, created_date=datetime.datetime(2023, 7, 27, 8, 17, 27, 340881), start_date=None, end_date=datetime.datetime(2023, 7, 27, 8, 17, 27, 350439), prerequisite_job_id=None, progress_message=None, progress_counter=None, num_records=None)
+</pre></div></div>
+</div>
+<p>The same functionality is present:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">new_prompt</span> <span class="o">=</span> <span class="n">old_msa</span><span class="o">.</span><span class="n">sample_prompt</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">new_prompt</span><span class="o">.</span><span class="n">job</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+PromptJob(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;c98c0115-1a15-4055-9a29-9ad89001146a&#39;, job_type=&#39;/align/prompt&#39;, created_date=datetime.datetime(2023, 7, 27, 8, 29, 55, 455136), start_date=None, end_date=None, prerequisite_job_id=None, progress_message=None, progress_counter=None, num_records=None, msa_id=None, prompt_id=&#39;c98c0115-1a15-4055-9a29-9ad89001146a&#39;)
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">oldprompt</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">poet</span><span class="o">.</span><span class="n">load_prompt_job</span><span class="p">(</span><span class="n">prompt</span><span class="o">.</span><span class="n">prompt_id</span><span class="p">)</span>
+<span class="n">oldprompt</span><span class="o">.</span><span class="n">job</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Job(status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt;, job_id=&#39;83c816d8-a65d-4c6d-b939-d58db669793a&#39;, job_type=&#39;/align/prompt&#39;, created_date=datetime.datetime(2023, 7, 27, 8, 17, 30, 13621), start_date=datetime.datetime(2023, 7, 27, 8, 19, 44, 182024), end_date=datetime.datetime(2023, 7, 27, 8, 19, 48, 685526), prerequisite_job_id=None, progress_message=None, progress_counter=None, num_records=None)
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">old_job</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">poet</span><span class="o">.</span><span class="n">load_poet_job</span><span class="p">(</span><span class="n">sspjob</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">job_id</span><span class="p">)</span>
+<span class="n">old_job</span><span class="o">.</span><span class="n">get</span><span class="p">()[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[PoetSSPResult(sequence=b&#39;input&#39;, score=[-28.7412109375, -28.05859375, -28.6044921875], name=None),
+ PoetSSPResult(sequence=b&#39;A1R&#39;, score=[-30.0703125, -29.6171875, -29.744140625], name=None),
+ PoetSSPResult(sequence=b&#39;A1N&#39;, score=[-30.44921875, -30.638671875, -31.3056640625], name=None)]
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../poet.html" class="btn btn-neutral float-left" title="Protein Evolutionary Transformer (PoET)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../embedding_workflow.html" class="btn btn-neutral float-right" title="Protein Language Models &amp; Embeddings" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, NE47.bio.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

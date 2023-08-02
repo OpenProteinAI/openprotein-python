@@ -25,7 +25,7 @@ class APISessionMock(APISession):
         password = "test_password"
         super().__init__(username, password)
 
-    def get_auth_token(self, username, password):
+    def _get_auth_token(self, username, password):
         return BearerAuth('AUTHORIZED')
 
     def post(self, endpoint, data=None, json=None, **kwargs):

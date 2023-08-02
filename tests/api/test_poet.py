@@ -45,7 +45,7 @@ class APISessionMock(APISession):
         password = "test_password"
         super().__init__(username, password)
 
-    def get_auth_token(self, username, password):
+    def _get_auth_token(self, username, password):
         return BearerAuth('AUTHORIZED')
 
     def post(self, endpoint, data=None, json=None, **kwargs):
@@ -92,7 +92,10 @@ def test_poet_single_site_get(api_session_mock):
     api_session_mock.get.assert_called_once_with(
         'v1/poet/single_site',
         params={'job_id': job_id, 'page_size': 100, 'page_offset': 0}    )
-    assert result.result == [results] 
+    print(result.result)
+    d = result.result[0].dict()
+    for k,v in results.items():
+        assert d[k] ==v
 
 
 def test_poet_generate_post(api_session_mock):

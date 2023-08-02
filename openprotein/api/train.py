@@ -504,6 +504,7 @@ class TrainFutureMixin:
 
 
 class TrainFuture(TrainFutureMixin, AsyncJobFuture):
+    """Future Job for manipulating results"""
     def __init__(
         self,
         session: APISession,
@@ -547,7 +548,6 @@ class TrainFuture(TrainFutureMixin, AsyncJobFuture):
 
 class TrainingAPI:
     """API interface for calling Train endpoints"""
-
     def __init__(
         self,
         session: APISession,
@@ -631,7 +631,7 @@ class TrainingAPI:
 
         Parameters
         ----------
-        assaydataset : str
+        job_id : str
             job_id to get
 
 

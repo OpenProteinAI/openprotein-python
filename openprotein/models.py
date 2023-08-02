@@ -7,8 +7,8 @@ from pydantic import BaseModel, Field, validator
 from openprotein.api.jobs import Job, JobStatus
 
 class ModelDescription(BaseModel):
-    citation_title: Optional[str]
-    doi: Optional[str]
+    citation_title: Optional[str] = None
+    doi: Optional[str] = None
     summary: str
 
 class TokenInfo(BaseModel):
@@ -20,7 +20,7 @@ class TokenInfo(BaseModel):
 class ModelMetadata(BaseModel):
     model_id: str
     description: ModelDescription
-    max_sequence_length: Optional[int]
+    max_sequence_length: Optional[int] = None
     dimension: int
     output_types: List[str]
     input_tokens: List[str]
@@ -55,18 +55,18 @@ class SVDJob(Job):
 class SVDMetadata(BaseModel):
     id: str
     status: JobStatus
-    created_date: Optional[datetime]
+    created_date: Optional[datetime] = None
     model_id: str
     n_components: int
-    reduction: Optional[str]
+    reduction: Optional[str] = None
     sequence_length: Optional[int] = None
 
     def is_done(self):
         return self.status.done()
     
 class DesignMetadata(BaseModel):
-    y_mu: Optional[float]
-    y_var: Optional[float]
+    y_mu: Optional[float] = None
+    y_var: Optional[float] = None
 
 class DesignSubscore(BaseModel):
     score: int
@@ -170,7 +170,7 @@ class JobType(str, Enum):
 
 
 class Jobplus(Job):
-    sequence_length: Optional[int]
+    sequence_length: Optional[int] = None
 
 
 class TrainStep(BaseModel):
@@ -225,11 +225,11 @@ class AssayDataPage(BaseModel):
 
 
 class MSAJob(Job):
-    msa_id: Optional[str]
+    msa_id: Optional[str] = None
 
 
 class PromptJob(MSAJob):
-    prompt_id: Optional[str]
+    prompt_id: Optional[str] = None
 
 
 class MSASamplingMethod(str, Enum):
@@ -280,21 +280,21 @@ class PoetInputType(str, Enum):
 class PoetScoreResult(BaseModel):
     sequence: bytes
     score: List[float]
-    name: Optional[str]
+    name: Optional[str] = None
 
 class PoetScoreJob(Job):
-    parent_id: Optional[str]
-    s3prefix: Optional[str]
-    page_size: Optional[int]
-    page_offset: Optional[int]
-    num_rows: Optional[int]
-    result: Optional[List[PoetScoreResult]]
-    n_completed: Optional[int]
+    parent_id: Optional[str] = None
+    s3prefix: Optional[str] = None
+    page_size: Optional[int] = None
+    page_offset: Optional[int] = None
+    num_rows: Optional[int] = None
+    result: Optional[List[PoetScoreResult]] = None
+    n_completed: Optional[int] = None
 
 class PoetSSPResult(BaseModel):
     sequence: bytes
     score: List[float]
-    name: Optional[str]
+    name: Optional[str] = None
 
     @validator('sequence', pre=True, always=True)
     def replacename(cls, value):
@@ -304,13 +304,13 @@ class PoetSSPResult(BaseModel):
         return value
 
 class PoetSSPJob(PoetScoreJob):
-    parent_id: Optional[str]
-    s3prefix: Optional[str]
-    page_size: Optional[int]
-    page_offset: Optional[int]
-    num_rows: Optional[int]
-    result: Optional[List[PoetSSPResult]]
-    n_completed: Optional[int]
+    parent_id: Optional[str] = None
+    s3prefix: Optional[str] = None
+    page_size: Optional[int] = None
+    page_offset: Optional[int] = None
+    num_rows: Optional[int] = None
+    result: Optional[List[PoetSSPResult]] = None
+    n_completed: Optional[int] = None
 
 class Prediction(BaseModel):
     """Prediction details."""
