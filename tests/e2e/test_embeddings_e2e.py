@@ -297,6 +297,7 @@ def test_esm(session: OpenProtein, model_id: str, sequences: list[bytes]):
         assert np.abs(result[s] - actual).mean() < 1e-2
 
 
+@pytest.mark.longrun
 @pytest.mark.parametrize("reduction", [None, "MEAN", "SUM"])
 @pytest.mark.parametrize("random_state,should_fail", [(47, False), (100, True)])
 def test_svd(
