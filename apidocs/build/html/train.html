@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Train &mdash; OpenProtein-Python  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Predict" href="predict.html" />
+    <link rel="prev" title="AssayData" href="data.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            OpenProtein-Python
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Session management</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="core_workflow.html">Asssay-based Sequence Learning</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="core_workflow.html#assaydata">AssayData</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_workflow.html#train">Train</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_workflow.html#predict">Predict</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_workflow.html#design">Design</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="core_workflow.html#index">Index</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="data.html">AssayData</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Train</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#openprotein.api.train.TrainingAPI"><code class="docutils literal notranslate"><span class="pre">TrainingAPI</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#openprotein.api.train.TrainFuture"><code class="docutils literal notranslate"><span class="pre">TrainFuture</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="predict.html">Predict</a></li>
+<li class="toctree-l3"><a class="reference internal" href="design.html">Design</a></li>
+<li class="toctree-l3"><a class="reference internal" href="demos/core_demo.html">Demo of Core workflow functionality</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="poet_workflow.html">De Novo prediction &amp; generative models (PoET)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="embedding_workflow.html">Protein Language Models &amp; Embeddings</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">OpenProtein-Python</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="core_workflow.html">Asssay-based Sequence Learning</a></li>
+      <li class="breadcrumb-item active">Train</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/train.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="train">
+<h1>Train<a class="headerlink" href="#train" title="Permalink to this heading"></a></h1>
+<p>Train model(s) on your measured properties to enable predictions for new sequences! These workflows can additionally perform cross-validation on your models to estimate uncertainty. /n A trained model is required before you can utilize predict or design endpoints.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="openprotein.api.train.TrainingAPI">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.train.</span></span><span class="sig-name descname"><span class="pre">TrainingAPI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.base.APISession"><span class="pre">APISession</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/train.html#TrainingAPI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.train.TrainingAPI" title="Permalink to this definition"></a></dt>
+<dd><p>API interface for calling Train endpoints</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="openprotein.api.train.TrainingAPI.create_training_job">
+<span class="sig-name descname"><span class="pre">create_training_job</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">assaydataset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="data.html#openprotein.api.data.AssayDataset" title="openprotein.api.data.AssayDataset"><span class="pre">AssayDataset</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">measurement_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_preprocess</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#openprotein.api.train.TrainFuture" title="openprotein.api.train.TrainFuture"><span class="pre">TrainFuture</span></a></span></span><a class="reference internal" href="_modules/openprotein/api/train.html#TrainingAPI.create_training_job"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.train.TrainingAPI.create_training_job" title="Permalink to this definition"></a></dt>
+<dd><p>Create a training job on your data.</p>
+<p>This function validates the inputs, formats the data, and sends the job.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>assaydataset</strong> (<a class="reference internal" href="data.html#openprotein.api.data.AssayDataset" title="openprotein.api.data.AssayDataset"><em>AssayDataset</em></a>) – An AssayDataset object from which the assay_id is extracted.</p></li>
+<li><p><strong>measurement_name</strong> (<em>str</em><em> or </em><em>List</em><em>[</em><em>str</em><em>]</em>) – The name(s) of the measurement(s) to be used in the training job.</p></li>
+<li><p><strong>model_name</strong> (<em>str</em><em>, </em><em>optional</em>) – The name to give the model.</p></li>
+<li><p><strong>force_preprocess</strong> (<em>bool</em><em>, </em><em>optional</em>) – If set to True, preprocessing is forced even if data already exists.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A TrainFuture Job</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#openprotein.api.train.TrainFuture" title="openprotein.api.train.TrainFuture">TrainFuture</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>InvalidParameterError</strong> – If the <cite>assaydataset</cite> is not an AssayDataset object,
+    If any measurement name provided does not exist in the AssayDataset,
+    or if the AssayDataset has fewer than 3 data points.</p></li>
+<li><p><strong>HTTPError</strong> – If the request to the server fails.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="openprotein.api.train.TrainingAPI.get_training_results">
+<span class="sig-name descname"><span class="pre">get_training_results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#openprotein.api.train.TrainFuture" title="openprotein.api.train.TrainFuture"><span class="pre">TrainFuture</span></a></span></span><a class="reference internal" href="_modules/openprotein/api/train.html#TrainingAPI.get_training_results"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.train.TrainingAPI.get_training_results" title="Permalink to this definition"></a></dt>
+<dd><p>Get training results (e.g. loss etc).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>job_id</strong> (<em>str</em>) – job_id to get</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A TrainFuture Job</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#openprotein.api.train.TrainFuture" title="openprotein.api.train.TrainFuture">TrainFuture</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="openprotein.api.train.TrainingAPI.load_job">
+<span class="sig-name descname"><span class="pre">load_job</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Jobplus</span></span></span><a class="reference internal" href="_modules/openprotein/api/train.html#TrainingAPI.load_job"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.train.TrainingAPI.load_job" title="Permalink to this definition"></a></dt>
+<dd><p>Reload a Submitted job to resume from where you left off!</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>job_id</strong> (<em>str</em>) – The identifier of the job whose details are to be loaded.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Job</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Job</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>HTTPError</strong> – If the request to the server fails.</p></li>
+<li><p><strong>InvalidJob</strong> – If the Job is of the wrong type</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="openprotein.api.train.TrainFuture">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.train.</span></span><span class="sig-name descname"><span class="pre">TrainFuture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.base.APISession"><span class="pre">APISession</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">assaymetadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">AssayMetadata</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/train.html#TrainFuture"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.train.TrainFuture" title="Permalink to this definition"></a></dt>
+<dd><p>Future Job for manipulating results</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="openprotein.api.train.TrainFuture.get_assay_data">
+<span class="sig-name descname"><span class="pre">get_assay_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/train.html#TrainFuture.get_assay_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.train.TrainFuture.get_assay_data" title="Permalink to this definition"></a></dt>
+<dd><p>NOT IMPLEMENTED.</p>
+<p>Get the assay data used for the training job.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The assay data.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="data.html" class="btn btn-neutral float-left" title="AssayData" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="predict.html" class="btn btn-neutral float-right" title="Predict" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, NE47.bio.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

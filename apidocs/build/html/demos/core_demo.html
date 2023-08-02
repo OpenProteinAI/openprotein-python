@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demo of Core workflow functionality &mdash; OpenProtein-Python  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/nbsphinx-code-cells.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="De Novo prediction &amp; generative models (PoET)" href="../poet_workflow.html" />
+    <link rel="prev" title="Design" href="../design.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            OpenProtein-Python
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Session management</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../core_workflow.html">Asssay-based Sequence Learning</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../core_workflow.html#assaydata">AssayData</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core_workflow.html#train">Train</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core_workflow.html#predict">Predict</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core_workflow.html#design">Design</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../core_workflow.html#index">Index</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../data.html">AssayData</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../train.html">Train</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../predict.html">Predict</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../design.html">Design</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Demo of Core workflow functionality</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Setup">Setup</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Data-Upload">Data Upload</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Model-training">Model training</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Sequence-design">Sequence design</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Sequence-predictions">Sequence predictions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Resume-workflows">Resume workflows</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../poet_workflow.html">De Novo prediction &amp; generative models (PoET)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../embedding_workflow.html">Protein Language Models &amp; Embeddings</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">OpenProtein-Python</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../core_workflow.html">Asssay-based Sequence Learning</a></li>
+      <li class="breadcrumb-item active">Demo of Core workflow functionality</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/demos/core_demo.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="k">matplotlib</span> inline
+</pre></div>
+</div>
+</div>
+<section id="Demo-of-Core-workflow-functionality">
+<h1>Demo of Core workflow functionality<a class="headerlink" href="#Demo-of-Core-workflow-functionality" title="Permalink to this heading"></a></h1>
+<p>This notebook will briefly cover how to run <code class="docutils literal notranslate"><span class="pre">assaydata</span></code>, <code class="docutils literal notranslate"><span class="pre">train</span></code>, <code class="docutils literal notranslate"><span class="pre">predict</span></code>, <code class="docutils literal notranslate"><span class="pre">design</span></code> workflows.</p>
+<p>For more information please <a class="reference external" href="https://docs.openprotein.ai/">read the docs</a>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+
+<span class="kn">from</span> <span class="nn">AWSTools.Batchtools.batch_utils</span> <span class="kn">import</span> <span class="n">fakeseq</span> <span class="c1"># Used for creating fake protein sequences for testing</span>
+<br/></pre></div>
+</div>
+</div>
+<section id="Setup">
+<h2>Setup<a class="headerlink" href="#Setup" title="Permalink to this heading"></a></h2>
+<p>Connect to the OpenProtein backend with your credentials:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">openprotein</span>
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;../../../secrets.config&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+<span class="n">session</span> <span class="o">=</span> <span class="n">openprotein</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">username</span><span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;username&#39;</span><span class="p">],</span> <span class="n">password</span><span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;password&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<p>Load some demo data:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dataset</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;./demo_data/core.csv&quot;</span><span class="p">)</span>
+<span class="n">dataset</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>sequence</th>
+      <th>isobutyramide_normalized_fitness</th>
+      <th>acetamide_normalized_fitness</th>
+      <th>propionamide_normalized_fitness</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>WRHGDISSSNDTVGVAVVNYKMPRLHTAAEVLDNARKIAEMIVGMK...</td>
+      <td>-0.5174</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>WRHGDISSSNDTVGVAVVNYKMPRLHTAAEVLDNARKIAEMIVGMK...</td>
+      <td>-0.5154</td>
+      <td>-2.1514</td>
+      <td>-1.1457</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+</section>
+<section id="Data-Upload">
+<h2>Data Upload<a class="headerlink" href="#Data-Upload" title="Permalink to this heading"></a></h2>
+<p>Create the Demo data in the backend to be able to use it with our suite of tools:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create</span>
+<span class="n">assay</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="s2">&quot;Dataset Name&quot;</span><span class="p">,</span> <span class="s2">&quot;Dataset description&quot;</span><span class="p">)</span>
+<span class="n">assay_id</span> <span class="o">=</span> <span class="n">assay</span><span class="o">.</span><span class="n">id</span>
+<span class="n">assay</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+AssayMetadata(assay_name=&#39;Dataset Name&#39;, assay_description=&#39;Dataset description&#39;, assay_id=&#39;dbf85fa1-12ff-45e7-b5a5-2e93e888a6ac&#39;, original_filename=&#39;assay_data&#39;, created_date=datetime.datetime(2023, 7, 28, 1, 41, 47, 332556), num_rows=15, num_entries=41, measurement_names=[&#39;isobutyramide_normalized_fitness&#39;, &#39;acetamide_normalized_fitness&#39;, &#39;propionamide_normalized_fitness&#39;], sequence_length=346)
+</pre></div></div>
+</div>
+<p>We could also have loaded a job from an old job ID. This will be faster and more efficient for users resuming workflows:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">assay</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">load_job</span><span class="p">(</span><span class="n">assay_id</span><span class="p">)</span> <span class="c1"># can reload job to resume workflows</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">assay</span><span class="o">.</span><span class="n">get_first</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>sequence</th>
+      <th>isobutyramide_normalized_fitness</th>
+      <th>acetamide_normalized_fitness</th>
+      <th>propionamide_normalized_fitness</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>WRHGDISSSNDTVGVAVVNYKMPRLHTAAEVLDNARKIAEMIVGMK...</td>
+      <td>-0.5174</td>
+      <td>None</td>
+      <td>None</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">assay</span><span class="o">.</span><span class="n">get_slice</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>sequence</th>
+      <th>isobutyramide_normalized_fitness</th>
+      <th>acetamide_normalized_fitness</th>
+      <th>propionamide_normalized_fitness</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>MRHGDISSSNDTVGVAVVNYKMPRLHTAAEVLDNARKWAEMIVGMK...</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>-0.7550</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>MRHGDISSSNDTVGVAVVNYKMPRLHTAAEVLDNARKYAEMIVGMK...</td>
+      <td>-0.7448</td>
+      <td>-1.7992</td>
+      <td>-0.9711</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">assay</span><span class="o">.</span><span class="n">sequence_length</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+346
+</pre></div></div>
+</div>
+</section>
+<section id="Model-training">
+<h2>Model training<a class="headerlink" href="#Model-training" title="Permalink to this heading"></a></h2>
+<p>We can use the assay object to create a training job:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">train</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">create_training_job</span><span class="p">(</span><span class="n">assay</span><span class="p">,</span>
+                                          <span class="n">measurement_name</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;isobutyramide_normalized_fitness&quot;</span><span class="p">,</span> <span class="s2">&quot;acetamide_normalized_fitness&quot;</span><span class="p">],</span>
+                                          <span class="n">model_name</span><span class="o">=</span><span class="s2">&quot;mymodel&quot;</span><span class="p">)</span> <span class="c1"># name the resulting model</span>
+<span class="n">train_id</span> <span class="o">=</span> <span class="n">train</span><span class="o">.</span><span class="n">id</span>
+<span class="n">train</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Jobplus(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;, job_type=&#39;/workflow/train&#39;, created_date=datetime.datetime(2023, 7, 28, 1, 41, 47, 762130), start_date=None, end_date=None, prerequisite_job_id=&#39;6ba74592-91ac-47e4-9ea7-59fa0fc199fb&#39;, progress_message=None, progress_counter=None, num_records=None, sequence_length=346)
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">#train = session.train.load_job(train_id)</span>
+<span class="c1">#train</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">train</span><span class="o">.</span><span class="n">refresh</span><span class="p">()</span>
+<span class="n">train</span><span class="o">.</span><span class="n">status</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;
+</pre></div></div>
+</div>
+<p>We can wait for the results before proceeding:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">results</span> <span class="o">=</span> <span class="n">train</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">isobut_results</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">traingraph</span> <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">tag</span><span class="o">==</span><span class="s2">&quot;isobutyramide_normalized_fitness&quot;</span><span class="p">]</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">scatterplot</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">step</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">isobut_results</span><span class="p">],</span> <span class="n">y</span><span class="o">=</span><span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">loss</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">isobut_results</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Steps&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Loss&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/demos_core_demo_20_0.png" src="../_images/demos_core_demo_20_0.png" />
+</div>
+</div>
+<p>We can also request a cross-validation job to see the training results in more detail:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">train</span><span class="o">.</span><span class="n">crossvalidate</span><span class="p">()</span>
+<span class="n">train</span><span class="o">.</span><span class="n">crossvalidation</span><span class="o">.</span><span class="n">id</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&#39;e12e7cc5-89e7-4c22-9958-2366243b196e&#39;
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">cvdata</span> <span class="o">=</span> <span class="n">train</span><span class="o">.</span><span class="n">crossvalidation</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">cvresult</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">cvdata</span> <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">measurement_name</span> <span class="o">==</span> <span class="s2">&quot;isobutyramide_normalized_fitness&quot;</span><span class="p">]</span>
+
+<span class="n">sns</span><span class="o">.</span><span class="n">regplot</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">y</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">cvresult</span><span class="p">],</span> <span class="n">y</span><span class="o">=</span><span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">y_mu</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">cvresult</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Y&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Y-hat&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/demos_core_demo_24_0.png" src="../_images/demos_core_demo_24_0.png" />
+</div>
+</div>
+<p>We can examine the models associated with a train or assaydata set. These will be identical here but multiple train jobs are possible on a single assaydata:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">train</span><span class="o">.</span><span class="n">list_models</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[{&#39;name&#39;: &#39;mymodel - acetamide_normalized_fitness&#39;,
+  &#39;description&#39;: &#39;&#39;,
+  &#39;model_id&#39;: &#39;4f5a95cc-7cd9-4d19-bd2c-768c93d8d217&#39;,
+  &#39;training_assaydata&#39;: &#39;dbf85fa1-12ff-45e7-b5a5-2e93e888a6ac&#39;,
+  &#39;job_id&#39;: &#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;,
+  &#39;created_date&#39;: &#39;2023-07-28T01:43:16.966824&#39;,
+  &#39;model_type&#39;: &#39;EXACT_GP&#39;,
+  &#39;additional_metadata&#39;: {&#39;input_dims&#39;: 13,
+   &#39;embedding_model&#39;: &#39;TorchLowRankSVD&#39;,
+   &#39;sequence_length&#39;: 346,
+   &#39;projection_layer&#39;: &#39;dbf85fa1-12ff-45e7-b5a5-2e93e888a6ac_pca.joblib&#39;,
+   &#39;measurement_names&#39;: [&#39;acetamide_normalized_fitness&#39;],
+   &#39;original_task_index&#39;: 1}},
+ {&#39;name&#39;: &#39;mymodel - isobutyramide_normalized_fitness&#39;,
+  &#39;description&#39;: &#39;&#39;,
+  &#39;model_id&#39;: &#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;,
+  &#39;training_assaydata&#39;: &#39;dbf85fa1-12ff-45e7-b5a5-2e93e888a6ac&#39;,
+  &#39;job_id&#39;: &#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;,
+  &#39;created_date&#39;: &#39;2023-07-28T01:43:16.327287&#39;,
+  &#39;model_type&#39;: &#39;EXACT_GP&#39;,
+  &#39;additional_metadata&#39;: {&#39;input_dims&#39;: 13,
+   &#39;embedding_model&#39;: &#39;TorchLowRankSVD&#39;,
+   &#39;sequence_length&#39;: 346,
+   &#39;projection_layer&#39;: &#39;dbf85fa1-12ff-45e7-b5a5-2e93e888a6ac_pca.joblib&#39;,
+   &#39;measurement_names&#39;: [&#39;isobutyramide_normalized_fitness&#39;],
+   &#39;original_task_index&#39;: 0}}]
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">assay</span><span class="o">.</span><span class="n">list_models</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[{&#39;name&#39;: &#39;mymodel - acetamide_normalized_fitness&#39;,
+  &#39;description&#39;: &#39;&#39;,
+  &#39;model_id&#39;: &#39;4f5a95cc-7cd9-4d19-bd2c-768c93d8d217&#39;,
+  &#39;training_assaydata&#39;: &#39;dbf85fa1-12ff-45e7-b5a5-2e93e888a6ac&#39;,
+  &#39;job_id&#39;: &#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;,
+  &#39;created_date&#39;: &#39;2023-07-28T01:43:16.966824&#39;,
+  &#39;model_type&#39;: &#39;EXACT_GP&#39;,
+  &#39;additional_metadata&#39;: {&#39;input_dims&#39;: 13,
+   &#39;embedding_model&#39;: &#39;TorchLowRankSVD&#39;,
+   &#39;sequence_length&#39;: 346,
+   &#39;projection_layer&#39;: &#39;dbf85fa1-12ff-45e7-b5a5-2e93e888a6ac_pca.joblib&#39;,
+   &#39;measurement_names&#39;: [&#39;acetamide_normalized_fitness&#39;],
+   &#39;original_task_index&#39;: 1}},
+ {&#39;name&#39;: &#39;mymodel - isobutyramide_normalized_fitness&#39;,
+  &#39;description&#39;: &#39;&#39;,
+  &#39;model_id&#39;: &#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;,
+  &#39;training_assaydata&#39;: &#39;dbf85fa1-12ff-45e7-b5a5-2e93e888a6ac&#39;,
+  &#39;job_id&#39;: &#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;,
+  &#39;created_date&#39;: &#39;2023-07-28T01:43:16.327287&#39;,
+  &#39;model_type&#39;: &#39;EXACT_GP&#39;,
+  &#39;additional_metadata&#39;: {&#39;input_dims&#39;: 13,
+   &#39;embedding_model&#39;: &#39;TorchLowRankSVD&#39;,
+   &#39;sequence_length&#39;: 346,
+   &#39;projection_layer&#39;: &#39;dbf85fa1-12ff-45e7-b5a5-2e93e888a6ac_pca.joblib&#39;,
+   &#39;measurement_names&#39;: [&#39;isobutyramide_normalized_fitness&#39;],
+   &#39;original_task_index&#39;: 0}}]
+</pre></div></div>
+</div>
+<p>Let’s take one of these models for further use:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model_id</span> <span class="o">=</span> <span class="n">train</span><span class="o">.</span><span class="n">list_models</span><span class="p">()[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;model_id&#39;</span><span class="p">]</span>
+<span class="n">train</span><span class="o">.</span><span class="n">list_models</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+{&#39;name&#39;: &#39;mymodel - acetamide_normalized_fitness&#39;,
+ &#39;description&#39;: &#39;&#39;,
+ &#39;model_id&#39;: &#39;4f5a95cc-7cd9-4d19-bd2c-768c93d8d217&#39;,
+ &#39;training_assaydata&#39;: &#39;dbf85fa1-12ff-45e7-b5a5-2e93e888a6ac&#39;,
+ &#39;job_id&#39;: &#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;,
+ &#39;created_date&#39;: &#39;2023-07-28T01:43:16.966824&#39;,
+ &#39;model_type&#39;: &#39;EXACT_GP&#39;,
+ &#39;additional_metadata&#39;: {&#39;input_dims&#39;: 13,
+  &#39;embedding_model&#39;: &#39;TorchLowRankSVD&#39;,
+  &#39;sequence_length&#39;: 346,
+  &#39;projection_layer&#39;: &#39;dbf85fa1-12ff-45e7-b5a5-2e93e888a6ac_pca.joblib&#39;,
+  &#39;measurement_names&#39;: [&#39;acetamide_normalized_fitness&#39;],
+  &#39;original_task_index&#39;: 1}}
+</pre></div></div>
+</div>
+</section>
+<section id="Sequence-design">
+<h2>Sequence design<a class="headerlink" href="#Sequence-design" title="Permalink to this heading"></a></h2>
+<p>We can set up a design job using our trained model as a criteria:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">openprotein.models</span> <span class="kn">import</span> <span class="n">DesignJobCreate</span><span class="p">,</span> <span class="n">ModelCriterion</span><span class="p">,</span> <span class="n">NMutationCriterion</span><span class="p">,</span> <span class="n">Criterion</span>
+<span class="n">design_data</span> <span class="o">=</span> <span class="n">DesignJobCreate</span><span class="p">(</span>
+    <span class="n">assay_id</span><span class="o">=</span><span class="n">assay</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+    <span class="n">criteria</span><span class="o">=</span><span class="p">[</span>
+        <span class="p">[</span>
+            <span class="n">ModelCriterion</span><span class="p">(</span>
+                <span class="n">criterion_type</span><span class="o">=</span><span class="s1">&#39;model&#39;</span><span class="p">,</span>
+                <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span>
+                <span class="n">measurement_name</span><span class="o">=</span><span class="s2">&quot;acetamide_normalized_fitness&quot;</span><span class="p">,</span>
+                <span class="n">criterion</span><span class="o">=</span><span class="n">Criterion</span><span class="p">(</span><span class="n">target</span><span class="o">=-</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="s2">&quot;&lt;&quot;</span><span class="p">)</span>
+            <span class="p">),</span>
+        <span class="p">],</span>
+        <span class="p">[</span><span class="n">NMutationCriterion</span><span class="p">(</span><span class="n">criterion_type</span><span class="o">=</span><span class="s2">&quot;n_mutations&quot;</span><span class="p">,</span> <span class="p">)]</span>
+    <span class="p">],</span>
+    <span class="n">mutation_positions</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">13</span><span class="p">],</span>
+    <span class="n">num_steps</span><span class="o">=</span><span class="mi">10</span>
+<span class="p">)</span>
+
+
+<span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">design_data</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+<br/><br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+{&#39;assay_id&#39;: &#39;dbf85fa1-12ff-45e7-b5a5-2e93e888a6ac&#39;,
+ &#39;criteria&#39;: [[{&#39;criterion_type&#39;: &#39;model&#39;,
+    &#39;model_id&#39;: &#39;4f5a95cc-7cd9-4d19-bd2c-768c93d8d217&#39;,
+    &#39;measurement_name&#39;: &#39;acetamide_normalized_fitness&#39;,
+    &#39;criterion&#39;: {&#39;target&#39;: -0.5, &#39;weight&#39;: 1.0, &#39;direction&#39;: &#39;&lt;&#39;}}],
+  [{&#39;criterion_type&#39;: &#39;n_mutations&#39;}]],
+ &#39;num_steps&#39;: 10,
+ &#39;pop_size&#39;: None,
+ &#39;n_offsprings&#39;: None,
+ &#39;crossover_prob&#39;: None,
+ &#39;crossover_prob_pointwise&#39;: None,
+ &#39;mutation_average_mutations_per_seq&#39;: None,
+ &#39;mutation_positions&#39;: [2, 13]}
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># create the design job</span>
+<span class="n">design_job</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">design</span><span class="o">.</span><span class="n">create_design_job</span><span class="p">(</span><span class="n">design_data</span><span class="p">)</span>
+<span class="n">design_id</span> <span class="o">=</span> <span class="n">design_job</span><span class="o">.</span><span class="n">id</span>
+<span class="n">design_job</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Job(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;e1826033-583b-4581-a602-9ceff483c8e0&#39;, job_type=&#39;/workflow/design&#39;, created_date=datetime.datetime(2023, 7, 28, 1, 43, 24, 642996), start_date=None, end_date=None, prerequisite_job_id=None, progress_message=None, progress_counter=None, num_records=None)
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><br/><span></span><span class="c1">#design_job = session.design.load_job(design_id)</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">results</span> <span class="o">=</span> <span class="n">design_job</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+<span class="n">results</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">:]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[DesignStep(step=9, sample_index=2557, sequence=&#39;MRHGDIMSSNMTVGVAVVFPKMPRDRSGEWRLDNADKIKYMTAGMKRKQQQYQLVVEPIRVWQGQMWDYAEYTEQMCYIPGCETSIHSDACKKVNVWGVYSLMGEKHEEHIDKAQYYTCDLIDMDGTFADKYYKISPWYQIEQWYWGQQDYVSRDPVDMKIYLAFCDCHNYPEIWYDTAMKGAYCCVPCNGSMQPAKDDEQQMAKAMQWCHNCYVEVKNMASGSGVQSDFRVSASIIFDQRIVAETGCTEMCIQYAQLSLSDQRYARCEPQSINKQFTIQMRGYSGLQASGDGDRPLIACPRHFVRTYVGTRVIYRESVHGNIRSTTGSAQADVGAWEYKMYENDA&#39;, initial_scores=[0, 195], scores=[[DesignSubscore(score=0, metadata=DesignMetadata(y_mu=-1.052383542060852, y_var=0.008722011931240559))], [DesignSubscore(score=195, metadata=DesignMetadata(y_mu=None, y_var=None))]], umap1=0.5089479088783264, umap2=8.538457870483398),
+ DesignStep(step=9, sample_index=2558, sequence=&#39;RRHGDISSNWDTYGVRVVNYTCPRLGHWAEVLANAPNCPGQILGMRLMLRGATGGRCPMYSLMGIMLTCAERMLTAQACVSETVHDFSEACRVATVWGVFKAGTQRCEECGIKGPYNCLVLIPQNGEAQQCYRKILLPCPMEGDYAQTQTYDSANPKGFESSQNHCRDPNEPSEWRDCASFGAELIVRCQGYRYPAKQIWPMNPKNMRWANNWYTGVANAACRDPHESIFPHSMIRGFDGRTWGYQGWEECITQCFQESLQQILSCRANDQSQNETFKIVKRSWRVLQALKRGDRGLNELCFRFYRTWVNDCPKARENVGRLTRSSPGCAQWSVGGLNYWGLEHRA&#39;, initial_scores=[0, 196], scores=[[DesignSubscore(score=0, metadata=DesignMetadata(y_mu=-1.052383542060852, y_var=0.008722011931240559))], [DesignSubscore(score=196, metadata=DesignMetadata(y_mu=None, y_var=None))]], umap1=0.4868474304676056, umap2=8.431281089782715),
+ DesignStep(step=9, sample_index=2559, sequence=&#39;MRHGDISSSNDTVGVAVVNYKMPRLHTAAEVLDNARKLAEMIVGMKQGLPGMDLVVFPEYSLQGIMYDPAEMMETAVAIPGEETEIFSRACRKANVWGVFSLTGERHEEHPRKAPYNTLVLIDNNGEIVQKYRKIIPWCPIEGWYPGGQTYVSEGPKGMKISLIICDDGNYPEIWRDCAMKGAELIVRCQGYMYPAKDQQVMMAKAMAWANNCYVAVANAAGFDGVYSYFGHSAIIGFDGRTLGECGEEEMGIQYAQLSLSQIRDARANDQSQNHLFKILHRGYSGLQASGDGDRGLAECPFEFYRTWVTDAEKARENVERLTRSTTGVAQCPVGRLPYEGLEKEA&#39;, initial_scores=[0, 346], scores=[[DesignSubscore(score=0, metadata=DesignMetadata(y_mu=-1.0225590467453003, y_var=0.008469139225780964))], [DesignSubscore(score=346, metadata=DesignMetadata(y_mu=None, y_var=None))]], umap1=4.1282830238342285, umap2=6.924859046936035)]
+</pre></div></div>
+</div>
+<p>We can access the design results:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">results</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">scores</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[[DesignSubscore(score=0, metadata=DesignMetadata(y_mu=-1.0225590467453003, y_var=0.008469139225780964))],
+ [DesignSubscore(score=346, metadata=DesignMetadata(y_mu=None, y_var=None))]]
+</pre></div></div>
+</div>
+</section>
+<section id="Sequence-predictions">
+<h2>Sequence predictions<a class="headerlink" href="#Sequence-predictions" title="Permalink to this heading"></a></h2>
+<p>We can also predict scores for new sequences using our models trained on our old sequences:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create some random sequences to predict</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+<span class="n">p_seqs</span> <span class="o">=</span> <span class="p">[</span><span class="n">fakeseq</span><span class="p">(</span><span class="n">assay</span><span class="o">.</span><span class="n">sequence_length</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)]</span>
+<span class="n">p_seqs</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[&#39;MVINYHGGMLRTPNHQMEMFQPEFYKCDGILVREQCWLKKWGGIPEFHARIMDCFQQQARMAGNKPIGYKHLYLLHMWCFEVIQAFTNQIAYGKQLPGDHPRTNWYHFEHTMNCNPQLHFTSGSLYRSTMEKLAYSCNYTYCVQTHMYYHRREVIEMLSPSNPARTARHHPHVDMELQIIINVENQVVIPTDWNPWWIRIMCIEPDRWDCMQKKDKVFSTHFRNINVCIRPEHRDDIFDEMYCKYPHRVECQHFSGWKGLPNINPHHRTFTTCGMDPPRMWCLRKVWIDTGKYPAFYSEAQGQFQCPKYEKDAYAKGFRTELGHEISSQYEVGNFTMTNQAIAGLA&#39;,
+ &#39;QRMNDISWFCLAEWYWYKKEWILMFLCDTDGDENQAKCQQINVQIIIYVPSRAVVEIMEALFVMSAHLYWYTAVADNFLLDSHLLDGRDNTTFMIIGTRQWSIVHRSGLSYYKQNDLSNKLQMQKRRLLMPEMWWIRNWPWLQLVLNMENARHTGYYHQSRNGVWQWIDLLEAQRGCHQRGYVNTRQALFFAADHQLWDHTIIYTVQWEPAHQKDDQVRKMICAEYDCIIVKSSAYCFCNFQFHQKEFGFKCFIVSHGALSLTYLHYVVFRPKEEPHWHGTISACKDDRPYGLWLMGTPPYFWAPSGKLANWNMMEPCETQDCFANNYPESWLKFWWVMTTGSKPS&#39;,
+ &#39;NSIMWHDIKCPRMMQWAWHVDNVATEVNTYNGDQTKGNGKFAHAQPSHFPYMFFWQMAIMGYHIDAAFPCLKNELVHGMCQWECLCIVNGRPVKPYENSVFSYHYDSEAKSYKFDKEEPMMFQFFELIQTATTHEYVWHECSSNQQNIGLNSQMNRHICQPEILIPLYRVTLLESGPMIVRHSAIKTYEPGPGWLPTGDFIKSFRQRTDMLIWTGFNRNVRVVGMMAFKTMHLGPAVCEFSQEDHHDHTLRWKHKWTKACKYWDIRQIANQLPCFSELEHKKTLIHCETQKDKFESKWLMRMLCDRPHSEVDMYHHCQAVNFERKWTSLQGWCQSGKVTYPCDDPT&#39;]
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pjob</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">predict</span><span class="o">.</span><span class="n">create_predict_job</span><span class="p">(</span><span class="n">sequences</span><span class="o">=</span><span class="n">p_seqs</span><span class="p">,</span> <span class="n">train_job</span><span class="o">=</span><span class="n">train</span><span class="p">)</span>
+<span class="n">pjob_id</span> <span class="o">=</span> <span class="n">pjob</span><span class="o">.</span><span class="n">id</span>
+<span class="n">pjob</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Job(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;395645cb-2d09-46cf-bcc2-c625fb7e2063&#39;, job_type=&#39;/workflow/predict&#39;, created_date=None, start_date=None, end_date=None, prerequisite_job_id=None, progress_message=None, progress_counter=0, num_records=None)
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[29]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">results</span> <span class="o">=</span> <span class="n">pjob</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+Waiting: 100%|██████████| 100/100 [07:22&lt;00:00,  4.42s/it, status=SUCCESS]
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[30]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dict</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[30]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+{&#39;sequence&#39;: &#39;MVINYHGGMLRTPNHQMEMFQPEFYKCDGILVREQCWLKKWGGIPEFHARIMDCFQQQARMAGNKPIGYKHLYLLHMWCFEVIQAFTNQIAYGKQLPGDHPRTNWYHFEHTMNCNPQLHFTSGSLYRSTMEKLAYSCNYTYCVQTHMYYHRREVIEMLSPSNPARTARHHPHVDMELQIIINVENQVVIPTDWNPWWIRIMCIEPDRWDCMQKKDKVFSTHFRNINVCIRPEHRDDIFDEMYCKYPHRVECQHFSGWKGLPNINPHHRTFTTCGMDPPRMWCLRKVWIDTGKYPAFYSEAQGQFQCPKYEKDAYAKGFRTELGHEISSQYEVGNFTMTNQAIAGLA&#39;,
+ &#39;predictions&#39;: [{&#39;model_id&#39;: &#39;4f5a95cc-7cd9-4d19-bd2c-768c93d8d217&#39;,
+   &#39;model_name&#39;: &#39;mymodel - acetamide_normalized_fitness&#39;,
+   &#39;properties&#39;: {&#39;acetamide_normalized_fitness&#39;: {&#39;y_mu&#39;: -1.052383542060852,
+     &#39;y_var&#39;: 0.008722011931240559}}},
+  {&#39;model_id&#39;: &#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;,
+   &#39;model_name&#39;: &#39;mymodel - isobutyramide_normalized_fitness&#39;,
+   &#39;properties&#39;: {&#39;isobutyramide_normalized_fitness&#39;: {&#39;y_mu&#39;: -0.5801481008529663,
+     &#39;y_var&#39;: 0.07187105715274811}}}]}
+</pre></div></div>
+</div>
+<p>We can also send a single sequence for single site mutation analysis:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[31]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sequence</span> <span class="o">=</span> <span class="n">assay</span><span class="o">.</span><span class="n">get_first</span><span class="p">()</span><span class="o">.</span><span class="n">sequence</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="n">sspredict</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">predict</span><span class="o">.</span><span class="n">create_predict_single_site</span><span class="p">(</span><span class="n">sequence</span><span class="p">,</span> <span class="n">train</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[32]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ssp_results</span> <span class="o">=</span> <span class="n">sspredict</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">ssp_results</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+Waiting: 100%|██████████| 100/100 [03:30&lt;00:00,  2.11s/it, status=SUCCESS]
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[32]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[SequencePrediction(position=0, amino_acid=&#39;A&#39;, predictions=[Prediction(model_id=&#39;4f5a95cc-7cd9-4d19-bd2c-768c93d8d217&#39;, model_name=&#39;mymodel - acetamide_normalized_fitness&#39;, properties={&#39;acetamide_normalized_fitness&#39;: {&#39;y_mu&#39;: -1.0585644245147705, &#39;y_var&#39;: 0.00865915883332491}}), Prediction(model_id=&#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;, model_name=&#39;mymodel - isobutyramide_normalized_fitness&#39;, properties={&#39;isobutyramide_normalized_fitness&#39;: {&#39;y_mu&#39;: -0.509050190448761, &#39;y_var&#39;: 0.04599723219871521}})]),
+ SequencePrediction(position=0, amino_acid=&#39;R&#39;, predictions=[Prediction(model_id=&#39;4f5a95cc-7cd9-4d19-bd2c-768c93d8d217&#39;, model_name=&#39;mymodel - acetamide_normalized_fitness&#39;, properties={&#39;acetamide_normalized_fitness&#39;: {&#39;y_mu&#39;: -1.0604116916656494, &#39;y_var&#39;: 0.008511288091540337}}), Prediction(model_id=&#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;, model_name=&#39;mymodel - isobutyramide_normalized_fitness&#39;, properties={&#39;isobutyramide_normalized_fitness&#39;: {&#39;y_mu&#39;: -0.38895800709724426, &#39;y_var&#39;: 0.01822088658809662}})]),
+ SequencePrediction(position=0, amino_acid=&#39;N&#39;, predictions=[Prediction(model_id=&#39;4f5a95cc-7cd9-4d19-bd2c-768c93d8d217&#39;, model_name=&#39;mymodel - acetamide_normalized_fitness&#39;, properties={&#39;acetamide_normalized_fitness&#39;: {&#39;y_mu&#39;: -1.0604782104492188, &#39;y_var&#39;: 0.008520051836967468}}), Prediction(model_id=&#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;, model_name=&#39;mymodel - isobutyramide_normalized_fitness&#39;, properties={&#39;isobutyramide_normalized_fitness&#39;: {&#39;y_mu&#39;: -0.39489519596099854, &#39;y_var&#39;: 0.019712451845407486}})])]
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[33]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ssp_results</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dict</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[33]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+{&#39;position&#39;: 0,
+ &#39;amino_acid&#39;: &#39;A&#39;,
+ &#39;predictions&#39;: [{&#39;model_id&#39;: &#39;4f5a95cc-7cd9-4d19-bd2c-768c93d8d217&#39;,
+   &#39;model_name&#39;: &#39;mymodel - acetamide_normalized_fitness&#39;,
+   &#39;properties&#39;: {&#39;acetamide_normalized_fitness&#39;: {&#39;y_mu&#39;: -1.0585644245147705,
+     &#39;y_var&#39;: 0.00865915883332491}}},
+  {&#39;model_id&#39;: &#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;,
+   &#39;model_name&#39;: &#39;mymodel - isobutyramide_normalized_fitness&#39;,
+   &#39;properties&#39;: {&#39;isobutyramide_normalized_fitness&#39;: {&#39;y_mu&#39;: -0.509050190448761,
+     &#39;y_var&#39;: 0.04599723219871521}}}]}
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[34]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">preds</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span><span class="n">i</span><span class="o">.</span><span class="n">dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ssp_results</span><span class="p">])</span>
+<span class="n">preds</span><span class="p">[</span><span class="s1">&#39;acetamide_normalized_fitness&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;acetamide_normalized_fitness&#39;</span><span class="p">][</span><span class="s1">&#39;y_mu&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">preds</span><span class="o">.</span><span class="n">predictions</span><span class="p">]</span>
+<span class="n">preds</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[34]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>position</th>
+      <th>amino_acid</th>
+      <th>predictions</th>
+      <th>acetamide_normalized_fitness</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>0</td>
+      <td>A</td>
+      <td>[{'model_id': '4f5a95cc-7cd9-4d19-bd2c-768c93d...</td>
+      <td>-1.058564</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>0</td>
+      <td>R</td>
+      <td>[{'model_id': '4f5a95cc-7cd9-4d19-bd2c-768c93d...</td>
+      <td>-1.060412</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>0</td>
+      <td>N</td>
+      <td>[{'model_id': '4f5a95cc-7cd9-4d19-bd2c-768c93d...</td>
+      <td>-1.060478</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>0</td>
+      <td>D</td>
+      <td>[{'model_id': '4f5a95cc-7cd9-4d19-bd2c-768c93d...</td>
+      <td>-1.064667</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>0</td>
+      <td>C</td>
+      <td>[{'model_id': '4f5a95cc-7cd9-4d19-bd2c-768c93d...</td>
+      <td>-1.067287</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[35]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><br/><span></span><span class="n">df_pivot</span> <span class="o">=</span> <span class="n">preds</span><span class="o">.</span><span class="n">pivot</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="s1">&#39;position&#39;</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="s1">&#39;amino_acid&#39;</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="s1">&#39;acetamide_normalized_fitness&#39;</span><span class="p">)</span>
+
+<span class="c1"># Create  heatmap</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">heatmap</span><span class="p">(</span><span class="n">df_pivot</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;coolwarm&#39;</span><span class="p">,</span> <span class="n">annot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s2">&quot;.2f&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Acetamide Normalized Fitness Heatmap&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Amino Acid&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Position&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/demos_core_demo_47_0.png" src="../_images/demos_core_demo_47_0.png" />
+</div>
+</div>
+</section>
+<section id="Resume-workflows">
+<h2>Resume workflows<a class="headerlink" href="#Resume-workflows" title="Permalink to this heading"></a></h2>
+<p>Lastly, it’s possible to resume from where you left off with the job id:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[36]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">train</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">load_job</span><span class="p">(</span><span class="n">train_id</span><span class="p">)</span>
+<span class="n">train</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[36]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Jobplus(status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt;, job_id=&#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;, job_type=&#39;/workflow/train&#39;, created_date=datetime.datetime(2023, 7, 28, 1, 41, 47, 762130), start_date=datetime.datetime(2023, 7, 28, 1, 42, 48, 246124), end_date=datetime.datetime(2023, 7, 28, 1, 43, 17, 160692), prerequisite_job_id=&#39;6ba74592-91ac-47e4-9ea7-59fa0fc199fb&#39;, progress_message=None, progress_counter=None, num_records=None, sequence_length=346)
+</pre></div></div>
+</div>
+<p>This reloaded job can be used as above for predict or design tasks, and those can also be reloaded!</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[37]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pjob</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">predict</span><span class="o">.</span><span class="n">load_job</span><span class="p">(</span><span class="n">pjob_id</span><span class="p">)</span>
+<span class="n">pjob</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[37]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Job(status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt;, job_id=&#39;395645cb-2d09-46cf-bcc2-c625fb7e2063&#39;, job_type=&#39;/workflow/predict&#39;, created_date=datetime.datetime(2023, 7, 28, 1, 56, 20, 244335), start_date=datetime.datetime(2023, 7, 28, 2, 3, 3, 642814), end_date=datetime.datetime(2023, 7, 28, 2, 3, 37, 431378), prerequisite_job_id=&#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;, progress_message=None, progress_counter=None, num_records=None)
+</pre></div></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../design.html" class="btn btn-neutral float-left" title="Design" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../poet_workflow.html" class="btn btn-neutral float-right" title="De Novo prediction &amp; generative models (PoET)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, NE47.bio.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
