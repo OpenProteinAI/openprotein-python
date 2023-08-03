@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "openprotein"
-version = "0.0.1"
+version = "0.1.0b"
 description = "OpenProtein Python interface."
 authors = ["OpenProtein <info@ne47.bio>"]
 
