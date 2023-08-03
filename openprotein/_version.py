@@ -1,2 +1,2 @@
-__version_tuple__ = version_tuple = (0, 1, 0, 'b1')
+__version_tuple__ = version_tuple = (0, 1, 1, 'b3')
 __version__ = version = '.'.join(str(x) for x in __version_tuple__)

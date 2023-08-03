@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "openprotein"
-version = "0.1.0b"
+version = "0.1.1b3"
 description = "OpenProtein Python interface."
 authors = ["OpenProtein <info@ne47.bio>"]
 
@@ -9,6 +9,7 @@ python = "^3.7"
 requests = "*"
 pydantic = "*"
 tqdm = "*"
+pandas = "*"
 
 [tool.poetry.dev-dependencies]
 
