@@ -12,6 +12,11 @@ jobs:
     steps:
     - uses: actions/checkout@v1
 
+    - name: Install Pandoc
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y pandoc
+
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
@@ -20,13 +25,13 @@ jobs:
     - name: Install Sphinx
       run: |
         python -m pip install --upgrade pip
-        pip install sphinx recommonmark sphinx_markdown_tables sphinx_markdown_builder nbsphinx sphinx-rtd-theme pandoc
+        pip install sphinx recommonmark sphinx_markdown_tables sphinx_markdown_builder nbsphinx sphinx-rtd-theme pandas requests tqdm pydantic
 
     - name: Build HTML with Sphinx
       run: |
         cd apidocs
         make html
-
+  
     - name: Get bucket name
       shell: bash
       run: |
