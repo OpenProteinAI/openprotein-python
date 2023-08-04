@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>openprotein.base &mdash; OpenProtein-Python  documentation</title>
+  <title>openprotein_python.base &mdash; OpenProtein-Python  documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -64,8 +64,8 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
-          <li class="breadcrumb-item"><a href="../openprotein.html">openprotein</a></li>
-      <li class="breadcrumb-item active">openprotein.base</li>
+          <li class="breadcrumb-item"><a href="../openprotein_python.html">openprotein_python</a></li>
+      <li class="breadcrumb-item active">openprotein_python.base</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -74,8 +74,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <h1>Source code for openprotein.base</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">openprotein.config</span> <span class="k">as</span> <span class="nn">config</span>
+  <h1>Source code for openprotein_python.base</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">openprotein_python.config</span> <span class="k">as</span> <span class="nn">config</span>
 
 <span class="kn">import</span> <span class="nn">requests</span>
 <span class="kn">from</span> <span class="nn">urllib.parse</span> <span class="kn">import</span> <span class="n">urljoin</span>
@@ -84,7 +84,7 @@
 <span class="kn">from</span> <span class="nn">requests.adapters</span> <span class="kn">import</span> <span class="n">HTTPAdapter</span>
 <span class="kn">from</span> <span class="nn">requests.packages.urllib3.util.retry</span> <span class="kn">import</span> <span class="n">Retry</span>
 
-<span class="kn">from</span> <span class="nn">openprotein.errors</span> <span class="kn">import</span> <span class="n">APIError</span><span class="p">,</span> <span class="n">InvalidParameterError</span><span class="p">,</span> <span class="n">MissingParameterError</span><span class="p">,</span> <span class="n">AuthError</span>
+<span class="kn">from</span> <span class="nn">openprotein_python.errors</span> <span class="kn">import</span> <span class="n">APIError</span><span class="p">,</span> <span class="n">InvalidParameterError</span><span class="p">,</span> <span class="n">MissingParameterError</span><span class="p">,</span> <span class="n">AuthError</span>
 
 <span class="k">class</span> <span class="nc">BearerAuth</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">auth</span><span class="o">.</span><span class="n">AuthBase</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -99,7 +99,7 @@
         <span class="k">return</span> <span class="n">r</span>
 
 
-<div class="viewcode-block" id="APISession"><a class="viewcode-back" href="../../basics.html#openprotein.APISession">[docs]</a><span class="k">class</span> <span class="nc">APISession</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">):</span>
+<div class="viewcode-block" id="APISession"><a class="viewcode-back" href="../../basics.html#openprotein_python.APISession">[docs]</a><span class="k">class</span> <span class="nc">APISession</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A class to handle API sessions. This class provides a connection session to the OpenProtein API.</span>
 
@@ -117,7 +117,7 @@
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">username</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span>
                  <span class="n">password</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span>
-                 <span class="n">backend</span><span class="p">:</span><span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;https://dev.api.openprotein.ai/api/&quot;</span> <span class="p">):</span>
+                 <span class="n">backend</span><span class="p">:</span><span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;https://api.openprotein.ai/api/&quot;</span> <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">backend</span> <span class="o">=</span> <span class="n">backend</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">verify</span> <span class="o">=</span> <span class="kc">True</span>
@@ -132,7 +132,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s1">&#39;https://&#39;</span><span class="p">,</span> <span class="n">adapter</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">login</span><span class="p">(</span><span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span>
 
-<div class="viewcode-block" id="APISession.login"><a class="viewcode-back" href="../../basics.html#openprotein.APISession.login">[docs]</a>    <span class="k">def</span> <span class="nf">login</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">username</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span> <span class="n">password</span><span class="p">:</span><span class="nb">str</span><span class="p">):</span>
+<div class="viewcode-block" id="APISession.login"><a class="viewcode-back" href="../../basics.html#openprotein_python.APISession.login">[docs]</a>    <span class="k">def</span> <span class="nf">login</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">username</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span> <span class="n">password</span><span class="p">:</span><span class="nb">str</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot; </span>
 <span class="sd">        Authenticate connection to OpenProtein with your credentials.</span>
 <span class="sd">        </span>

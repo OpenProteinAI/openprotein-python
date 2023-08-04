@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>openprotein.api.poet &mdash; OpenProtein-Python  documentation</title>
+  <title>openprotein_python.api.poet &mdash; OpenProtein-Python  documentation</title>
       <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
@@ -64,8 +64,8 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
-          <li class="breadcrumb-item"><a href="../../openprotein.html">openprotein</a></li>
-      <li class="breadcrumb-item active">openprotein.api.poet</li>
+          <li class="breadcrumb-item"><a href="../../openprotein_python.html">openprotein_python</a></li>
+      <li class="breadcrumb-item active">openprotein_python.api.poet</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -74,7 +74,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <h1>Source code for openprotein.api.poet</h1><div class="highlight"><pre>
+  <h1>Source code for openprotein_python.api.poet</h1><div class="highlight"><pre>
 <span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">BinaryIO</span><span class="p">,</span> <span class="n">Iterator</span>
 <span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">BytesIO</span>
 <span class="kn">import</span> <span class="nn">random</span>
@@ -82,18 +82,18 @@
 <span class="kn">import</span> <span class="nn">codecs</span>
 <span class="kn">import</span> <span class="nn">requests</span>
 
-<span class="kn">from</span> <span class="nn">openprotein.base</span> <span class="kn">import</span> <span class="n">APISession</span>
-<span class="kn">from</span> <span class="nn">openprotein.api.jobs</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span> <span class="nn">openprotein_python.base</span> <span class="kn">import</span> <span class="n">APISession</span>
+<span class="kn">from</span> <span class="nn">openprotein_python.api.jobs</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">Job</span><span class="p">,</span>
     <span class="n">AsyncJobFuture</span><span class="p">,</span>
     <span class="n">StreamingAsyncJobFuture</span><span class="p">,</span>
     <span class="n">job_get</span><span class="p">,</span>
     <span class="n">job_args_get</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">openprotein.api.jobs</span> <span class="kn">import</span> <span class="n">load_job</span> <span class="c1">#as base_load_job</span>
-<span class="kn">import</span> <span class="nn">openprotein.config</span> <span class="k">as</span> <span class="nn">config</span>
+<span class="kn">from</span> <span class="nn">openprotein_python.api.jobs</span> <span class="kn">import</span> <span class="n">load_job</span> <span class="c1">#as base_load_job</span>
+<span class="kn">import</span> <span class="nn">openprotein_python.config</span> <span class="k">as</span> <span class="nn">config</span>
 
-<span class="kn">from</span> <span class="nn">openprotein.models</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span> <span class="nn">openprotein_python.models</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">MSASamplingMethod</span><span class="p">,</span>
     <span class="n">PoetInputType</span><span class="p">,</span>
     <span class="n">PoetScoreJob</span><span class="p">,</span>
@@ -104,7 +104,7 @@
     <span class="n">PoetSSPJob</span><span class="p">,</span>
     <span class="n">PoetSSPResult</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">openprotein.errors</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span> <span class="nn">openprotein_python.errors</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">InvalidParameterError</span><span class="p">,</span>
     <span class="n">MissingParameterError</span><span class="p">,</span>
     <span class="n">APIError</span><span class="p">,</span>
@@ -561,7 +561,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">job_id</span>
 
 
-<div class="viewcode-block" id="MSAFuture"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.MSAFuture">[docs]</a><span class="k">class</span> <span class="nc">MSAFuture</span><span class="p">(</span><span class="n">PoetFutureMixin</span><span class="p">,</span> <span class="n">AsyncJobFuture</span><span class="p">):</span>
+<div class="viewcode-block" id="MSAFuture"><a class="viewcode-back" href="../../../poet.html#openprotein_python.api.poet.MSAFuture">[docs]</a><span class="k">class</span> <span class="nc">MSAFuture</span><span class="p">(</span><span class="n">PoetFutureMixin</span><span class="p">,</span> <span class="n">AsyncJobFuture</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Represents a result of a MSA job.</span>
 
@@ -626,17 +626,17 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_msa_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">job_id</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_msa_id</span>
 
-<div class="viewcode-block" id="MSAFuture.wait"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.MSAFuture.wait">[docs]</a>    <span class="k">def</span> <span class="nf">wait</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="MSAFuture.wait"><a class="viewcode-back" href="../../../poet.html#openprotein_python.api.poet.MSAFuture.wait">[docs]</a>    <span class="k">def</span> <span class="nf">wait</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
         <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span>
                              <span class="n">interval</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">POLLING_INTERVAL</span><span class="p">,</span>
                              <span class="n">timeout</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">POLLING_TIMEOUT</span><span class="p">,</span>
                              <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># no progress to track</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="MSAFuture.get"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.MSAFuture.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="MSAFuture.get"><a class="viewcode-back" href="../../../poet.html#openprotein_python.api.poet.MSAFuture.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_msa</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="MSAFuture.sample_prompt"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.MSAFuture.sample_prompt">[docs]</a>    <span class="k">def</span> <span class="nf">sample_prompt</span><span class="p">(</span>
+<div class="viewcode-block" id="MSAFuture.sample_prompt"><a class="viewcode-back" href="../../../poet.html#openprotein_python.api.poet.MSAFuture.sample_prompt">[docs]</a>    <span class="k">def</span> <span class="nf">sample_prompt</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">num_sequences</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">num_residues</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -699,7 +699,7 @@
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">PromptFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">msa_id</span><span class="p">)</span></div></div>
 
-<div class="viewcode-block" id="PromptFuture"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PromptFuture">[docs]</a><span class="k">class</span> <span class="nc">PromptFuture</span><span class="p">(</span><span class="n">MSAFuture</span><span class="p">):</span>
+<div class="viewcode-block" id="PromptFuture"><a class="viewcode-back" href="../../../poet.html#openprotein_python.api.poet.PromptFuture">[docs]</a><span class="k">class</span> <span class="nc">PromptFuture</span><span class="p">(</span><span class="n">MSAFuture</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Represents a result of a prompt job.</span>
 
@@ -744,11 +744,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">page_size</span> <span class="o">=</span> <span class="n">page_size</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_msa_id</span> <span class="o">=</span> <span class="n">msa_id</span>
 
-<div class="viewcode-block" id="PromptFuture.get"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PromptFuture.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="PromptFuture.get"><a class="viewcode-back" href="../../../poet.html#openprotein_python.api.poet.PromptFuture.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_prompt</span><span class="p">()</span></div></div>
 
 
-<div class="viewcode-block" id="PoetScoreFuture"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetScoreFuture">[docs]</a><span class="k">class</span> <span class="nc">PoetScoreFuture</span><span class="p">(</span><span class="n">PoetFutureMixin</span><span class="p">,</span> <span class="n">AsyncJobFuture</span><span class="p">):</span>
+<div class="viewcode-block" id="PoetScoreFuture"><a class="viewcode-back" href="../../../poet.html#openprotein_python.api.poet.PoetScoreFuture">[docs]</a><span class="k">class</span> <span class="nc">PoetScoreFuture</span><span class="p">(</span><span class="n">PoetFutureMixin</span><span class="p">,</span> <span class="n">AsyncJobFuture</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Represents a result of a PoET scoring job.</span>
 
@@ -782,7 +782,7 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">page_size</span> <span class="o">=</span> <span class="n">page_size</span>
 
-<div class="viewcode-block" id="PoetScoreFuture.get"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetScoreFuture.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PoetScoreResult</span><span class="p">]:</span>
+<div class="viewcode-block" id="PoetScoreFuture.get"><a class="viewcode-back" href="../../../poet.html#openprotein_python.api.poet.PoetScoreFuture.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PoetScoreResult</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get the final results of the PoET scoring job.</span>
 
@@ -917,7 +917,7 @@
         <span class="p">)</span> <span class="kn">from</span> <span class="nn">exc</span>
 
 
-<div class="viewcode-block" id="PoetSingleSiteFuture"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetSingleSiteFuture">[docs]</a><span class="k">class</span> <span class="nc">PoetSingleSiteFuture</span><span class="p">(</span><span class="n">PoetFutureMixin</span><span class="p">,</span> <span class="n">AsyncJobFuture</span><span class="p">):</span>
+<div class="viewcode-block" id="PoetSingleSiteFuture"><a class="viewcode-back" href="../../../poet.html#openprotein_python.api.poet.PoetSingleSiteFuture">[docs]</a><span class="k">class</span> <span class="nc">PoetSingleSiteFuture</span><span class="p">(</span><span class="n">PoetFutureMixin</span><span class="p">,</span> <span class="n">AsyncJobFuture</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Represents a result of a PoET single-site analysis job.</span>
 
@@ -951,7 +951,7 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">page_size</span> <span class="o">=</span> <span class="n">page_size</span>
 
-<div class="viewcode-block" id="PoetSingleSiteFuture.get"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetSingleSiteFuture.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PoetSSPResult</span><span class="p">]:</span>
+<div class="viewcode-block" id="PoetSingleSiteFuture.get"><a class="viewcode-back" href="../../../poet.html#openprotein_python.api.poet.PoetSingleSiteFuture.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PoetSSPResult</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get the results of a PoET single-site analysis job.</span>
 
@@ -1105,7 +1105,7 @@
         <span class="k">raise</span> <span class="n">APIError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to get poet generation results: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">exc</span>
 
 
-<div class="viewcode-block" id="PoetGenerateFuture"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetGenerateFuture">[docs]</a><span class="k">class</span> <span class="nc">PoetGenerateFuture</span><span class="p">(</span><span class="n">PoetFutureMixin</span><span class="p">,</span> <span class="n">StreamingAsyncJobFuture</span><span class="p">):</span>
+<div class="viewcode-block" id="PoetGenerateFuture"><a class="viewcode-back" href="../../../poet.html#openprotein_python.api.poet.PoetGenerateFuture">[docs]</a><span class="k">class</span> <span class="nc">PoetGenerateFuture</span><span class="p">(</span><span class="n">PoetFutureMixin</span><span class="p">,</span> <span class="n">StreamingAsyncJobFuture</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Represents a result of a PoET generation job.</span>
 
@@ -1122,7 +1122,7 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="PoetGenerateFuture.stream"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetGenerateFuture.stream">[docs]</a>    <span class="k">def</span> <span class="nf">stream</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">PoetScoreResult</span><span class="p">]:</span>
+<div class="viewcode-block" id="PoetGenerateFuture.stream"><a class="viewcode-back" href="../../../poet.html#openprotein_python.api.poet.PoetGenerateFuture.stream">[docs]</a>    <span class="k">def</span> <span class="nf">stream</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">PoetScoreResult</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Stream the results from the response.</span>
 
@@ -1165,13 +1165,13 @@
     <span class="k">return</span> <span class="n">prompt_id</span>
 
 
-<div class="viewcode-block" id="PoetAPI"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI">[docs]</a><span class="k">class</span> <span class="nc">PoetAPI</span><span class="p">:</span>
+<div class="viewcode-block" id="PoetAPI"><a class="viewcode-back" href="../../../poet.html#openprotein_python.api.poet.PoetAPI">[docs]</a><span class="k">class</span> <span class="nc">PoetAPI</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;API interface for calling Poet and Align endpoints&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">session</span>
 
-<div class="viewcode-block" id="PoetAPI.load_prompt_job"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI.load_prompt_job">[docs]</a>    <span class="k">def</span> <span class="nf">load_prompt_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PromptFuture</span><span class="p">:</span>
+<div class="viewcode-block" id="PoetAPI.load_prompt_job"><a class="viewcode-back" href="../../../poet.html#openprotein_python.api.poet.PoetAPI.load_prompt_job">[docs]</a>    <span class="k">def</span> <span class="nf">load_prompt_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PromptFuture</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Reload a previously ran prompt job to resume where you left off.</span>
 
@@ -1196,7 +1196,7 @@
         <span class="n">msa_id</span> <span class="o">=</span> <span class="n">job_args_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">prompt_id</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;root_msa&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">PromptFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="n">msa_id</span><span class="o">=</span><span class="n">msa_id</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PoetAPI.load_msa_job"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI.load_msa_job">[docs]</a>    <span class="k">def</span> <span class="nf">load_msa_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msa_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MSAFuture</span><span class="p">:</span>
+<div class="viewcode-block" id="PoetAPI.load_msa_job"><a class="viewcode-back" href="../../../poet.html#openprotein_python.api.poet.PoetAPI.load_msa_job">[docs]</a>    <span class="k">def</span> <span class="nf">load_msa_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msa_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MSAFuture</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Reload a previously ran MSA job to resume where you left off.</span>
 
@@ -1220,7 +1220,7 @@
             <span class="k">raise</span> <span class="n">InvalidJob</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;job </span><span class="si">{</span><span class="n">msa_id</span><span class="si">}</span><span class="s2"> is not a MSA job!&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">MSAFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PoetAPI.load_poet_job"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI.load_poet_job">[docs]</a>    <span class="k">def</span> <span class="nf">load_poet_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="PoetAPI.load_poet_job"><a class="viewcode-back" href="../../../poet.html#openprotein_python.api.poet.PoetAPI.load_poet_job">[docs]</a>    <span class="k">def</span> <span class="nf">load_poet_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                       <span class="n">job_id</span><span class="p">:</span> <span class="nb">str</span>
                       <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">PoetSingleSiteFuture</span><span class="p">,</span>
                                  <span class="n">PoetScoreFuture</span><span class="p">,</span>
@@ -1253,7 +1253,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">InvalidJob</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;job </span><span class="si">{</span><span class="n">job_id</span><span class="si">}</span><span class="s2"> is not a PoET job!&quot;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PoetAPI.upload_msa"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI.upload_msa">[docs]</a>    <span class="k">def</span> <span class="nf">upload_msa</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msa_file</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MSAFuture</span><span class="p">:</span>
+<div class="viewcode-block" id="PoetAPI.upload_msa"><a class="viewcode-back" href="../../../poet.html#openprotein_python.api.poet.PoetAPI.upload_msa">[docs]</a>    <span class="k">def</span> <span class="nf">upload_msa</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msa_file</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MSAFuture</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Upload an MSA from file.</span>
 
@@ -1275,7 +1275,7 @@
         <span class="n">job</span> <span class="o">=</span> <span class="n">msa_post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">msa_file</span><span class="o">=</span><span class="n">msa_file</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">MSAFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PoetAPI.create_msa"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI.create_msa">[docs]</a>    <span class="k">def</span> <span class="nf">create_msa</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MSAFuture</span><span class="p">:</span>
+<div class="viewcode-block" id="PoetAPI.create_msa"><a class="viewcode-back" href="../../../poet.html#openprotein_python.api.poet.PoetAPI.create_msa">[docs]</a>    <span class="k">def</span> <span class="nf">create_msa</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MSAFuture</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Construct an MSA via homology search with the seed sequence.</span>
 
@@ -1297,7 +1297,7 @@
         <span class="n">job</span> <span class="o">=</span> <span class="n">msa_post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">MSAFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PoetAPI.upload_prompt"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI.upload_prompt">[docs]</a>    <span class="k">def</span> <span class="nf">upload_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt_file</span><span class="p">:</span> <span class="n">BinaryIO</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PromptJob</span><span class="p">:</span>
+<div class="viewcode-block" id="PoetAPI.upload_prompt"><a class="viewcode-back" href="../../../poet.html#openprotein_python.api.poet.PoetAPI.upload_prompt">[docs]</a>    <span class="k">def</span> <span class="nf">upload_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt_file</span><span class="p">:</span> <span class="n">BinaryIO</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PromptJob</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Directly upload a prompt.</span>
 
@@ -1322,7 +1322,7 @@
         <span class="n">job</span> <span class="o">=</span> <span class="n">upload_prompt_post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">prompt_file</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">PromptFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PoetAPI.get_prompt"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI.get_prompt">[docs]</a>    <span class="k">def</span> <span class="nf">get_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="p">:</span> <span class="n">Job</span><span class="p">,</span> <span class="n">prompt_index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">:</span>
+<div class="viewcode-block" id="PoetAPI.get_prompt"><a class="viewcode-back" href="../../../poet.html#openprotein_python.api.poet.PoetAPI.get_prompt">[docs]</a>    <span class="k">def</span> <span class="nf">get_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="p">:</span> <span class="n">Job</span><span class="p">,</span> <span class="n">prompt_index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get prompts for a given job.</span>
 
@@ -1342,7 +1342,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="n">PoetInputType</span><span class="o">.</span><span class="n">PROMPT</span><span class="p">,</span> <span class="n">prompt_index</span><span class="o">=</span><span class="n">prompt_index</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="PoetAPI.get_seed"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI.get_seed">[docs]</a>    <span class="k">def</span> <span class="nf">get_seed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="p">:</span> <span class="n">Job</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">:</span>
+<div class="viewcode-block" id="PoetAPI.get_seed"><a class="viewcode-back" href="../../../poet.html#openprotein_python.api.poet.PoetAPI.get_seed">[docs]</a>    <span class="k">def</span> <span class="nf">get_seed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="p">:</span> <span class="n">Job</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get input data for a given msa job.</span>
 
@@ -1358,7 +1358,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">get_input</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="n">PoetInputType</span><span class="o">.</span><span class="n">INPUT</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PoetAPI.get_msa"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI.get_msa">[docs]</a>    <span class="k">def</span> <span class="nf">get_msa</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="p">:</span> <span class="n">Job</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">:</span>
+<div class="viewcode-block" id="PoetAPI.get_msa"><a class="viewcode-back" href="../../../poet.html#openprotein_python.api.poet.PoetAPI.get_msa">[docs]</a>    <span class="k">def</span> <span class="nf">get_msa</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="p">:</span> <span class="n">Job</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get generated MSA for a given job.</span>
 
@@ -1374,7 +1374,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">get_input</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="n">PoetInputType</span><span class="o">.</span><span class="n">MSA</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PoetAPI.get_prompt_job"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI.get_prompt_job">[docs]</a>    <span class="k">def</span> <span class="nf">get_prompt_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PromptJob</span><span class="p">:</span>
+<div class="viewcode-block" id="PoetAPI.get_prompt_job"><a class="viewcode-back" href="../../../poet.html#openprotein_python.api.poet.PoetAPI.get_prompt_job">[docs]</a>    <span class="k">def</span> <span class="nf">get_prompt_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PromptJob</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get prompt job based on job_id.</span>
 
@@ -1392,7 +1392,7 @@
         <span class="k">assert</span> <span class="n">job</span><span class="o">.</span><span class="n">job_type</span> <span class="o">==</span> <span class="s2">&quot;/align/prompt&quot;</span>
         <span class="k">return</span> <span class="n">PromptJob</span><span class="p">(</span><span class="o">**</span><span class="n">job</span><span class="o">.</span><span class="n">dict</span><span class="p">(),</span> <span class="n">prompt_id</span><span class="o">=</span><span class="n">job</span><span class="o">.</span><span class="n">job_id</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PoetAPI.get_msa_job"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI.get_msa_job">[docs]</a>    <span class="k">def</span> <span class="nf">get_msa_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MSAJob</span><span class="p">:</span>
+<div class="viewcode-block" id="PoetAPI.get_msa_job"><a class="viewcode-back" href="../../../poet.html#openprotein_python.api.poet.PoetAPI.get_msa_job">[docs]</a>    <span class="k">def</span> <span class="nf">get_msa_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MSAJob</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get MSA job based on job_id.</span>
 
@@ -1410,7 +1410,7 @@
         <span class="k">assert</span> <span class="n">job</span><span class="o">.</span><span class="n">job_type</span> <span class="o">==</span> <span class="s2">&quot;/align/align&quot;</span>
         <span class="k">return</span> <span class="n">MSAJob</span><span class="p">(</span><span class="o">**</span><span class="n">job</span><span class="o">.</span><span class="n">dict</span><span class="p">(),</span> <span class="n">msa_id</span><span class="o">=</span><span class="n">job</span><span class="o">.</span><span class="n">job_id</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PoetAPI.score"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI.score">[docs]</a>    <span class="k">def</span> <span class="nf">score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">queries</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">PoetScoreFuture</span><span class="p">:</span>
+<div class="viewcode-block" id="PoetAPI.score"><a class="viewcode-back" href="../../../poet.html#openprotein_python.api.poet.PoetAPI.score">[docs]</a>    <span class="k">def</span> <span class="nf">score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">queries</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">PoetScoreFuture</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Score query sequences using the specified prompt.</span>
 
@@ -1430,7 +1430,7 @@
         <span class="n">response</span> <span class="o">=</span> <span class="n">poet_score_post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">prompt_id</span><span class="p">,</span> <span class="n">queries</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">PoetScoreFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PoetAPI.single_site"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI.single_site">[docs]</a>    <span class="k">def</span> <span class="nf">single_site</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">sequence</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PoetSingleSiteFuture</span><span class="p">:</span>
+<div class="viewcode-block" id="PoetAPI.single_site"><a class="viewcode-back" href="../../../poet.html#openprotein_python.api.poet.PoetAPI.single_site">[docs]</a>    <span class="k">def</span> <span class="nf">single_site</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">sequence</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PoetSingleSiteFuture</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Score all single substitutions of the query sequence using the specified prompt.</span>
 
@@ -1450,7 +1450,7 @@
         <span class="n">response</span> <span class="o">=</span> <span class="n">poet_single_site_post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">sequence</span><span class="p">,</span> <span class="n">prompt_id</span><span class="o">=</span><span class="n">prompt_id</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">PoetSingleSiteFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PoetAPI.generate"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI.generate">[docs]</a>    <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span>
+<div class="viewcode-block" id="PoetAPI.generate"><a class="viewcode-back" href="../../../poet.html#openprotein_python.api.poet.PoetAPI.generate">[docs]</a>    <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">prompt</span><span class="p">:</span> <span class="n">Prompt</span><span class="p">,</span>
         <span class="n">num_samples</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>

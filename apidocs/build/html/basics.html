@@ -51,8 +51,8 @@
 <li class="toctree-l2"><a class="reference internal" href="overview.html#openprotein-job-system">OpenProtein Job System</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="overview.html#openprotein-api-session">OpenProtein API session</a><ul class="current">
 <li class="toctree-l3 current"><a class="current reference internal" href="#">APISession</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#openprotein.APISession"><code class="docutils literal notranslate"><span class="pre">APISession</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#openprotein.OpenProtein"><code class="docutils literal notranslate"><span class="pre">OpenProtein</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#openprotein_python.APISession"><code class="docutils literal notranslate"><span class="pre">APISession</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#openprotein_python.OpenProtein"><code class="docutils literal notranslate"><span class="pre">OpenProtein</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -93,8 +93,8 @@
 <h1>APISession<a class="headerlink" href="#apisession" title="Permalink to this heading"></a></h1>
 <p>Create an authorized connection to OpenProtein backend.</p>
 <dl class="py class">
-<dt class="sig sig-object py" id="openprotein.APISession">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.</span></span><span class="sig-name descname"><span class="pre">APISession</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">username</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">password</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'https://dev.api.openprotein.ai/api/'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/base.html#APISession"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.APISession" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein_python.APISession">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein_python.</span></span><span class="sig-name descname"><span class="pre">APISession</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">username</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">password</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'https://api.openprotein.ai/api/'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein_python/base.html#APISession"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.APISession" title="Permalink to this definition"></a></dt>
 <dd><p>A class to handle API sessions. This class provides a connection session to the OpenProtein API.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -109,8 +109,8 @@
 </pre></div>
 </div>
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein.APISession.login">
-<span class="sig-name descname"><span class="pre">login</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">username</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">password</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/base.html#APISession.login"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.APISession.login" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein_python.APISession.login">
+<span class="sig-name descname"><span class="pre">login</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">username</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">password</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein_python/base.html#APISession.login"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.APISession.login" title="Permalink to this definition"></a></dt>
 <dd><p>Authenticate connection to OpenProtein with your credentials.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -125,48 +125,48 @@
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="openprotein.OpenProtein">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.</span></span><span class="sig-name descname"><span class="pre">OpenProtein</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">username</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">password</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'https://dev.api.openprotein.ai/api/'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein.html#OpenProtein"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.OpenProtein" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein_python.OpenProtein">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein_python.</span></span><span class="sig-name descname"><span class="pre">OpenProtein</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">username</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">password</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'https://api.openprotein.ai/api/'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein_python.html#OpenProtein"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.OpenProtein" title="Permalink to this definition"></a></dt>
 <dd><p>The base class for accessing OpenProtein API functionality.</p>
 <dl class="py property">
-<dt class="sig sig-object py" id="openprotein.OpenProtein.data">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data</span></span><a class="headerlink" href="#openprotein.OpenProtein.data" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein_python.OpenProtein.data">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data</span></span><a class="headerlink" href="#openprotein_python.OpenProtein.data" title="Permalink to this definition"></a></dt>
 <dd><p>The data submodule gives access to functionality for uploading and accessing user data.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="openprotein.OpenProtein.design">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">design</span></span><a class="headerlink" href="#openprotein.OpenProtein.design" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein_python.OpenProtein.design">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">design</span></span><a class="headerlink" href="#openprotein_python.OpenProtein.design" title="Permalink to this definition"></a></dt>
 <dd><p>The design submodule gives access to functionality for designing new sequences using models from train.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="openprotein.OpenProtein.embedding">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">embedding</span></span><a class="headerlink" href="#openprotein.OpenProtein.embedding" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein_python.OpenProtein.embedding">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">embedding</span></span><a class="headerlink" href="#openprotein_python.OpenProtein.embedding" title="Permalink to this definition"></a></dt>
 <dd><p>The embedding submodule gives access to protein embedding models and their inference endpoints.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="openprotein.OpenProtein.jobs">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">jobs</span></span><a class="headerlink" href="#openprotein.OpenProtein.jobs" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein_python.OpenProtein.jobs">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">jobs</span></span><a class="headerlink" href="#openprotein_python.OpenProtein.jobs" title="Permalink to this definition"></a></dt>
 <dd><p>The jobs submodule gives access to functionality for listing jobs and checking their status.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="openprotein.OpenProtein.poet">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">poet</span></span><a class="headerlink" href="#openprotein.OpenProtein.poet" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein_python.OpenProtein.poet">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">poet</span></span><a class="headerlink" href="#openprotein_python.OpenProtein.poet" title="Permalink to this definition"></a></dt>
 <dd><p>The PoET submodule gives access to the PoET generative model and MSA and prompt creation interfaces.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="openprotein.OpenProtein.predict">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">predict</span></span><a class="headerlink" href="#openprotein.OpenProtein.predict" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein_python.OpenProtein.predict">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">predict</span></span><a class="headerlink" href="#openprotein_python.OpenProtein.predict" title="Permalink to this definition"></a></dt>
 <dd><p>The predict submodule gives access to sequence predictions using models from train.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="openprotein.OpenProtein.train">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">train</span></span><a class="headerlink" href="#openprotein.OpenProtein.train" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein_python.OpenProtein.train">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">train</span></span><a class="headerlink" href="#openprotein_python.OpenProtein.train" title="Permalink to this definition"></a></dt>
 <dd><p>The train submodule gives access to functionality for training and validating ML models.</p>
 </dd></dl>
 

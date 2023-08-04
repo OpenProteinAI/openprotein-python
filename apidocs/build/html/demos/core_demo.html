@@ -138,9 +138,9 @@
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">openprotein</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">openprotein_python</span> <span class="k">as</span> <span class="nn">openprotein</span>
 
-<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;../../../secrets.config&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;../../../../secrets.config&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
     <span class="n">config</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
 
 <span class="n">session</span> <span class="o">=</span> <span class="n">openprotein</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">username</span><span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;username&#39;</span><span class="p">],</span> <span class="n">password</span><span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;password&#39;</span><span class="p">])</span>
@@ -152,7 +152,7 @@
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dataset</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;./demo_data/core.csv&quot;</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dataset</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;./data/core.csv&quot;</span><span class="p">)</span>
 <span class="n">dataset</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -226,7 +226,7 @@
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-AssayMetadata(assay_name=&#39;Dataset Name&#39;, assay_description=&#39;Dataset description&#39;, assay_id=&#39;dbf85fa1-12ff-45e7-b5a5-2e93e888a6ac&#39;, original_filename=&#39;assay_data&#39;, created_date=datetime.datetime(2023, 7, 28, 1, 41, 47, 332556), num_rows=15, num_entries=41, measurement_names=[&#39;isobutyramide_normalized_fitness&#39;, &#39;acetamide_normalized_fitness&#39;, &#39;propionamide_normalized_fitness&#39;], sequence_length=346)
+AssayMetadata(assay_name=&#39;Dataset Name&#39;, assay_description=&#39;Dataset description&#39;, assay_id=&#39;4c0e52b6-92f6-44b1-903e-34470c1338bf&#39;, original_filename=&#39;assay_data&#39;, created_date=datetime.datetime(2023, 8, 4, 4, 9, 40, 976130), num_rows=15, num_entries=41, measurement_names=[&#39;isobutyramide_normalized_fitness&#39;, &#39;acetamide_normalized_fitness&#39;, &#39;propionamide_normalized_fitness&#39;], sequence_length=346)
 </pre></div></div>
 </div>
 <p>We could also have loaded a job from an old job ID. This will be faster and more efficient for users resuming workflows:</p>
@@ -382,7 +382,7 @@ AssayMetadata(assay_name=&#39;Dataset Name&#39;, assay_description=&#39;Dataset 
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Jobplus(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;, job_type=&#39;/workflow/train&#39;, created_date=datetime.datetime(2023, 7, 28, 1, 41, 47, 762130), start_date=None, end_date=None, prerequisite_job_id=&#39;6ba74592-91ac-47e4-9ea7-59fa0fc199fb&#39;, progress_message=None, progress_counter=None, num_records=None, sequence_length=346)
+Jobplus(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;32f2b480-f6d9-4d0c-9aeb-ec521d9a7c16&#39;, job_type=&#39;/workflow/train&#39;, created_date=datetime.datetime(2023, 8, 4, 4, 9, 41, 265475), start_date=None, end_date=None, prerequisite_job_id=&#39;a5aad829-95d8-4b70-96fe-5d798219bcb5&#39;, progress_message=None, progress_counter=None, num_records=None, sequence_length=346)
 </pre></div></div>
 </div>
 <div class="nbinput nblast docutils container">
@@ -455,7 +455,7 @@ Jobplus(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;d292d4d
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&#39;e12e7cc5-89e7-4c22-9958-2366243b196e&#39;
+&#39;d86e8ede-2d10-4def-86bc-d84c87a83206&#39;
 </pre></div></div>
 </div>
 <div class="nbinput nblast docutils container">
@@ -502,28 +502,28 @@ Jobplus(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;d292d4d
 <div class="highlight"><pre>
 [{&#39;name&#39;: &#39;mymodel - acetamide_normalized_fitness&#39;,
   &#39;description&#39;: &#39;&#39;,
-  &#39;model_id&#39;: &#39;4f5a95cc-7cd9-4d19-bd2c-768c93d8d217&#39;,
-  &#39;training_assaydata&#39;: &#39;dbf85fa1-12ff-45e7-b5a5-2e93e888a6ac&#39;,
-  &#39;job_id&#39;: &#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;,
-  &#39;created_date&#39;: &#39;2023-07-28T01:43:16.966824&#39;,
+  &#39;model_id&#39;: &#39;b565e080-ddb5-418c-9f67-c0468990e57a&#39;,
+  &#39;training_assaydata&#39;: &#39;4c0e52b6-92f6-44b1-903e-34470c1338bf&#39;,
+  &#39;job_id&#39;: &#39;32f2b480-f6d9-4d0c-9aeb-ec521d9a7c16&#39;,
+  &#39;created_date&#39;: &#39;2023-08-04T04:11:22.933136&#39;,
   &#39;model_type&#39;: &#39;EXACT_GP&#39;,
   &#39;additional_metadata&#39;: {&#39;input_dims&#39;: 13,
    &#39;embedding_model&#39;: &#39;TorchLowRankSVD&#39;,
    &#39;sequence_length&#39;: 346,
-   &#39;projection_layer&#39;: &#39;dbf85fa1-12ff-45e7-b5a5-2e93e888a6ac_pca.joblib&#39;,
+   &#39;projection_layer&#39;: &#39;4c0e52b6-92f6-44b1-903e-34470c1338bf_pca.joblib&#39;,
    &#39;measurement_names&#39;: [&#39;acetamide_normalized_fitness&#39;],
    &#39;original_task_index&#39;: 1}},
  {&#39;name&#39;: &#39;mymodel - isobutyramide_normalized_fitness&#39;,
   &#39;description&#39;: &#39;&#39;,
-  &#39;model_id&#39;: &#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;,
-  &#39;training_assaydata&#39;: &#39;dbf85fa1-12ff-45e7-b5a5-2e93e888a6ac&#39;,
-  &#39;job_id&#39;: &#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;,
-  &#39;created_date&#39;: &#39;2023-07-28T01:43:16.327287&#39;,
+  &#39;model_id&#39;: &#39;32f2b480-f6d9-4d0c-9aeb-ec521d9a7c16&#39;,
+  &#39;training_assaydata&#39;: &#39;4c0e52b6-92f6-44b1-903e-34470c1338bf&#39;,
+  &#39;job_id&#39;: &#39;32f2b480-f6d9-4d0c-9aeb-ec521d9a7c16&#39;,
+  &#39;created_date&#39;: &#39;2023-08-04T04:11:22.395893&#39;,
   &#39;model_type&#39;: &#39;EXACT_GP&#39;,
   &#39;additional_metadata&#39;: {&#39;input_dims&#39;: 13,
    &#39;embedding_model&#39;: &#39;TorchLowRankSVD&#39;,
    &#39;sequence_length&#39;: 346,
-   &#39;projection_layer&#39;: &#39;dbf85fa1-12ff-45e7-b5a5-2e93e888a6ac_pca.joblib&#39;,
+   &#39;projection_layer&#39;: &#39;4c0e52b6-92f6-44b1-903e-34470c1338bf_pca.joblib&#39;,
    &#39;measurement_names&#39;: [&#39;isobutyramide_normalized_fitness&#39;],
    &#39;original_task_index&#39;: 0}}]
 </pre></div></div>
@@ -544,28 +544,28 @@ Jobplus(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;d292d4d
 <div class="highlight"><pre>
 [{&#39;name&#39;: &#39;mymodel - acetamide_normalized_fitness&#39;,
   &#39;description&#39;: &#39;&#39;,
-  &#39;model_id&#39;: &#39;4f5a95cc-7cd9-4d19-bd2c-768c93d8d217&#39;,
-  &#39;training_assaydata&#39;: &#39;dbf85fa1-12ff-45e7-b5a5-2e93e888a6ac&#39;,
-  &#39;job_id&#39;: &#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;,
-  &#39;created_date&#39;: &#39;2023-07-28T01:43:16.966824&#39;,
+  &#39;model_id&#39;: &#39;b565e080-ddb5-418c-9f67-c0468990e57a&#39;,
+  &#39;training_assaydata&#39;: &#39;4c0e52b6-92f6-44b1-903e-34470c1338bf&#39;,
+  &#39;job_id&#39;: &#39;32f2b480-f6d9-4d0c-9aeb-ec521d9a7c16&#39;,
+  &#39;created_date&#39;: &#39;2023-08-04T04:11:22.933136&#39;,
   &#39;model_type&#39;: &#39;EXACT_GP&#39;,
   &#39;additional_metadata&#39;: {&#39;input_dims&#39;: 13,
    &#39;embedding_model&#39;: &#39;TorchLowRankSVD&#39;,
    &#39;sequence_length&#39;: 346,
-   &#39;projection_layer&#39;: &#39;dbf85fa1-12ff-45e7-b5a5-2e93e888a6ac_pca.joblib&#39;,
+   &#39;projection_layer&#39;: &#39;4c0e52b6-92f6-44b1-903e-34470c1338bf_pca.joblib&#39;,
    &#39;measurement_names&#39;: [&#39;acetamide_normalized_fitness&#39;],
    &#39;original_task_index&#39;: 1}},
  {&#39;name&#39;: &#39;mymodel - isobutyramide_normalized_fitness&#39;,
   &#39;description&#39;: &#39;&#39;,
-  &#39;model_id&#39;: &#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;,
-  &#39;training_assaydata&#39;: &#39;dbf85fa1-12ff-45e7-b5a5-2e93e888a6ac&#39;,
-  &#39;job_id&#39;: &#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;,
-  &#39;created_date&#39;: &#39;2023-07-28T01:43:16.327287&#39;,
+  &#39;model_id&#39;: &#39;32f2b480-f6d9-4d0c-9aeb-ec521d9a7c16&#39;,
+  &#39;training_assaydata&#39;: &#39;4c0e52b6-92f6-44b1-903e-34470c1338bf&#39;,
+  &#39;job_id&#39;: &#39;32f2b480-f6d9-4d0c-9aeb-ec521d9a7c16&#39;,
+  &#39;created_date&#39;: &#39;2023-08-04T04:11:22.395893&#39;,
   &#39;model_type&#39;: &#39;EXACT_GP&#39;,
   &#39;additional_metadata&#39;: {&#39;input_dims&#39;: 13,
    &#39;embedding_model&#39;: &#39;TorchLowRankSVD&#39;,
    &#39;sequence_length&#39;: 346,
-   &#39;projection_layer&#39;: &#39;dbf85fa1-12ff-45e7-b5a5-2e93e888a6ac_pca.joblib&#39;,
+   &#39;projection_layer&#39;: &#39;4c0e52b6-92f6-44b1-903e-34470c1338bf_pca.joblib&#39;,
    &#39;measurement_names&#39;: [&#39;isobutyramide_normalized_fitness&#39;],
    &#39;original_task_index&#39;: 0}}]
 </pre></div></div>
@@ -588,15 +588,15 @@ Jobplus(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;d292d4d
 <div class="highlight"><pre>
 {&#39;name&#39;: &#39;mymodel - acetamide_normalized_fitness&#39;,
  &#39;description&#39;: &#39;&#39;,
- &#39;model_id&#39;: &#39;4f5a95cc-7cd9-4d19-bd2c-768c93d8d217&#39;,
- &#39;training_assaydata&#39;: &#39;dbf85fa1-12ff-45e7-b5a5-2e93e888a6ac&#39;,
- &#39;job_id&#39;: &#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;,
- &#39;created_date&#39;: &#39;2023-07-28T01:43:16.966824&#39;,
+ &#39;model_id&#39;: &#39;b565e080-ddb5-418c-9f67-c0468990e57a&#39;,
+ &#39;training_assaydata&#39;: &#39;4c0e52b6-92f6-44b1-903e-34470c1338bf&#39;,
+ &#39;job_id&#39;: &#39;32f2b480-f6d9-4d0c-9aeb-ec521d9a7c16&#39;,
+ &#39;created_date&#39;: &#39;2023-08-04T04:11:22.933136&#39;,
  &#39;model_type&#39;: &#39;EXACT_GP&#39;,
  &#39;additional_metadata&#39;: {&#39;input_dims&#39;: 13,
   &#39;embedding_model&#39;: &#39;TorchLowRankSVD&#39;,
   &#39;sequence_length&#39;: 346,
-  &#39;projection_layer&#39;: &#39;dbf85fa1-12ff-45e7-b5a5-2e93e888a6ac_pca.joblib&#39;,
+  &#39;projection_layer&#39;: &#39;4c0e52b6-92f6-44b1-903e-34470c1338bf_pca.joblib&#39;,
   &#39;measurement_names&#39;: [&#39;acetamide_normalized_fitness&#39;],
   &#39;original_task_index&#39;: 1}}
 </pre></div></div>
@@ -606,10 +606,10 @@ Jobplus(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;d292d4d
 <h2>Sequence design<a class="headerlink" href="#Sequence-design" title="Permalink to this heading"></a></h2>
 <p>We can set up a design job using our trained model as a criteria:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">openprotein.models</span> <span class="kn">import</span> <span class="n">DesignJobCreate</span><span class="p">,</span> <span class="n">ModelCriterion</span><span class="p">,</span> <span class="n">NMutationCriterion</span><span class="p">,</span> <span class="n">Criterion</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">openprotein_python.models</span> <span class="kn">import</span> <span class="n">DesignJobCreate</span><span class="p">,</span> <span class="n">ModelCriterion</span><span class="p">,</span> <span class="n">NMutationCriterion</span><span class="p">,</span> <span class="n">Criterion</span>
 <span class="n">design_data</span> <span class="o">=</span> <span class="n">DesignJobCreate</span><span class="p">(</span>
     <span class="n">assay_id</span><span class="o">=</span><span class="n">assay</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
     <span class="n">criteria</span><span class="o">=</span><span class="p">[</span>
@@ -633,14 +633,14 @@ Jobplus(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;d292d4d
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-{&#39;assay_id&#39;: &#39;dbf85fa1-12ff-45e7-b5a5-2e93e888a6ac&#39;,
+{&#39;assay_id&#39;: &#39;4c0e52b6-92f6-44b1-903e-34470c1338bf&#39;,
  &#39;criteria&#39;: [[{&#39;criterion_type&#39;: &#39;model&#39;,
-    &#39;model_id&#39;: &#39;4f5a95cc-7cd9-4d19-bd2c-768c93d8d217&#39;,
+    &#39;model_id&#39;: &#39;b565e080-ddb5-418c-9f67-c0468990e57a&#39;,
     &#39;measurement_name&#39;: &#39;acetamide_normalized_fitness&#39;,
     &#39;criterion&#39;: {&#39;target&#39;: -0.5, &#39;weight&#39;: 1.0, &#39;direction&#39;: &#39;&lt;&#39;}}],
   [{&#39;criterion_type&#39;: &#39;n_mutations&#39;}]],
@@ -654,7 +654,7 @@ Jobplus(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;d292d4d
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># create the design job</span>
@@ -665,16 +665,16 @@ Jobplus(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;d292d4d
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Job(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;e1826033-583b-4581-a602-9ceff483c8e0&#39;, job_type=&#39;/workflow/design&#39;, created_date=datetime.datetime(2023, 7, 28, 1, 43, 24, 642996), start_date=None, end_date=None, prerequisite_job_id=None, progress_message=None, progress_counter=None, num_records=None)
+Job(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;7379c52b-a7b9-48b2-8d62-5583b2724a47&#39;, job_type=&#39;/workflow/design&#39;, created_date=datetime.datetime(2023, 8, 4, 4, 11, 48, 431695), start_date=None, end_date=None, prerequisite_job_id=None, progress_message=None, progress_counter=None, num_records=None)
 </pre></div></div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><br/><span></span><span class="c1">#design_job = session.design.load_job(design_id)</span>
@@ -682,7 +682,7 @@ Job(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;e1826033-58
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">results</span> <span class="o">=</span> <span class="n">design_job</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
@@ -691,19 +691,19 @@ Job(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;e1826033-58
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-[DesignStep(step=9, sample_index=2557, sequence=&#39;MRHGDIMSSNMTVGVAVVFPKMPRDRSGEWRLDNADKIKYMTAGMKRKQQQYQLVVEPIRVWQGQMWDYAEYTEQMCYIPGCETSIHSDACKKVNVWGVYSLMGEKHEEHIDKAQYYTCDLIDMDGTFADKYYKISPWYQIEQWYWGQQDYVSRDPVDMKIYLAFCDCHNYPEIWYDTAMKGAYCCVPCNGSMQPAKDDEQQMAKAMQWCHNCYVEVKNMASGSGVQSDFRVSASIIFDQRIVAETGCTEMCIQYAQLSLSDQRYARCEPQSINKQFTIQMRGYSGLQASGDGDRPLIACPRHFVRTYVGTRVIYRESVHGNIRSTTGSAQADVGAWEYKMYENDA&#39;, initial_scores=[0, 195], scores=[[DesignSubscore(score=0, metadata=DesignMetadata(y_mu=-1.052383542060852, y_var=0.008722011931240559))], [DesignSubscore(score=195, metadata=DesignMetadata(y_mu=None, y_var=None))]], umap1=0.5089479088783264, umap2=8.538457870483398),
- DesignStep(step=9, sample_index=2558, sequence=&#39;RRHGDISSNWDTYGVRVVNYTCPRLGHWAEVLANAPNCPGQILGMRLMLRGATGGRCPMYSLMGIMLTCAERMLTAQACVSETVHDFSEACRVATVWGVFKAGTQRCEECGIKGPYNCLVLIPQNGEAQQCYRKILLPCPMEGDYAQTQTYDSANPKGFESSQNHCRDPNEPSEWRDCASFGAELIVRCQGYRYPAKQIWPMNPKNMRWANNWYTGVANAACRDPHESIFPHSMIRGFDGRTWGYQGWEECITQCFQESLQQILSCRANDQSQNETFKIVKRSWRVLQALKRGDRGLNELCFRFYRTWVNDCPKARENVGRLTRSSPGCAQWSVGGLNYWGLEHRA&#39;, initial_scores=[0, 196], scores=[[DesignSubscore(score=0, metadata=DesignMetadata(y_mu=-1.052383542060852, y_var=0.008722011931240559))], [DesignSubscore(score=196, metadata=DesignMetadata(y_mu=None, y_var=None))]], umap1=0.4868474304676056, umap2=8.431281089782715),
- DesignStep(step=9, sample_index=2559, sequence=&#39;MRHGDISSSNDTVGVAVVNYKMPRLHTAAEVLDNARKLAEMIVGMKQGLPGMDLVVFPEYSLQGIMYDPAEMMETAVAIPGEETEIFSRACRKANVWGVFSLTGERHEEHPRKAPYNTLVLIDNNGEIVQKYRKIIPWCPIEGWYPGGQTYVSEGPKGMKISLIICDDGNYPEIWRDCAMKGAELIVRCQGYMYPAKDQQVMMAKAMAWANNCYVAVANAAGFDGVYSYFGHSAIIGFDGRTLGECGEEEMGIQYAQLSLSQIRDARANDQSQNHLFKILHRGYSGLQASGDGDRGLAECPFEFYRTWVTDAEKARENVERLTRSTTGVAQCPVGRLPYEGLEKEA&#39;, initial_scores=[0, 346], scores=[[DesignSubscore(score=0, metadata=DesignMetadata(y_mu=-1.0225590467453003, y_var=0.008469139225780964))], [DesignSubscore(score=346, metadata=DesignMetadata(y_mu=None, y_var=None))]], umap1=4.1282830238342285, umap2=6.924859046936035)]
+[DesignStep(step=9, sample_index=2557, sequence=&#39;MRHGDIMSSNMTVGVAVVFPKMPRDRSGEWRLDNADKIKYMTAGMKRKQQQYQLVVEPIRVWQGQMWDYAEYTEQMCYIPGCETSIHSDACKKVNVWGVYSLMGEKHEEHIDKAQYYTCDLIDMDGTFADKYYKISPWYQIEQWYWGQQDYVSRDPVDMKIYLAFCDCHNYPEIWYDTAMKGAYCCVPCNGSMQPAKDDEQQMAKAMQWCHNCYVEVKNMASGSGVQSDFRVSASIIFDQRIVAETGCTEMCIQYAQLSLSDQRYARCEPQSINKQFTIQMRGYSGLQASGDGDRPLIACPRHFVRTYVGTRVIYRESVHGNIRSTTGSAQADVGAWEYKMYENDA&#39;, initial_scores=[0, 195], scores=[[DesignSubscore(score=0, metadata=DesignMetadata(y_mu=-1.0524402856826782, y_var=0.008635343983769417))], [DesignSubscore(score=195, metadata=DesignMetadata(y_mu=None, y_var=None))]], umap1=9.221505165100098, umap2=5.6895341873168945),
+ DesignStep(step=9, sample_index=2558, sequence=&#39;RRHGDISSNWDTYGVRVVNYTCPRLGHWAEVLANAPNCPGQILGMRLMLRGATGGRCPMYSLMGIMLTCAERMLTAQACVSETVHDFSEACRVATVWGVFKAGTQRCEECGIKGPYNCLVLIPQNGEAQQCYRKILLPCPMEGDYAQTQTYDSANPKGFESSQNHCRDPNEPSEWRDCASFGAELIVRCQGYRYPAKQIWPMNPKNMRWANNWYTGVANAACRDPHESIFPHSMIRGFDGRTWGYQGWEECITQCFQESLQQILSCRANDQSQNETFKIVKRSWRVLQALKRGDRGLNELCFRFYRTWVNDCPKARENVGRLTRSSPGCAQWSVGGLNYWGLEHRA&#39;, initial_scores=[0, 196], scores=[[DesignSubscore(score=0, metadata=DesignMetadata(y_mu=-1.0524402856826782, y_var=0.008635343983769417))], [DesignSubscore(score=196, metadata=DesignMetadata(y_mu=None, y_var=None))]], umap1=6.276093482971191, umap2=3.623070240020752),
+ DesignStep(step=9, sample_index=2559, sequence=&#39;MRHGDISSSNDTVGVAVVNYKMPRLHTAAEVLDNARKLAEMIVGMKQGLPGMDLVVFPEYSLQGIMYDPAEMMETAVAIPGEETEIFSRACRKANVWGVFSLTGERHEEHPRKAPYNTLVLIDNNGEIVQKYRKIIPWCPIEGWYPGGQTYVSEGPKGMKISLIICDDGNYPEIWRDCAMKGAELIVRCQGYMYPAKDQQVMMAKAMAWANNCYVAVANAAGFDGVYSYFGHSAIIGFDGRTLGECGEEEMGIQYAQLSLSQIRDARANDQSQNHLFKILHRGYSGLQASGDGDRGLAECPFEFYRTWVTDAEKARENVERLTRSTTGVAQCPVGRLPYEGLEKEA&#39;, initial_scores=[0, 346], scores=[[DesignSubscore(score=0, metadata=DesignMetadata(y_mu=-1.0229432582855225, y_var=0.008387535810470581))], [DesignSubscore(score=346, metadata=DesignMetadata(y_mu=None, y_var=None))]], umap1=6.0364813804626465, umap2=4.060112476348877)]
 </pre></div></div>
 </div>
 <p>We can access the design results:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">results</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">scores</span>
@@ -711,12 +711,12 @@ Job(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;e1826033-58
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-[[DesignSubscore(score=0, metadata=DesignMetadata(y_mu=-1.0225590467453003, y_var=0.008469139225780964))],
+[[DesignSubscore(score=0, metadata=DesignMetadata(y_mu=-1.0229432582855225, y_var=0.008387535810470581))],
  [DesignSubscore(score=346, metadata=DesignMetadata(y_mu=None, y_var=None))]]
 </pre></div></div>
 </div>
@@ -725,7 +725,7 @@ Job(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;e1826033-58
 <h2>Sequence predictions<a class="headerlink" href="#Sequence-predictions" title="Permalink to this heading"></a></h2>
 <p>We can also predict scores for new sequences using our models trained on our old sequences:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create some random sequences to predict</span>
@@ -736,7 +736,7 @@ Job(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;e1826033-58
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -747,7 +747,7 @@ Job(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;e1826033-58
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pjob</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">predict</span><span class="o">.</span><span class="n">create_predict_job</span><span class="p">(</span><span class="n">sequences</span><span class="o">=</span><span class="n">p_seqs</span><span class="p">,</span> <span class="n">train_job</span><span class="o">=</span><span class="n">train</span><span class="p">)</span>
@@ -757,12 +757,12 @@ Job(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;e1826033-58
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Job(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;395645cb-2d09-46cf-bcc2-c625fb7e2063&#39;, job_type=&#39;/workflow/predict&#39;, created_date=None, start_date=None, end_date=None, prerequisite_job_id=None, progress_message=None, progress_counter=0, num_records=None)
+Job(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;d7fe72d9-1f5b-4889-ad66-2f4a9b619978&#39;, job_type=&#39;/workflow/predict&#39;, created_date=None, start_date=None, end_date=None, prerequisite_job_id=None, progress_message=None, progress_counter=0, num_records=None)
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
@@ -778,7 +778,7 @@ Job(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;395645cb-2d
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-Waiting: 100%|██████████| 100/100 [07:22&lt;00:00,  4.42s/it, status=SUCCESS]
+Waiting: 100%|██████████| 100/100 [00:35&lt;00:00,  2.83it/s, status=SUCCESS]
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
@@ -796,14 +796,14 @@ Waiting: 100%|██████████| 100/100 [07:22&lt;00:00,  4.42s/it
 <div class="output_area docutils container">
 <div class="highlight"><pre>
 {&#39;sequence&#39;: &#39;MVINYHGGMLRTPNHQMEMFQPEFYKCDGILVREQCWLKKWGGIPEFHARIMDCFQQQARMAGNKPIGYKHLYLLHMWCFEVIQAFTNQIAYGKQLPGDHPRTNWYHFEHTMNCNPQLHFTSGSLYRSTMEKLAYSCNYTYCVQTHMYYHRREVIEMLSPSNPARTARHHPHVDMELQIIINVENQVVIPTDWNPWWIRIMCIEPDRWDCMQKKDKVFSTHFRNINVCIRPEHRDDIFDEMYCKYPHRVECQHFSGWKGLPNINPHHRTFTTCGMDPPRMWCLRKVWIDTGKYPAFYSEAQGQFQCPKYEKDAYAKGFRTELGHEISSQYEVGNFTMTNQAIAGLA&#39;,
- &#39;predictions&#39;: [{&#39;model_id&#39;: &#39;4f5a95cc-7cd9-4d19-bd2c-768c93d8d217&#39;,
-   &#39;model_name&#39;: &#39;mymodel - acetamide_normalized_fitness&#39;,
-   &#39;properties&#39;: {&#39;acetamide_normalized_fitness&#39;: {&#39;y_mu&#39;: -1.052383542060852,
-     &#39;y_var&#39;: 0.008722011931240559}}},
-  {&#39;model_id&#39;: &#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;,
+ &#39;predictions&#39;: [{&#39;model_id&#39;: &#39;32f2b480-f6d9-4d0c-9aeb-ec521d9a7c16&#39;,
    &#39;model_name&#39;: &#39;mymodel - isobutyramide_normalized_fitness&#39;,
-   &#39;properties&#39;: {&#39;isobutyramide_normalized_fitness&#39;: {&#39;y_mu&#39;: -0.5801481008529663,
-     &#39;y_var&#39;: 0.07187105715274811}}}]}
+   &#39;properties&#39;: {&#39;isobutyramide_normalized_fitness&#39;: {&#39;y_mu&#39;: -0.579990804195404,
+     &#39;y_var&#39;: 0.07199262827634811}}},
+  {&#39;model_id&#39;: &#39;b565e080-ddb5-418c-9f67-c0468990e57a&#39;,
+   &#39;model_name&#39;: &#39;mymodel - acetamide_normalized_fitness&#39;,
+   &#39;properties&#39;: {&#39;acetamide_normalized_fitness&#39;: {&#39;y_mu&#39;: -1.0524402856826782,
+     &#39;y_var&#39;: 0.008635327219963074}}}]}
 </pre></div></div>
 </div>
 <p>We can also send a single sequence for single site mutation analysis:</p>
@@ -831,7 +831,7 @@ Waiting: 100%|██████████| 100/100 [07:22&lt;00:00,  4.42s/it
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-Waiting: 100%|██████████| 100/100 [03:30&lt;00:00,  2.11s/it, status=SUCCESS]
+Waiting: 100%|██████████| 100/100 [04:21&lt;00:00,  2.62s/it, status=SUCCESS]
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -840,9 +840,9 @@ Waiting: 100%|██████████| 100/100 [03:30&lt;00:00,  2.11s/it
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-[SequencePrediction(position=0, amino_acid=&#39;A&#39;, predictions=[Prediction(model_id=&#39;4f5a95cc-7cd9-4d19-bd2c-768c93d8d217&#39;, model_name=&#39;mymodel - acetamide_normalized_fitness&#39;, properties={&#39;acetamide_normalized_fitness&#39;: {&#39;y_mu&#39;: -1.0585644245147705, &#39;y_var&#39;: 0.00865915883332491}}), Prediction(model_id=&#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;, model_name=&#39;mymodel - isobutyramide_normalized_fitness&#39;, properties={&#39;isobutyramide_normalized_fitness&#39;: {&#39;y_mu&#39;: -0.509050190448761, &#39;y_var&#39;: 0.04599723219871521}})]),
- SequencePrediction(position=0, amino_acid=&#39;R&#39;, predictions=[Prediction(model_id=&#39;4f5a95cc-7cd9-4d19-bd2c-768c93d8d217&#39;, model_name=&#39;mymodel - acetamide_normalized_fitness&#39;, properties={&#39;acetamide_normalized_fitness&#39;: {&#39;y_mu&#39;: -1.0604116916656494, &#39;y_var&#39;: 0.008511288091540337}}), Prediction(model_id=&#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;, model_name=&#39;mymodel - isobutyramide_normalized_fitness&#39;, properties={&#39;isobutyramide_normalized_fitness&#39;: {&#39;y_mu&#39;: -0.38895800709724426, &#39;y_var&#39;: 0.01822088658809662}})]),
- SequencePrediction(position=0, amino_acid=&#39;N&#39;, predictions=[Prediction(model_id=&#39;4f5a95cc-7cd9-4d19-bd2c-768c93d8d217&#39;, model_name=&#39;mymodel - acetamide_normalized_fitness&#39;, properties={&#39;acetamide_normalized_fitness&#39;: {&#39;y_mu&#39;: -1.0604782104492188, &#39;y_var&#39;: 0.008520051836967468}}), Prediction(model_id=&#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;, model_name=&#39;mymodel - isobutyramide_normalized_fitness&#39;, properties={&#39;isobutyramide_normalized_fitness&#39;: {&#39;y_mu&#39;: -0.39489519596099854, &#39;y_var&#39;: 0.019712451845407486}})])]
+[SequencePrediction(position=0, amino_acid=&#39;A&#39;, predictions=[Prediction(model_id=&#39;32f2b480-f6d9-4d0c-9aeb-ec521d9a7c16&#39;, model_name=&#39;mymodel - isobutyramide_normalized_fitness&#39;, properties={&#39;isobutyramide_normalized_fitness&#39;: {&#39;y_mu&#39;: -0.5117711424827576, &#39;y_var&#39;: 0.046446166932582855}}), Prediction(model_id=&#39;b565e080-ddb5-418c-9f67-c0468990e57a&#39;, model_name=&#39;mymodel - acetamide_normalized_fitness&#39;, properties={&#39;acetamide_normalized_fitness&#39;: {&#39;y_mu&#39;: -1.0585060119628906, &#39;y_var&#39;: 0.00857548974454403}})]),
+ SequencePrediction(position=0, amino_acid=&#39;R&#39;, predictions=[Prediction(model_id=&#39;32f2b480-f6d9-4d0c-9aeb-ec521d9a7c16&#39;, model_name=&#39;mymodel - isobutyramide_normalized_fitness&#39;, properties={&#39;isobutyramide_normalized_fitness&#39;: {&#39;y_mu&#39;: -0.3882597088813782, &#39;y_var&#39;: 0.018137391656637192}}), Prediction(model_id=&#39;b565e080-ddb5-418c-9f67-c0468990e57a&#39;, model_name=&#39;mymodel - acetamide_normalized_fitness&#39;, properties={&#39;acetamide_normalized_fitness&#39;: {&#39;y_mu&#39;: -1.0603432655334473, &#39;y_var&#39;: 0.008428620174527168}})]),
+ SequencePrediction(position=0, amino_acid=&#39;N&#39;, predictions=[Prediction(model_id=&#39;32f2b480-f6d9-4d0c-9aeb-ec521d9a7c16&#39;, model_name=&#39;mymodel - isobutyramide_normalized_fitness&#39;, properties={&#39;isobutyramide_normalized_fitness&#39;: {&#39;y_mu&#39;: -0.39606380462646484, &#39;y_var&#39;: 0.019559957087039948}}), Prediction(model_id=&#39;b565e080-ddb5-418c-9f67-c0468990e57a&#39;, model_name=&#39;mymodel - acetamide_normalized_fitness&#39;, properties={&#39;acetamide_normalized_fitness&#39;: {&#39;y_mu&#39;: -1.0605355501174927, &#39;y_var&#39;: 0.00843595527112484}})])]
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
@@ -861,28 +861,28 @@ Waiting: 100%|██████████| 100/100 [03:30&lt;00:00,  2.11s/it
 <div class="highlight"><pre>
 {&#39;position&#39;: 0,
  &#39;amino_acid&#39;: &#39;A&#39;,
- &#39;predictions&#39;: [{&#39;model_id&#39;: &#39;4f5a95cc-7cd9-4d19-bd2c-768c93d8d217&#39;,
-   &#39;model_name&#39;: &#39;mymodel - acetamide_normalized_fitness&#39;,
-   &#39;properties&#39;: {&#39;acetamide_normalized_fitness&#39;: {&#39;y_mu&#39;: -1.0585644245147705,
-     &#39;y_var&#39;: 0.00865915883332491}}},
-  {&#39;model_id&#39;: &#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;,
+ &#39;predictions&#39;: [{&#39;model_id&#39;: &#39;32f2b480-f6d9-4d0c-9aeb-ec521d9a7c16&#39;,
    &#39;model_name&#39;: &#39;mymodel - isobutyramide_normalized_fitness&#39;,
-   &#39;properties&#39;: {&#39;isobutyramide_normalized_fitness&#39;: {&#39;y_mu&#39;: -0.509050190448761,
-     &#39;y_var&#39;: 0.04599723219871521}}}]}
+   &#39;properties&#39;: {&#39;isobutyramide_normalized_fitness&#39;: {&#39;y_mu&#39;: -0.5117711424827576,
+     &#39;y_var&#39;: 0.046446166932582855}}},
+  {&#39;model_id&#39;: &#39;b565e080-ddb5-418c-9f67-c0468990e57a&#39;,
+   &#39;model_name&#39;: &#39;mymodel - acetamide_normalized_fitness&#39;,
+   &#39;properties&#39;: {&#39;acetamide_normalized_fitness&#39;: {&#39;y_mu&#39;: -1.0585060119628906,
+     &#39;y_var&#39;: 0.00857548974454403}}}]}
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[34]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[36]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">preds</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span><span class="n">i</span><span class="o">.</span><span class="n">dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ssp_results</span><span class="p">])</span>
-<span class="n">preds</span><span class="p">[</span><span class="s1">&#39;acetamide_normalized_fitness&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;acetamide_normalized_fitness&#39;</span><span class="p">][</span><span class="s1">&#39;y_mu&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">preds</span><span class="o">.</span><span class="n">predictions</span><span class="p">]</span>
+<span class="n">preds</span><span class="p">[</span><span class="s1">&#39;acetamide_normalized_fitness&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;acetamide_normalized_fitness&#39;</span><span class="p">][</span><span class="s1">&#39;y_mu&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">preds</span><span class="o">.</span><span class="n">predictions</span><span class="p">]</span>
 <span class="n">preds</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[34]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[36]:
 </pre></div>
 </div>
 <div class="output_area rendered_html docutils container">
@@ -915,43 +915,43 @@ Waiting: 100%|██████████| 100/100 [03:30&lt;00:00,  2.11s/it
       <th>0</th>
       <td>0</td>
       <td>A</td>
-      <td>[{'model_id': '4f5a95cc-7cd9-4d19-bd2c-768c93d...</td>
-      <td>-1.058564</td>
+      <td>[{'model_id': '32f2b480-f6d9-4d0c-9aeb-ec521d9...</td>
+      <td>-1.058506</td>
     </tr>
     <tr>
       <th>1</th>
       <td>0</td>
       <td>R</td>
-      <td>[{'model_id': '4f5a95cc-7cd9-4d19-bd2c-768c93d...</td>
-      <td>-1.060412</td>
+      <td>[{'model_id': '32f2b480-f6d9-4d0c-9aeb-ec521d9...</td>
+      <td>-1.060343</td>
     </tr>
     <tr>
       <th>2</th>
       <td>0</td>
       <td>N</td>
-      <td>[{'model_id': '4f5a95cc-7cd9-4d19-bd2c-768c93d...</td>
-      <td>-1.060478</td>
+      <td>[{'model_id': '32f2b480-f6d9-4d0c-9aeb-ec521d9...</td>
+      <td>-1.060536</td>
     </tr>
     <tr>
       <th>3</th>
       <td>0</td>
       <td>D</td>
-      <td>[{'model_id': '4f5a95cc-7cd9-4d19-bd2c-768c93d...</td>
-      <td>-1.064667</td>
+      <td>[{'model_id': '32f2b480-f6d9-4d0c-9aeb-ec521d9...</td>
+      <td>-1.064618</td>
     </tr>
     <tr>
       <th>4</th>
       <td>0</td>
       <td>C</td>
-      <td>[{'model_id': '4f5a95cc-7cd9-4d19-bd2c-768c93d...</td>
-      <td>-1.067287</td>
+      <td>[{'model_id': '32f2b480-f6d9-4d0c-9aeb-ec521d9...</td>
+      <td>-1.067208</td>
     </tr>
   </tbody>
 </table>
 </div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[35]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[37]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><br/><span></span><span class="n">df_pivot</span> <span class="o">=</span> <span class="n">preds</span><span class="o">.</span><span class="n">pivot</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="s1">&#39;position&#39;</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="s1">&#39;amino_acid&#39;</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="s1">&#39;acetamide_normalized_fitness&#39;</span><span class="p">)</span>
@@ -978,7 +978,7 @@ Waiting: 100%|██████████| 100/100 [03:30&lt;00:00,  2.11s/it
 <h2>Resume workflows<a class="headerlink" href="#Resume-workflows" title="Permalink to this heading"></a></h2>
 <p>Lastly, it’s possible to resume from where you left off with the job id:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[36]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[38]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">train</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">load_job</span><span class="p">(</span><span class="n">train_id</span><span class="p">)</span>
@@ -987,17 +987,17 @@ Waiting: 100%|██████████| 100/100 [03:30&lt;00:00,  2.11s/it
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[36]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[38]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Jobplus(status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt;, job_id=&#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;, job_type=&#39;/workflow/train&#39;, created_date=datetime.datetime(2023, 7, 28, 1, 41, 47, 762130), start_date=datetime.datetime(2023, 7, 28, 1, 42, 48, 246124), end_date=datetime.datetime(2023, 7, 28, 1, 43, 17, 160692), prerequisite_job_id=&#39;6ba74592-91ac-47e4-9ea7-59fa0fc199fb&#39;, progress_message=None, progress_counter=None, num_records=None, sequence_length=346)
+Jobplus(status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt;, job_id=&#39;32f2b480-f6d9-4d0c-9aeb-ec521d9a7c16&#39;, job_type=&#39;/workflow/train&#39;, created_date=datetime.datetime(2023, 8, 4, 4, 9, 41, 265475), start_date=datetime.datetime(2023, 8, 4, 4, 10, 50, 448570), end_date=datetime.datetime(2023, 8, 4, 4, 11, 23, 169511), prerequisite_job_id=&#39;a5aad829-95d8-4b70-96fe-5d798219bcb5&#39;, progress_message=None, progress_counter=None, num_records=None, sequence_length=346)
 </pre></div></div>
 </div>
 <p>This reloaded job can be used as above for predict or design tasks, and those can also be reloaded!</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[37]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[39]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pjob</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">predict</span><span class="o">.</span><span class="n">load_job</span><span class="p">(</span><span class="n">pjob_id</span><span class="p">)</span>
@@ -1006,12 +1006,12 @@ Jobplus(status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt;, job_id=&#39;d292d4d
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[37]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[39]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Job(status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt;, job_id=&#39;395645cb-2d09-46cf-bcc2-c625fb7e2063&#39;, job_type=&#39;/workflow/predict&#39;, created_date=datetime.datetime(2023, 7, 28, 1, 56, 20, 244335), start_date=datetime.datetime(2023, 7, 28, 2, 3, 3, 642814), end_date=datetime.datetime(2023, 7, 28, 2, 3, 37, 431378), prerequisite_job_id=&#39;d292d4de-392f-4fc8-9e45-7d3938f63902&#39;, progress_message=None, progress_counter=None, num_records=None)
+Job(status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt;, job_id=&#39;d7fe72d9-1f5b-4889-ad66-2f4a9b619978&#39;, job_type=&#39;/workflow/predict&#39;, created_date=datetime.datetime(2023, 8, 4, 4, 24, 47, 600909), start_date=datetime.datetime(2023, 8, 4, 4, 24, 53, 718138), end_date=datetime.datetime(2023, 8, 4, 4, 25, 19, 662641), prerequisite_job_id=&#39;32f2b480-f6d9-4d0c-9aeb-ec521d9a7c16&#39;, progress_message=None, progress_counter=None, num_records=None)
 </pre></div></div>
 </div>
 </section>

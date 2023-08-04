@@ -129,9 +129,9 @@
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">openprotein</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">openprotein_python</span> <span class="k">as</span> <span class="nn">openprotein</span>
 
-<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;../../../secrets.config&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;../../../../secrets.config&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
     <span class="n">config</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
 
 <span class="n">session</span> <span class="o">=</span> <span class="n">openprotein</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">username</span><span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;username&#39;</span><span class="p">],</span> <span class="n">password</span><span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;password&#39;</span><span class="p">])</span>
@@ -169,8 +169,7 @@
  esm2_t6_8M_UR50D,
  prot-seq,
  rotaprot-large-uniref50w,
- rotaprot-large-uniref90-ft,
- test-model]
+ rotaprot-large-uniref90-ft]
 </pre></div></div>
 </div>
 <p>You can view more information on each model:</p>
@@ -367,7 +366,7 @@
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Job(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;f304e749-6d36-4a8b-85df-4206acfaf50b&#39;, job_type=&#39;/embeddings/embed_reduced&#39;, created_date=datetime.datetime(2023, 7, 28, 2, 57, 16, 347282, tzinfo=datetime.timezone.utc), start_date=None, end_date=None, prerequisite_job_id=None, progress_message=None, progress_counter=0, num_records=1)
+Job(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;89089c15-9e76-41fa-af9c-05452efb3014&#39;, job_type=&#39;/embeddings/embed_reduced&#39;, created_date=datetime.datetime(2023, 8, 4, 4, 10, 29, 565648, tzinfo=datetime.timezone.utc), start_date=None, end_date=None, prerequisite_job_id=None, progress_message=None, progress_counter=0, num_records=1)
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
@@ -385,7 +384,7 @@ Job(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;f304e749-6d
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Job(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;84ed7e57-20ab-469e-bbca-0560bd294c30&#39;, job_type=&#39;/embeddings/embed_reduced&#39;, created_date=datetime.datetime(2023, 7, 28, 2, 57, 16, 361915, tzinfo=datetime.timezone.utc), start_date=None, end_date=None, prerequisite_job_id=None, progress_message=None, progress_counter=0, num_records=1)
+Job(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;a0187ab9-1a72-4e03-b0d6-cd48fdc04d19&#39;, job_type=&#39;/embeddings/embed_reduced&#39;, created_date=datetime.datetime(2023, 8, 4, 4, 10, 29, 617604, tzinfo=datetime.timezone.utc), start_date=None, end_date=None, prerequisite_job_id=None, progress_message=None, progress_counter=0, num_records=1)
 </pre></div></div>
 </div>
 </section>
@@ -405,8 +404,8 @@ Job(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;84ed7e57-20
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-Waiting: 100%|██████████| 100/100 [00:00&lt;00:00, 7605.54it/s, status=SUCCESS]
-Retrieving: 100%|██████████| 1/1 [00:00&lt;00:00, 13.12it/s]
+Waiting:   0%|          | 0/100 [00:00&lt;?, ?it/s, status=RUNNING]Waiting: 100%|██████████| 100/100 [06:43&lt;00:00,  4.04s/it, status=SUCCESS]
+Retrieving: 100%|██████████| 1/1 [00:00&lt;00:00, 21.70it/s]
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
@@ -473,8 +472,8 @@ False
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-Waiting: 100%|██████████| 100/100 [00:00&lt;00:00, 4872.51it/s, status=SUCCESS]
-Retrieving: 100%|██████████| 1/1 [00:00&lt;00:00, 36.59it/s]
+Waiting: 100%|██████████| 100/100 [00:00&lt;00:00, 6243.29it/s, status=SUCCESS]
+Retrieving: 100%|██████████| 1/1 [00:00&lt;00:00, 26.15it/s]
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
@@ -576,7 +575,7 @@ array([ 0.15882437, -0.03162469,  0.11416737], dtype=float32)
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Job(status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt;, job_id=&#39;f304e749-6d36-4a8b-85df-4206acfaf50b&#39;, job_type=&#39;/embeddings/embed_reduced&#39;, created_date=datetime.datetime(2023, 7, 28, 2, 57, 16, 347282), start_date=datetime.datetime(2023, 7, 28, 2, 57, 16, 431629), end_date=datetime.datetime(2023, 7, 28, 2, 57, 16, 431629), prerequisite_job_id=None, progress_message=None, progress_counter=100, num_records=None)
+Job(status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt;, job_id=&#39;89089c15-9e76-41fa-af9c-05452efb3014&#39;, job_type=&#39;/embeddings/embed_reduced&#39;, created_date=datetime.datetime(2023, 8, 4, 4, 10, 29, 565648), start_date=datetime.datetime(2023, 8, 4, 4, 10, 29, 782187), end_date=datetime.datetime(2023, 8, 4, 4, 17, 13, 119073), prerequisite_job_id=None, progress_message=None, progress_counter=100, num_records=None)
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">

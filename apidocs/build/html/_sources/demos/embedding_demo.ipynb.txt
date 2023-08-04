@@ -53,9 +53,9 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "import openprotein\n",
+    "import openprotein_python as openprotein\n",
     "\n",
-    "with open('../../../secrets.config', 'r') as f:\n",
+    "with open('../../../../secrets.config', 'r') as f:\n",
     "    config = json.load(f)\n",
     "\n",
     "session = openprotein.connect(username= config['username'], password= config['password'])"
@@ -91,8 +91,7 @@
        " esm2_t6_8M_UR50D,\n",
        " prot-seq,\n",
        " rotaprot-large-uniref50w,\n",
-       " rotaprot-large-uniref90-ft,\n",
-       " test-model]"
+       " rotaprot-large-uniref90-ft]"
       ]
      },
      "execution_count": 4,
@@ -320,7 +319,7 @@
     {
      "data": {
       "text/plain": [
-       "Job(status=<JobStatus.PENDING: 'PENDING'>, job_id='f304e749-6d36-4a8b-85df-4206acfaf50b', job_type='/embeddings/embed_reduced', created_date=datetime.datetime(2023, 7, 28, 2, 57, 16, 347282, tzinfo=datetime.timezone.utc), start_date=None, end_date=None, prerequisite_job_id=None, progress_message=None, progress_counter=0, num_records=1)"
+       "Job(status=<JobStatus.PENDING: 'PENDING'>, job_id='89089c15-9e76-41fa-af9c-05452efb3014', job_type='/embeddings/embed_reduced', created_date=datetime.datetime(2023, 8, 4, 4, 10, 29, 565648, tzinfo=datetime.timezone.utc), start_date=None, end_date=None, prerequisite_job_id=None, progress_message=None, progress_counter=0, num_records=1)"
       ]
      },
      "execution_count": 8,
@@ -342,7 +341,7 @@
     {
      "data": {
       "text/plain": [
-       "Job(status=<JobStatus.PENDING: 'PENDING'>, job_id='84ed7e57-20ab-469e-bbca-0560bd294c30', job_type='/embeddings/embed_reduced', created_date=datetime.datetime(2023, 7, 28, 2, 57, 16, 361915, tzinfo=datetime.timezone.utc), start_date=None, end_date=None, prerequisite_job_id=None, progress_message=None, progress_counter=0, num_records=1)"
+       "Job(status=<JobStatus.PENDING: 'PENDING'>, job_id='a0187ab9-1a72-4e03-b0d6-cd48fdc04d19', job_type='/embeddings/embed_reduced', created_date=datetime.datetime(2023, 8, 4, 4, 10, 29, 617604, tzinfo=datetime.timezone.utc), start_date=None, end_date=None, prerequisite_job_id=None, progress_message=None, progress_counter=0, num_records=1)"
       ]
      },
      "execution_count": 9,
@@ -373,8 +372,15 @@
      "name": "stderr",
      "output_type": "stream",
      "text": [
-      "Waiting: 100%|██████████| 100/100 [00:00<00:00, 7605.54it/s, status=SUCCESS]\n",
-      "Retrieving: 100%|██████████| 1/1 [00:00<00:00, 13.12it/s]\n"
+      "Waiting:   0%|          | 0/100 [00:00<?, ?it/s, status=RUNNING]"
+     ]
+    },
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "Waiting: 100%|██████████| 100/100 [06:43<00:00,  4.04s/it, status=SUCCESS]\n",
+      "Retrieving: 100%|██████████| 1/1 [00:00<00:00, 21.70it/s]\n"
      ]
     }
    ],
@@ -451,8 +457,8 @@
      "name": "stderr",
      "output_type": "stream",
      "text": [
-      "Waiting: 100%|██████████| 100/100 [00:00<00:00, 4872.51it/s, status=SUCCESS]\n",
-      "Retrieving: 100%|██████████| 1/1 [00:00<00:00, 36.59it/s]\n"
+      "Waiting: 100%|██████████| 100/100 [00:00<00:00, 6243.29it/s, status=SUCCESS]\n",
+      "Retrieving: 100%|██████████| 1/1 [00:00<00:00, 26.15it/s]\n"
      ]
     }
    ],
@@ -582,7 +588,7 @@
     {
      "data": {
       "text/plain": [
-       "Job(status=<JobStatus.SUCCESS: 'SUCCESS'>, job_id='f304e749-6d36-4a8b-85df-4206acfaf50b', job_type='/embeddings/embed_reduced', created_date=datetime.datetime(2023, 7, 28, 2, 57, 16, 347282), start_date=datetime.datetime(2023, 7, 28, 2, 57, 16, 431629), end_date=datetime.datetime(2023, 7, 28, 2, 57, 16, 431629), prerequisite_job_id=None, progress_message=None, progress_counter=100, num_records=None)"
+       "Job(status=<JobStatus.SUCCESS: 'SUCCESS'>, job_id='89089c15-9e76-41fa-af9c-05452efb3014', job_type='/embeddings/embed_reduced', created_date=datetime.datetime(2023, 8, 4, 4, 10, 29, 565648), start_date=datetime.datetime(2023, 8, 4, 4, 10, 29, 782187), end_date=datetime.datetime(2023, 8, 4, 4, 17, 13, 119073), prerequisite_job_id=None, progress_message=None, progress_counter=100, num_records=None)"
       ]
      },
      "execution_count": 20,

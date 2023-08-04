@@ -6,7 +6,7 @@ Python interface for the OpenProtein.AI REST API.
 You can install with pip: 
 
 ```
-pip install openprotein-python
+pip install openprotein_python
 ```
 ## Getting started
 

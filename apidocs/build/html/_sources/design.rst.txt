@@ -3,8 +3,8 @@ Design
 
 Design new sequences based on your stated objectives and our genetic algorithm!
 
-.. autoclass:: openprotein.api.design.DesignAPI
+.. autoclass:: openprotein_python.api.design.DesignAPI
    :members:
 
-.. autoclass:: openprotein.api.design.DesignFuture
+.. autoclass:: openprotein_python.api.design.DesignFuture
    :members:

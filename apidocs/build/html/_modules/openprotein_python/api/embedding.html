@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>openprotein.api.embedding &mdash; OpenProtein-Python  documentation</title>
+  <title>openprotein_python.api.embedding &mdash; OpenProtein-Python  documentation</title>
       <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
@@ -64,8 +64,8 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
-          <li class="breadcrumb-item"><a href="../../openprotein.html">openprotein</a></li>
-      <li class="breadcrumb-item active">openprotein.api.embedding</li>
+          <li class="breadcrumb-item"><a href="../../openprotein_python.html">openprotein_python</a></li>
+      <li class="breadcrumb-item active">openprotein_python.api.embedding</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -74,19 +74,19 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <h1>Source code for openprotein.api.embedding</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">openprotein.base</span> <span class="kn">import</span> <span class="n">APISession</span>
-<span class="kn">from</span> <span class="nn">openprotein.api.jobs</span> <span class="kn">import</span> <span class="p">(</span>
+  <h1>Source code for openprotein_python.api.embedding</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">openprotein_python.base</span> <span class="kn">import</span> <span class="n">APISession</span>
+<span class="kn">from</span> <span class="nn">openprotein_python.api.jobs</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">Job</span><span class="p">,</span>
     <span class="n">MappedAsyncJobFuture</span><span class="p">,</span>
     <span class="n">PagedAsyncJobFuture</span><span class="p">,</span>
     <span class="n">job_get</span><span class="p">,</span>
     <span class="n">JobStatus</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">openprotein.errors</span> <span class="kn">import</span> <span class="n">InvalidJob</span>
-<span class="kn">import</span> <span class="nn">openprotein.config</span> <span class="k">as</span> <span class="nn">config</span>
-<span class="kn">from</span> <span class="nn">openprotein.api.jobs</span> <span class="kn">import</span> <span class="n">load_job</span>
-<span class="kn">from</span> <span class="nn">openprotein.models</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span> <span class="nn">openprotein_python.errors</span> <span class="kn">import</span> <span class="n">InvalidJob</span>
+<span class="kn">import</span> <span class="nn">openprotein_python.config</span> <span class="k">as</span> <span class="nn">config</span>
+<span class="kn">from</span> <span class="nn">openprotein_python.api.jobs</span> <span class="kn">import</span> <span class="n">load_job</span>
+<span class="kn">from</span> <span class="nn">openprotein_python.models</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">ModelDescription</span><span class="p">,</span>
     <span class="n">TokenInfo</span><span class="p">,</span>
     <span class="n">ModelMetadata</span><span class="p">,</span>
@@ -215,7 +215,7 @@
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">allow_pickle</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="EmbeddingResultFuture"><a class="viewcode-back" href="../../../embedding.html#openprotein.api.embedding.EmbeddingResultFuture">[docs]</a><span class="k">class</span> <span class="nc">EmbeddingResultFuture</span><span class="p">(</span><span class="n">MappedAsyncJobFuture</span><span class="p">):</span>
+<div class="viewcode-block" id="EmbeddingResultFuture"><a class="viewcode-back" href="../../../embedding.html#openprotein_python.api.embedding.EmbeddingResultFuture">[docs]</a><span class="k">class</span> <span class="nc">EmbeddingResultFuture</span><span class="p">(</span><span class="n">MappedAsyncJobFuture</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Future Job for manipulating results&quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -240,7 +240,7 @@
     <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sequences</span>
 
-<div class="viewcode-block" id="EmbeddingResultFuture.get_item"><a class="viewcode-back" href="../../../embedding.html#openprotein.api.embedding.EmbeddingResultFuture.get_item">[docs]</a>    <span class="k">def</span> <span class="nf">get_item</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequence</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<div class="viewcode-block" id="EmbeddingResultFuture.get_item"><a class="viewcode-back" href="../../../embedding.html#openprotein_python.api.embedding.EmbeddingResultFuture.get_item">[docs]</a>    <span class="k">def</span> <span class="nf">get_item</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequence</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get embedding results for specified sequence.</span>
 
@@ -458,7 +458,7 @@
     <span class="k">return</span> <span class="n">Job</span><span class="p">(</span><span class="o">**</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
 
 
-<div class="viewcode-block" id="ProtembedModel"><a class="viewcode-back" href="../../../embedding.html#openprotein.api.embedding.ProtembedModel">[docs]</a><span class="k">class</span> <span class="nc">ProtembedModel</span><span class="p">:</span>
+<div class="viewcode-block" id="ProtembedModel"><a class="viewcode-back" href="../../../embedding.html#openprotein_python.api.embedding.ProtembedModel">[docs]</a><span class="k">class</span> <span class="nc">ProtembedModel</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Class providing inference endpoints for protein embedding models served by OpenProtein.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -478,7 +478,7 @@
     <span class="k">def</span> <span class="nf">metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_metadata</span><span class="p">()</span>
 
-<div class="viewcode-block" id="ProtembedModel.get_metadata"><a class="viewcode-back" href="../../../embedding.html#openprotein.api.embedding.ProtembedModel.get_metadata">[docs]</a>    <span class="k">def</span> <span class="nf">get_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ModelMetadata</span><span class="p">:</span>
+<div class="viewcode-block" id="ProtembedModel.get_metadata"><a class="viewcode-back" href="../../../embedding.html#openprotein_python.api.embedding.ProtembedModel.get_metadata">[docs]</a>    <span class="k">def</span> <span class="nf">get_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ModelMetadata</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get model metadata for this model.</span>
 
@@ -491,7 +491,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span> <span class="o">=</span> <span class="n">embedding_model_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span></div>
 
-<div class="viewcode-block" id="ProtembedModel.embed"><a class="viewcode-back" href="../../../embedding.html#openprotein.api.embedding.ProtembedModel.embed">[docs]</a>    <span class="k">def</span> <span class="nf">embed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequences</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">],</span> <span class="n">reduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span><span class="o">=</span><span class="s2">&quot;MEAN&quot;</span><span class="p">):</span>
+<div class="viewcode-block" id="ProtembedModel.embed"><a class="viewcode-back" href="../../../embedding.html#openprotein_python.api.embedding.ProtembedModel.embed">[docs]</a>    <span class="k">def</span> <span class="nf">embed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequences</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">],</span> <span class="n">reduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span><span class="o">=</span><span class="s2">&quot;MEAN&quot;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Embed sequences using this model.</span>
 
@@ -512,7 +512,7 @@
                                    <span class="n">reduction</span><span class="o">=</span><span class="n">reduction</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">EmbeddingResultFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="n">sequences</span><span class="o">=</span><span class="n">sequences</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="ProtembedModel.logits"><a class="viewcode-back" href="../../../embedding.html#openprotein.api.embedding.ProtembedModel.logits">[docs]</a>    <span class="k">def</span> <span class="nf">logits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequences</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">EmbeddingResultFuture</span><span class="p">:</span>
+<div class="viewcode-block" id="ProtembedModel.logits"><a class="viewcode-back" href="../../../embedding.html#openprotein_python.api.embedding.ProtembedModel.logits">[docs]</a>    <span class="k">def</span> <span class="nf">logits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequences</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">EmbeddingResultFuture</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        logit embeddings for sequences using this model.</span>
 
@@ -528,7 +528,7 @@
         <span class="n">job</span> <span class="o">=</span> <span class="n">embedding_model_logits_post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">sequences</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">EmbeddingResultFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="n">sequences</span><span class="o">=</span><span class="n">sequences</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="ProtembedModel.attn"><a class="viewcode-back" href="../../../embedding.html#openprotein.api.embedding.ProtembedModel.attn">[docs]</a>    <span class="k">def</span> <span class="nf">attn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequences</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">EmbeddingResultFuture</span><span class="p">:</span>
+<div class="viewcode-block" id="ProtembedModel.attn"><a class="viewcode-back" href="../../../embedding.html#openprotein_python.api.embedding.ProtembedModel.attn">[docs]</a>    <span class="k">def</span> <span class="nf">attn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequences</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">EmbeddingResultFuture</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Attention embeddings for sequences using this model.</span>
 
@@ -544,7 +544,7 @@
         <span class="n">job</span> <span class="o">=</span> <span class="n">embedding_model_attn_post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">sequences</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">EmbeddingResultFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="n">sequences</span><span class="o">=</span><span class="n">sequences</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="ProtembedModel.fit_svd"><a class="viewcode-back" href="../../../embedding.html#openprotein.api.embedding.ProtembedModel.fit_svd">[docs]</a>    <span class="k">def</span> <span class="nf">fit_svd</span><span class="p">(</span>
+<div class="viewcode-block" id="ProtembedModel.fit_svd"><a class="viewcode-back" href="../../../embedding.html#openprotein_python.api.embedding.ProtembedModel.fit_svd">[docs]</a>    <span class="k">def</span> <span class="nf">fit_svd</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">sequences</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">],</span>
         <span class="n">n_components</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1024</span><span class="p">,</span>
@@ -581,7 +581,7 @@
         <span class="k">return</span> <span class="n">SVDModel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">metadata</span><span class="p">)</span></div></div>
 
 
-<div class="viewcode-block" id="SVDModel"><a class="viewcode-back" href="../../../embedding.html#openprotein.api.embedding.SVDModel">[docs]</a><span class="k">class</span> <span class="nc">SVDModel</span><span class="p">:</span>
+<div class="viewcode-block" id="SVDModel"><a class="viewcode-back" href="../../../embedding.html#openprotein_python.api.embedding.SVDModel">[docs]</a><span class="k">class</span> <span class="nc">SVDModel</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Class providing embedding endpoint for SVD models. \</span>
 <span class="sd">        Also allows retrieving embeddings of sequences used to fit the SVD with `get`.</span>
@@ -622,7 +622,7 @@
     <span class="k">def</span> <span class="nf">reduction</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="o">.</span><span class="n">reduction</span>
 
-<div class="viewcode-block" id="SVDModel.get_model"><a class="viewcode-back" href="../../../embedding.html#openprotein.api.embedding.SVDModel.get_model">[docs]</a>    <span class="k">def</span> <span class="nf">get_model</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProtembedModel</span><span class="p">:</span>
+<div class="viewcode-block" id="SVDModel.get_model"><a class="viewcode-back" href="../../../embedding.html#openprotein_python.api.embedding.SVDModel.get_model">[docs]</a>    <span class="k">def</span> <span class="nf">get_model</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProtembedModel</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetch embeddings model&quot;&quot;&quot;</span>
         <span class="n">model</span> <span class="o">=</span> <span class="n">ProtembedModel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="o">.</span><span class="n">model_id</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">model</span></div>
@@ -631,17 +631,17 @@
     <span class="k">def</span> <span class="nf">model</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProtembedModel</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_model</span><span class="p">()</span>
 
-<div class="viewcode-block" id="SVDModel.delete"><a class="viewcode-back" href="../../../embedding.html#openprotein.api.embedding.SVDModel.delete">[docs]</a>    <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<div class="viewcode-block" id="SVDModel.delete"><a class="viewcode-back" href="../../../embedding.html#openprotein_python.api.embedding.SVDModel.delete">[docs]</a>    <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Delete this SVD model.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">svd_delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="SVDModel.get_job"><a class="viewcode-back" href="../../../embedding.html#openprotein.api.embedding.SVDModel.get_job">[docs]</a>    <span class="k">def</span> <span class="nf">get_job</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Job</span><span class="p">:</span>
+<div class="viewcode-block" id="SVDModel.get_job"><a class="viewcode-back" href="../../../embedding.html#openprotein_python.api.embedding.SVDModel.get_job">[docs]</a>    <span class="k">def</span> <span class="nf">get_job</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Job</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get job associated with this SVD model&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">job_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="SVDModel.get_inputs"><a class="viewcode-back" href="../../../embedding.html#openprotein.api.embedding.SVDModel.get_inputs">[docs]</a>    <span class="k">def</span> <span class="nf">get_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]:</span>
+<div class="viewcode-block" id="SVDModel.get_inputs"><a class="viewcode-back" href="../../../embedding.html#openprotein_python.api.embedding.SVDModel.get_inputs">[docs]</a>    <span class="k">def</span> <span class="nf">get_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get sequences used for embeddings job.</span>
 
@@ -651,7 +651,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">embedding_get_sequences</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="SVDModel.get_embeddings"><a class="viewcode-back" href="../../../embedding.html#openprotein.api.embedding.SVDModel.get_embeddings">[docs]</a>    <span class="k">def</span> <span class="nf">get_embeddings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EmbeddingResultFuture</span><span class="p">:</span>
+<div class="viewcode-block" id="SVDModel.get_embeddings"><a class="viewcode-back" href="../../../embedding.html#openprotein_python.api.embedding.SVDModel.get_embeddings">[docs]</a>    <span class="k">def</span> <span class="nf">get_embeddings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EmbeddingResultFuture</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get SVD embedding results for this model.</span>
 
@@ -661,7 +661,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">EmbeddingResultFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_job</span><span class="p">())</span></div>
 
-<div class="viewcode-block" id="SVDModel.embed"><a class="viewcode-back" href="../../../embedding.html#openprotein.api.embedding.SVDModel.embed">[docs]</a>    <span class="k">def</span> <span class="nf">embed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequences</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">EmbeddingResultFuture</span><span class="p">:</span>
+<div class="viewcode-block" id="SVDModel.embed"><a class="viewcode-back" href="../../../embedding.html#openprotein_python.api.embedding.SVDModel.embed">[docs]</a>    <span class="k">def</span> <span class="nf">embed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequences</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">EmbeddingResultFuture</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Use this SVD model to reduce embeddings results. </span>
 
@@ -679,7 +679,7 @@
         <span class="k">return</span> <span class="n">EmbeddingResultFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="n">sequences</span><span class="o">=</span><span class="n">sequences</span><span class="p">)</span></div></div>
 
 
-<div class="viewcode-block" id="EmbeddingAPI"><a class="viewcode-back" href="../../../embedding.html#openprotein.api.embedding.EmbeddingAPI">[docs]</a><span class="k">class</span> <span class="nc">EmbeddingAPI</span><span class="p">:</span>
+<div class="viewcode-block" id="EmbeddingAPI"><a class="viewcode-back" href="../../../embedding.html#openprotein_python.api.embedding.EmbeddingAPI">[docs]</a><span class="k">class</span> <span class="nc">EmbeddingAPI</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This class defines a high level interface for accessing the embeddings API.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -687,14 +687,14 @@
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">session</span>
 
-<div class="viewcode-block" id="EmbeddingAPI.list_models"><a class="viewcode-back" href="../../../embedding.html#openprotein.api.embedding.EmbeddingAPI.list_models">[docs]</a>    <span class="k">def</span> <span class="nf">list_models</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ProtembedModel</span><span class="p">]:</span>
+<div class="viewcode-block" id="EmbeddingAPI.list_models"><a class="viewcode-back" href="../../../embedding.html#openprotein_python.api.embedding.EmbeddingAPI.list_models">[docs]</a>    <span class="k">def</span> <span class="nf">list_models</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ProtembedModel</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;list models available for creating embeddings of your sequences&quot;&quot;&quot;</span>
         <span class="n">models</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">model_id</span> <span class="ow">in</span> <span class="n">embedding_models_list_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">):</span>
             <span class="n">models</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ProtembedModel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">model_id</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">models</span></div>
 
-<div class="viewcode-block" id="EmbeddingAPI.get_model"><a class="viewcode-back" href="../../../embedding.html#openprotein.api.embedding.EmbeddingAPI.get_model">[docs]</a>    <span class="k">def</span> <span class="nf">get_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProtembedModel</span><span class="p">:</span>
+<div class="viewcode-block" id="EmbeddingAPI.get_model"><a class="viewcode-back" href="../../../embedding.html#openprotein_python.api.embedding.EmbeddingAPI.get_model">[docs]</a>    <span class="k">def</span> <span class="nf">get_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProtembedModel</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get model by model_id. </span>
 
@@ -719,7 +719,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">ProtembedModel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">model_id</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="EmbeddingAPI.embed"><a class="viewcode-back" href="../../../embedding.html#openprotein.api.embedding.EmbeddingAPI.embed">[docs]</a>    <span class="k">def</span> <span class="nf">embed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="EmbeddingAPI.embed"><a class="viewcode-back" href="../../../embedding.html#openprotein_python.api.embedding.EmbeddingAPI.embed">[docs]</a>    <span class="k">def</span> <span class="nf">embed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
               <span class="n">model</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ProtembedModel</span><span class="p">,</span><span class="n">SVDModel</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
                            <span class="n">sequences</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">],</span>
                            <span class="n">reduction</span><span class="o">=</span><span class="s2">&quot;MEAN&quot;</span><span class="p">):</span>
@@ -763,7 +763,7 @@
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">EmbeddingResultFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="n">sequences</span><span class="o">=</span><span class="n">sequences</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="EmbeddingAPI.get_results"><a class="viewcode-back" href="../../../embedding.html#openprotein.api.embedding.EmbeddingAPI.get_results">[docs]</a>    <span class="k">def</span> <span class="nf">get_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EmbeddingResultFuture</span><span class="p">:</span>
+<div class="viewcode-block" id="EmbeddingAPI.get_results"><a class="viewcode-back" href="../../../embedding.html#openprotein_python.api.embedding.EmbeddingAPI.get_results">[docs]</a>    <span class="k">def</span> <span class="nf">get_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EmbeddingResultFuture</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Retrieves the results of an embedding job.</span>
 
@@ -779,7 +779,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">EmbeddingResultFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="EmbeddingAPI.fit_svd"><a class="viewcode-back" href="../../../embedding.html#openprotein.api.embedding.EmbeddingAPI.fit_svd">[docs]</a>    <span class="k">def</span> <span class="nf">fit_svd</span><span class="p">(</span>
+<div class="viewcode-block" id="EmbeddingAPI.fit_svd"><a class="viewcode-back" href="../../../embedding.html#openprotein_python.api.embedding.EmbeddingAPI.fit_svd">[docs]</a>    <span class="k">def</span> <span class="nf">fit_svd</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">sequences</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">],</span>
@@ -810,7 +810,7 @@
             <span class="n">sequences</span><span class="o">=</span><span class="n">sequences</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="n">n_components</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="n">reduction</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="EmbeddingAPI.get_svd"><a class="viewcode-back" href="../../../embedding.html#openprotein.api.embedding.EmbeddingAPI.get_svd">[docs]</a>    <span class="k">def</span> <span class="nf">get_svd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">svd_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SVDModel</span><span class="p">:</span>
+<div class="viewcode-block" id="EmbeddingAPI.get_svd"><a class="viewcode-back" href="../../../embedding.html#openprotein_python.api.embedding.EmbeddingAPI.get_svd">[docs]</a>    <span class="k">def</span> <span class="nf">get_svd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">svd_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SVDModel</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get SVD job results. Including SVD dimension and sequence lengths.</span>
 
@@ -828,7 +828,7 @@
         <span class="n">metadata</span> <span class="o">=</span> <span class="n">svd_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">svd_id</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">SVDModel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">metadata</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="EmbeddingAPI.delete_svd"><a class="viewcode-back" href="../../../embedding.html#openprotein.api.embedding.EmbeddingAPI.delete_svd">[docs]</a>    <span class="k">def</span> <span class="nf">delete_svd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">svd_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<div class="viewcode-block" id="EmbeddingAPI.delete_svd"><a class="viewcode-back" href="../../../embedding.html#openprotein_python.api.embedding.EmbeddingAPI.delete_svd">[docs]</a>    <span class="k">def</span> <span class="nf">delete_svd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">svd_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Delete SVD model.</span>
 
@@ -844,7 +844,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">svd_delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">svd_id</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="EmbeddingAPI.list_svd"><a class="viewcode-back" href="../../../embedding.html#openprotein.api.embedding.EmbeddingAPI.list_svd">[docs]</a>    <span class="k">def</span> <span class="nf">list_svd</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">SVDModel</span><span class="p">]:</span>
+<div class="viewcode-block" id="EmbeddingAPI.list_svd"><a class="viewcode-back" href="../../../embedding.html#openprotein_python.api.embedding.EmbeddingAPI.list_svd">[docs]</a>    <span class="k">def</span> <span class="nf">list_svd</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">SVDModel</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        List SVD models made by user.</span>
 
@@ -860,7 +860,7 @@
             <span class="n">SVDModel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">metadata</span><span class="p">)</span> <span class="k">for</span> <span class="n">metadata</span> <span class="ow">in</span> <span class="n">svd_list_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">)</span>
         <span class="p">]</span></div>
 
-<div class="viewcode-block" id="EmbeddingAPI.get_svd_results"><a class="viewcode-back" href="../../../embedding.html#openprotein.api.embedding.EmbeddingAPI.get_svd_results">[docs]</a>    <span class="k">def</span> <span class="nf">get_svd_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="p">:</span> <span class="n">Job</span><span class="p">):</span>
+<div class="viewcode-block" id="EmbeddingAPI.get_svd_results"><a class="viewcode-back" href="../../../embedding.html#openprotein_python.api.embedding.EmbeddingAPI.get_svd_results">[docs]</a>    <span class="k">def</span> <span class="nf">get_svd_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="p">:</span> <span class="n">Job</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get SVD job results. Including SVD dimension and sequence lengths.</span>
 
@@ -877,7 +877,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">EmbeddingResultFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="EmbeddingAPI.load_job"><a class="viewcode-back" href="../../../embedding.html#openprotein.api.embedding.EmbeddingAPI.load_job">[docs]</a>    <span class="k">def</span> <span class="nf">load_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Job</span><span class="p">:</span>
+<div class="viewcode-block" id="EmbeddingAPI.load_job"><a class="viewcode-back" href="../../../embedding.html#openprotein_python.api.embedding.EmbeddingAPI.load_job">[docs]</a>    <span class="k">def</span> <span class="nf">load_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Job</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Reload a Submitted job to resume from where you left off!</span>
 

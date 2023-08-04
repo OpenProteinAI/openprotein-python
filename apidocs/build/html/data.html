@@ -54,8 +54,8 @@
 <li class="toctree-l2"><a class="reference internal" href="core_workflow.html#design">Design</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="core_workflow.html#index">Index</a><ul class="current">
 <li class="toctree-l3 current"><a class="current reference internal" href="#">AssayData</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#openprotein.api.data.DataAPI"><code class="docutils literal notranslate"><span class="pre">DataAPI</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#openprotein.api.data.AssayDataset"><code class="docutils literal notranslate"><span class="pre">AssayDataset</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#openprotein_python.api.data.DataAPI"><code class="docutils literal notranslate"><span class="pre">DataAPI</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#openprotein_python.api.data.AssayDataset"><code class="docutils literal notranslate"><span class="pre">AssayDataset</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="train.html">Train</a></li>
@@ -99,12 +99,12 @@
 <h1>AssayData<a class="headerlink" href="#assaydata" title="Permalink to this heading"></a></h1>
 <p>Upload your dataset to OpenProtein’s engineering platform for train, predict and design tasks.</p>
 <dl class="py class">
-<dt class="sig sig-object py" id="openprotein.api.data.DataAPI">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.data.</span></span><span class="sig-name descname"><span class="pre">DataAPI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.base.APISession"><span class="pre">APISession</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/data.html#DataAPI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.data.DataAPI" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein_python.api.data.DataAPI">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein_python.api.data.</span></span><span class="sig-name descname"><span class="pre">DataAPI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein_python.APISession" title="openprotein_python.base.APISession"><span class="pre">APISession</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein_python/api/data.html#DataAPI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.data.DataAPI" title="Permalink to this definition"></a></dt>
 <dd><p>API interface for calling AssayData endpoints</p>
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein.api.data.DataAPI.create">
-<span class="sig-name descname"><span class="pre">create</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">table</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#openprotein.api.data.AssayDataset" title="openprotein.api.data.AssayDataset"><span class="pre">AssayDataset</span></a></span></span><a class="reference internal" href="_modules/openprotein/api/data.html#DataAPI.create"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.data.DataAPI.create" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein_python.api.data.DataAPI.create">
+<span class="sig-name descname"><span class="pre">create</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">table</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#openprotein_python.api.data.AssayDataset" title="openprotein_python.api.data.AssayDataset"><span class="pre">AssayDataset</span></a></span></span><a class="reference internal" href="_modules/openprotein_python/api/data.html#DataAPI.create"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.data.DataAPI.create" title="Permalink to this definition"></a></dt>
 <dd><p>Create a new assay dataset.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -118,14 +118,14 @@
 <dd class="field-even"><p>Created assay dataset.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#openprotein.api.data.AssayDataset" title="openprotein.api.data.AssayDataset">AssayDataset</a></p>
+<dd class="field-odd"><p><a class="reference internal" href="#openprotein_python.api.data.AssayDataset" title="openprotein_python.api.data.AssayDataset">AssayDataset</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein.api.data.DataAPI.get">
-<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">assay_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#openprotein.api.data.AssayDataset" title="openprotein.api.data.AssayDataset"><span class="pre">AssayDataset</span></a></span></span><a class="reference internal" href="_modules/openprotein/api/data.html#DataAPI.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.data.DataAPI.get" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein_python.api.data.DataAPI.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">assay_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#openprotein_python.api.data.AssayDataset" title="openprotein_python.api.data.AssayDataset"><span class="pre">AssayDataset</span></a></span></span><a class="reference internal" href="_modules/openprotein_python/api/data.html#DataAPI.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.data.DataAPI.get" title="Permalink to this definition"></a></dt>
 <dd><p>Get an assay dataset by its ID.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -135,7 +135,7 @@
 <dd class="field-even"><p>Assay dataset with the specified ID.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#openprotein.api.data.AssayDataset" title="openprotein.api.data.AssayDataset">AssayDataset</a></p>
+<dd class="field-odd"><p><a class="reference internal" href="#openprotein_python.api.data.AssayDataset" title="openprotein_python.api.data.AssayDataset">AssayDataset</a></p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>KeyError</strong> – If no assay dataset with the given ID is found.</p>
@@ -144,22 +144,22 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein.api.data.DataAPI.list">
-<span class="sig-name descname"><span class="pre">list</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#openprotein.api.data.AssayDataset" title="openprotein.api.data.AssayDataset"><span class="pre">AssayDataset</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/openprotein/api/data.html#DataAPI.list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.data.DataAPI.list" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein_python.api.data.DataAPI.list">
+<span class="sig-name descname"><span class="pre">list</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#openprotein_python.api.data.AssayDataset" title="openprotein_python.api.data.AssayDataset"><span class="pre">AssayDataset</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/openprotein_python/api/data.html#DataAPI.list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.data.DataAPI.list" title="Permalink to this definition"></a></dt>
 <dd><p>List all assay datasets.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>List of all assay datasets.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>List[<a class="reference internal" href="#openprotein.api.data.AssayDataset" title="openprotein.api.data.AssayDataset">AssayDataset</a>]</p>
+<dd class="field-even"><p>List[<a class="reference internal" href="#openprotein_python.api.data.AssayDataset" title="openprotein_python.api.data.AssayDataset">AssayDataset</a>]</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein.api.data.DataAPI.load_job">
-<span class="sig-name descname"><span class="pre">load_job</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">assay_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#openprotein.api.data.AssayDataset" title="openprotein.api.data.AssayDataset"><span class="pre">AssayDataset</span></a></span></span><a class="reference internal" href="_modules/openprotein/api/data.html#DataAPI.load_job"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.data.DataAPI.load_job" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein_python.api.data.DataAPI.load_job">
+<span class="sig-name descname"><span class="pre">load_job</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">assay_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#openprotein_python.api.data.AssayDataset" title="openprotein_python.api.data.AssayDataset"><span class="pre">AssayDataset</span></a></span></span><a class="reference internal" href="_modules/openprotein_python/api/data.html#DataAPI.load_job"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.data.DataAPI.load_job" title="Permalink to this definition"></a></dt>
 <dd><p>Reload a Submitted job to resume from where you left off!</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -183,12 +183,12 @@
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="openprotein.api.data.AssayDataset">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.data.</span></span><span class="sig-name descname"><span class="pre">AssayDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.base.APISession"><span class="pre">APISession</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">AssayMetadata</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/data.html#AssayDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.data.AssayDataset" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein_python.api.data.AssayDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein_python.api.data.</span></span><span class="sig-name descname"><span class="pre">AssayDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein_python.APISession" title="openprotein_python.base.APISession"><span class="pre">APISession</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">AssayMetadata</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein_python/api/data.html#AssayDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.data.AssayDataset" title="Permalink to this definition"></a></dt>
 <dd><p>Future Job for manipulating results</p>
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein.api.data.AssayDataset.get_first">
-<span class="sig-name descname"><span class="pre">get_first</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/openprotein/api/data.html#AssayDataset.get_first"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.data.AssayDataset.get_first" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein_python.api.data.AssayDataset.get_first">
+<span class="sig-name descname"><span class="pre">get_first</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/openprotein_python/api/data.html#AssayDataset.get_first"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.data.AssayDataset.get_first" title="Permalink to this definition"></a></dt>
 <dd><p>Get head slice of assay data.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -201,8 +201,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein.api.data.AssayDataset.get_slice">
-<span class="sig-name descname"><span class="pre">get_slice</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/openprotein/api/data.html#AssayDataset.get_slice"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.data.AssayDataset.get_slice" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein_python.api.data.AssayDataset.get_slice">
+<span class="sig-name descname"><span class="pre">get_slice</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/openprotein_python/api/data.html#AssayDataset.get_slice"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.data.AssayDataset.get_slice" title="Permalink to this definition"></a></dt>
 <dd><p>Get a slice of assay data.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -221,8 +221,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein.api.data.AssayDataset.list_models">
-<span class="sig-name descname"><span class="pre">list_models</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/data.html#AssayDataset.list_models"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.data.AssayDataset.list_models" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein_python.api.data.AssayDataset.list_models">
+<span class="sig-name descname"><span class="pre">list_models</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein_python/api/data.html#AssayDataset.list_models"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.data.AssayDataset.list_models" title="Permalink to this definition"></a></dt>
 <dd><p>List models assoicated with assay.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -235,8 +235,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein.api.data.AssayDataset.update">
-<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">assay_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">assay_description</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/openprotein/api/data.html#AssayDataset.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.data.AssayDataset.update" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein_python.api.data.AssayDataset.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">assay_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">assay_description</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/openprotein_python/api/data.html#AssayDataset.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.data.AssayDataset.update" title="Permalink to this definition"></a></dt>
 <dd><p>Update the assay metadata.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>openprotein.api.train &mdash; OpenProtein-Python  documentation</title>
+  <title>openprotein_python.api.train &mdash; OpenProtein-Python  documentation</title>
       <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
@@ -64,8 +64,8 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
-          <li class="breadcrumb-item"><a href="../../openprotein.html">openprotein</a></li>
-      <li class="breadcrumb-item active">openprotein.api.train</li>
+          <li class="breadcrumb-item"><a href="../../openprotein_python.html">openprotein_python</a></li>
+      <li class="breadcrumb-item active">openprotein_python.api.train</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -74,15 +74,15 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <h1>Source code for openprotein.api.train</h1><div class="highlight"><pre>
+  <h1>Source code for openprotein_python.api.train</h1><div class="highlight"><pre>
 <span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span>
 <span class="kn">import</span> <span class="nn">pydantic</span>
-<span class="kn">from</span> <span class="nn">openprotein.base</span> <span class="kn">import</span> <span class="n">APISession</span>
-<span class="kn">from</span> <span class="nn">openprotein.api.jobs</span> <span class="kn">import</span> <span class="n">AsyncJobFuture</span><span class="p">,</span> <span class="n">Job</span>
+<span class="kn">from</span> <span class="nn">openprotein_python.base</span> <span class="kn">import</span> <span class="n">APISession</span>
+<span class="kn">from</span> <span class="nn">openprotein_python.api.jobs</span> <span class="kn">import</span> <span class="n">AsyncJobFuture</span><span class="p">,</span> <span class="n">Job</span>
 
-<span class="kn">from</span> <span class="nn">openprotein.models</span> <span class="kn">import</span> <span class="n">TrainGraph</span><span class="p">,</span> <span class="n">JobType</span><span class="p">,</span> <span class="n">Jobplus</span><span class="p">,</span> <span class="n">CVResults</span>
-<span class="kn">from</span> <span class="nn">openprotein.errors</span> <span class="kn">import</span> <span class="n">InvalidParameterError</span><span class="p">,</span> <span class="n">APIError</span><span class="p">,</span> <span class="n">InvalidJob</span>
-<span class="kn">from</span> <span class="nn">openprotein.api.data</span> <span class="kn">import</span> <span class="n">AssayDataset</span><span class="p">,</span> <span class="n">AssayMetadata</span>
+<span class="kn">from</span> <span class="nn">openprotein_python.models</span> <span class="kn">import</span> <span class="n">TrainGraph</span><span class="p">,</span> <span class="n">JobType</span><span class="p">,</span> <span class="n">Jobplus</span><span class="p">,</span> <span class="n">CVResults</span>
+<span class="kn">from</span> <span class="nn">openprotein_python.errors</span> <span class="kn">import</span> <span class="n">InvalidParameterError</span><span class="p">,</span> <span class="n">APIError</span><span class="p">,</span> <span class="n">InvalidJob</span>
+<span class="kn">from</span> <span class="nn">openprotein_python.api.data</span> <span class="kn">import</span> <span class="n">AssayDataset</span><span class="p">,</span> <span class="n">AssayMetadata</span>
 
 
 <span class="k">def</span> <span class="nf">list_models</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span> <span class="n">job_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">:</span>
@@ -580,7 +580,7 @@
         <span class="k">return</span> <span class="n">list_models</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">job_id</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="TrainFuture"><a class="viewcode-back" href="../../../train.html#openprotein.api.train.TrainFuture">[docs]</a><span class="k">class</span> <span class="nc">TrainFuture</span><span class="p">(</span><span class="n">TrainFutureMixin</span><span class="p">,</span> <span class="n">AsyncJobFuture</span><span class="p">):</span>
+<div class="viewcode-block" id="TrainFuture"><a class="viewcode-back" href="../../../train.html#openprotein_python.api.train.TrainFuture">[docs]</a><span class="k">class</span> <span class="nc">TrainFuture</span><span class="p">(</span><span class="n">TrainFutureMixin</span><span class="p">,</span> <span class="n">AsyncJobFuture</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Future Job for manipulating results&quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -602,7 +602,7 @@
     <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">job_id</span>
 
-<div class="viewcode-block" id="TrainFuture.get_assay_data"><a class="viewcode-back" href="../../../train.html#openprotein.api.train.TrainFuture.get_assay_data">[docs]</a>    <span class="k">def</span> <span class="nf">get_assay_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="TrainFuture.get_assay_data"><a class="viewcode-back" href="../../../train.html#openprotein_python.api.train.TrainFuture.get_assay_data">[docs]</a>    <span class="k">def</span> <span class="nf">get_assay_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        NOT IMPLEMENTED.</span>
 
@@ -623,7 +623,7 @@
         <span class="k">return</span> <span class="n">results</span></div>
 
 
-<div class="viewcode-block" id="TrainingAPI"><a class="viewcode-back" href="../../../train.html#openprotein.api.train.TrainingAPI">[docs]</a><span class="k">class</span> <span class="nc">TrainingAPI</span><span class="p">:</span>
+<div class="viewcode-block" id="TrainingAPI"><a class="viewcode-back" href="../../../train.html#openprotein_python.api.train.TrainingAPI">[docs]</a><span class="k">class</span> <span class="nc">TrainingAPI</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;API interface for calling Train endpoints&quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -632,7 +632,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">session</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">assay</span> <span class="o">=</span> <span class="kc">None</span>
 
-<div class="viewcode-block" id="TrainingAPI.create_training_job"><a class="viewcode-back" href="../../../train.html#openprotein.api.train.TrainingAPI.create_training_job">[docs]</a>    <span class="k">def</span> <span class="nf">create_training_job</span><span class="p">(</span>
+<div class="viewcode-block" id="TrainingAPI.create_training_job"><a class="viewcode-back" href="../../../train.html#openprotein_python.api.train.TrainingAPI.create_training_job">[docs]</a>    <span class="k">def</span> <span class="nf">create_training_job</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">assaydataset</span><span class="p">:</span> <span class="n">AssayDataset</span><span class="p">,</span>
         <span class="n">measurement_name</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
@@ -702,7 +702,7 @@
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">TrainFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job_details</span><span class="p">,</span> <span class="n">assaydataset</span><span class="p">)</span>
 
-<div class="viewcode-block" id="TrainingAPI.get_training_results"><a class="viewcode-back" href="../../../train.html#openprotein.api.train.TrainingAPI.get_training_results">[docs]</a>    <span class="k">def</span> <span class="nf">get_training_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TrainFuture</span><span class="p">:</span>
+<div class="viewcode-block" id="TrainingAPI.get_training_results"><a class="viewcode-back" href="../../../train.html#openprotein_python.api.train.TrainingAPI.get_training_results">[docs]</a>    <span class="k">def</span> <span class="nf">get_training_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TrainFuture</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get training results (e.g. loss etc).</span>
 
@@ -720,7 +720,7 @@
         <span class="n">job_details</span> <span class="o">=</span> <span class="n">get_training_results</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job_id</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">TrainFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job_details</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="TrainingAPI.load_job"><a class="viewcode-back" href="../../../train.html#openprotein.api.train.TrainingAPI.load_job">[docs]</a>    <span class="k">def</span> <span class="nf">load_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Jobplus</span><span class="p">:</span>
+<div class="viewcode-block" id="TrainingAPI.load_job"><a class="viewcode-back" href="../../../train.html#openprotein_python.api.train.TrainingAPI.load_job">[docs]</a>    <span class="k">def</span> <span class="nf">load_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Jobplus</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Reload a Submitted job to resume from where you left off!</span>
 
