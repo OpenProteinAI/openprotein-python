@@ -70,7 +70,7 @@ jobs:
         AWS_S3_BUCKET: ${{ steps.bucket_name.outputs.bucket }}
       shell: bash
       run: |
-        aws s3 sync apidocs/_build/html s3://${AWS_S3_BUCKET}/apidocs/
+        aws s3 sync apidocs/build/html s3://${AWS_S3_BUCKET}/apidocs/
 
     - name: Invalidate CloudFront cache
       env:
