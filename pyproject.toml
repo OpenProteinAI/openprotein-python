@@ -1,6 +1,6 @@
 [tool.poetry]
-name = "openprotein"
-version = "0.1.1b3"
+name = "openprotein-python"
+version = "0.1.1b4"
 description = "OpenProtein Python interface."
 authors = ["OpenProtein <info@ne47.bio>"]
 
@@ -23,4 +23,4 @@ url = "https://test.pypi.org/simple"
 
 
 [project.urls]
-Homepage = "https://github.com/OpenProteinAI/openprotein-python"
+Homepage = "https://docs.openprotein.ai/"

@@ -1,10 +1,13 @@
 # openprotein-python
 Python interface for the OpenProtein.AI REST API.
 
-Work-in-progress. Currently supports basic exampination of jobs and running predictions for query sequences and single site variants with PoET. 
+## Installation 
 
-Each module has a raw/low level set of functions that directly call the REST API endpoints. On top of that, a higher level interface exists for authenticating a session, then accessing the functionality via high-level APIs. Long running POST/GET paradigm calls return a Future object that can be polled to see if the result is ready, and then used to retrieve the result. It also implements an interface for synchronously waiting for the result.
+You can install with pip: 
 
+```
+pip install openprotein-python
+```
 ## Getting started
 
 First, create a session using your login credentials.
@@ -19,16 +22,8 @@ Given a future, check its status and retrieve results
 ```
 future.refresh() # call the backend to update the job status
 future.done() # returns True if the job is done, meaning the status could be SUCCESS, FAILED, or CANCELLED
+future.wait() # wait until done and then fetch results, verbosity is controlled with verbose arg.
 result = future.get() # get the result from a finished job
-```
-
-To wait for a job to finish and return the result, use `future.wait()`
-```
-# this will poll the backend for the job status every 2.5 seconds
-# for up to 600 seconds. If it takes longer than 600 seconds for the result
-# to be ready, this will raise a TimeoutException
-# verbose=True will print the time elapsed and job status using `tqdm`
-result = future.wait(interval=2.5, timeout=600, verbose=True)
 ```
 
 
@@ -40,11 +35,23 @@ session.jobs.list() # list all jobs
 session.jobs.get(JOB_ID) # get a specific job
 ```
 
+Resume an `AsyncJobFuture` from where you left off with each API's load_job:
+
+For example for training jobs:
+
+```
+session.train.load_job(JOB_ID)
+```
 ### PoET interface
 
 Score sequences using the PoET interface.
 ```
-prompt = b'MALWMRLLPLLALLALWGPDPAAAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN'
+prompt_seqs = b'MALWMRLLPLLALLALWGPDPAAAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN'
+
+prompt = session.poet.upload_prompt(prompt_seqs)
+```
+
+```
 queries = [
     b'MALWMRLLPLLALLALWGPDPAAAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN',
     b'MALWMRLLPLLVLLALWGPDPASAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN',
@@ -52,15 +59,17 @@ queries = [
     b'MALWIRSLPLLALLVFSGPGTSYAAANQHLCGSHLVEALYLVCGERGFFYSPKARRDVEQPLVSSPLRGEAGVLPFQQEEYEKVKRGIVEQCCHNTCSLYQLENYCN',
     b'MALWMRLLPLLALLALWAPAPTRAFVNQHLCGSHLVEALYLVCGERGFFYTPKARREVEDLQVRDVELAGAPGEGGLQPLALEGALQKRGIVEQCCTSICSLYQLENYCN',
 ]
-future = session.poet.score(prompt, queries, prompt_is_seed=True)
+```
+
+```
+future = session.poet.score(prompt, queries)
 result = future.wait()
 # result is a list of (sequence, score) pydantic objects
 ```
 
 Score single site variants using the PoET interface.
 ```
-prompt = b'MALWMRLLPLLALLALWGPDPAAAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN'
-sequence = prompt
+sequence = "MALWMRLLPLLALLALWGPDPAAAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN"
 future = session.poet.single_site(prompt, sequence, prompt_is_seed=True) 
 result = future.wait()
 # result is a dictionary of {variant: score}
@@ -68,16 +77,13 @@ result = future.wait()
 
 Generate sequences from the PoET model.
 ```
-prompt = b'MALWMRLLPLLALLALWGPDPAAAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN'
+
 future = session.poet.generate(
     prompt,
-    prompt_is_seed=True,
     max_seqs_from_msa=1024,
     num_samples=100,
-    # temperature=1.0,
-    # topk=None,
-    # topp=None,
-    # max_length=1000,
+    temperature=1.0,
+    topk=15
 )
 samples = future.wait()
 ```
@@ -91,10 +97,4 @@ future.get_msa()
 future.get_seed()
 ```
 
-
-## TODOs
-
-- [] Error parsing for requests
-- [] Better interface for creating async POST/GET requests
-- [] Interfaces for other REST API modules
- 
+See more at our [Homepage](https://docs.openprotein.ai/)
