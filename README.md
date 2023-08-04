@@ -1,3 +1,6 @@
+[![PyPI version](https://badge.fury.io/py/openprotein-python.svg)](https://pypi.org/project/openprotein-python/)
+[![Coverage](./apidocs/source/coverage.svg)](https://pypi.org/project/openprotein-python/)
+
 # openprotein-python
 Python interface for the OpenProtein.AI REST API.
 
