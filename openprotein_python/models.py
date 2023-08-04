@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import Enum
 import numpy as np
 from pydantic import BaseModel, Field, validator
-from openprotein.api.jobs import Job, JobStatus
+from openprotein_python.api.jobs import Job, JobStatus
 
 class ModelDescription(BaseModel):
     citation_title: Optional[str] = None

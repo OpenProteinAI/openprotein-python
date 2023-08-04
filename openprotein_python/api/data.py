@@ -3,10 +3,10 @@ import pydantic
 from typing import Optional, List
 from io import BytesIO
 
-from openprotein.models import AssayMetadata, AssayDataPage
-from openprotein.errors import APIError
-from openprotein.base import APISession
-import openprotein.config as config
+from openprotein_python.models import AssayMetadata, AssayDataPage
+from openprotein_python.errors import APIError
+from openprotein_python.base import APISession
+import openprotein_python.config as config
 
 
 def list_models(session: APISession, assay_id: str) -> List:

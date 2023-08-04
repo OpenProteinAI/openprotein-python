@@ -1,10 +1,10 @@
 import pytest
 from unittest.mock import MagicMock
-from openprotein.base import APISession
+from openprotein_python.base import APISession
 import io
 from urllib.parse import urljoin
-from openprotein.base import BearerAuth
-from openprotein.api.embedding import *
+from openprotein_python.base import BearerAuth
+from openprotein_python.api.embedding import *
 
 class ResponseMock:
     def __init__(self):

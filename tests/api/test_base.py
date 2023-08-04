@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from openprotein.base import AuthError, APISession
+from openprotein_python.base import AuthError, APISession
 import io
 import requests
 import json
@@ -54,7 +54,7 @@ def test_APISession_authenticate_failed(response_mock_unauthenticated):
 
         assert "Unable to authenticate with given credentials" in str(exc.value) 
         APISession.post.assert_called_once_with(
-            'https://dev.api.openprotein.ai/api/v1/login/user-access-token',
+            'https://api.openprotein.ai/api/v1/login/user-access-token',
             params={'username': username, 'password': password}, timeout=3
         )
 
@@ -68,6 +68,6 @@ def test_APISession_authenticate_successful(response_mock_authenticated):
 
         assert session.auth.token == token
         session.post.assert_called_once_with(
-            'https://dev.api.openprotein.ai/api/v1/login/user-access-token',
+            'https://api.openprotein.ai/api/v1/login/user-access-token',
             params={'username': username, 'password': password}, timeout=3
         )

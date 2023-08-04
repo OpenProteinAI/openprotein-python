@@ -11,9 +11,9 @@ import tqdm
 import pydantic
 from pydantic import BaseModel
 
-from openprotein.errors import TimeoutException
-from openprotein.base import APISession
-import openprotein.config as config
+from openprotein_python.errors import TimeoutException
+from openprotein_python.base import APISession
+import openprotein_python.config as config
 
 
 class JobStatus(str, Enum):

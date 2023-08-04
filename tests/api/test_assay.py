@@ -1,8 +1,8 @@
 import pytest
 from unittest.mock import MagicMock
-from openprotein.base import APISession
+from openprotein_python.base import APISession
 from datetime import datetime
-from openprotein.api.data import *
+from openprotein_python.api.data import *
 import io
 import pandas as pd
 from urllib.parse import urljoin
@@ -12,7 +12,7 @@ from io import BytesIO
 import pydantic
 from unittest.mock import ANY
 import json
-from openprotein.base import BearerAuth
+from openprotein_python.base import BearerAuth
 
 
 class APISessionMock(APISession):

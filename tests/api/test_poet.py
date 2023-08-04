@@ -1,8 +1,8 @@
 import pytest
 from unittest.mock import MagicMock
-from openprotein.base import APISession
+from openprotein_python.base import APISession
 from datetime import datetime
-from openprotein.api.poet import *
+from openprotein_python.api.poet import *
 import io
 from urllib.parse import urljoin
 
@@ -10,7 +10,7 @@ from typing import List, Optional, Union
 from io import BytesIO
 from unittest.mock import ANY
 import json
-from openprotein.base import BearerAuth
+from openprotein_python.base import BearerAuth
 
 class ResponseMock:
     def __init__(self):

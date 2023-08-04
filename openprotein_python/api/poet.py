@@ -5,18 +5,18 @@ import csv
 import codecs
 import requests
 
-from openprotein.base import APISession
-from openprotein.api.jobs import (
+from openprotein_python.base import APISession
+from openprotein_python.api.jobs import (
     Job,
     AsyncJobFuture,
     StreamingAsyncJobFuture,
     job_get,
     job_args_get,
 )
-from openprotein.api.jobs import load_job #as base_load_job
-import openprotein.config as config
+from openprotein_python.api.jobs import load_job #as base_load_job
+import openprotein_python.config as config
 
-from openprotein.models import (
+from openprotein_python.models import (
     MSASamplingMethod,
     PoetInputType,
     PoetScoreJob,
@@ -27,7 +27,7 @@ from openprotein.models import (
     PoetSSPJob,
     PoetSSPResult,
 )
-from openprotein.errors import (
+from openprotein_python.errors import (
     InvalidParameterError,
     MissingParameterError,
     APIError,

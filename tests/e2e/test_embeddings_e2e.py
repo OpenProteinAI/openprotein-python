@@ -25,9 +25,9 @@ from protembed.alphabets import Uniprot21
 from protembed.datasets import pad_tensor_1d
 from protembed.factory import ProtembedModelLoader
 
-import openprotein
-from openprotein import OpenProtein
-from openprotein.api.embedding import SVDModel
+import openprotein_python
+from openprotein_python import OpenProtein
+from openprotein_python.api.embedding import SVDModel
 from tests.utils.svd import TorchLowRankSVDTransform
 
 
@@ -51,10 +51,10 @@ def load_model_and_alphabet_local(model_location, device):
 def session() -> OpenProtein:
     with open("secrets.config", "r") as f:
         config = json.load(f)
-    return openprotein.connect(
+    return openprotein_python.connect(
         config["username"],
         config["password"],
-        backend="https://dev.api.openprotein.ai/api/",
+        backend="https://api.openprotein.ai/api/",
     )
 
 
