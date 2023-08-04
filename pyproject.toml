@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "openprotein_python"
 packages = [{include = "openprotein"}]
-version = "0.1.1b10"
+version = "0.1.1b11"
 description = "OpenProtein Python interface."
 license = "MIT"
 readme = "README.md"

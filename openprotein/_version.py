@@ -1,2 +1,3 @@
-__version_tuple__ = version_tuple = (0, 1, 1, 'b10')
-__version__ = version = '.'.join(str(x) for x in __version_tuple__)
+from importlib.metadata import version
+
+__version__ = version("openprotein-python")
