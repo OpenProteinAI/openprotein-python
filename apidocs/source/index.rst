@@ -2,6 +2,13 @@
 Welcome to OpenProtein's documentation!
 =============================================
 
+.. image:: https://badge.fury.io/py/openprotein-python.svg
+    :target: https://pypi.org/project/openprotein-python/
+    :align: right
+.. image:: coverage.svg
+    :target: https://pypi.org/project/openprotein-python/
+    :align: right
+    
 Welcome to OpenProtein.AI! 
 
 OpenProtein.AI is a powerful platform that seamlessly integrates state-of-the-art machine learning and generative models into protein engineering workflows. 
