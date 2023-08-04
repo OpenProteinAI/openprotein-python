@@ -138,7 +138,7 @@
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">openprotein_python</span> <span class="k">as</span> <span class="nn">openprotein</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">openprotein</span>
 
 <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;../../../../secrets.config&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
     <span class="n">config</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
@@ -609,7 +609,7 @@ Jobplus(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;32f2b48
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">openprotein_python.models</span> <span class="kn">import</span> <span class="n">DesignJobCreate</span><span class="p">,</span> <span class="n">ModelCriterion</span><span class="p">,</span> <span class="n">NMutationCriterion</span><span class="p">,</span> <span class="n">Criterion</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">openprotein.models</span> <span class="kn">import</span> <span class="n">DesignJobCreate</span><span class="p">,</span> <span class="n">ModelCriterion</span><span class="p">,</span> <span class="n">NMutationCriterion</span><span class="p">,</span> <span class="n">Criterion</span>
 <span class="n">design_data</span> <span class="o">=</span> <span class="n">DesignJobCreate</span><span class="p">(</span>
     <span class="n">assay_id</span><span class="o">=</span><span class="n">assay</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
     <span class="n">criteria</span><span class="o">=</span><span class="p">[</span>

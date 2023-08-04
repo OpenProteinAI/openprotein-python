@@ -1,12 +1,12 @@
 from typing import Optional
 import pydantic
 
-from openprotein_python.base import APISession
-from openprotein_python.api.jobs import AsyncJobFuture, Job
-import openprotein_python.config as config
-from openprotein_python.api.jobs import load_job
-from openprotein_python.models import DesignJobCreate, JobType, DesignResults
-from openprotein_python.errors import (
+from openprotein.base import APISession
+from openprotein.api.jobs import AsyncJobFuture, Job
+import openprotein.config as config
+from openprotein.api.jobs import load_job
+from openprotein.models import DesignJobCreate, JobType, DesignResults
+from openprotein.errors import (
     APIError,
     InvalidJob,
 )

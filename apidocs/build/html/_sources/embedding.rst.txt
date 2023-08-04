@@ -3,14 +3,14 @@ Embeddings
 
 Create embeddings for your protein sequences using open-source and proprietary models!
 
-.. autoclass:: openprotein_python.api.embedding.EmbeddingAPI
+.. autoclass:: openprotein.api.embedding.EmbeddingAPI
    :members:
 
-.. autoclass:: openprotein_python.api.embedding.EmbeddingResultFuture
+.. autoclass:: openprotein.api.embedding.EmbeddingResultFuture
    :members:
 
-.. autoclass:: openprotein_python.api.embedding.ProtembedModel
+.. autoclass:: openprotein.api.embedding.ProtembedModel
    :members:
 
-.. autoclass:: openprotein_python.api.embedding.SVDModel
+.. autoclass:: openprotein.api.embedding.SVDModel
    :members:

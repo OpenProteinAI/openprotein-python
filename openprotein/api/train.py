@@ -1,11 +1,11 @@
 from typing import Optional, List, Union
 import pydantic
-from openprotein_python.base import APISession
-from openprotein_python.api.jobs import AsyncJobFuture, Job
+from openprotein.base import APISession
+from openprotein.api.jobs import AsyncJobFuture, Job
 
-from openprotein_python.models import TrainGraph, JobType, Jobplus, CVResults
-from openprotein_python.errors import InvalidParameterError, APIError, InvalidJob
-from openprotein_python.api.data import AssayDataset, AssayMetadata
+from openprotein.models import TrainGraph, JobType, Jobplus, CVResults
+from openprotein.errors import InvalidParameterError, APIError, InvalidJob
+from openprotein.api.data import AssayDataset, AssayMetadata
 
 
 def list_models(session: APISession, job_id: str) -> List:

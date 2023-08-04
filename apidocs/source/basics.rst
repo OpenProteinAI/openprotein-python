@@ -3,11 +3,11 @@ APISession
 
 Create an authorized connection to OpenProtein backend. 
 
-.. autoclass:: openprotein_python.APISession
+.. autoclass:: openprotein.APISession
    :members:
    :exclude-members: request
 
 
-.. autoclass:: openprotein_python.OpenProtein
+.. autoclass:: openprotein.OpenProtein
    :members:
    :exclude-members: request

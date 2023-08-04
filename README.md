@@ -9,13 +9,13 @@ Python interface for the OpenProtein.AI REST API.
 You can install with pip: 
 
 ```
-pip install openprotein_python
+pip install openprotein
 ```
 ## Getting started
 
 First, create a session using your login credentials.
 ```
-import openprotein_python
+import openprotein
 session = openprotein.connect(USERNAME, PASSWORD)
 ```
 

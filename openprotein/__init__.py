@@ -1,13 +1,13 @@
-from openprotein_python._version import __version__
+from openprotein._version import __version__
 
-from openprotein_python.base import APISession
-from openprotein_python.api.jobs import JobsAPI, Job
-from openprotein_python.api.data import DataAPI
-from openprotein_python.api.poet import PoetAPI
-from openprotein_python.api.embedding import EmbeddingAPI
-from openprotein_python.api.train import TrainingAPI
-from openprotein_python.api.design import DesignAPI
-from openprotein_python.api.predict import PredictAPI
+from openprotein.base import APISession
+from openprotein.api.jobs import JobsAPI, Job
+from openprotein.api.data import DataAPI
+from openprotein.api.poet import PoetAPI
+from openprotein.api.embedding import EmbeddingAPI
+from openprotein.api.train import TrainingAPI
+from openprotein.api.design import DesignAPI
+from openprotein.api.predict import PredictAPI
 class OpenProtein(APISession):
     """
     The base class for accessing OpenProtein API functionality.
