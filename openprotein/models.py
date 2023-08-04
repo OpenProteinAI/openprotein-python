@@ -3,21 +3,21 @@ from typing import Optional, List, Union, Dict, Literal
 from datetime import datetime
 from enum import Enum
 import numpy as np
-from pydantic import BaseModel, Field, validator
-from openprotein_python.api.jobs import Job, JobStatus
+from pydantic import BaseModel, Field, validator, ConfigDict
+from openprotein.api.jobs import Job, JobStatus, NewModel
 
-class ModelDescription(BaseModel):
+class ModelDescription(NewModel):
     citation_title: Optional[str] = None
     doi: Optional[str] = None
     summary: str
 
-class TokenInfo(BaseModel):
+class TokenInfo(NewModel):
     id: int
     token: str
     primary: bool
     description: str
 
-class ModelMetadata(BaseModel):
+class ModelMetadata(NewModel):
     model_id: str
     description: ModelDescription
     max_sequence_length: Optional[int] = None
@@ -27,7 +27,7 @@ class ModelMetadata(BaseModel):
     output_tokens: List[str]
     token_descriptions: List[List[TokenInfo]]
 
-class EmbeddedSequence(BaseModel):
+class EmbeddedSequence(NewModel):
     class Config:
         arbitrary_types_allowed = True
 
@@ -52,7 +52,7 @@ class SVDJob(Job):
     pass
 
 
-class SVDMetadata(BaseModel):
+class SVDMetadata(NewModel):
     id: str
     status: JobStatus
     created_date: Optional[datetime] = None
@@ -64,15 +64,15 @@ class SVDMetadata(BaseModel):
     def is_done(self):
         return self.status.done()
     
-class DesignMetadata(BaseModel):
+class DesignMetadata(NewModel):
     y_mu: Optional[float] = None
     y_var: Optional[float] = None
 
-class DesignSubscore(BaseModel):
+class DesignSubscore(NewModel):
     score: int
     metadata: DesignMetadata
 
-class DesignStep(BaseModel):
+class DesignStep(NewModel):
     step: int
     sample_index: int
     sequence: str
@@ -88,7 +88,7 @@ class DesignStep(BaseModel):
     umap2: float
 
 
-class DesignResults(BaseModel):
+class DesignResults(NewModel):
     status: str
     job_id: str
     created_date: str
@@ -106,20 +106,20 @@ class DirectionEnum(str, Enum):
     eq = "="
 
 
-class Criterion(BaseModel):
+class Criterion(NewModel):
     target: float
     weight: float
     direction: str
 
 
-class ModelCriterion(BaseModel):
+class ModelCriterion(NewModel):
     criterion_type: Literal["model"]
     model_id: str
     measurement_name: str
     criterion: Criterion
 
 
-class NMutationCriterion(BaseModel):
+class NMutationCriterion(NewModel):
     criterion_type: Literal["n_mutations"]
     # sequences: Optional[List[str]]
 
@@ -127,7 +127,7 @@ class NMutationCriterion(BaseModel):
 CriterionItem = Union[ModelCriterion, NMutationCriterion]
 
 
-class DesignJobCreate(BaseModel):
+class DesignJobCreate(NewModel):
     assay_id: str
     criteria: List[List[CriterionItem]]
     num_steps: Optional[int] = 8
@@ -173,34 +173,34 @@ class Jobplus(Job):
     sequence_length: Optional[int] = None
 
 
-class TrainStep(BaseModel):
+class TrainStep(NewModel):
     step: int
     loss: float
     tag: str
     tags: dict
 
 
-class TrainGraph(BaseModel):
+class TrainGraph(NewModel):
     traingraph: List[TrainStep]
     created_date: datetime
     job_id: str
 
 
-class SequenceData(BaseModel):
+class SequenceData(NewModel):
     sequence: str
 
 
-class SequenceDataset(BaseModel):
+class SequenceDataset(NewModel):
     sequences: List[str]
 
 
-class JobDetails(BaseModel):
+class JobDetails(NewModel):
     job_id: str
     job_type: str
     status: str
 
 
-class AssayMetadata(BaseModel):
+class AssayMetadata(NewModel):
     assay_name: str
     assay_description: str
     assay_id: str
@@ -212,12 +212,12 @@ class AssayMetadata(BaseModel):
     sequence_length: Optional[int] = None
 
 
-class AssayDataRow(BaseModel):
+class AssayDataRow(NewModel):
     mut_sequence: str
     measurement_values: List[Union[float, None]]
 
 
-class AssayDataPage(BaseModel):
+class AssayDataPage(NewModel):
     assaymetadata: AssayMetadata
     page_size: int
     page_offset: int
@@ -243,7 +243,7 @@ class MSASamplingMethod(str, Enum):
 
 
 
-class PromptPostParams(BaseModel):
+class PromptPostParams(NewModel):
     msa_id: str
     num_sequences: Optional[int] = Field(None, ge=0, lt=100)
     num_residues: Optional[int] = Field(None, ge=0, lt=24577)
@@ -255,7 +255,7 @@ class PromptPostParams(BaseModel):
     num_ensemble_prompts: int = 1
     random_seed: Optional[int] = None
 
-#class PoetSiteResult(BaseModel):
+#class PoetSiteResult(NewModel):
 #    # obsolete
 #    sequence: bytes
 #    score: List[float]
@@ -277,7 +277,7 @@ class PoetInputType(str, Enum):
     PROMPT = "PROMPT"
 
 
-class PoetScoreResult(BaseModel):
+class PoetScoreResult(NewModel):
     sequence: bytes
     score: List[float]
     name: Optional[str] = None
@@ -291,7 +291,7 @@ class PoetScoreJob(Job):
     result: Optional[List[PoetScoreResult]] = None
     n_completed: Optional[int] = None
 
-class PoetSSPResult(BaseModel):
+class PoetSSPResult(NewModel):
     sequence: bytes
     score: List[float]
     name: Optional[str] = None
@@ -312,7 +312,7 @@ class PoetSSPJob(PoetScoreJob):
     result: Optional[List[PoetSSPResult]] = None
     n_completed: Optional[int] = None
 
-class Prediction(BaseModel):
+class Prediction(NewModel):
     """Prediction details."""
 
     model_id: str
@@ -320,7 +320,7 @@ class Prediction(BaseModel):
     properties: Dict[str, Dict[str, float]]
 
 
-class PredictJobBase(BaseModel):
+class PredictJobBase(NewModel):
     """Shared properties for predict job outputs."""
 
     # might be none if just fetching
@@ -329,7 +329,7 @@ class PredictJobBase(BaseModel):
     status: str
 
 
-class DesignJob(BaseModel):
+class DesignJob(NewModel):
     job_id: Optional[str] = None
     job_type: str
     status: str
@@ -338,7 +338,7 @@ class DesignJob(BaseModel):
 class PredictJob(PredictJobBase):
     """Properties about predict job returned via API."""
 
-    class SequencePrediction(BaseModel):
+    class SequencePrediction(NewModel):
         """Sequence prediction."""
 
         sequence: str
@@ -350,7 +350,7 @@ class PredictJob(PredictJobBase):
 class PredictSingleSiteJob(PredictJobBase):
     """Properties about single-site prediction job returned via API."""
 
-    class SequencePrediction(BaseModel):
+    class SequencePrediction(NewModel):
         """Sequence prediction."""
 
         position: int
@@ -361,7 +361,7 @@ class PredictSingleSiteJob(PredictJobBase):
     result: Optional[List[SequencePrediction]] = None
 
 
-class CVItem(BaseModel):
+class CVItem(NewModel):
     row_index: int
     sequence: str
     measurement_name: str

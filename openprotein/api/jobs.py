@@ -9,12 +9,18 @@ from enum import Enum
 
 import tqdm
 import pydantic
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-from openprotein_python.errors import TimeoutException
-from openprotein_python.base import APISession
-import openprotein_python.config as config
+from openprotein.errors import TimeoutException
+from openprotein.base import APISession
+import openprotein.config as config
 
+
+
+class NewModel(BaseModel):
+    model_config = ConfigDict(
+        protected_namespaces=()
+    )
 
 class JobStatus(str, Enum):
     PENDING: str = "PENDING"
@@ -34,7 +40,7 @@ class JobStatus(str, Enum):
 
 
 
-class Job(BaseModel):
+class Job(NewModel):
     status: JobStatus
     job_id: str
     job_type: str

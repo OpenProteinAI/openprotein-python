@@ -1,4 +1,4 @@
-import openprotein_python.config as config
+import openprotein.config as config
 
 import requests
 from urllib.parse import urljoin
@@ -7,7 +7,7 @@ from typing import Union
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
-from openprotein_python.errors import APIError, InvalidParameterError, MissingParameterError, AuthError
+from openprotein.errors import APIError, InvalidParameterError, MissingParameterError, AuthError
 
 class BearerAuth(requests.auth.AuthBase):
     """

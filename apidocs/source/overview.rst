@@ -25,7 +25,7 @@ In addition, you can resume a workflow using the ``load_job`` function along wit
 OpenProtein API session
 -------------------------
 
-Executing workflows is acheived with the OpenProtein APISession object (see :py:meth:`openprotein_python.APISession`) ::
+Executing workflows is acheived with the OpenProtein APISession object (see :py:meth:`openprotein.APISession`) ::
 
     session = openprotein.connect(username="username", password="password")
 

@@ -1,6 +1,7 @@
 [tool.poetry]
 name = "openprotein_python"
-version = "0.1.1b7"
+packages = [{include = "openprotein"}]
+version = "0.1.1b11"
 description = "OpenProtein Python interface."
 license = "MIT"
 readme = "README.md"
@@ -12,11 +13,11 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.7"
-requests = ">2"
-pydantic = ">1"
-tqdm = ">4"
-pandas = ">1"
+python = "^3.8"
+requests = ">=2"
+pydantic = ">=1"
+tqdm = ">=4"
+pandas = ">=1"
 
 [tool.poetry.dev-dependencies]
 
