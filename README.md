@@ -12,7 +12,7 @@ pip install openprotein_python
 
 First, create a session using your login credentials.
 ```
-import openprotein
+import openprotein_python
 session = openprotein.connect(USERNAME, PASSWORD)
 ```
 
