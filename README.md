@@ -1,5 +1,5 @@
 [![PyPI version](https://badge.fury.io/py/openprotein-python.svg)](https://pypi.org/project/openprotein-python/)
-[![Coverage](./apidocs/source/coverage.svg)](https://pypi.org/project/openprotein-python/)
+[![Coverage](https://github.com/OpenProteinAI/openprotein-python-private/raw/develop/apidocs/source/coverage.svg)](https://pypi.org/project/openprotein-python/)
 
 # openprotein-python
 Python interface for the OpenProtein.AI REST API.
@@ -9,7 +9,7 @@ Python interface for the OpenProtein.AI REST API.
 You can install with pip: 
 
 ```
-pip install openprotein
+pip install openprotein-python
 ```
 ## Getting started
 
