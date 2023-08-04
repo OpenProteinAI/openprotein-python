@@ -52,12 +52,12 @@
 <li class="toctree-l2"><a class="reference internal" href="poet_workflow.html#creating-a-prompt">Creating a prompt</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="poet_workflow.html#index">Index</a><ul class="current">
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Protein Evolutionary Transformer (PoET)</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#openprotein_python.api.poet.PoetAPI"><code class="docutils literal notranslate"><span class="pre">PoetAPI</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#openprotein_python.api.poet.PoetScoreFuture"><code class="docutils literal notranslate"><span class="pre">PoetScoreFuture</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#openprotein_python.api.poet.PoetSingleSiteFuture"><code class="docutils literal notranslate"><span class="pre">PoetSingleSiteFuture</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#openprotein_python.api.poet.PoetGenerateFuture"><code class="docutils literal notranslate"><span class="pre">PoetGenerateFuture</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#openprotein_python.api.poet.PromptFuture"><code class="docutils literal notranslate"><span class="pre">PromptFuture</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#openprotein_python.api.poet.MSAFuture"><code class="docutils literal notranslate"><span class="pre">MSAFuture</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#openprotein.api.poet.PoetAPI"><code class="docutils literal notranslate"><span class="pre">PoetAPI</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#openprotein.api.poet.PoetScoreFuture"><code class="docutils literal notranslate"><span class="pre">PoetScoreFuture</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#openprotein.api.poet.PoetSingleSiteFuture"><code class="docutils literal notranslate"><span class="pre">PoetSingleSiteFuture</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#openprotein.api.poet.PoetGenerateFuture"><code class="docutils literal notranslate"><span class="pre">PoetGenerateFuture</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#openprotein.api.poet.PromptFuture"><code class="docutils literal notranslate"><span class="pre">PromptFuture</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#openprotein.api.poet.MSAFuture"><code class="docutils literal notranslate"><span class="pre">MSAFuture</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="demos/poet_demo.html">Demo of PoET functionality</a></li>
@@ -97,12 +97,12 @@
 <h1>Protein Evolutionary Transformer (PoET)<a class="headerlink" href="#protein-evolutionary-transformer-poet" title="Permalink to this heading"></a></h1>
 <p>Use our generative Protein Evolutionary Transformer (PoET) model for de novo generation of proteins, evaluation of protein fitness, and single site mutant analysis of proteins. These workflows are all possible without prior wetlab data, and therefore do not require assaydata to be pre-loaded!</p>
 <dl class="py class">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetAPI">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein_python.api.poet.</span></span><span class="sig-name descname"><span class="pre">PoetAPI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein_python.APISession" title="openprotein_python.base.APISession"><span class="pre">APISession</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#PoetAPI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.poet.PoetAPI" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetAPI">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.poet.</span></span><span class="sig-name descname"><span class="pre">PoetAPI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.base.APISession"><span class="pre">APISession</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetAPI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetAPI" title="Permalink to this definition"></a></dt>
 <dd><p>API interface for calling Poet and Align endpoints</p>
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetAPI.create_msa">
-<span class="sig-name descname"><span class="pre">create_msa</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#openprotein_python.api.poet.MSAFuture" title="openprotein_python.api.poet.MSAFuture"><span class="pre">MSAFuture</span></a></span></span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#PoetAPI.create_msa"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.poet.PoetAPI.create_msa" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetAPI.create_msa">
+<span class="sig-name descname"><span class="pre">create_msa</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#openprotein.api.poet.MSAFuture" title="openprotein.api.poet.MSAFuture"><span class="pre">MSAFuture</span></a></span></span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetAPI.create_msa"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetAPI.create_msa" title="Permalink to this definition"></a></dt>
 <dd><p>Construct an MSA via homology search with the seed sequence.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -121,8 +121,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetAPI.generate">
-<span class="sig-name descname"><span class="pre">generate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#openprotein_python.api.poet.PromptFuture" title="openprotein_python.api.poet.PromptFuture"><span class="pre">PromptFuture</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperature</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">topk</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">topp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#openprotein_python.api.poet.PoetGenerateFuture" title="openprotein_python.api.poet.PoetGenerateFuture"><span class="pre">PoetGenerateFuture</span></a></span></span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#PoetAPI.generate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.poet.PoetAPI.generate" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetAPI.generate">
+<span class="sig-name descname"><span class="pre">generate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#openprotein.api.poet.PromptFuture" title="openprotein.api.poet.PromptFuture"><span class="pre">PromptFuture</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperature</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">topk</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">topp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#openprotein.api.poet.PoetGenerateFuture" title="openprotein.api.poet.PoetGenerateFuture"><span class="pre">PoetGenerateFuture</span></a></span></span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetAPI.generate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetAPI.generate" title="Permalink to this definition"></a></dt>
 <dd><p>Generate protein sequences conditioned on a prompt.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -149,8 +149,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetAPI.get_msa">
-<span class="sig-name descname"><span class="pre">get_msa</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">reader</span></span></span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#PoetAPI.get_msa"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.poet.PoetAPI.get_msa" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetAPI.get_msa">
+<span class="sig-name descname"><span class="pre">get_msa</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">reader</span></span></span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetAPI.get_msa"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetAPI.get_msa" title="Permalink to this definition"></a></dt>
 <dd><p>Get generated MSA for a given job.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -166,8 +166,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetAPI.get_msa_job">
-<span class="sig-name descname"><span class="pre">get_msa_job</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">MSAJob</span></span></span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#PoetAPI.get_msa_job"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.poet.PoetAPI.get_msa_job" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetAPI.get_msa_job">
+<span class="sig-name descname"><span class="pre">get_msa_job</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">MSAJob</span></span></span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetAPI.get_msa_job"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetAPI.get_msa_job" title="Permalink to this definition"></a></dt>
 <dd><p>Get MSA job based on job_id.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -183,8 +183,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetAPI.get_prompt">
-<span class="sig-name descname"><span class="pre">get_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">reader</span></span></span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#PoetAPI.get_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.poet.PoetAPI.get_prompt" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetAPI.get_prompt">
+<span class="sig-name descname"><span class="pre">get_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">reader</span></span></span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetAPI.get_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetAPI.get_prompt" title="Permalink to this definition"></a></dt>
 <dd><p>Get prompts for a given job.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -203,8 +203,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetAPI.get_prompt_job">
-<span class="sig-name descname"><span class="pre">get_prompt_job</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PromptJob</span></span></span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#PoetAPI.get_prompt_job"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.poet.PoetAPI.get_prompt_job" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetAPI.get_prompt_job">
+<span class="sig-name descname"><span class="pre">get_prompt_job</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PromptJob</span></span></span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetAPI.get_prompt_job"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetAPI.get_prompt_job" title="Permalink to this definition"></a></dt>
 <dd><p>Get prompt job based on job_id.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -220,8 +220,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetAPI.get_seed">
-<span class="sig-name descname"><span class="pre">get_seed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">reader</span></span></span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#PoetAPI.get_seed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.poet.PoetAPI.get_seed" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetAPI.get_seed">
+<span class="sig-name descname"><span class="pre">get_seed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">reader</span></span></span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetAPI.get_seed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetAPI.get_seed" title="Permalink to this definition"></a></dt>
 <dd><p>Get input data for a given msa job.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -237,8 +237,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetAPI.load_msa_job">
-<span class="sig-name descname"><span class="pre">load_msa_job</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msa_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#openprotein_python.api.poet.MSAFuture" title="openprotein_python.api.poet.MSAFuture"><span class="pre">MSAFuture</span></a></span></span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#PoetAPI.load_msa_job"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.poet.PoetAPI.load_msa_job" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetAPI.load_msa_job">
+<span class="sig-name descname"><span class="pre">load_msa_job</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msa_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#openprotein.api.poet.MSAFuture" title="openprotein.api.poet.MSAFuture"><span class="pre">MSAFuture</span></a></span></span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetAPI.load_msa_job"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetAPI.load_msa_job" title="Permalink to this definition"></a></dt>
 <dd><p>Reload a previously ran MSA job to resume where you left off.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -251,14 +251,14 @@
 <dd class="field-odd"><p>Job to resume workflows.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference internal" href="#openprotein_python.api.poet.PromptFuture" title="openprotein_python.api.poet.PromptFuture">PromptFuture</a></p>
+<dd class="field-even"><p><a class="reference internal" href="#openprotein.api.poet.PromptFuture" title="openprotein.api.poet.PromptFuture">PromptFuture</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetAPI.load_poet_job">
-<span class="sig-name descname"><span class="pre">load_poet_job</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#openprotein_python.api.poet.PoetSingleSiteFuture" title="openprotein_python.api.poet.PoetSingleSiteFuture"><span class="pre">PoetSingleSiteFuture</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="#openprotein_python.api.poet.PoetScoreFuture" title="openprotein_python.api.poet.PoetScoreFuture"><span class="pre">PoetScoreFuture</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="#openprotein_python.api.poet.PoetGenerateFuture" title="openprotein_python.api.poet.PoetGenerateFuture"><span class="pre">PoetGenerateFuture</span></a></span></span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#PoetAPI.load_poet_job"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.poet.PoetAPI.load_poet_job" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetAPI.load_poet_job">
+<span class="sig-name descname"><span class="pre">load_poet_job</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#openprotein.api.poet.PoetSingleSiteFuture" title="openprotein.api.poet.PoetSingleSiteFuture"><span class="pre">PoetSingleSiteFuture</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="#openprotein.api.poet.PoetScoreFuture" title="openprotein.api.poet.PoetScoreFuture"><span class="pre">PoetScoreFuture</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="#openprotein.api.poet.PoetGenerateFuture" title="openprotein.api.poet.PoetGenerateFuture"><span class="pre">PoetGenerateFuture</span></a></span></span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetAPI.load_poet_job"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetAPI.load_poet_job" title="Permalink to this definition"></a></dt>
 <dd><p>Reload a previously ran Poet job to resume where you left off.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -277,8 +277,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetAPI.load_prompt_job">
-<span class="sig-name descname"><span class="pre">load_prompt_job</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#openprotein_python.api.poet.PromptFuture" title="openprotein_python.api.poet.PromptFuture"><span class="pre">PromptFuture</span></a></span></span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#PoetAPI.load_prompt_job"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.poet.PoetAPI.load_prompt_job" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetAPI.load_prompt_job">
+<span class="sig-name descname"><span class="pre">load_prompt_job</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#openprotein.api.poet.PromptFuture" title="openprotein.api.poet.PromptFuture"><span class="pre">PromptFuture</span></a></span></span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetAPI.load_prompt_job"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetAPI.load_prompt_job" title="Permalink to this definition"></a></dt>
 <dd><p>Reload a previously ran prompt job to resume where you left off.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -291,14 +291,14 @@
 <dd class="field-odd"><p>Job to resume workflows.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference internal" href="#openprotein_python.api.poet.PromptFuture" title="openprotein_python.api.poet.PromptFuture">PromptFuture</a></p>
+<dd class="field-even"><p><a class="reference internal" href="#openprotein.api.poet.PromptFuture" title="openprotein.api.poet.PromptFuture">PromptFuture</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetAPI.score">
-<span class="sig-name descname"><span class="pre">score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#openprotein_python.api.poet.PromptFuture" title="openprotein_python.api.poet.PromptFuture"><span class="pre">PromptFuture</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">queries</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#openprotein_python.api.poet.PoetScoreFuture" title="openprotein_python.api.poet.PoetScoreFuture"><span class="pre">PoetScoreFuture</span></a></span></span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#PoetAPI.score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.poet.PoetAPI.score" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetAPI.score">
+<span class="sig-name descname"><span class="pre">score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#openprotein.api.poet.PromptFuture" title="openprotein.api.poet.PromptFuture"><span class="pre">PromptFuture</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">queries</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#openprotein.api.poet.PoetScoreFuture" title="openprotein.api.poet.PoetScoreFuture"><span class="pre">PoetScoreFuture</span></a></span></span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetAPI.score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetAPI.score" title="Permalink to this definition"></a></dt>
 <dd><p>Score query sequences using the specified prompt.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -317,8 +317,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetAPI.single_site">
-<span class="sig-name descname"><span class="pre">single_site</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#openprotein_python.api.poet.PromptFuture" title="openprotein_python.api.poet.PromptFuture"><span class="pre">PromptFuture</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequence</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#openprotein_python.api.poet.PoetSingleSiteFuture" title="openprotein_python.api.poet.PoetSingleSiteFuture"><span class="pre">PoetSingleSiteFuture</span></a></span></span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#PoetAPI.single_site"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.poet.PoetAPI.single_site" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetAPI.single_site">
+<span class="sig-name descname"><span class="pre">single_site</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#openprotein.api.poet.PromptFuture" title="openprotein.api.poet.PromptFuture"><span class="pre">PromptFuture</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequence</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#openprotein.api.poet.PoetSingleSiteFuture" title="openprotein.api.poet.PoetSingleSiteFuture"><span class="pre">PoetSingleSiteFuture</span></a></span></span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetAPI.single_site"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetAPI.single_site" title="Permalink to this definition"></a></dt>
 <dd><p>Score all single substitutions of the query sequence using the specified prompt.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -337,8 +337,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetAPI.upload_msa">
-<span class="sig-name descname"><span class="pre">upload_msa</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msa_file</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#openprotein_python.api.poet.MSAFuture" title="openprotein_python.api.poet.MSAFuture"><span class="pre">MSAFuture</span></a></span></span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#PoetAPI.upload_msa"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.poet.PoetAPI.upload_msa" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetAPI.upload_msa">
+<span class="sig-name descname"><span class="pre">upload_msa</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msa_file</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#openprotein.api.poet.MSAFuture" title="openprotein.api.poet.MSAFuture"><span class="pre">MSAFuture</span></a></span></span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetAPI.upload_msa"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetAPI.upload_msa" title="Permalink to this definition"></a></dt>
 <dd><p>Upload an MSA from file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -357,8 +357,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetAPI.upload_prompt">
-<span class="sig-name descname"><span class="pre">upload_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">BinaryIO</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PromptJob</span></span></span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#PoetAPI.upload_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.poet.PoetAPI.upload_prompt" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetAPI.upload_prompt">
+<span class="sig-name descname"><span class="pre">upload_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">BinaryIO</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PromptJob</span></span></span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetAPI.upload_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetAPI.upload_prompt" title="Permalink to this definition"></a></dt>
 <dd><p>Directly upload a prompt.</p>
 <p>Bypass post_msa and prompt_post steps entirely. In this case PoET will use the prompt as is.
 You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; and newline between CSVs.</p>
@@ -381,23 +381,23 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetScoreFuture">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein_python.api.poet.</span></span><span class="sig-name descname"><span class="pre">PoetScoreFuture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein_python.APISession" title="openprotein_python.base.APISession"><span class="pre">APISession</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#PoetScoreFuture"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.poet.PoetScoreFuture" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetScoreFuture">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.poet.</span></span><span class="sig-name descname"><span class="pre">PoetScoreFuture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.base.APISession"><span class="pre">APISession</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetScoreFuture"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetScoreFuture" title="Permalink to this definition"></a></dt>
 <dd><p>Represents a result of a PoET scoring job.</p>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetScoreFuture.session">
-<span class="sig-name descname"><span class="pre">session</span></span><a class="headerlink" href="#openprotein_python.api.poet.PoetScoreFuture.session" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetScoreFuture.session">
+<span class="sig-name descname"><span class="pre">session</span></span><a class="headerlink" href="#openprotein.api.poet.PoetScoreFuture.session" title="Permalink to this definition"></a></dt>
 <dd><p>An instance of APISession for API interactions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="basics.html#openprotein_python.APISession" title="openprotein_python.APISession">APISession</a></p>
+<dd class="field-odd"><p><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.APISession">APISession</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetScoreFuture.job">
-<span class="sig-name descname"><span class="pre">job</span></span><a class="headerlink" href="#openprotein_python.api.poet.PoetScoreFuture.job" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetScoreFuture.job">
+<span class="sig-name descname"><span class="pre">job</span></span><a class="headerlink" href="#openprotein.api.poet.PoetScoreFuture.job" title="Permalink to this definition"></a></dt>
 <dd><p>The PoET scoring job.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -407,8 +407,8 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetScoreFuture.page_size">
-<span class="sig-name descname"><span class="pre">page_size</span></span><a class="headerlink" href="#openprotein_python.api.poet.PoetScoreFuture.page_size" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetScoreFuture.page_size">
+<span class="sig-name descname"><span class="pre">page_size</span></span><a class="headerlink" href="#openprotein.api.poet.PoetScoreFuture.page_size" title="Permalink to this definition"></a></dt>
 <dd><p>The number of results to fetch in a single page.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -418,14 +418,14 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetScoreFuture.get">
-<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#PoetScoreFuture.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.poet.PoetScoreFuture.get" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetScoreFuture.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetScoreFuture.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetScoreFuture.get" title="Permalink to this definition"></a></dt>
 <dd><p>Get the final results of the PoET  job.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="id0">
-<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">PoetScoreResult</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#PoetScoreFuture.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id0" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">PoetScoreResult</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetScoreFuture.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id0" title="Permalink to this definition"></a></dt>
 <dd><p>Get the final results of the PoET scoring job.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -446,23 +446,23 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetSingleSiteFuture">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein_python.api.poet.</span></span><span class="sig-name descname"><span class="pre">PoetSingleSiteFuture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein_python.APISession" title="openprotein_python.base.APISession"><span class="pre">APISession</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#PoetSingleSiteFuture"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.poet.PoetSingleSiteFuture" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetSingleSiteFuture">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.poet.</span></span><span class="sig-name descname"><span class="pre">PoetSingleSiteFuture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.base.APISession"><span class="pre">APISession</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetSingleSiteFuture"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetSingleSiteFuture" title="Permalink to this definition"></a></dt>
 <dd><p>Represents a result of a PoET single-site analysis job.</p>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetSingleSiteFuture.session">
-<span class="sig-name descname"><span class="pre">session</span></span><a class="headerlink" href="#openprotein_python.api.poet.PoetSingleSiteFuture.session" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetSingleSiteFuture.session">
+<span class="sig-name descname"><span class="pre">session</span></span><a class="headerlink" href="#openprotein.api.poet.PoetSingleSiteFuture.session" title="Permalink to this definition"></a></dt>
 <dd><p>An instance of APISession for API interactions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="basics.html#openprotein_python.APISession" title="openprotein_python.APISession">APISession</a></p>
+<dd class="field-odd"><p><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.APISession">APISession</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetSingleSiteFuture.job">
-<span class="sig-name descname"><span class="pre">job</span></span><a class="headerlink" href="#openprotein_python.api.poet.PoetSingleSiteFuture.job" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetSingleSiteFuture.job">
+<span class="sig-name descname"><span class="pre">job</span></span><a class="headerlink" href="#openprotein.api.poet.PoetSingleSiteFuture.job" title="Permalink to this definition"></a></dt>
 <dd><p>The PoET scoring job.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -472,8 +472,8 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetSingleSiteFuture.page_size">
-<span class="sig-name descname"><span class="pre">page_size</span></span><a class="headerlink" href="#openprotein_python.api.poet.PoetSingleSiteFuture.page_size" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetSingleSiteFuture.page_size">
+<span class="sig-name descname"><span class="pre">page_size</span></span><a class="headerlink" href="#openprotein.api.poet.PoetSingleSiteFuture.page_size" title="Permalink to this definition"></a></dt>
 <dd><p>The number of results to fetch in a single page.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -483,14 +483,14 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetSingleSiteFuture.get">
-<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#PoetSingleSiteFuture.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.poet.PoetSingleSiteFuture.get" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetSingleSiteFuture.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetSingleSiteFuture.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetSingleSiteFuture.get" title="Permalink to this definition"></a></dt>
 <dd><p>Get the final results of the PoET  job.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="id1">
-<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">PoetSSPResult</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#PoetSingleSiteFuture.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id1" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">PoetSSPResult</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetSingleSiteFuture.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id1" title="Permalink to this definition"></a></dt>
 <dd><p>Get the results of a PoET single-site analysis job.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -511,23 +511,23 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetGenerateFuture">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein_python.api.poet.</span></span><span class="sig-name descname"><span class="pre">PoetGenerateFuture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein_python.APISession" title="openprotein_python.base.APISession"><span class="pre">APISession</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#PoetGenerateFuture"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.poet.PoetGenerateFuture" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetGenerateFuture">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.poet.</span></span><span class="sig-name descname"><span class="pre">PoetGenerateFuture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.base.APISession"><span class="pre">APISession</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetGenerateFuture"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetGenerateFuture" title="Permalink to this definition"></a></dt>
 <dd><p>Represents a result of a PoET generation job.</p>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetGenerateFuture.session">
-<span class="sig-name descname"><span class="pre">session</span></span><a class="headerlink" href="#openprotein_python.api.poet.PoetGenerateFuture.session" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetGenerateFuture.session">
+<span class="sig-name descname"><span class="pre">session</span></span><a class="headerlink" href="#openprotein.api.poet.PoetGenerateFuture.session" title="Permalink to this definition"></a></dt>
 <dd><p>An instance of APISession for API interactions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="basics.html#openprotein_python.APISession" title="openprotein_python.APISession">APISession</a></p>
+<dd class="field-odd"><p><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.APISession">APISession</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetGenerateFuture.job">
-<span class="sig-name descname"><span class="pre">job</span></span><a class="headerlink" href="#openprotein_python.api.poet.PoetGenerateFuture.job" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetGenerateFuture.job">
+<span class="sig-name descname"><span class="pre">job</span></span><a class="headerlink" href="#openprotein.api.poet.PoetGenerateFuture.job" title="Permalink to this definition"></a></dt>
 <dd><p>The PoET scoring job.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -537,8 +537,8 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetGenerateFuture.Methods">
-<span class="sig-name descname"><span class="pre">Methods</span></span><a class="headerlink" href="#openprotein_python.api.poet.PoetGenerateFuture.Methods" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetGenerateFuture.Methods">
+<span class="sig-name descname"><span class="pre">Methods</span></span><a class="headerlink" href="#openprotein.api.poet.PoetGenerateFuture.Methods" title="Permalink to this definition"></a></dt>
 <dd><dl class="simple">
 <dt>stream() -&gt; Iterator[PoetScoreResult]:</dt><dd><p>Stream the results of the PoET generation job.</p>
 </dd>
@@ -546,8 +546,8 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PoetGenerateFuture.stream">
-<span class="sig-name descname"><span class="pre">stream</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">PoetScoreResult</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#PoetGenerateFuture.stream"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.poet.PoetGenerateFuture.stream" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PoetGenerateFuture.stream">
+<span class="sig-name descname"><span class="pre">stream</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">PoetScoreResult</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/openprotein/api/poet.html#PoetGenerateFuture.stream"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PoetGenerateFuture.stream" title="Permalink to this definition"></a></dt>
 <dd><p>Stream the results from the response.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -565,23 +565,23 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PromptFuture">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein_python.api.poet.</span></span><span class="sig-name descname"><span class="pre">PromptFuture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein_python.APISession" title="openprotein_python.base.APISession"><span class="pre">APISession</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msa_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#PromptFuture"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.poet.PromptFuture" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PromptFuture">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.poet.</span></span><span class="sig-name descname"><span class="pre">PromptFuture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.base.APISession"><span class="pre">APISession</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msa_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/poet.html#PromptFuture"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PromptFuture" title="Permalink to this definition"></a></dt>
 <dd><p>Represents a result of a prompt job.</p>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PromptFuture.session">
-<span class="sig-name descname"><span class="pre">session</span></span><a class="headerlink" href="#openprotein_python.api.poet.PromptFuture.session" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PromptFuture.session">
+<span class="sig-name descname"><span class="pre">session</span></span><a class="headerlink" href="#openprotein.api.poet.PromptFuture.session" title="Permalink to this definition"></a></dt>
 <dd><p>An instance of APISession for API interactions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="basics.html#openprotein_python.APISession" title="openprotein_python.APISession">APISession</a></p>
+<dd class="field-odd"><p><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.APISession">APISession</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PromptFuture.job">
-<span class="sig-name descname"><span class="pre">job</span></span><a class="headerlink" href="#openprotein_python.api.poet.PromptFuture.job" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PromptFuture.job">
+<span class="sig-name descname"><span class="pre">job</span></span><a class="headerlink" href="#openprotein.api.poet.PromptFuture.job" title="Permalink to this definition"></a></dt>
 <dd><p>The PoET scoring job.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -591,8 +591,8 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PromptFuture.page_size">
-<span class="sig-name descname"><span class="pre">page_size</span></span><a class="headerlink" href="#openprotein_python.api.poet.PromptFuture.page_size" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PromptFuture.page_size">
+<span class="sig-name descname"><span class="pre">page_size</span></span><a class="headerlink" href="#openprotein.api.poet.PromptFuture.page_size" title="Permalink to this definition"></a></dt>
 <dd><p>The number of results to fetch in a single page.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -602,8 +602,8 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.PromptFuture.get">
-<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#PromptFuture.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.poet.PromptFuture.get" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.PromptFuture.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/poet.html#PromptFuture.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.PromptFuture.get" title="Permalink to this definition"></a></dt>
 <dd><p>Get the final results of the PoET scoring job.</p>
 </dd></dl>
 
@@ -618,23 +618,23 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.MSAFuture">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein_python.api.poet.</span></span><span class="sig-name descname"><span class="pre">MSAFuture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein_python.APISession" title="openprotein_python.base.APISession"><span class="pre">APISession</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#MSAFuture"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.poet.MSAFuture" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.MSAFuture">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.poet.</span></span><span class="sig-name descname"><span class="pre">MSAFuture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.base.APISession"><span class="pre">APISession</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/poet.html#MSAFuture"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.MSAFuture" title="Permalink to this definition"></a></dt>
 <dd><p>Represents a result of a MSA job.</p>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.MSAFuture.session">
-<span class="sig-name descname"><span class="pre">session</span></span><a class="headerlink" href="#openprotein_python.api.poet.MSAFuture.session" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.MSAFuture.session">
+<span class="sig-name descname"><span class="pre">session</span></span><a class="headerlink" href="#openprotein.api.poet.MSAFuture.session" title="Permalink to this definition"></a></dt>
 <dd><p>An instance of APISession for API interactions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="basics.html#openprotein_python.APISession" title="openprotein_python.APISession">APISession</a></p>
+<dd class="field-odd"><p><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.APISession">APISession</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.MSAFuture.job">
-<span class="sig-name descname"><span class="pre">job</span></span><a class="headerlink" href="#openprotein_python.api.poet.MSAFuture.job" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.MSAFuture.job">
+<span class="sig-name descname"><span class="pre">job</span></span><a class="headerlink" href="#openprotein.api.poet.MSAFuture.job" title="Permalink to this definition"></a></dt>
 <dd><p>The PoET scoring job.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -644,8 +644,8 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.MSAFuture.page_size">
-<span class="sig-name descname"><span class="pre">page_size</span></span><a class="headerlink" href="#openprotein_python.api.poet.MSAFuture.page_size" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.MSAFuture.page_size">
+<span class="sig-name descname"><span class="pre">page_size</span></span><a class="headerlink" href="#openprotein.api.poet.MSAFuture.page_size" title="Permalink to this definition"></a></dt>
 <dd><p>The number of results to fetch in a single page.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -655,8 +655,8 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.MSAFuture.get">
-<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#MSAFuture.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.poet.MSAFuture.get" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.MSAFuture.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/poet.html#MSAFuture.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.MSAFuture.get" title="Permalink to this definition"></a></dt>
 <dd><p>Get the final results of the PoET scoring job.</p>
 </dd></dl>
 
@@ -669,8 +669,8 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 </dd>
 </dl>
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.MSAFuture.sample_prompt">
-<span class="sig-name descname"><span class="pre">sample_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_sequences</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_residues</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">MSASamplingMethod</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">MSASamplingMethod.NEIGHBORS_NONGAP_NORM_NO_LIMIT</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">homology_level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_similarity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_similarity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">always_include_seed_sequence</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_ensemble_prompts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#MSAFuture.sample_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.poet.MSAFuture.sample_prompt" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.MSAFuture.sample_prompt">
+<span class="sig-name descname"><span class="pre">sample_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_sequences</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_residues</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">MSASamplingMethod</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">MSASamplingMethod.NEIGHBORS_NONGAP_NORM_NO_LIMIT</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">homology_level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_similarity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_similarity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">always_include_seed_sequence</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_ensemble_prompts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/poet.html#MSAFuture.sample_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.MSAFuture.sample_prompt" title="Permalink to this definition"></a></dt>
 <dd><p>Create a protein sequence prompt from a linked MSA (Multiple Sequence Alignment) for PoET Jobs.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -699,8 +699,8 @@ You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; 
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="openprotein_python.api.poet.MSAFuture.wait">
-<span class="sig-name descname"><span class="pre">wait</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein_python/api/poet.html#MSAFuture.wait"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein_python.api.poet.MSAFuture.wait" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="openprotein.api.poet.MSAFuture.wait">
+<span class="sig-name descname"><span class="pre">wait</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/poet.html#MSAFuture.wait"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.poet.MSAFuture.wait" title="Permalink to this definition"></a></dt>
 <dd><p>Wait for job to complete, then fetch results.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>

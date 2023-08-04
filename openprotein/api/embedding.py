@@ -1,15 +1,15 @@
-from openprotein_python.base import APISession
-from openprotein_python.api.jobs import (
+from openprotein.base import APISession
+from openprotein.api.jobs import (
     Job,
     MappedAsyncJobFuture,
     PagedAsyncJobFuture,
     job_get,
     JobStatus,
 )
-from openprotein_python.errors import InvalidJob
-import openprotein_python.config as config
-from openprotein_python.api.jobs import load_job
-from openprotein_python.models import (
+from openprotein.errors import InvalidJob
+import openprotein.config as config
+from openprotein.api.jobs import load_job
+from openprotein.models import (
     ModelDescription,
     TokenInfo,
     ModelMetadata,

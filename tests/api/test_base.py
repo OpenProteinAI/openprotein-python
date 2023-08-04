@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from openprotein_python.base import AuthError, APISession
+from openprotein.base import AuthError, APISession
 import io
 import requests
 import json

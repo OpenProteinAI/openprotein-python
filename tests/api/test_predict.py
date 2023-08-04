@@ -1,9 +1,9 @@
 from unittest.mock import patch, MagicMock, ANY
-from openprotein_python.api.predict import PredictFuture, PredictAPI, get_prediction_results, get_single_site_prediction_results
-from openprotein_python.base import APISession
-from openprotein_python.api.train import TrainFuture
-from openprotein_python.models import SequenceDataset, SequenceData, AssayMetadata, Prediction, PredictJob, PredictSingleSiteJob
-from openprotein_python.api.jobs import Job
+from openprotein.api.predict import PredictFuture, PredictAPI, get_prediction_results, get_single_site_prediction_results
+from openprotein.base import APISession
+from openprotein.api.train import TrainFuture
+from openprotein.models import SequenceDataset, SequenceData, AssayMetadata, Prediction, PredictJob, PredictSingleSiteJob
+from openprotein.api.jobs import Job
 import pytest 
 from datetime import datetime 
 

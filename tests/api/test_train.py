@@ -2,14 +2,14 @@ import pytest
 from datetime import datetime
 from unittest.mock import MagicMock
 
-from openprotein_python.api.data import AssayDataset, AssayMetadata
-from openprotein_python.api.jobs import Job
-from openprotein_python.api.train import (TrainFuture, TrainingAPI, create_train_job,
+from openprotein.api.data import AssayDataset, AssayMetadata
+from openprotein.api.jobs import Job
+from openprotein.api.train import (TrainFuture, TrainingAPI, create_train_job,
                                    _create_train_job_br, _create_train_job_gp,
                                    get_training_results)
-from openprotein_python.base import APISession
-from openprotein_python.errors import InvalidParameterError
-from openprotein_python.models import TrainGraph
+from openprotein.base import APISession
+from openprotein.errors import InvalidParameterError
+from openprotein.models import TrainGraph
 
 
 @pytest.fixture
