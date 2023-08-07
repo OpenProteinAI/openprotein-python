@@ -364,11 +364,10 @@ def upload_prompt_post(
         An object representing the status and results of the prompt job.
     """
 
-    endpoint = "v1/align/upload_prompt"
-
+    endpoint = "v1/poet/align/upload_prompt"
+    files = {"prompt_file": prompt_file}
     try:
-        body = {"prompt_file": prompt_file}
-        response = session.post(endpoint, body=body)
+        response = session.post(endpoint, files=files)
         return PromptJob(**response.json())
     except Exception as exc:
         raise APIError(f"Failed to upload prompt post: {exc}") from exc
