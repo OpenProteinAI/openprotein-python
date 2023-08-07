@@ -8,8 +8,8 @@ Welcome to OpenProtein's documentation!
 .. image:: coverage.svg
     :target: https://pypi.org/project/openprotein-python/
     :align: right
-.. image:: https://anaconda.org/openprotein/openprotein_python/badges/version.svg
-    :target: https://anaconda.org/openprotein/openprotein_python
+.. image:: https://anaconda.org/openprotein/openprotein-python/badges/version.svg
+    :target: https://anaconda.org/openprotein/openprotein-python
     :align: right
 
 Welcome to OpenProtein.AI! 
