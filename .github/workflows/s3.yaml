@@ -22,10 +22,18 @@ jobs:
       with:
         python-version: '3.x'
 
-    - name: Install Sphinx
+    - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install sphinx recommonmark sphinx_markdown_tables sphinx_markdown_builder nbsphinx sphinx-rtd-theme pandas requests tqdm pydantic
+        pip install sphinx recommonmark sphinx_markdown_tables sphinx_markdown_builder nbsphinx sphinx-rtd-theme pandas requests tqdm pydantic coverage coverage-badge
+
+    - name: Run tests and generate coverage badge
+      run: |
+        coverage run -m pytest ./tests/api/
+        coverage html
+        mv htmlcov apidocs/source/
+        rm ./apidocs/source/coverage.svg 
+        coverage-badge -o apidocs/source/coverage.svg
 
     - name: Build HTML with Sphinx
       run: |
