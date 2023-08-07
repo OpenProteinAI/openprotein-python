@@ -2,7 +2,7 @@
 # SECRETS FILE
 secrets.config
 poetry.lock
-/.github/*
+/.github/s3.yaml
 /htmlcov
 /apidocs/build
 # VS code
