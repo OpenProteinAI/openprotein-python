@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>openprotein.api.poet &mdash; OpenProtein-Python  documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            OpenProtein-Python
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Session management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core_workflow.html">Asssay-based Sequence Learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../poet_workflow.html">De Novo prediction &amp; generative models (PoET)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../embedding_workflow.html">Protein Language Models &amp; Embeddings</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">OpenProtein-Python</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../../openprotein.html">openprotein</a></li>
+      <li class="breadcrumb-item active">openprotein.api.poet</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for openprotein.api.poet</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">BinaryIO</span><span class="p">,</span> <span class="n">Iterator</span>
+<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">BytesIO</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">csv</span>
+<span class="kn">import</span> <span class="nn">codecs</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+
+<span class="kn">from</span> <span class="nn">openprotein.base</span> <span class="kn">import</span> <span class="n">APISession</span>
+<span class="kn">from</span> <span class="nn">openprotein.api.jobs</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Job</span><span class="p">,</span>
+    <span class="n">AsyncJobFuture</span><span class="p">,</span>
+    <span class="n">StreamingAsyncJobFuture</span><span class="p">,</span>
+    <span class="n">job_get</span><span class="p">,</span>
+    <span class="n">job_args_get</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">openprotein.api.jobs</span> <span class="kn">import</span> <span class="n">load_job</span> <span class="c1">#as base_load_job</span>
+<span class="kn">import</span> <span class="nn">openprotein.config</span> <span class="k">as</span> <span class="nn">config</span>
+
+<span class="kn">from</span> <span class="nn">openprotein.models</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">MSASamplingMethod</span><span class="p">,</span>
+    <span class="n">PoetInputType</span><span class="p">,</span>
+    <span class="n">PoetScoreJob</span><span class="p">,</span>
+    <span class="n">PoetScoreResult</span><span class="p">,</span>
+    <span class="n">PromptJob</span><span class="p">,</span>
+    <span class="n">MSAJob</span><span class="p">,</span>
+    <span class="n">JobType</span><span class="p">,</span>
+    <span class="n">PoetSSPJob</span><span class="p">,</span>
+    <span class="n">PoetSSPResult</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">openprotein.errors</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">InvalidParameterError</span><span class="p">,</span>
+    <span class="n">MissingParameterError</span><span class="p">,</span>
+    <span class="n">APIError</span><span class="p">,</span>
+    <span class="n">InvalidJob</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<span class="c1">#def load_job(session, job_id):</span>
+<span class="c1">#    return base_load_job(session, job_id)</span>
+
+
+<span class="k">def</span> <span class="nf">csv_stream</span><span class="p">(</span><span class="n">response</span><span class="p">:</span> <span class="n">requests</span><span class="o">.</span><span class="n">Response</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns a CSV reader from a requests.Response object.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    response : requests.Response</span>
+<span class="sd">        The response object to parse.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    csv.reader</span>
+<span class="sd">        A csv reader object for the response.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">raw_content</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">raw</span>  <span class="c1"># the raw bytes stream</span>
+    <span class="n">content</span> <span class="o">=</span> <span class="n">codecs</span><span class="o">.</span><span class="n">getreader</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)(</span>
+        <span class="n">raw_content</span>
+    <span class="p">)</span>  <span class="c1"># force the response to be encoded as utf-8</span>
+    <span class="k">return</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">get_align_job_inputs</span><span class="p">(</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span>
+    <span class="n">job_id</span><span class="p">,</span>
+    <span class="n">input_type</span><span class="p">:</span> <span class="n">PoetInputType</span><span class="p">,</span>
+    <span class="n">prompt_index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">requests</span><span class="o">.</span><span class="n">Response</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get MSA and related data for an align job.</span>
+
+<span class="sd">    Returns either the original user seed (RAW), the generated MSA or the prompt.</span>
+
+<span class="sd">    Specify prompt_index to retreive the specific prompt for each replicate when input_type is PROMPT.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        The API session.</span>
+<span class="sd">    job_id : int or str</span>
+<span class="sd">        The job identifier.</span>
+<span class="sd">    input_type : PoetInputType</span>
+<span class="sd">        The type of MSA data.</span>
+<span class="sd">    prompt_index : Optional[int]</span>
+<span class="sd">        The replicate number for the prompt (input_type=-PROMPT only)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    requests.Response</span>
+<span class="sd">        The response from the server.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="s2">&quot;v1/poet/align/inputs&quot;</span>
+
+    <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;job_id&quot;</span><span class="p">:</span> <span class="n">job_id</span><span class="p">,</span> <span class="s2">&quot;msa_type&quot;</span><span class="p">:</span> <span class="n">input_type</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">prompt_index</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">&quot;replicate&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">prompt_index</span>
+
+    <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">response</span>
+
+
+<span class="k">def</span> <span class="nf">get_input</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span>
+    <span class="n">job</span><span class="p">:</span> <span class="n">Job</span><span class="p">,</span>
+    <span class="n">input_type</span><span class="p">:</span> <span class="n">PoetInputType</span><span class="p">,</span>
+    <span class="n">prompt_index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get input data for a given job.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    self : APISession</span>
+<span class="sd">        The API session.</span>
+<span class="sd">    job : Job</span>
+<span class="sd">        The job for which to retrieve data.</span>
+<span class="sd">    input_type : PoetInputType</span>
+<span class="sd">        The type of MSA data.</span>
+<span class="sd">    prompt_index : Optional[int]</span>
+<span class="sd">        The replicate number for the prompt (input_type=-PROMPT only)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    csv.reader</span>
+<span class="sd">        A CSV reader for the response data.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">job_id</span> <span class="o">=</span> <span class="n">job</span><span class="o">.</span><span class="n">job_id</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">get_align_job_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="p">,</span> <span class="n">input_type</span><span class="p">,</span> <span class="n">prompt_index</span><span class="o">=</span><span class="n">prompt_index</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">csv_stream</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">get_prompt</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span> <span class="n">job</span><span class="p">:</span> <span class="n">Job</span><span class="p">,</span> <span class="n">prompt_index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the prompt for a given job.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    self : APISession</span>
+<span class="sd">        The API session.</span>
+<span class="sd">    job : Job</span>
+<span class="sd">        The job for which to retrieve the prompt.</span>
+<span class="sd">    prompt_index : Optional[int], default=None</span>
+<span class="sd">        The index of the prompt. If None, it returns all.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    csv.reader</span>
+<span class="sd">        A CSV reader for the prompt data.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">get_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="n">PoetInputType</span><span class="o">.</span><span class="n">PROMPT</span><span class="p">,</span> <span class="n">prompt_index</span><span class="o">=</span><span class="n">prompt_index</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">get_seed</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span> <span class="n">job</span><span class="p">:</span> <span class="n">Job</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the seed for a given MSA job.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    self : APISession</span>
+<span class="sd">        The API session.</span>
+<span class="sd">    job : Job</span>
+<span class="sd">        The job for which to retrieve the seed.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    csv.reader</span>
+<span class="sd">        A CSV reader for the seed sequence.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">get_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="n">PoetInputType</span><span class="o">.</span><span class="n">INPUT</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">get_msa</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span> <span class="n">job</span><span class="p">:</span> <span class="n">Job</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the generated MSA (Multiple Sequence Alignment) for a given job.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    self : APISession</span>
+<span class="sd">        The API session.</span>
+<span class="sd">    job : Job</span>
+<span class="sd">        The job for which to retrieve the MSA.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    csv.reader</span>
+<span class="sd">        A CSV reader for the MSA data.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">get_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="n">PoetInputType</span><span class="o">.</span><span class="n">MSA</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">msa_post</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span> <span class="n">msa_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create an MSA.</span>
+
+<span class="sd">    Either via a seed sequence (which will trigger MSA creation) or a ready-to-use MSA (via msa_file).</span>
+
+<span class="sd">    Note that seed and msa_file are mutually exclusive, and one or the other must be set.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        Authorized session.</span>
+<span class="sd">    msa_file : str, optional</span>
+<span class="sd">        Ready-made MSA. Defaults to None.</span>
+<span class="sd">    seed : str, optional</span>
+<span class="sd">        Seed to trigger MSA job. Defaults to None.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    Exception</span>
+<span class="sd">        If msa_file and seed are both None.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    MSAJob</span>
+<span class="sd">        Job details.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">msa_file</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">seed</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
+        <span class="n">msa_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">seed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="n">MissingParameterError</span><span class="p">(</span><span class="s2">&quot;seed OR msa_file must be provided.&quot;</span><span class="p">)</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="s2">&quot;v1/poet/align/msa&quot;</span>
+
+    <span class="n">is_seed</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="n">seed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">msa_file</span> <span class="o">=</span> <span class="n">BytesIO</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="sa">b</span><span class="s2">&quot;&gt;seed&quot;</span><span class="p">,</span> <span class="n">seed</span><span class="p">]))</span>
+        <span class="n">is_seed</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;is_seed&quot;</span><span class="p">:</span> <span class="n">is_seed</span><span class="p">}</span>
+    <span class="n">files</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;msa_file&quot;</span><span class="p">:</span> <span class="n">msa_file</span><span class="p">}</span>
+
+    <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">files</span><span class="o">=</span><span class="n">files</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">MSAJob</span><span class="p">(</span><span class="o">**</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+
+
+<span class="k">def</span> <span class="nf">prompt_post</span><span class="p">(</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span>
+    <span class="n">msa_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">num_sequences</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">num_residues</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">method</span><span class="p">:</span> <span class="n">MSASamplingMethod</span> <span class="o">=</span> <span class="n">MSASamplingMethod</span><span class="o">.</span><span class="n">NEIGHBORS_NONGAP_NORM_NO_LIMIT</span><span class="p">,</span>
+    <span class="n">homology_level</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.8</span><span class="p">,</span>
+    <span class="n">max_similarity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">min_similarity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">always_include_seed_sequence</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">num_ensemble_prompts</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">random_seed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a protein sequence prompt from a linked MSA (Multiple Sequence Alignment) for PoET Jobs.</span>
+
+<span class="sd">    The MSA is specified by msa_id and created in msa_post.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        An instance of APISession to manage interactions with the API.</span>
+<span class="sd">    msa_id : str</span>
+<span class="sd">        The ID of the Multiple Sequence Alignment to use for the prompt.</span>
+<span class="sd">    num_sequences : int, optional</span>
+<span class="sd">        Maximum number of sequences in the prompt. Must be &lt;100.</span>
+<span class="sd">    num_residues : int, optional</span>
+<span class="sd">        Maximum number of residues (tokens) in the prompt. Must be less than 24577.</span>
+<span class="sd">    method : MSASamplingMethod, optional</span>
+<span class="sd">        Method to use for MSA sampling. Defaults to NEIGHBORS_NONGAP_NORM_NO_LIMIT.</span>
+<span class="sd">    homology_level : float, optional</span>
+<span class="sd">        Level of homology for sequences in the MSA (neighbors methods only). Must be between 0 and 1. Defaults to 0.8.</span>
+<span class="sd">    max_similarity : float, optional</span>
+<span class="sd">        Maximum similarity between sequences in the MSA and the seed. Must be between 0 and 1. Defaults to 1.0.</span>
+<span class="sd">    min_similarity : float, optional</span>
+<span class="sd">        Minimum similarity between sequences in the MSA and the seed. Must be between 0 and 1. Defaults to 0.0.</span>
+<span class="sd">    always_include_seed_sequence : bool, optional</span>
+<span class="sd">        Whether to always include the seed sequence in the MSA. Defaults to False.</span>
+<span class="sd">    num_ensemble_prompts : int, optional</span>
+<span class="sd">        Number of ensemble jobs to run. Defaults to 1.</span>
+<span class="sd">    random_seed : int, optional</span>
+<span class="sd">        Seed for random number generation. Defaults to a random number between 0 and 2**32-1.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    InvalidParameterError</span>
+<span class="sd">        If provided parameter values are not in the allowed range.</span>
+<span class="sd">    MissingParameterError</span>
+<span class="sd">        If both or none of &#39;num_sequences&#39;, &#39;num_residues&#39; is specified.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    PromptJob</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="s2">&quot;v1/poet/align/prompt&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">homology_level</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">InvalidParameterError</span><span class="p">(</span><span class="s2">&quot;The &#39;homology_level&#39; must be between 0 and 1.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">max_similarity</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">InvalidParameterError</span><span class="p">(</span><span class="s2">&quot;The &#39;max_similarity&#39; must be between 0 and 1.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">min_similarity</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">InvalidParameterError</span><span class="p">(</span><span class="s2">&quot;The &#39;min_similarity&#39; must be between 0 and 1.&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">num_residues</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">num_sequences</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">num_residues</span> <span class="o">=</span> <span class="mi">12288</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">num_sequences</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">num_residues</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
+        <span class="n">num_sequences</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">num_residues</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="n">MissingParameterError</span><span class="p">(</span>
+            <span class="s2">&quot;Either &#39;num_sequences&#39; or &#39;num_residues&#39; must be set, but not both.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">num_sequences</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">num_sequences</span> <span class="o">&lt;</span> <span class="mi">100</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">InvalidParameterError</span><span class="p">(</span><span class="s2">&quot;The &#39;num_sequences&#39; must be between 0 and 100.&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">num_residues</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">num_residues</span> <span class="o">&lt;</span> <span class="mi">24577</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">InvalidParameterError</span><span class="p">(</span><span class="s2">&quot;The &#39;num_residues&#39; must be between 0 and 24577.&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">random_seed</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">random_seed</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">randrange</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="mi">32</span><span class="p">)</span>
+
+    <span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;msa_id&quot;</span><span class="p">:</span> <span class="n">msa_id</span><span class="p">,</span>
+        <span class="s2">&quot;msa_method&quot;</span><span class="p">:</span> <span class="n">method</span><span class="p">,</span>
+        <span class="s2">&quot;homology_level&quot;</span><span class="p">:</span> <span class="n">homology_level</span><span class="p">,</span>
+        <span class="s2">&quot;max_similarity&quot;</span><span class="p">:</span> <span class="n">max_similarity</span><span class="p">,</span>
+        <span class="s2">&quot;min_similarity&quot;</span><span class="p">:</span> <span class="n">min_similarity</span><span class="p">,</span>
+        <span class="s2">&quot;force_include_first&quot;</span><span class="p">:</span> <span class="n">always_include_seed_sequence</span><span class="p">,</span>
+        <span class="s2">&quot;replicates&quot;</span><span class="p">:</span> <span class="n">num_ensemble_prompts</span><span class="p">,</span>
+        <span class="s2">&quot;seed&quot;</span><span class="p">:</span> <span class="n">random_seed</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="n">num_sequences</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">&quot;max_msa_sequences&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">num_sequences</span>
+    <span class="k">if</span> <span class="n">num_residues</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">&quot;max_msa_tokens&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">num_residues</span>
+
+    <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">PromptJob</span><span class="p">(</span><span class="o">**</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+
+
+<span class="k">def</span> <span class="nf">upload_prompt_post</span><span class="p">(</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span>
+    <span class="n">prompt_file</span><span class="p">:</span> <span class="n">BinaryIO</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PromptJob</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Directly upload a prompt.</span>
+
+<span class="sd">    Bypass post_msa and prompt_post steps entirely. In this case PoET will use the prompt as is.</span>
+<span class="sd">    You can specify multiple prompts (one per replicate) with an `&lt;END_PROMPT&gt;\n` between CSVs.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        An instance of APISession to manage interactions with the API.</span>
+<span class="sd">    prompt_file : BinaryIO</span>
+<span class="sd">        Binary I/O object representing the prompt file.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    APIError</span>
+<span class="sd">        If there is an issue with the API request.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    PromptJob</span>
+<span class="sd">        An object representing the status and results of the prompt job.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="s2">&quot;v1/poet/align/upload_prompt&quot;</span>
+    <span class="n">files</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;prompt_file&quot;</span><span class="p">:</span> <span class="n">prompt_file</span><span class="p">}</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">files</span><span class="o">=</span><span class="n">files</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PromptJob</span><span class="p">(</span><span class="o">**</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">APIError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to upload prompt post: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">exc</span>
+
+
+<span class="k">def</span> <span class="nf">poet_score_post</span><span class="p">(</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span> <span class="n">prompt_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">queries</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PoetScoreJob</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Submits a job to score sequences based on the given prompt.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        An instance of APISession to manage interactions with the API.</span>
+<span class="sd">    prompt_id : str</span>
+<span class="sd">        The ID of the prompt.</span>
+<span class="sd">    queries : List[str]</span>
+<span class="sd">        A list of query sequences to be scored.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    APIError</span>
+<span class="sd">        If there is an issue with the API request.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    PoetScoreJob</span>
+<span class="sd">        An object representing the status and results of the scoring job.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="s2">&quot;v1/poet/score&quot;</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">queries</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">MissingParameterError</span><span class="p">(</span><span class="s2">&quot;Must include queries for scoring!&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">prompt_id</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">MissingParameterError</span><span class="p">(</span><span class="s2">&quot;Must include prompt_id in request!&quot;</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">variant_file</span> <span class="o">=</span> <span class="n">BytesIO</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">queries</span><span class="p">))</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;prompt_id&quot;</span><span class="p">:</span> <span class="n">prompt_id</span><span class="p">}</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+            <span class="n">endpoint</span><span class="p">,</span> <span class="n">files</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;variant_file&quot;</span><span class="p">:</span> <span class="n">variant_file</span><span class="p">},</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">PoetScoreJob</span><span class="p">(</span><span class="o">**</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">APIError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to post poet score: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">exc</span>
+
+
+<span class="k">def</span> <span class="nf">poet_score_get</span><span class="p">(</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span> <span class="n">job_id</span><span class="p">,</span> <span class="n">page_size</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">POET_PAGE_SIZE</span><span class="p">,</span> <span class="n">page_offset</span><span class="o">=</span><span class="mi">0</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Fetch a page of results from a PoET score job.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        An instance of APISession to manage interactions with the API.</span>
+<span class="sd">    job_id : str</span>
+<span class="sd">        The ID of the PoET scoring job to fetch results from.</span>
+<span class="sd">    page_size : int, optional</span>
+<span class="sd">        The number of results to fetch in a single page. Defaults to config.POET_PAGE_SIZE.</span>
+<span class="sd">    page_offset : int, optional</span>
+<span class="sd">        The offset (number of results) to start fetching results from. Defaults to 0.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    APIError</span>
+<span class="sd">        If the provided page size is larger than the maximum allowed page size.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    PoetScoreJob</span>
+<span class="sd">        An object representing the PoET scoring job, including its current status and results (if any).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="s2">&quot;v1/poet/score&quot;</span>
+
+    <span class="k">if</span> <span class="n">page_size</span> <span class="o">&gt;</span> <span class="n">config</span><span class="o">.</span><span class="n">POET_MAX_PAGE_SIZE</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">APIError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Page size must be less than the max for PoET: </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">POET_MAX_PAGE_SIZE</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="n">endpoint</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;job_id&quot;</span><span class="p">:</span> <span class="n">job_id</span><span class="p">,</span> <span class="s2">&quot;page_size&quot;</span><span class="p">:</span> <span class="n">page_size</span><span class="p">,</span> <span class="s2">&quot;page_offset&quot;</span><span class="p">:</span> <span class="n">page_offset</span><span class="p">},</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">PoetScoreJob</span><span class="p">(</span><span class="o">**</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+
+
+<span class="k">class</span> <span class="nc">PoetFutureMixin</span><span class="p">:</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span>
+    <span class="n">job</span><span class="p">:</span> <span class="n">Job</span>
+
+    <span class="k">def</span> <span class="nf">get_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_type</span><span class="p">:</span> <span class="n">PoetInputType</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;See child function docs.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">get_input</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">,</span> <span class="n">input_type</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt_index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;See child function docs.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">get_prompt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">,</span> <span class="n">prompt_index</span><span class="o">=</span><span class="n">prompt_index</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_seed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;See child function docs.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">get_seed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_msa</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;See child function docs.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">get_msa</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">job_id</span>
+
+
+<div class="viewcode-block" id="MSAFuture"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.MSAFuture">[docs]</a><span class="k">class</span> <span class="nc">MSAFuture</span><span class="p">(</span><span class="n">PoetFutureMixin</span><span class="p">,</span> <span class="n">AsyncJobFuture</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Represents a result of a MSA job.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        An instance of APISession for API interactions.</span>
+<span class="sd">    job : Job</span>
+<span class="sd">        The PoET scoring job.</span>
+<span class="sd">    page_size : int</span>
+<span class="sd">        The number of results to fetch in a single page.</span>
+
+<span class="sd">    Methods</span>
+<span class="sd">    -------</span>
+<span class="sd">    get(verbose=False)</span>
+<span class="sd">        Get the final results of the PoET scoring job.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    List[PoetScoreResult]</span>
+<span class="sd">        The list of results from the PoET scoring job.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span> <span class="n">job</span><span class="p">:</span> <span class="n">Job</span><span class="p">,</span> <span class="n">page_size</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">POET_PAGE_SIZE</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        init a PoetScoreFuture instance.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        session : APISession</span>
+<span class="sd">            An instance of APISession for API interactions.</span>
+<span class="sd">        job : Job</span>
+<span class="sd">            The PoET scoring job.</span>
+<span class="sd">        page_size : int</span>
+<span class="sd">            The number of results to fetch in a single page.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">page_size</span> <span class="o">=</span> <span class="n">page_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_msa_id</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_prompt_id</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">)</span>
+    
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">job_id</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">prompt_id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">job_type</span> <span class="o">==</span> <span class="s2">&quot;/align/prompt&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prompt_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_prompt_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">job_id</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prompt_id</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">msa_id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">job_type</span> <span class="o">==</span> <span class="s2">&quot;/align/align&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_msa_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_msa_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">job_id</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_msa_id</span>
+
+<div class="viewcode-block" id="MSAFuture.wait"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.MSAFuture.wait">[docs]</a>    <span class="k">def</span> <span class="nf">wait</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span>
+                             <span class="n">interval</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">POLLING_INTERVAL</span><span class="p">,</span>
+                             <span class="n">timeout</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">POLLING_TIMEOUT</span><span class="p">,</span>
+                             <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># no progress to track</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="MSAFuture.get"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.MSAFuture.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_msa</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="MSAFuture.sample_prompt"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.MSAFuture.sample_prompt">[docs]</a>    <span class="k">def</span> <span class="nf">sample_prompt</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">num_sequences</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">num_residues</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">method</span><span class="p">:</span> <span class="n">MSASamplingMethod</span> <span class="o">=</span> <span class="n">MSASamplingMethod</span><span class="o">.</span><span class="n">NEIGHBORS_NONGAP_NORM_NO_LIMIT</span><span class="p">,</span>
+        <span class="n">homology_level</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.8</span><span class="p">,</span>
+        <span class="n">max_similarity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">min_similarity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">always_include_seed_sequence</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">num_ensemble_prompts</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">random_seed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a protein sequence prompt from a linked MSA (Multiple Sequence Alignment) for PoET Jobs.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        num_sequences : int, optional</span>
+<span class="sd">            Maximum number of sequences in the prompt. Must be  &lt;100.</span>
+<span class="sd">        num_residues : int, optional</span>
+<span class="sd">            Maximum number of residues (tokens) in the prompt. Must be less than 24577.</span>
+<span class="sd">        method : MSASamplingMethod, optional</span>
+<span class="sd">            Method to use for MSA sampling. Defaults to NEIGHBORS_NONGAP_NORM_NO_LIMIT.</span>
+<span class="sd">        homology_level : float, optional</span>
+<span class="sd">            Level of homology for sequences in the MSA (neighbors methods only). Must be between 0 and 1. Defaults to 0.8.</span>
+<span class="sd">        max_similarity : float, optional</span>
+<span class="sd">            Maximum similarity between sequences in the MSA and the seed. Must be between 0 and 1. Defaults to 1.0.</span>
+<span class="sd">        min_similarity : float, optional</span>
+<span class="sd">            Minimum similarity between sequences in the MSA and the seed. Must be between 0 and 1. Defaults to 0.0.</span>
+<span class="sd">        always_include_seed_sequence : bool, optional</span>
+<span class="sd">            Whether to always include the seed sequence in the MSA. Defaults to False.</span>
+<span class="sd">        num_ensemble_prompts : int, optional</span>
+<span class="sd">            Number of ensemble jobs to run. Defaults to 1.</span>
+<span class="sd">        random_seed : int, optional</span>
+<span class="sd">            Seed for random number generation. Defaults to a random number between 0 and 2**32-1.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        InvalidParameterError</span>
+<span class="sd">            If provided parameter values are not in the allowed range.</span>
+<span class="sd">        MissingParameterError</span>
+<span class="sd">            If both or none of &#39;num_sequences&#39;, &#39;num_residues&#39; is specified.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        PromptJob</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">msa_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">msa_id</span>
+        <span class="n">job</span> <span class="o">=</span> <span class="n">prompt_post</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span>
+            <span class="n">msa_id</span><span class="p">,</span>
+            <span class="n">num_sequences</span><span class="o">=</span><span class="n">num_sequences</span><span class="p">,</span>
+            <span class="n">num_residues</span><span class="o">=</span><span class="n">num_residues</span><span class="p">,</span>
+            <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
+            <span class="n">homology_level</span><span class="o">=</span><span class="n">homology_level</span><span class="p">,</span>
+            <span class="n">max_similarity</span><span class="o">=</span><span class="n">max_similarity</span><span class="p">,</span>
+            <span class="n">min_similarity</span><span class="o">=</span><span class="n">min_similarity</span><span class="p">,</span>
+            <span class="n">always_include_seed_sequence</span><span class="o">=</span><span class="n">always_include_seed_sequence</span><span class="p">,</span>
+            <span class="n">num_ensemble_prompts</span><span class="o">=</span><span class="n">num_ensemble_prompts</span><span class="p">,</span>
+            <span class="n">random_seed</span><span class="o">=</span><span class="n">random_seed</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">PromptFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">msa_id</span><span class="p">)</span></div></div>
+
+<div class="viewcode-block" id="PromptFuture"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PromptFuture">[docs]</a><span class="k">class</span> <span class="nc">PromptFuture</span><span class="p">(</span><span class="n">MSAFuture</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Represents a result of a prompt job.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        An instance of APISession for API interactions.</span>
+<span class="sd">    job : Job</span>
+<span class="sd">        The PoET scoring job.</span>
+<span class="sd">    page_size : int</span>
+<span class="sd">        The number of results to fetch in a single page.</span>
+
+<span class="sd">    Methods</span>
+<span class="sd">    -------</span>
+<span class="sd">    get(verbose=False)</span>
+<span class="sd">        Get the final results of the PoET scoring job.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    List[PoetScoreResult]</span>
+<span class="sd">        The list of results from the PoET scoring job.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span>
+        <span class="n">job</span><span class="p">:</span> <span class="n">Job</span><span class="p">,</span>
+        <span class="n">page_size</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">POET_PAGE_SIZE</span><span class="p">,</span>
+        <span class="n">msa_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        init a PoetScoreFuture instance.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            session (APISession): An instance of APISession for API interactions.</span>
+<span class="sd">            job (Job): The PoET scoring job.</span>
+<span class="sd">            page_size (int, optional): The number of results to fetch in a single page. Defaults to config.POET_PAGE_SIZE.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">page_size</span> <span class="o">=</span> <span class="n">page_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_msa_id</span> <span class="o">=</span> <span class="n">msa_id</span>
+
+<div class="viewcode-block" id="PromptFuture.get"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PromptFuture.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_prompt</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="PoetScoreFuture"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetScoreFuture">[docs]</a><span class="k">class</span> <span class="nc">PoetScoreFuture</span><span class="p">(</span><span class="n">PoetFutureMixin</span><span class="p">,</span> <span class="n">AsyncJobFuture</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Represents a result of a PoET scoring job.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        An instance of APISession for API interactions.</span>
+<span class="sd">    job : Job</span>
+<span class="sd">        The PoET scoring job.</span>
+<span class="sd">    page_size : int</span>
+<span class="sd">        The number of results to fetch in a single page.    </span>
+
+<span class="sd">    Methods</span>
+<span class="sd">    -------</span>
+<span class="sd">    get(verbose=False)</span>
+<span class="sd">        Get the final results of the PoET  job.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span> <span class="n">job</span><span class="p">:</span> <span class="n">Job</span><span class="p">,</span> <span class="n">page_size</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">POET_PAGE_SIZE</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        init a PoetScoreFuture instance.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            session (APISession): An instance of APISession for API interactions.</span>
+<span class="sd">            job (Job): The PoET scoring job.</span>
+<span class="sd">            page_size (int, optional): The number of results to fetch in a single page. Defaults to config.POET_PAGE_SIZE.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">page_size</span> <span class="o">=</span> <span class="n">page_size</span>
+
+<div class="viewcode-block" id="PoetScoreFuture.get"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetScoreFuture.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PoetScoreResult</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the final results of the PoET scoring job.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        verbose : bool, optional</span>
+<span class="sd">            If True, print verbose output. Defaults to False.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        APIError</span>
+<span class="sd">            If there is an issue with the API request.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        List[PoetScoreResult]</span>
+<span class="sd">            A list of PoetScoreResult objects representing the scoring results.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">job_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">job_id</span>
+        <span class="n">step</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">page_size</span>
+
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">num_returned</span> <span class="o">=</span> <span class="n">step</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">while</span> <span class="n">num_returned</span> <span class="o">&gt;=</span> <span class="n">step</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="n">poet_score_get</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span>
+                    <span class="n">job_id</span><span class="p">,</span>
+                    <span class="n">page_offset</span><span class="o">=</span><span class="n">offset</span><span class="p">,</span>
+                    <span class="n">page_size</span><span class="o">=</span><span class="n">step</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">results</span> <span class="o">+=</span> <span class="n">response</span><span class="o">.</span><span class="n">result</span>
+                <span class="n">num_returned</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">result</span><span class="p">)</span>
+                <span class="n">offset</span> <span class="o">+=</span> <span class="n">num_returned</span>
+            <span class="k">except</span> <span class="n">APIError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to get results: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">results</span>
+        <span class="k">return</span> <span class="n">results</span></div></div>
+
+
+<span class="k">def</span> <span class="nf">poet_single_site_post</span><span class="p">(</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span> <span class="n">variant</span><span class="p">,</span> <span class="n">parent_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prompt_id</span><span class="o">=</span><span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PoetSSPJob</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Request PoET single-site analysis for a variant.</span>
+
+<span class="sd">    This function will mutate every position in the variant to every amino acid and return the scores.</span>
+<span class="sd">    Note that if parent_id is set then it will inherit all prompt properties of that parent.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        An instance of APISession for API interactions.</span>
+<span class="sd">    variant : str</span>
+<span class="sd">        The variant to analyze.</span>
+<span class="sd">    parent_id : str, optional</span>
+<span class="sd">        The ID of the parent job. Either parent_id or prompt_id must be set. Defaults to None.</span>
+<span class="sd">    prompt_id : str, optional</span>
+<span class="sd">        The ID of the prompt. Either parent_id or prompt_id must be set. Defaults to None.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    APIError</span>
+<span class="sd">        If the input parameters are invalid or there is an issue with the API request.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    PoetSSPJob</span>
+<span class="sd">        An object representing the status and results of the PoET single-site analysis job.</span>
+<span class="sd">        Note that the input variant score is given as `X0X`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="s2">&quot;v1/poet/single_site&quot;</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">parent_id</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">prompt_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
+        <span class="n">parent_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">prompt_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="n">InvalidParameterError</span><span class="p">(</span><span class="s2">&quot;Either parent_id or prompt_id must be set.&quot;</span><span class="p">)</span>
+
+    <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;variant&quot;</span><span class="p">:</span> <span class="n">variant</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">prompt_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">&quot;prompt_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">prompt_id</span>
+    <span class="k">if</span> <span class="n">parent_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">&quot;parent_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parent_id</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PoetSSPJob</span><span class="p">(</span><span class="o">**</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">APIError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to post poet single-site analysis: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">exc</span>
+
+
+<span class="k">def</span> <span class="nf">poet_single_site_get</span><span class="p">(</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span> <span class="n">job_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">page_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">page_offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PoetSSPJob</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Fetch paged results of a PoET single-site analysis job.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        An instance of APISession for API interactions.</span>
+<span class="sd">    job_id : str</span>
+<span class="sd">        The ID of the PoET single-site analysis job to fetch results from.</span>
+<span class="sd">    page_size : int, optional</span>
+<span class="sd">        The number of results to fetch in a single page. Defaults to 100.</span>
+<span class="sd">    page_offset : int, optional</span>
+<span class="sd">        The offset (number of results) to start fetching results from. Defaults to 0.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    APIError</span>
+<span class="sd">        If there is an issue with the API request.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    PoetSSPJob</span>
+<span class="sd">        An object representing the status and results of the PoET single-site analysis job.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="s2">&quot;v1/poet/single_site&quot;</span>
+
+    <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;job_id&quot;</span><span class="p">:</span> <span class="n">job_id</span><span class="p">,</span> <span class="s2">&quot;page_size&quot;</span><span class="p">:</span> <span class="n">page_size</span><span class="p">,</span> <span class="s2">&quot;page_offset&quot;</span><span class="p">:</span> <span class="n">page_offset</span><span class="p">}</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PoetSSPJob</span><span class="p">(</span><span class="o">**</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">APIError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Failed to get poet single-site analysis results: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span> <span class="kn">from</span> <span class="nn">exc</span>
+
+
+<div class="viewcode-block" id="PoetSingleSiteFuture"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetSingleSiteFuture">[docs]</a><span class="k">class</span> <span class="nc">PoetSingleSiteFuture</span><span class="p">(</span><span class="n">PoetFutureMixin</span><span class="p">,</span> <span class="n">AsyncJobFuture</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Represents a result of a PoET single-site analysis job.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        An instance of APISession for API interactions.</span>
+<span class="sd">    job : Job</span>
+<span class="sd">        The PoET scoring job.</span>
+<span class="sd">    page_size : int</span>
+<span class="sd">        The number of results to fetch in a single page.</span>
+
+<span class="sd">    Methods</span>
+<span class="sd">    -------</span>
+<span class="sd">    get(verbose=False)</span>
+<span class="sd">        Get the final results of the PoET  job.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span> <span class="n">job</span><span class="p">:</span> <span class="n">Job</span><span class="p">,</span> <span class="n">page_size</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">POET_PAGE_SIZE</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        init a PoetSingleSiteFuture instance.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            session (APISession): An instance of APISession for API interactions.</span>
+<span class="sd">            job (Job): The PoET single-site analysis job.</span>
+<span class="sd">            page_size (int, optional): The number of results to fetch in a single page. Defaults to config.POET_PAGE_SIZE.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">page_size</span> <span class="o">=</span> <span class="n">page_size</span>
+
+<div class="viewcode-block" id="PoetSingleSiteFuture.get"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetSingleSiteFuture.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PoetSSPResult</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the results of a PoET single-site analysis job.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        verbose : bool, optional</span>
+<span class="sd">            If True, print verbose output. Defaults to False.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Dict[bytes, float]</span>
+<span class="sd">            A dictionary mapping mutation codes to scores.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        APIError</span>
+<span class="sd">            If there is an issue with the API request.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">job_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">job_id</span>
+        <span class="n">step</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">page_size</span>
+
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">num_returned</span> <span class="o">=</span> <span class="n">step</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">while</span> <span class="n">num_returned</span> <span class="o">&gt;=</span> <span class="n">step</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="n">poet_single_site_get</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span>
+                    <span class="n">job_id</span><span class="p">,</span>
+                    <span class="n">page_offset</span><span class="o">=</span><span class="n">offset</span><span class="p">,</span>
+                    <span class="n">page_size</span><span class="o">=</span><span class="n">step</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">results</span> <span class="o">+=</span> <span class="n">response</span><span class="o">.</span><span class="n">result</span>
+                <span class="n">num_returned</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">result</span><span class="p">)</span>
+                <span class="n">offset</span> <span class="o">+=</span> <span class="n">num_returned</span>
+            <span class="k">except</span> <span class="n">APIError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to get results: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">results</span>
+        <span class="k">return</span> <span class="n">results</span></div></div>
+
+
+<span class="k">def</span> <span class="nf">poet_generate_post</span><span class="p">(</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span>
+    <span class="n">prompt_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">num_samples</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">topk</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">topp</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">max_length</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">random_seed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Job</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generate protein sequences with a prompt.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        An instance of APISession for API interactions.</span>
+<span class="sd">    prompt_id : str</span>
+<span class="sd">        The ID of the prompt to generate samples from.</span>
+<span class="sd">    num_samples : int, optional</span>
+<span class="sd">        The number of samples to generate. Defaults to 100.</span>
+<span class="sd">    temperature : float, optional</span>
+<span class="sd">        The temperature for sampling. Higher values produce more random outputs. Defaults to 1.0.</span>
+<span class="sd">    topk : int, optional</span>
+<span class="sd">        The number of top-k residues to consider during sampling. Defaults to None.</span>
+<span class="sd">    topp : float, optional</span>
+<span class="sd">        The cumulative probability threshold for top-p sampling. Defaults to None.</span>
+<span class="sd">    max_length : int, optional</span>
+<span class="sd">        The maximum length of generated proteins. Defaults to 1000.</span>
+<span class="sd">    random_seed : int, optional</span>
+<span class="sd">        Seed for random number generation. Defaults to a random number.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    APIError</span>
+<span class="sd">        If there is an issue with the API request.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Job</span>
+<span class="sd">        An object representing the status and information about the generation job.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="s2">&quot;v1/poet/generate&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mf">0.1</span> <span class="o">&lt;=</span> <span class="n">temperature</span> <span class="o">&lt;=</span> <span class="mi">2</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">InvalidParameterError</span><span class="p">(</span><span class="s2">&quot;The &#39;temperature&#39; must be between 0.1 and 2.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">topk</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">2</span> <span class="o">&lt;=</span> <span class="n">topk</span> <span class="o">&lt;=</span> <span class="mi">20</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">InvalidParameterError</span><span class="p">(</span><span class="s2">&quot;The &#39;topk&#39; must be between 2 and 22.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">topp</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">topp</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">InvalidParameterError</span><span class="p">(</span><span class="s2">&quot;The &#39;topp&#39; must be between 0 and 1.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">random_seed</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">random_seed</span> <span class="o">&lt;=</span> <span class="mi">2</span><span class="o">**</span><span class="mi">32</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">InvalidParameterError</span><span class="p">(</span><span class="s2">&quot;The &#39;random_seed&#39; must be between 0 and 1.&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">random_seed</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">random_seed</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">randrange</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="mi">32</span><span class="p">)</span>
+
+    <span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;prompt_id&quot;</span><span class="p">:</span> <span class="n">prompt_id</span><span class="p">,</span>
+        <span class="s2">&quot;generate_n&quot;</span><span class="p">:</span> <span class="n">num_samples</span><span class="p">,</span>
+        <span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="n">temperature</span><span class="p">,</span>
+        <span class="s2">&quot;maxlen&quot;</span><span class="p">:</span> <span class="n">max_length</span><span class="p">,</span>
+        <span class="s2">&quot;seed&quot;</span><span class="p">:</span> <span class="n">random_seed</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="n">topk</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">&quot;topk&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">topk</span>
+    <span class="k">if</span> <span class="n">topp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">&quot;topp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">topp</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Job</span><span class="p">(</span><span class="o">**</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">APIError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to post PoET generation request: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">exc</span>
+
+
+<span class="k">def</span> <span class="nf">poet_generate_get</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">,</span> <span class="n">job_id</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">requests</span><span class="o">.</span><span class="n">Response</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the results of a PoET generation job.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        An instance of APISession for API interactions.</span>
+<span class="sd">    job_id : str</span>
+<span class="sd">        Job ID from a poet/generate job.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    APIError</span>
+<span class="sd">        If there is an issue with the API request.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    requests.Response</span>
+<span class="sd">        The response object containing the results of the PoET generation job.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="s2">&quot;v1/poet/generate&quot;</span>
+
+    <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;job_id&quot;</span><span class="p">:</span> <span class="n">job_id</span><span class="p">}</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">APIError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to get poet generation results: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">exc</span>
+
+
+<div class="viewcode-block" id="PoetGenerateFuture"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetGenerateFuture">[docs]</a><span class="k">class</span> <span class="nc">PoetGenerateFuture</span><span class="p">(</span><span class="n">PoetFutureMixin</span><span class="p">,</span> <span class="n">StreamingAsyncJobFuture</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Represents a result of a PoET generation job.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    session : APISession</span>
+<span class="sd">        An instance of APISession for API interactions.</span>
+<span class="sd">    job : Job</span>
+<span class="sd">        The PoET scoring job.</span>
+
+<span class="sd">    Methods:</span>
+<span class="sd">        stream() -&gt; Iterator[PoetScoreResult]:</span>
+<span class="sd">            Stream the results of the PoET generation job.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="PoetGenerateFuture.stream"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetGenerateFuture.stream">[docs]</a>    <span class="k">def</span> <span class="nf">stream</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">PoetScoreResult</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Stream the results from the response.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        ------</span>
+<span class="sd">        PoetScoreResult: Yield</span>
+<span class="sd">            A result object containing the sequence, score, and name.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        APIError</span>
+<span class="sd">            If the request fails.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">poet_generate_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">job_id</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">tokens</span> <span class="ow">in</span> <span class="n">csv_stream</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">name</span><span class="p">,</span> <span class="n">sequence</span> <span class="o">=</span> <span class="n">tokens</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
+                    <span class="n">score</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">tokens</span><span class="p">[</span><span class="mi">2</span><span class="p">:]]</span>
+                    <span class="n">sequence</span> <span class="o">=</span> <span class="n">sequence</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
+                    <span class="n">sample</span> <span class="o">=</span> <span class="n">PoetScoreResult</span><span class="p">(</span><span class="n">sequence</span><span class="o">=</span><span class="n">sequence</span><span class="p">,</span> <span class="n">score</span><span class="o">=</span><span class="n">score</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+                    <span class="k">yield</span> <span class="n">sample</span>
+                <span class="k">except</span> <span class="p">(</span><span class="ne">IndexError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                    <span class="c1"># Skip malformed or incomplete tokens</span>
+                    <span class="nb">print</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Skipping malformed or incomplete tokens: </span><span class="si">{</span><span class="n">tokens</span><span class="si">}</span><span class="s2"> with </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+        <span class="k">except</span> <span class="n">APIError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to stream PoET generation results: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div></div>
+
+
+<span class="n">Prompt</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">PromptFuture</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+
+
+<span class="k">def</span> <span class="nf">validate_prompt</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="n">Prompt</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;helper function to validate prompt_id is prompt type&quot;&quot;&quot;</span>
+    <span class="n">prompt_id</span> <span class="o">=</span> <span class="n">prompt</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">PromptFuture</span><span class="p">):</span>
+        <span class="n">prompt_id</span> <span class="o">=</span> <span class="n">prompt</span><span class="o">.</span><span class="n">prompt_id</span>
+    <span class="k">return</span> <span class="n">prompt_id</span>
+
+
+<div class="viewcode-block" id="PoetAPI"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI">[docs]</a><span class="k">class</span> <span class="nc">PoetAPI</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;API interface for calling Poet and Align endpoints&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">APISession</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">session</span>
+
+<div class="viewcode-block" id="PoetAPI.load_prompt_job"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI.load_prompt_job">[docs]</a>    <span class="k">def</span> <span class="nf">load_prompt_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PromptFuture</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Reload a previously ran prompt job to resume where you left off.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        prompt_id : str</span>
+<span class="sd">            ID for job.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        InvalidJob</span>
+<span class="sd">            If job is of incorrect type.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        PromptFuture</span>
+<span class="sd">            Job to resume workflows.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">job</span> <span class="o">=</span> <span class="n">load_job</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">prompt_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">job</span><span class="o">.</span><span class="n">job_type</span> <span class="o">!=</span> <span class="n">JobType</span><span class="o">.</span><span class="n">align_prompt</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidJob</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;job </span><span class="si">{</span><span class="n">prompt_id</span><span class="si">}</span><span class="s2"> is not a prompt job!&quot;</span><span class="p">)</span>
+        <span class="n">msa_id</span> <span class="o">=</span> <span class="n">job_args_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">prompt_id</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;root_msa&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PromptFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="n">msa_id</span><span class="o">=</span><span class="n">msa_id</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PoetAPI.load_msa_job"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI.load_msa_job">[docs]</a>    <span class="k">def</span> <span class="nf">load_msa_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msa_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MSAFuture</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Reload a previously ran MSA job to resume where you left off.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        msa_id : str</span>
+<span class="sd">            ID for job.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        InvalidJob</span>
+<span class="sd">            If job is of incorrect type.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        PromptFuture</span>
+<span class="sd">            Job to resume workflows.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">job</span> <span class="o">=</span> <span class="n">load_job</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">msa_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">job</span><span class="o">.</span><span class="n">job_type</span> <span class="o">!=</span> <span class="n">JobType</span><span class="o">.</span><span class="n">align</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidJob</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;job </span><span class="si">{</span><span class="n">msa_id</span><span class="si">}</span><span class="s2"> is not a MSA job!&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">MSAFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PoetAPI.load_poet_job"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI.load_poet_job">[docs]</a>    <span class="k">def</span> <span class="nf">load_poet_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                      <span class="n">job_id</span><span class="p">:</span> <span class="nb">str</span>
+                      <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">PoetSingleSiteFuture</span><span class="p">,</span>
+                                 <span class="n">PoetScoreFuture</span><span class="p">,</span>
+                                 <span class="n">PoetGenerateFuture</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Reload a previously ran Poet job to resume where you left off.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        job_id : str</span>
+<span class="sd">            ID for job.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        InvalidJob</span>
+<span class="sd">            If job is of incorrect type.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        PoetFuture</span>
+<span class="sd">            Job to resume workflows.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">job</span> <span class="o">=</span> <span class="n">load_job</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">job</span><span class="o">.</span><span class="n">job_type</span> <span class="o">==</span> <span class="n">JobType</span><span class="o">.</span><span class="n">prots2prot_single_site</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">PoetSingleSiteFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">job</span><span class="o">.</span><span class="n">job_type</span> <span class="o">==</span> <span class="n">JobType</span><span class="o">.</span><span class="n">prots2prot</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">PoetScoreFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">job</span><span class="o">.</span><span class="n">job_type</span> <span class="o">==</span> <span class="n">JobType</span><span class="o">.</span><span class="n">prots2prot_generate</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">PoetGenerateFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidJob</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;job </span><span class="si">{</span><span class="n">job_id</span><span class="si">}</span><span class="s2"> is not a PoET job!&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PoetAPI.upload_msa"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI.upload_msa">[docs]</a>    <span class="k">def</span> <span class="nf">upload_msa</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msa_file</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MSAFuture</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Upload an MSA from file.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        msa_file : str, optional</span>
+<span class="sd">            Ready-made MSA. If not provided, default value is None.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        APIError</span>
+<span class="sd">            If there is an issue with the API request.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        MSAJob</span>
+<span class="sd">            Job object containing the details of the MSA upload.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">job</span> <span class="o">=</span> <span class="n">msa_post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">msa_file</span><span class="o">=</span><span class="n">msa_file</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">MSAFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PoetAPI.create_msa"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI.create_msa">[docs]</a>    <span class="k">def</span> <span class="nf">create_msa</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MSAFuture</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Construct an MSA via homology search with the seed sequence.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        seed : bytes</span>
+<span class="sd">            Seed sequence for the MSA construction.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        APIError</span>
+<span class="sd">            If there is an issue with the API request.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        MSAJob</span>
+<span class="sd">            Job object containing the details of the MSA construction.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">job</span> <span class="o">=</span> <span class="n">msa_post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">MSAFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PoetAPI.upload_prompt"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI.upload_prompt">[docs]</a>    <span class="k">def</span> <span class="nf">upload_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt_file</span><span class="p">:</span> <span class="n">BinaryIO</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PromptJob</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Directly upload a prompt.</span>
+
+<span class="sd">        Bypass post_msa and prompt_post steps entirely. In this case PoET will use the prompt as is.</span>
+<span class="sd">        You can specify multiple prompts (one per replicate) with an &lt;END_PROMPT&gt; and newline between CSVs.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        prompt_file : BinaryIO</span>
+<span class="sd">            Binary I/O object representing the prompt file.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        APIError</span>
+<span class="sd">            If there is an issue with the API request.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        PromptJob</span>
+<span class="sd">            An object representing the status and results of the prompt job.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">job</span> <span class="o">=</span> <span class="n">upload_prompt_post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">prompt_file</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PromptFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PoetAPI.get_prompt"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI.get_prompt">[docs]</a>    <span class="k">def</span> <span class="nf">get_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="p">:</span> <span class="n">Job</span><span class="p">,</span> <span class="n">prompt_index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get prompts for a given job.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        job : Job</span>
+<span class="sd">            The job for which to retrieve data.</span>
+<span class="sd">        prompt_index : Optional[int]</span>
+<span class="sd">            The replicate number for the prompt (input_type=-PROMPT only)</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        csv.reader</span>
+<span class="sd">            A CSV reader for the response data.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">get_input</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="n">PoetInputType</span><span class="o">.</span><span class="n">PROMPT</span><span class="p">,</span> <span class="n">prompt_index</span><span class="o">=</span><span class="n">prompt_index</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="PoetAPI.get_seed"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI.get_seed">[docs]</a>    <span class="k">def</span> <span class="nf">get_seed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="p">:</span> <span class="n">Job</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get input data for a given msa job.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        job : Job</span>
+<span class="sd">            The job for which to retrieve data.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        csv.reader</span>
+<span class="sd">            A CSV reader for the response data.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">get_input</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="n">PoetInputType</span><span class="o">.</span><span class="n">INPUT</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PoetAPI.get_msa"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI.get_msa">[docs]</a>    <span class="k">def</span> <span class="nf">get_msa</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="p">:</span> <span class="n">Job</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get generated MSA for a given job.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        job : Job</span>
+<span class="sd">            The job for which to retrieve data.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        csv.reader</span>
+<span class="sd">            A CSV reader for the response data.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">get_input</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="n">PoetInputType</span><span class="o">.</span><span class="n">MSA</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PoetAPI.get_prompt_job"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI.get_prompt_job">[docs]</a>    <span class="k">def</span> <span class="nf">get_prompt_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PromptJob</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get prompt job based on job_id.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        job_id: str</span>
+<span class="sd">            job ID for a prompt job</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        ----------</span>
+<span class="sd">        PromptJob</span>
+<span class="sd">            A prompt job instance</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">job</span> <span class="o">=</span> <span class="n">job_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job_id</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">job</span><span class="o">.</span><span class="n">job_type</span> <span class="o">==</span> <span class="s2">&quot;/align/prompt&quot;</span>
+        <span class="k">return</span> <span class="n">PromptJob</span><span class="p">(</span><span class="o">**</span><span class="n">job</span><span class="o">.</span><span class="n">dict</span><span class="p">(),</span> <span class="n">prompt_id</span><span class="o">=</span><span class="n">job</span><span class="o">.</span><span class="n">job_id</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PoetAPI.get_msa_job"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI.get_msa_job">[docs]</a>    <span class="k">def</span> <span class="nf">get_msa_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MSAJob</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get MSA job based on job_id.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        job_id: str</span>
+<span class="sd">            job ID for a prompt job</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        ----------</span>
+<span class="sd">        MSAJob</span>
+<span class="sd">            A prompt job instance</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">job</span> <span class="o">=</span> <span class="n">job_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job_id</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">job</span><span class="o">.</span><span class="n">job_type</span> <span class="o">==</span> <span class="s2">&quot;/align/align&quot;</span>
+        <span class="k">return</span> <span class="n">MSAJob</span><span class="p">(</span><span class="o">**</span><span class="n">job</span><span class="o">.</span><span class="n">dict</span><span class="p">(),</span> <span class="n">msa_id</span><span class="o">=</span><span class="n">job</span><span class="o">.</span><span class="n">job_id</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PoetAPI.score"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI.score">[docs]</a>    <span class="k">def</span> <span class="nf">score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">queries</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">PoetScoreFuture</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Score query sequences using the specified prompt.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        prompt : Prompt</span>
+<span class="sd">            Prompt job to use for scoring the sequences.</span>
+<span class="sd">        queries : List[bytes]</span>
+<span class="sd">            Sequences to score.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        results</span>
+<span class="sd">            The scores of the query sequences.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">prompt_id</span> <span class="o">=</span> <span class="n">validate_prompt</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">poet_score_post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">prompt_id</span><span class="p">,</span> <span class="n">queries</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PoetScoreFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PoetAPI.single_site"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI.single_site">[docs]</a>    <span class="k">def</span> <span class="nf">single_site</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">sequence</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PoetSingleSiteFuture</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Score all single substitutions of the query sequence using the specified prompt.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        prompt : Prompt</span>
+<span class="sd">            Prompt job to use for scoring the sequences.</span>
+<span class="sd">        sequence : bytes</span>
+<span class="sd">            Sequence to analyse.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        results</span>
+<span class="sd">            The scores of the mutated sequence.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">prompt_id</span> <span class="o">=</span> <span class="n">validate_prompt</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">poet_single_site_post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">sequence</span><span class="p">,</span> <span class="n">prompt_id</span><span class="o">=</span><span class="n">prompt_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PoetSingleSiteFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PoetAPI.generate"><a class="viewcode-back" href="../../../poet.html#openprotein.api.poet.PoetAPI.generate">[docs]</a>    <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">prompt</span><span class="p">:</span> <span class="n">Prompt</span><span class="p">,</span>
+        <span class="n">num_samples</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+        <span class="n">temperature</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">topk</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">topp</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_length</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+        <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PoetGenerateFuture</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generate protein sequences conditioned on a prompt.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        prompt : PromptJob</span>
+<span class="sd">            The prompt to use for generating sequences.</span>
+<span class="sd">        num_samples : int, optional</span>
+<span class="sd">            The number of samples to generate, by default 100.</span>
+<span class="sd">        temperature : float, optional</span>
+<span class="sd">            The temperature for sampling. Higher values produce more random outputs, by default 1.0.</span>
+<span class="sd">        topk : int, optional</span>
+<span class="sd">            The number of top-k residues to consider during sampling, by default None.</span>
+<span class="sd">        topp : float, optional</span>
+<span class="sd">            The cumulative probability threshold for top-p sampling, by default None.</span>
+<span class="sd">        max_length : int, optional</span>
+<span class="sd">            The maximum length of generated proteins, by default 1000.</span>
+<span class="sd">        seed : int, optional</span>
+<span class="sd">            Seed for random number generation, by default a random number.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        APIError</span>
+<span class="sd">            If there is an issue with the API request.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Job</span>
+<span class="sd">            An object representing the status and information about the generation job.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">prompt_id</span> <span class="o">=</span> <span class="n">validate_prompt</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>
+        <span class="n">job</span> <span class="o">=</span> <span class="n">poet_generate_post</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span>
+            <span class="n">prompt_id</span><span class="p">,</span>
+            <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
+            <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span>
+            <span class="n">topk</span><span class="o">=</span><span class="n">topk</span><span class="p">,</span>
+            <span class="n">topp</span><span class="o">=</span><span class="n">topp</span><span class="p">,</span>
+            <span class="n">max_length</span><span class="o">=</span><span class="n">max_length</span><span class="p">,</span>
+            <span class="n">random_seed</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">PoetGenerateFuture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, NE47.bio.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

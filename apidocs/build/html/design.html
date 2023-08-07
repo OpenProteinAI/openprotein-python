@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Design &mdash; OpenProtein-Python  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Demo of Core workflow functionality" href="demos/core_demo.html" />
+    <link rel="prev" title="Predict" href="predict.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            OpenProtein-Python
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Session management</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="core_workflow.html">Asssay-based Sequence Learning</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="core_workflow.html#assaydata">AssayData</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_workflow.html#train">Train</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_workflow.html#predict">Predict</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_workflow.html#design">Design</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="core_workflow.html#index">Index</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="data.html">AssayData</a></li>
+<li class="toctree-l3"><a class="reference internal" href="train.html">Train</a></li>
+<li class="toctree-l3"><a class="reference internal" href="predict.html">Predict</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Design</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#openprotein.api.design.DesignAPI"><code class="docutils literal notranslate"><span class="pre">DesignAPI</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#openprotein.api.design.DesignFuture"><code class="docutils literal notranslate"><span class="pre">DesignFuture</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="demos/core_demo.html">Demo of Core workflow functionality</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="poet_workflow.html">De Novo prediction &amp; generative models (PoET)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="embedding_workflow.html">Protein Language Models &amp; Embeddings</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">OpenProtein-Python</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="core_workflow.html">Asssay-based Sequence Learning</a></li>
+      <li class="breadcrumb-item active">Design</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/design.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="design">
+<h1>Design<a class="headerlink" href="#design" title="Permalink to this heading"></a></h1>
+<p>Design new sequences based on your stated objectives and our genetic algorithm!</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="openprotein.api.design.DesignAPI">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.design.</span></span><span class="sig-name descname"><span class="pre">DesignAPI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.base.APISession"><span class="pre">APISession</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/design.html#DesignAPI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.design.DesignAPI" title="Permalink to this definition"></a></dt>
+<dd><p>API interface for calling Design endpoints</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="openprotein.api.design.DesignAPI.create_design_job">
+<span class="sig-name descname"><span class="pre">create_design_job</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">design_job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DesignJobCreate</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#openprotein.api.design.DesignFuture" title="openprotein.api.design.DesignFuture"><span class="pre">DesignFuture</span></a></span></span><a class="reference internal" href="_modules/openprotein/api/design.html#DesignAPI.create_design_job"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.design.DesignAPI.create_design_job" title="Permalink to this definition"></a></dt>
+<dd><p>Start a protein design job based on your assaydata, a trained ML model and Criteria (specified here).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>design_job</strong> (<em>DesignJobCreate</em>) – The details of the design job to be created, with the following parameters:
+- assay_id: The ID for the assay.
+- criteria: A list of CriterionItem lists for evaluating the design.
+- num_steps: The number of steps in the genetic algo. Default is 8.
+- pop_size: The population size for the genetic algo. Default is None.
+- n_offsprings: The number of offspring for the genetic algo. Default is None.
+- crossover_prob: The crossover probability for the genetic algo. Default is None.
+- crossover_prob_pointwise: The pointwise crossover probability for the genetic algo. Default is None.
+- mutation_average_mutations_per_seq: The average number of mutations per sequence. Default is None.
+- mutation_positions: A list of positions where mutations may occur. Default is None.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The created job as a DesignFuture instance.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#openprotein.api.design.DesignFuture" title="openprotein.api.design.DesignFuture">DesignFuture</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="openprotein.api.design.DesignAPI.get_design_results">
+<span class="sig-name descname"><span class="pre">get_design_results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_offset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DesignResults</span></span></span><a class="reference internal" href="_modules/openprotein/api/design.html#DesignAPI.get_design_results"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.design.DesignAPI.get_design_results" title="Permalink to this definition"></a></dt>
+<dd><p>Retrieves the results of a Design job.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>job_id</strong> (<em>str</em>) – The ID for the design job</p></li>
+<li><p><strong>page_size</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em><em>, </em><em>default is None</em>) – The number of results to be returned per page. If None, all results are returned.</p></li>
+<li><p><strong>page_offset</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em><em>, </em><em>default is None</em>) – The number of results to skip. If None, defaults to 0.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The job object representing the Design job.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>DesignJob</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>HTTPError</strong> – If the GET request does not succeed.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="openprotein.api.design.DesignAPI.load_job">
+<span class="sig-name descname"><span class="pre">load_job</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Job</span></span></span><a class="reference internal" href="_modules/openprotein/api/design.html#DesignAPI.load_job"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.design.DesignAPI.load_job" title="Permalink to this definition"></a></dt>
+<dd><p>Reload a Submitted job to resume from where you left off!</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>job_id</strong> (<em>str</em>) – The identifier of the job whose details are to be loaded.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Job</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Job</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>HTTPError</strong> – If the request to the server fails.</p></li>
+<li><p><strong>InvalidJob</strong> – If the Job is of the wrong type</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="openprotein.api.design.DesignFuture">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">openprotein.api.design.</span></span><span class="sig-name descname"><span class="pre">DesignFuture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="basics.html#openprotein.APISession" title="openprotein.base.APISession"><span class="pre">APISession</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Job</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/design.html#DesignFuture"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.design.DesignFuture" title="Permalink to this definition"></a></dt>
+<dd><p>Future Job for manipulating results</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="openprotein.api.design.DesignFuture.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openprotein/api/design.html#DesignFuture.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openprotein.api.design.DesignFuture.get" title="Permalink to this definition"></a></dt>
+<dd><p>Get all the results of the design job.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, print verbose output. Defaults False.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>APIError</strong> – If there is an issue with the API request.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A list of predict objects representing the results.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>DesignJob</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="predict.html" class="btn btn-neutral float-left" title="Predict" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="demos/core_demo.html" class="btn btn-neutral float-right" title="Demo of Core workflow functionality" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, NE47.bio.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

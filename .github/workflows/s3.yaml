@@ -1,0 +1,96 @@
+name: Sphinx Build and Sync to S3
+
+on:
+  push:
+    branches:
+    - develop
+    - prod
+    - test
+
+jobs:
+  build_and_sync:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+  
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python -
+
+    - name: Install Pandoc
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y pandoc
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest sphinx recommonmark sphinx_markdown_tables sphinx_markdown_builder nbsphinx sphinx-rtd-theme pandas requests tqdm pydantic coverage coverage-badge
+
+    - name: Run tests and generate coverage badge
+      run: |
+        coverage run -m pytest ./tests/api/
+        coverage html
+        mv htmlcov apidocs/source/
+        rm ./apidocs/source/coverage.svg 
+        coverage-badge -o apidocs/source/coverage.svg
+
+    - name: Build HTML with Sphinx
+      run: |
+        cd apidocs
+        make html
+  
+    - name: Get bucket name
+      shell: bash
+      run: |
+        branch=$(echo ${GITHUB_REF#refs/heads/}); \
+        if [ $branch == 'develop' ]; \
+        then bucket=openprotein-docs-dev; \
+        elif [ $branch == 'prod' ]; \
+        then bucket=openprotein-docs-prod; \
+        elif [ $branch == 'test' ]; \
+        then bucket=openprotein-docs-dev; \
+        else exit 1; fi; \
+        echo $bucket; \
+        echo "bucket=$bucket" >> $GITHUB_OUTPUT
+      id: bucket_name
+
+    - name: Get distribution ID
+      shell: bash
+      run: |
+        branch=$(echo ${GITHUB_REF#refs/heads/}); \
+        if [ $branch == 'develop' ]; \
+        then dist=E3SMW2DYY71HHW; \
+        elif [ $branch == 'prod' ]; \
+        then dist=E1CUT1CP31D5NK; \
+        elif [ $branch == 'test' ]; \
+        then dist=E3SMW2DYY71HHW; \
+        else exit 1; fi; \
+        echo $dist; \
+        echo "dist=$dist" >> $GITHUB_OUTPUT
+      id: dist_id
+      
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    - name: Sync apidocs to S3
+      env:
+        AWS_S3_BUCKET: ${{ steps.bucket_name.outputs.bucket }}
+      shell: bash
+      run: |
+        aws s3 sync apidocs/build/html s3://${AWS_S3_BUCKET}/apidocs/
+
+    - name: Invalidate CloudFront cache
+      env:
+        DISTRIBUTION_ID: ${{ steps.dist_id.outputs.dist }}
+      run: |
+        aws cloudfront create-invalidation --distribution-id ${DISTRIBUTION_ID} --paths "/apidocs/*"
