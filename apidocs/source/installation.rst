@@ -14,7 +14,7 @@ conda
 ------
 .. code-block:: bash
 
-   conda install -c openprotein openprotein_python
+   conda install -c openprotein openprotein-python
 
 Github
 --------
