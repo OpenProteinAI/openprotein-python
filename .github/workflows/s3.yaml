@@ -17,20 +17,6 @@ jobs:
       run: |
         curl -sSL https://install.python-poetry.org | python -
 
-    - name: Create and push tag if on prod branch
-      if: github.ref == 'refs/heads/prod'
-      run: |
-        VERSION=$(poetry version -s)
-        git tag $VERSION
-        git push origin $VERSION
-
-    - name: Create and push test tag if on test branch
-      if: github.ref == 'refs/heads/test'
-      run: |
-        VERSION=$(poetry version -s)
-        git tag testvers
-        git push origin testvers
-
     - name: Install Pandoc
       run: |
         sudo apt-get update
