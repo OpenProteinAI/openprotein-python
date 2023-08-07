@@ -1,50 +1,93 @@
+[![PyPI version](https://badge.fury.io/py/openprotein-python.svg)](https://pypi.org/project/openprotein-python/)
+[![Coverage](https://dev.docs.openprotein.ai/api-python/_images/coverage.svg)](https://pypi.org/project/openprotein-python/)
+[![Conda version](https://anaconda.org/openprotein/openprotein_python/badges/version.svg)](https://anaconda.org/openprotein/openprotein_python)
+
+
 # openprotein-python
-Python interface for the OpenProtein.AI REST API.
+The OpenProtein.AI Python Interface provides a user-friendly library to interact with the OpenProtein.AI REST API, enabling various tasks related to protein analysis and modeling.
 
-Work-in-progress. Currently supports basic exampination of jobs and running predictions for query sequences and single site variants with PoET. 
+## Installation 
 
-Each module has a raw/low level set of functions that directly call the REST API endpoints. On top of that, a higher level interface exists for authenticating a session, then accessing the functionality via high-level APIs. Long running POST/GET paradigm calls return a Future object that can be polled to see if the result is ready, and then used to retrieve the result. It also implements an interface for synchronously waiting for the result.
+To install the python interface using pip, run the following command: 
+```
+pip install openprotein-python
+```
+
+or with conda:
+```
+conda install -c openprotein openprotein_python
+```
+## Requirements
+
+- Python 3.7 or higher.
+- pydantic version 1.0 or newer.
+- requests version 2.0 or newer.
+- tqdm version 4.0 or newer.
+- pandas version 1.0 or newer.
+
 
 ## Getting started
 
-First, create a session using your login credentials.
+To begin, create a session using your login credentials.
 ```
 import openprotein
+
+# replace USERNAME and PASSWORD with your actual login credentials
 session = openprotein.connect(USERNAME, PASSWORD)
 ```
+## Job Status
 
-Async calls return `AsyncJobFuture` objects that allow tracking the status of the job and retrieving the result when it's ready.
+The interface offers `AsyncJobFuture` objects for asynchronous calls, allowing tracking of job status and result retrieval when ready. Given a future, you can check its status and retrieve results.
 
-Given a future, check its status and retrieve results
+### Checking Job Status
+Check the status of an `AsyncJobFuture` using the following methods:
 ```
-future.refresh() # call the backend to update the job status
-future.done() # returns True if the job is done, meaning the status could be SUCCESS, FAILED, or CANCELLED
-result = future.get() # get the result from a finished job
-```
-
-To wait for a job to finish and return the result, use `future.wait()`
-```
-# this will poll the backend for the job status every 2.5 seconds
-# for up to 600 seconds. If it takes longer than 600 seconds for the result
-# to be ready, this will raise a TimeoutException
-# verbose=True will print the time elapsed and job status using `tqdm`
-result = future.wait(interval=2.5, timeout=600, verbose=True)
+future.refresh()  # call the backend to update the job status
+future.done()     # returns True if the job is done, meaning the status could be SUCCESS, FAILED, or CANCELLED
 ```
 
-
-### Jobs interface
-
-List your jobs, optionally filtered by date, job type, and status.
+### Retrieving Job Results
+Once the job has finished, retrieve the results using the following methods:
 ```
-session.jobs.list() # list all jobs
-session.jobs.get(JOB_ID) # get a specific job
+result = future.wait()     # wait until done and then fetch results
+
+#verbosity is controlled with verbose arg
+result = future.get(verbose=True)  # get the result from a finished job
 ```
 
-### PoET interface
+## Jobs Interface
 
-Score sequences using the PoET interface.
+### Listing Jobs
+To view all jobs associated with each session, the following method is available, providing an option to filter results by date, job type, or status.
 ```
-prompt = b'MALWMRLLPLLALLALWGPDPAAAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN'
+session.jobs.list() 
+```
+
+### Retrieving Specific Job
+For detailed information about a particular job, use the following command with the corresponding job ID:
+``` 
+session.jobs.get(JOB_ID)  # Replace JOB_ID with the ID of the specific job to be retrieved
+```
+
+### Resuming Jobs
+Jobs from prior workflows can be resumed using the load_job method provided by each API. 
+```
+session.train.load_job(JOB_ID)  # Replace JOB_ID with the ID of the training job to resume
+```
+
+## PoET interface
+The PoET Interface allows scoring, generating, and retrieving sequences using the PoET model.
+
+### Scoring Sequences
+To score sequences, use the score function. Provide a prompt and a list of queries. The results will be a list of (sequence, score) pydantic objects.
+
+```
+prompt_seqs = b'MALWMRLLPLLALLALWGPDPAAAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN'
+
+prompt = session.poet.upload_prompt(prompt_seqs)
+```
+
+```
 queries = [
     b'MALWMRLLPLLALLALWGPDPAAAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN',
     b'MALWMRLLPLLVLLALWGPDPASAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN',
@@ -52,37 +95,38 @@ queries = [
     b'MALWIRSLPLLALLVFSGPGTSYAAANQHLCGSHLVEALYLVCGERGFFYSPKARRDVEQPLVSSPLRGEAGVLPFQQEEYEKVKRGIVEQCCHNTCSLYQLENYCN',
     b'MALWMRLLPLLALLALWAPAPTRAFVNQHLCGSHLVEALYLVCGERGFFYTPKARREVEDLQVRDVELAGAPGEGGLQPLALEGALQKRGIVEQCCTSICSLYQLENYCN',
 ]
-future = session.poet.score(prompt, queries, prompt_is_seed=True)
+```
+
+```
+future = session.poet.score(prompt, queries)
 result = future.wait()
 # result is a list of (sequence, score) pydantic objects
 ```
 
-Score single site variants using the PoET interface.
+### Scoring Single Site Variants
+For scoring single site variants, use the `single_site function`, providing the original sequence and setting `prompt_is_seed` to True if the prompt is a seed sequence.
 ```
-prompt = b'MALWMRLLPLLALLALWGPDPAAAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN'
-sequence = prompt
+sequence = "MALWMRLLPLLALLALWGPDPAAAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN"
 future = session.poet.single_site(prompt, sequence, prompt_is_seed=True) 
 result = future.wait()
 # result is a dictionary of {variant: score}
 ```
 
-Generate sequences from the PoET model.
+### Generating Sequences
+To generate sequences from the PoET model, use the `generate` function with relevant parameters. The result will be a list of generated samples.
 ```
-prompt = b'MALWMRLLPLLALLALWGPDPAAAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN'
 future = session.poet.generate(
     prompt,
-    prompt_is_seed=True,
     max_seqs_from_msa=1024,
     num_samples=100,
-    # temperature=1.0,
-    # topk=None,
-    # topp=None,
-    # max_length=1000,
+    temperature=1.0,
+    topk=15
 )
 samples = future.wait()
 ```
 
-Retrieve the prompt, MSA, or input (seed) sequences for a PoET job.
+### Retrieving Input Sequences
+You can retrieve the prompt, MSA, or seed sequences for a PoET job using the `get_input` function or the individual functions for each type.
 ```
 future.get_input(INPUT_TYPE)
 # or, functions for each type
@@ -91,10 +135,4 @@ future.get_msa()
 future.get_seed()
 ```
 
-
-## TODOs
-
-- [] Error parsing for requests
-- [] Better interface for creating async POST/GET requests
-- [] Interfaces for other REST API modules
- 
+See more at our [Homepage](https://docs.openprotein.ai/)

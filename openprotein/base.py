@@ -1,44 +1,98 @@
-
 import openprotein.config as config
 
 import requests
 from urllib.parse import urljoin
 from typing import Union
 
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+
+from openprotein.errors import APIError, InvalidParameterError, MissingParameterError, AuthError
 
 class BearerAuth(requests.auth.AuthBase):
     """
     See https://stackoverflow.com/a/58055668
     """
+
     def __init__(self, token):
         self.token = token
+
     def __call__(self, r):
-        r.headers['authorization'] = 'Bearer ' + self.token
+        r.headers["authorization"] = "Bearer " + self.token
         return r
 
 
 class APISession(requests.Session):
-    def __init__(self, username, password, backend=config.Backend.PROD):
+    """
+    A class to handle API sessions. This class provides a connection session to the OpenProtein API.
+
+    Parameters
+    ----------
+    username : str
+        The username of the user.
+    password : str
+        The password of the user.
+
+    Examples
+    --------
+    >>> session = APISession("username", "password")
+    """
+
+    def __init__(self, username:str,
+                 password:str,
+                 backend:str = "https://api.openprotein.ai/api/" ):
         super().__init__()
         self.backend = backend
-        self.login(username, password)
         self.verify = True
 
-    def login(self, username, password):
-        self.auth = self.get_auth_token(username, password)
+        # Custom retry strategies
+        #auto retry for pesky connection reset errors and others
+        # 503 will catch if BE is refreshing
+        retry = Retry(total=4,
+                      backoff_factor=3, #0,1,4,13s
+                      status_forcelist=[500, 502, 503, 504, 101, 104]) 
+        adapter = HTTPAdapter(max_retries=retry)
+        self.mount('https://', adapter)
+        self.login(username, password)
 
-    def get_auth_token(self, username, password):
-        endpoint = 'v1/login/access-token'
+    def login(self, username:str, password:str):
+        """ 
+        Authenticate connection to OpenProtein with your credentials.
+        
+        Parameters
+        -----------
+        username: str
+            username 
+        password: str
+            password
+        """
+        self.auth = self._get_auth_token(username, password)
+
+    def _get_auth_token(self, username:str, password:str):
+        endpoint = "v1/login/user-access-token"
         url = urljoin(self.backend, endpoint)
-        response = requests.post(url, data={'username': username, 'password': password})
-        result = response.json()
-        token = result['access_token']
-        return BearerAuth(token)
+        response = self.post(
+            url, params={"username": username, "password": password}, timeout=3
+        )
+        if response.status_code == 200:
+            result = response.json()
+            token = result["access_token"]
+            return BearerAuth(token)
+        else:
+            raise AuthError(
+                f"Unable to authenticate with given credentials: {response.status_code} : {response.text}"
+            )
 
-    def request(self, method: Union[str, bytes], url: Union[str, bytes], *args, **kwargs):
+    def request(
+        self, method: Union[str, bytes], url: Union[str, bytes], *args, **kwargs
+    ):
         full_url = urljoin(self.backend, url)
         response = super().request(method, full_url, *args, **kwargs)
-        response.raise_for_status()
+        # allow 400 to pass to get caught by autherror
+        if response.status_code not in [200, 201, 202, 400]:
+            raise APIError(
+                f"Request failed: \n\t status: {response.status_code} \n\t message: {response.text} "
+            )
         return response
 
 

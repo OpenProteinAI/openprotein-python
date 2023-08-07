@@ -1,2 +1,10 @@
-__version_tuple__ = version_tuple = (0, 0, 3, 'dev1')
-__version__ = version = '.'.join(str(x) for x in __version_tuple__)
+try:
+    from importlib.metadata import version
+except ModuleNotFoundError:
+    from importlib_metadata import version # py37
+
+try:
+    __version__ = version("openprotein-python")
+except: 
+    __version__ = "None"
+
