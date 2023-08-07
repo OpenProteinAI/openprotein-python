@@ -43,6 +43,7 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Session management</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../core_workflow.html">Asssay-based Sequence Learning</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../poet_workflow.html">De Novo prediction &amp; generative models (PoET)</a></li>
@@ -441,11 +442,10 @@
 <span class="sd">        An object representing the status and results of the prompt job.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">endpoint</span> <span class="o">=</span> <span class="s2">&quot;v1/align/upload_prompt&quot;</span>
-
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="s2">&quot;v1/poet/align/upload_prompt&quot;</span>
+    <span class="n">files</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;prompt_file&quot;</span><span class="p">:</span> <span class="n">prompt_file</span><span class="p">}</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">body</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;prompt_file&quot;</span><span class="p">:</span> <span class="n">prompt_file</span><span class="p">}</span>
-        <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="n">body</span><span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">files</span><span class="o">=</span><span class="n">files</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">PromptJob</span><span class="p">(</span><span class="o">**</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">APIError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to upload prompt post: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">exc</span>
