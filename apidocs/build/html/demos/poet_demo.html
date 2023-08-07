@@ -98,7 +98,7 @@
            <div itemprop="articleBody">
              
   <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="k">matplotlib</span> inline
@@ -110,7 +110,7 @@
 <p>This notebook will briefly cover how to run <code class="docutils literal notranslate"><span class="pre">align</span></code> and <code class="docutils literal notranslate"><span class="pre">PoET</span></code> workflows.</p>
 <p>For more information please <a class="reference external" href="https://docs.openprotein.ai/">read the docs</a>.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -130,7 +130,7 @@
 <h2>Setup<a class="headerlink" href="#Setup" title="Permalink to this heading"></a></h2>
 <p>Connect to the OpenProtein backend with your credentials:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">openprotein</span>
@@ -143,7 +143,7 @@
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dataset</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;./data/core.csv&quot;</span><span class="p">)[[</span><span class="s1">&#39;sequence&#39;</span><span class="p">]]</span>
@@ -152,7 +152,7 @@
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="output_area rendered_html docutils container">
@@ -195,7 +195,7 @@
 <h2>Create an MSA<a class="headerlink" href="#Create-an-MSA" title="Permalink to this heading"></a></h2>
 <p>We can create an MSA either from a seed, or by uploading a ready-made file. Here we will explore the seed workflow:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create an MSA from a seed sequence</span>
@@ -205,7 +205,7 @@
 </div>
 <p>Start a ColabFold job to create an MSA:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">msa</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">poet</span><span class="o">.</span><span class="n">create_msa</span><span class="p">(</span><span class="n">seed</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
@@ -218,11 +218,11 @@
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt; job_id=&#39;6e67fcfd-016a-4b4e-8a0f-654608294dc9&#39; job_type=&#39;/align/align&#39; created_date=datetime.datetime(2023, 8, 4, 4, 10, 0, 147106) start_date=None end_date=datetime.datetime(2023, 8, 4, 4, 10, 0, 159244) prerequisite_job_id=None progress_message=None progress_counter=None num_records=None msa_id=&#39;6e67fcfd-016a-4b4e-8a0f-654608294dc9&#39;
+model_config={&#39;protected_namespaces&#39;: ()} status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt; job_id=&#39;b0a87413-053b-4607-af05-e2a571e3fb83&#39; job_type=&#39;/align/align&#39; created_date=datetime.datetime(2023, 8, 7, 4, 16, 27, 948640) start_date=None end_date=datetime.datetime(2023, 8, 7, 4, 16, 27, 988728) prerequisite_job_id=None progress_message=None progress_counter=None num_records=None msa_id=&#39;b0a87413-053b-4607-af05-e2a571e3fb83&#39;
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">r</span> <span class="o">=</span> <span class="n">msa</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
@@ -231,7 +231,7 @@ status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt; job_id=&#39;6e67fcfd-016a-4b
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -246,7 +246,7 @@ status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt; job_id=&#39;6e67fcfd-016a-4b
 </div>
 <p>We can examine our inputs:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">list</span><span class="p">(</span><span class="n">msa</span><span class="o">.</span><span class="n">get_input</span><span class="p">(</span><span class="s2">&quot;RAW&quot;</span><span class="p">))</span>
@@ -254,7 +254,7 @@ status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt; job_id=&#39;6e67fcfd-016a-4b
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -265,7 +265,7 @@ status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt; job_id=&#39;6e67fcfd-016a-4b
 </div>
 <p>and the resulting MSA (limited here to 4 sequences for brevity):</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[29]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">list</span><span class="p">(</span><span class="n">msa</span><span class="o">.</span><span class="n">get_input</span><span class="p">(</span><span class="s2">&quot;GENERATED&quot;</span><span class="p">))[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span>
@@ -273,7 +273,7 @@ status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt; job_id=&#39;6e67fcfd-016a-4b
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[29]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -293,7 +293,7 @@ status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt; job_id=&#39;6e67fcfd-016a-4b
 <h2>Prompt<a class="headerlink" href="#Prompt" title="Permalink to this heading"></a></h2>
 <p>We can use this MSA to create a prompt with a sampling regime (see the docs for details):</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[30]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">prompt</span> <span class="o">=</span> <span class="n">msa</span><span class="o">.</span><span class="n">sample_prompt</span><span class="p">(</span><span class="n">num_ensemble_prompts</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">random_seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
@@ -301,7 +301,7 @@ status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt; job_id=&#39;6e67fcfd-016a-4b
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[31]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">prompt</span><span class="o">.</span><span class="n">id</span> <span class="c1"># or prompt.job.job_id</span>
@@ -309,16 +309,16 @@ status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt; job_id=&#39;6e67fcfd-016a-4b
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[31]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&#39;2ee83e11-6027-4425-a352-1e0a1de64097&#39;
+&#39;87b127eb-d043-43ad-9f18-c52f0abad0f9&#39;
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[32]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># We can wait, or not, for the prompt to create</span>
@@ -327,17 +327,17 @@ status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt; job_id=&#39;6e67fcfd-016a-4b
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[32]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;_csv.reader at 0x7f4e8c0785f0&gt;
+&lt;_csv.reader at 0x7ff91dd00dd0&gt;
 </pre></div></div>
 </div>
 <p>As we specified 3 prompts above we will have 3 different prompts all drawn from the same MSA:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[33]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">list</span><span class="p">(</span><span class="n">prompt</span><span class="o">.</span><span class="n">get_prompt</span><span class="p">(</span><span class="mi">1</span><span class="p">))[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span>
@@ -345,7 +345,7 @@ status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt; job_id=&#39;6e67fcfd-016a-4b
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[33]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -359,7 +359,7 @@ status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt; job_id=&#39;6e67fcfd-016a-4b
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[34]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">list</span><span class="p">(</span><span class="n">prompt</span><span class="o">.</span><span class="n">get_prompt</span><span class="p">(</span><span class="mi">2</span><span class="p">))[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span>
@@ -367,7 +367,7 @@ status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt; job_id=&#39;6e67fcfd-016a-4b
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[34]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -381,7 +381,7 @@ status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt; job_id=&#39;6e67fcfd-016a-4b
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[35]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">list</span><span class="p">(</span><span class="n">prompt</span><span class="o">.</span><span class="n">get_prompt</span><span class="p">(</span><span class="mi">3</span><span class="p">))[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span>
@@ -389,7 +389,7 @@ status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt; job_id=&#39;6e67fcfd-016a-4b
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[35]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -403,7 +403,7 @@ status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt; job_id=&#39;6e67fcfd-016a-4b
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[36]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">prompt1_seqs</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">prompt</span><span class="o">.</span><span class="n">get_prompt</span><span class="p">(</span><span class="mi">1</span><span class="p">))]</span>
@@ -425,7 +425,7 @@ Seqs found in all 3 prompts: 0
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[37]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">msa</span><span class="o">.</span><span class="n">msa_id</span><span class="p">,</span> <span class="n">prompt</span><span class="o">.</span><span class="n">prompt_id</span>
@@ -433,20 +433,20 @@ Seqs found in all 3 prompts: 0
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[37]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-(&#39;6e67fcfd-016a-4b4e-8a0f-654608294dc9&#39;,
- &#39;2ee83e11-6027-4425-a352-1e0a1de64097&#39;)
+(&#39;b0a87413-053b-4607-af05-e2a571e3fb83&#39;,
+ &#39;87b127eb-d043-43ad-9f18-c52f0abad0f9&#39;)
 </pre></div></div>
 </div>
 </section>
 <section id="Scoring-with-PoET">
 <h2>Scoring with PoET<a class="headerlink" href="#Scoring-with-PoET" title="Permalink to this heading"></a></h2>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[38]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">seqs</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">sequence</span><span class="p">]</span> <span class="c1"># prepare seqs from our dataset</span>
@@ -454,7 +454,7 @@ Seqs found in all 3 prompts: 0
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[39]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">scorejob</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">poet</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">prompt</span><span class="o">.</span><span class="n">prompt_id</span><span class="p">,</span> <span class="n">queries</span><span class="o">=</span><span class="n">seqs</span> <span class="p">)</span>
@@ -462,7 +462,7 @@ Seqs found in all 3 prompts: 0
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[40]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">score_results</span> <span class="o">=</span> <span class="n">scorejob</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
@@ -471,12 +471,12 @@ Seqs found in all 3 prompts: 0
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[40]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-PoetScoreResult(sequence=b&#39;WRHGDISSSNDTVGVAVVNYKMPRLHTAAEVLDNARKIAEMIVGMKQGLPGMDLVVFPEYSLQGIMYDPAEMMETAVAIPGEETEIFSRACRKANVWGVFSLTGERHEEHPRKAPYNTLVLIDNNGEIVQKYRKIIPWCPIEGWYPGGQTYVSEGPKGMKISLIICDDGNYPEIWRDCAMKGAELIVRCQGYMYPAKDQQVMMAKAMAWANNCYVAVANAAGFDGVYSYFGHSAIIGFDGRTLGECGEEEMGIQYAQLSLSQIRDARANDQSQNHLFKILHRGYSGLQASGDGDRGLAECPFEFYRTWVTDAEKARENVERLTRSTTGVAQCPVGRLPYEGLEKEA&#39;, score=[-67.385009765625, -161.78848266601562, -173.0670166015625], name=&#39;sequence-01&#39;)
+PoetScoreResult(model_config={&#39;protected_namespaces&#39;: ()}, sequence=b&#39;WRHGDISSSNDTVGVAVVNYKMPRLHTAAEVLDNARKIAEMIVGMKQGLPGMDLVVFPEYSLQGIMYDPAEMMETAVAIPGEETEIFSRACRKANVWGVFSLTGERHEEHPRKAPYNTLVLIDNNGEIVQKYRKIIPWCPIEGWYPGGQTYVSEGPKGMKISLIICDDGNYPEIWRDCAMKGAELIVRCQGYMYPAKDQQVMMAKAMAWANNCYVAVANAAGFDGVYSYFGHSAIIGFDGRTLGECGEEEMGIQYAQLSLSQIRDARANDQSQNHLFKILHRGYSGLQASGDGDRGLAECPFEFYRTWVTDAEKARENVERLTRSTTGVAQCPVGRLPYEGLEKEA&#39;, score=[-67.385009765625, -161.78848266601562, -173.0670166015625], name=&#39;sequence-01&#39;)
 </pre></div></div>
 </div>
 </section>
@@ -484,7 +484,7 @@ PoetScoreResult(sequence=b&#39;WRHGDISSSNDTVGVAVVNYKMPRLHTAAEVLDNARKIAEMIVGMKQGL
 <h2>Single site analysis with PoET<a class="headerlink" href="#Single-site-analysis-with-PoET" title="Permalink to this heading"></a></h2>
 <p>A similar flow yields a single site mutation analysis of a sequence:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[41]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sspjob</span>   <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">poet</span><span class="o">.</span><span class="n">single_site</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">sequence</span><span class="o">=</span><span class="s2">&quot;AAPLAA&quot;</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
@@ -492,7 +492,7 @@ PoetScoreResult(sequence=b&#39;WRHGDISSSNDTVGVAVVNYKMPRLHTAAEVLDNARKIAEMIVGMKQGL
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[42]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ssp_results</span> <span class="o">=</span> <span class="n">sspjob</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
@@ -501,14 +501,14 @@ PoetScoreResult(sequence=b&#39;WRHGDISSSNDTVGVAVVNYKMPRLHTAAEVLDNARKIAEMIVGMKQGL
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[42]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-[PoetSSPResult(sequence=b&#39;input&#39;, score=[-28.7412109375, -28.05859375, -28.6044921875], name=None),
- PoetSSPResult(sequence=b&#39;A1R&#39;, score=[-30.0703125, -29.6171875, -29.744140625], name=None),
- PoetSSPResult(sequence=b&#39;A1N&#39;, score=[-30.44921875, -30.638671875, -31.3056640625], name=None)]
+[PoetSSPResult(model_config={&#39;protected_namespaces&#39;: ()}, sequence=b&#39;input&#39;, score=[-28.7412109375, -28.05859375, -28.6044921875], name=None),
+ PoetSSPResult(model_config={&#39;protected_namespaces&#39;: ()}, sequence=b&#39;A1R&#39;, score=[-30.0703125, -29.6171875, -29.744140625], name=None),
+ PoetSSPResult(model_config={&#39;protected_namespaces&#39;: ()}, sequence=b&#39;A1N&#39;, score=[-30.44921875, -30.638671875, -31.3056640625], name=None)]
 </pre></div></div>
 </div>
 </section>
@@ -516,7 +516,7 @@ PoetScoreResult(sequence=b&#39;WRHGDISSSNDTVGVAVVNYKMPRLHTAAEVLDNARKIAEMIVGMKQGL
 <h2>Generate <em>de novo</em> sequences<a class="headerlink" href="#Generate-de-novo-sequences" title="Permalink to this heading"></a></h2>
 <p>Lastly, we can use the generation workflow:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[43]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">genjob</span>  <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">poet</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">prompt</span><span class="o">.</span><span class="n">prompt_id</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span> <span class="c1">#make 10 sequences based on our prompt</span>
@@ -524,7 +524,7 @@ PoetScoreResult(sequence=b&#39;WRHGDISSSNDTVGVAVVNYKMPRLHTAAEVLDNARKIAEMIVGMKQGL
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[44]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><br/><span></span><span class="n">gen_results</span> <span class="o">=</span> <span class="n">genjob</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
@@ -533,12 +533,12 @@ PoetScoreResult(sequence=b&#39;WRHGDISSSNDTVGVAVVNYKMPRLHTAAEVLDNARKIAEMIVGMKQGL
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[44]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-PoetScoreResult(sequence=b&#39;AGLNGPGIDLVVFPELHLFGGNNPSAMLQASAEGIDGPRVKALQALAKDLNIWLVPGSVCEHGPNGQLFNTQLVLSPDGELAGYYRKIFPWRPFEPYDPGDRFTTVDLPGVGRVGLNICYDAWYPEVSRQLAWMGAEVILNVVKTTTPDRKQELILAKANAIVNQVFMVSVNCAGPTGQGKSIIVDPEGNTLVEAPDDQPQLLTAELDLAAVDQVRTH&#39;, score=[-106.92665100097656, -107.2594223022461, -98.85879516601562], name=&#39;generated-sequence-1&#39;)
+PoetScoreResult(model_config={&#39;protected_namespaces&#39;: ()}, sequence=b&#39;RHGDISSSRSGVGTAVVQYKLPRLHTRDEVLRNVEDIVNMIIGMKQGLPGMDLVIFPEYSLQGIMYDGNEMMKTASVIPGPETEAFVRACREHKVWGIFSLTGEQHEDHPHKSPYNTLILRDDKGNVVQKYRKILPWCPIEGWYPGDMTYVSEGPKGMKISLIICDDGNYPEIWRDCAMKGAEIIVRPQAYMYPAKDQQILMAKTMAWSNNVYAAVANAAGFDGVYTYFGHSAIIGFDGRTLGECGEEEGGVQYAELSISSIRDARKNNQSQNNLFKLNHRGYTGFSYSREKGKHAAECPYDFYKNWVNDPEKTQKGVEAITREKVGTQECPYDFLPVEETYRKPPAWFLTEDRTLLGMTPSQLPIGNRAEARRPLTNGCIAASQMNLKRAAGLKPEE&#39;, score=[-493.91375732421875, -462.3254089355469, -493.4800109863281], name=&#39;generated-sequence-1&#39;)
 </pre></div></div>
 </div>
 </section>
@@ -546,7 +546,7 @@ PoetScoreResult(sequence=b&#39;AGLNGPGIDLVVFPELHLFGGNNPSAMLQASAEGIDGPRVKALQALAKD
 <h2>Resuming work<a class="headerlink" href="#Resuming-work" title="Permalink to this heading"></a></h2>
 <p>You can reload a prompt, MSA or PoET job to resume where you left off:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[45]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">old_msa</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">poet</span><span class="o">.</span><span class="n">load_msa_job</span><span class="p">(</span><span class="n">msa</span><span class="o">.</span><span class="n">msa_id</span><span class="p">)</span>
@@ -555,17 +555,17 @@ PoetScoreResult(sequence=b&#39;AGLNGPGIDLVVFPELHLFGGNNPSAMLQASAEGIDGPRVKALQALAKD
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[45]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Job(status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt;, job_id=&#39;6e67fcfd-016a-4b4e-8a0f-654608294dc9&#39;, job_type=&#39;/align/align&#39;, created_date=datetime.datetime(2023, 8, 4, 4, 10, 0, 147106), start_date=None, end_date=datetime.datetime(2023, 8, 4, 4, 10, 0, 159244), prerequisite_job_id=None, progress_message=None, progress_counter=None, num_records=None)
+Job(model_config={&#39;protected_namespaces&#39;: ()}, status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt;, job_id=&#39;b0a87413-053b-4607-af05-e2a571e3fb83&#39;, job_type=&#39;/align/align&#39;, created_date=datetime.datetime(2023, 8, 7, 4, 16, 27, 948640), start_date=None, end_date=datetime.datetime(2023, 8, 7, 4, 16, 27, 988728), prerequisite_job_id=None, progress_message=None, progress_counter=None, num_records=None)
 </pre></div></div>
 </div>
 <p>The same functionality is present:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[46]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">new_prompt</span> <span class="o">=</span> <span class="n">old_msa</span><span class="o">.</span><span class="n">sample_prompt</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
@@ -574,16 +574,16 @@ Job(status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt;, job_id=&#39;6e67fcfd-01
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[46]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-PromptJob(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;024fd73a-6a8a-4c98-8ea0-7c9aeb53659a&#39;, job_type=&#39;/align/prompt&#39;, created_date=datetime.datetime(2023, 8, 4, 4, 15, 0, 105720), start_date=None, end_date=None, prerequisite_job_id=None, progress_message=None, progress_counter=None, num_records=None, msa_id=None, prompt_id=&#39;024fd73a-6a8a-4c98-8ea0-7c9aeb53659a&#39;)
+PromptJob(model_config={&#39;protected_namespaces&#39;: ()}, status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;8b85c413-01d4-4a4b-9253-e5c208664900&#39;, job_type=&#39;/align/prompt&#39;, created_date=datetime.datetime(2023, 8, 7, 4, 26, 34, 595942), start_date=None, end_date=None, prerequisite_job_id=None, progress_message=None, progress_counter=None, num_records=None, msa_id=None, prompt_id=&#39;8b85c413-01d4-4a4b-9253-e5c208664900&#39;)
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[47]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">oldprompt</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">poet</span><span class="o">.</span><span class="n">load_prompt_job</span><span class="p">(</span><span class="n">prompt</span><span class="o">.</span><span class="n">prompt_id</span><span class="p">)</span>
@@ -592,16 +592,16 @@ PromptJob(status=&lt;JobStatus.PENDING: &#39;PENDING&#39;&gt;, job_id=&#39;024fd
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[47]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Job(status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt;, job_id=&#39;2ee83e11-6027-4425-a352-1e0a1de64097&#39;, job_type=&#39;/align/prompt&#39;, created_date=datetime.datetime(2023, 8, 4, 4, 10, 2, 968626), start_date=datetime.datetime(2023, 8, 4, 4, 10, 12, 777392), end_date=datetime.datetime(2023, 8, 4, 4, 10, 17, 327525), prerequisite_job_id=None, progress_message=None, progress_counter=None, num_records=None)
+Job(model_config={&#39;protected_namespaces&#39;: ()}, status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt;, job_id=&#39;87b127eb-d043-43ad-9f18-c52f0abad0f9&#39;, job_type=&#39;/align/prompt&#39;, created_date=datetime.datetime(2023, 8, 7, 4, 16, 30, 556160), start_date=datetime.datetime(2023, 8, 7, 4, 17, 25, 505727), end_date=datetime.datetime(2023, 8, 7, 4, 17, 29, 851708), prerequisite_job_id=None, progress_message=None, progress_counter=None, num_records=None)
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[48]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">old_job</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">poet</span><span class="o">.</span><span class="n">load_poet_job</span><span class="p">(</span><span class="n">sspjob</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">job_id</span><span class="p">)</span>
@@ -610,14 +610,14 @@ Job(status=&lt;JobStatus.SUCCESS: &#39;SUCCESS&#39;&gt;, job_id=&#39;2ee83e11-60
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[48]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-[PoetSSPResult(sequence=b&#39;input&#39;, score=[-28.7412109375, -28.05859375, -28.6044921875], name=None),
- PoetSSPResult(sequence=b&#39;A1R&#39;, score=[-30.0703125, -29.6171875, -29.744140625], name=None),
- PoetSSPResult(sequence=b&#39;A1N&#39;, score=[-30.44921875, -30.638671875, -31.3056640625], name=None)]
+[PoetSSPResult(model_config={&#39;protected_namespaces&#39;: ()}, sequence=b&#39;input&#39;, score=[-28.7412109375, -28.05859375, -28.6044921875], name=None),
+ PoetSSPResult(model_config={&#39;protected_namespaces&#39;: ()}, sequence=b&#39;A1R&#39;, score=[-30.0703125, -29.6171875, -29.744140625], name=None),
+ PoetSSPResult(model_config={&#39;protected_namespaces&#39;: ()}, sequence=b&#39;A1N&#39;, score=[-30.44921875, -30.638671875, -31.3056640625], name=None)]
 </pre></div></div>
 </div>
 <div class="nbinput nblast docutils container">
