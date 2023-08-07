@@ -2,6 +2,9 @@
 # SECRETS FILE
 secrets.config
 
+
+/htmlcov
+/apidocs/build
 # VS code
 .DS_store
 
