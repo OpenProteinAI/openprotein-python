@@ -17,14 +17,15 @@ jobs:
       run: |
         curl -sSL https://install.python-poetry.org | python -
 
-    - name: Create and push tag on prod branch
-      if: github.ref == 'refs/heads/test'
+    - name: Create and push tag if on prod branch
+      if: github.ref == 'refs/heads/prod'
       run: |
+        git fetch --unshallow
         VERSION=$(poetry version -s)
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git tag $VERSION
-        git push origin $VERSION
+        git push https://${{secrets.GITHUB_TOKEN}}@github.com/${{github.repository}}.git $VERSION
 
     - name: Install Pandoc
       run: |
