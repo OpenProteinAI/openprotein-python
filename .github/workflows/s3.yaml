@@ -5,12 +5,26 @@ on:
     branches:
     - develop
     - prod
+    - test
 
 jobs:
   build_and_sync:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
+  
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python -
+
+    - name: Create and push tag on prod branch
+      if: github.ref == 'refs/heads/test'
+      run: |
+        VERSION=$(poetry version -s)
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git tag $VERSION
+        git push origin $VERSION
 
     - name: Install Pandoc
       run: |
@@ -48,6 +62,8 @@ jobs:
         then bucket=openprotein-docs-dev; \
         elif [ $branch == 'prod' ]; \
         then bucket=openprotein-docs-prod; \
+        elif [ $branch == 'test' ]; \
+        then bucket=openprotein-docs-dev; \
         else exit 1; fi; \
         echo $bucket; \
         echo "bucket=$bucket" >> $GITHUB_OUTPUT
@@ -61,6 +77,8 @@ jobs:
         then dist=E3SMW2DYY71HHW; \
         elif [ $branch == 'prod' ]; \
         then dist=E1CUT1CP31D5NK; \
+        elif [ $branch == 'test' ]; \
+        then dist=E3SMW2DYY71HHW; \
         else exit 1; fi; \
         echo $dist; \
         echo "dist=$dist" >> $GITHUB_OUTPUT
