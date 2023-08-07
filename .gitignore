@@ -1,8 +1,8 @@
 
 # SECRETS FILE
 secrets.config
-
-
+poetry.lock
+/.github/*
 /htmlcov
 /apidocs/build
 # VS code

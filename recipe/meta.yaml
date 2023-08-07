@@ -1,5 +1,5 @@
 package:
-  name: openprotein_python
+  name: openprotein-python
   version: "0.2.1"
 
 source:
