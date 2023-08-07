@@ -20,8 +20,6 @@ jobs:
     - name: Create and push tag if on prod branch
       if: github.ref == 'refs/heads/prod'
       run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
         git remote set-url origin https://${{secrets.GITHUB_TOKEN}}@github.com/${{github.repository}}
         VERSION=$(poetry version -s)
         git tag $VERSION
@@ -30,8 +28,6 @@ jobs:
     - name: Create and push test tag if on test branch
       if: github.ref == 'refs/heads/test'
       run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
         git remote set-url origin https://${{secrets.GITHUB_TOKEN}}@github.com/${{github.repository}}
         git tag testvers
         git push origin testvers
