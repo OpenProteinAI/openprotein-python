@@ -26,10 +26,11 @@ jobs:
         git config --local user.name "GitHub Action"
         git tag $VERSION
         git push https://${{secrets.GITHUB_TOKEN}}@github.com/${{github.repository}}.git $VERSION
-      elif: github.ref == 'refs/heads/test'
+
+    - name: Create and push test tag if on test branch
+      if: github.ref == 'refs/heads/test'
       run: |
         git fetch --unshallow
-        VERSION=$(poetry version -s)
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git tag testvers
