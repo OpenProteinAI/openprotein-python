@@ -9,6 +9,11 @@ To install the python interface using pip, run the following command:
 ```
 pip install openprotein-python
 ```
+
+or with conda:
+```
+conda install -c openprotein openprotein_python
+```
 ## Requirements
 
 - Python 3.7 or higher.
