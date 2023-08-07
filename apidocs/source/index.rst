@@ -8,7 +8,10 @@ Welcome to OpenProtein's documentation!
 .. image:: coverage.svg
     :target: https://pypi.org/project/openprotein-python/
     :align: right
-    
+.. image:: https://anaconda.org/openprotein/openprotein_python/badges/version.svg
+    :target: https://anaconda.org/openprotein/openprotein_python
+    :align: right
+
 Welcome to OpenProtein.AI! 
 
 OpenProtein.AI is a powerful platform that seamlessly integrates state-of-the-art machine learning and generative models into protein engineering workflows. 
@@ -23,6 +26,9 @@ Table of Contents
 +---+----------------------------------------------------+------------------------------------------------------+
 |   | Workflow                                           | Description                                          |
 +===+====================================================+======================================================+
+| 0 | `Installation`_                                    |Install guide for pip and conda.                      |
+|   |                                                    |                                                      |
++---+----------------------------------------------------+------------------------------------------------------+
 | 1 | `Session management`_                              |An overview of the OpenProtein Python Client          |
 |   |                                                    |& the asynchronous jobs system.                       |
 +---+----------------------------------------------------+------------------------------------------------------+
@@ -38,6 +44,7 @@ Table of Contents
 |   |                                                    |embeddings with proprietary & open-source models      |
 +---+----------------------------------------------------+------------------------------------------------------+
 
+.. _installation: installation.html
 .. _Session management: overview.html
 .. _Asssay-based Sequence Learning: core_workflow.html
 .. _De Novo prediction & generative models (PoET): poet_workflow.html
@@ -49,6 +56,7 @@ Table of Contents
    :hidden:
    :caption: Contents:
 
+   installation
    overview
    core_workflow
    poet_workflow

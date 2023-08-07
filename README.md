@@ -1,5 +1,8 @@
 [![PyPI version](https://badge.fury.io/py/openprotein-python.svg)](https://pypi.org/project/openprotein-python/)
 [![Coverage](https://dev.docs.openprotein.ai/api-python/_images/coverage.svg)](https://pypi.org/project/openprotein-python/)
+[![Conda version](https://anaconda.org/openprotein/openprotein_python/badges/version.svg)](https://anaconda.org/openprotein/openprotein_python)
+
+
 # openprotein-python
 The OpenProtein.AI Python Interface provides a user-friendly library to interact with the OpenProtein.AI REST API, enabling various tasks related to protein analysis and modeling.
 
@@ -8,6 +11,11 @@ The OpenProtein.AI Python Interface provides a user-friendly library to interact
 To install the python interface using pip, run the following command: 
 ```
 pip install openprotein-python
+```
+
+or with conda:
+```
+conda install -c openprotein openprotein_python
 ```
 ## Requirements
 
