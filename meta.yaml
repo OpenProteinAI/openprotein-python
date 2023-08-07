@@ -1,6 +1,6 @@
 package:
   name: openprotein_python
-  version: 0.1.1b8
+  version: 0.1.2
 
 source:
   path: ./
@@ -11,9 +11,11 @@ build:
 requirements:
   build:
     - python >=3.7
+    - poetry
   host:
     - python >=3.7
     - pip
+    - poetry
   run:
     - python >=3.7
     - requests >=2.0
