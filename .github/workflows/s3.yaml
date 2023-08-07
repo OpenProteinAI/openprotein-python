@@ -20,7 +20,7 @@ jobs:
     - name: Create and push tag if on prod branch
       if: github.ref == 'refs/heads/prod'
       run: |
-        git fetch --unshallow
+        git fetch
         VERSION=$(poetry version -s)
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
@@ -30,7 +30,7 @@ jobs:
     - name: Create and push test tag if on test branch
       if: github.ref == 'refs/heads/test'
       run: |
-        git fetch --unshallow
+        git fetch
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git tag testvers
