@@ -19,7 +19,7 @@ conda install -c openprotein openprotein-python
 ```
 ## Requirements
 
-- Python 3.7 or higher.
+- Python 3.8 or higher.
 - pydantic version 1.0 or newer.
 - requests version 2.0 or newer.
 - tqdm version 4.0 or newer.
