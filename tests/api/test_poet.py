@@ -209,8 +209,8 @@ def test_poet_upload_prompt_post(api_session_mock):
     result = upload_prompt_post(api_session_mock, prompt_file=prompt_fasta)
 
     api_session_mock.post.assert_called_once_with(
-        'v1/align/upload_prompt',
-        body={'prompt_file': prompt_fasta}
+        'v1/poet/align/upload_prompt',
+        files={'prompt_file': prompt_fasta}
     )
     assert result.job_id == 'j123'
 
