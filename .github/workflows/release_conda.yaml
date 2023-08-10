@@ -3,7 +3,7 @@ name: Release Conda Workflow
 on:
   push:
     tags:
-      - 'test*'
+      - 'v*'
 
 jobs:
   build:
