@@ -527,7 +527,7 @@ class SVDModel:
 
     def _refresh_metadata(self):
         if not self._metadata.is_done():
-            self.metadata = svd_get(self.session, self.id)
+            self._metadata = svd_get(self.session, self.id)
 
     @property
     def id(self):
