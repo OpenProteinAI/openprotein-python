@@ -47,12 +47,14 @@ jobs:
           coverage run -m pytest ./tests/api/
 
       - name: Build Package
+        id: build
         run: |
           conda install conda-build
           conda install anaconda-client
-          conda build ./anaconda_build
+          package_path=$(conda build ./anaconda_build --output)
+          echo "CONDA_PACKAGE=${package_path}" >> $GITHUB_ENV
 
       - name: Upload to Anaconda Cloud
         run: |
           anaconda login --username ${{ secrets.ANACONDA_USERNAME }} --password ${{ secrets.ANACONDA_PASSWORD }}
-          anaconda upload ${{ steps.build.outputs.CONDA_PACKAGE }}
+          anaconda upload $CONDA_PACKAGE
