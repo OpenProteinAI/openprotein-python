@@ -42,8 +42,8 @@ or ::
 .. note::
    For practical examples, see the following notebooks:
    
-   - :doc:`Core workflow notebook <demos/core_demo>`
-   - :doc:`Poet workflow notebook <demos/poet_demo>`
+   - :doc: `Core workflow notebook <demos/core_demo>`
+   - :doc:`Getting started with Poet <demos/poet_demo>` and `Designing new Chorismate mutase enzymes with Poet notebook <demos/chorismate>`
    - :doc:`Embeddings workflow notebook <demos/embedding_demo>`
 
 .. toctree::

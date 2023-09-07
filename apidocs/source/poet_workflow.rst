@@ -20,7 +20,7 @@ Once you have a viable prompt, you can execute the PoET workflows:
 
 
 .. note::
-   For a practical example of using this workflow, see the :doc:`PoET workflow notebook <demos/poet_demo>`.
+   For a practical example of using this workflow, see :doc:`Getting started with Poet <demos/poet_demo>` or :doc:`Designing new Chorismate mutase enzymes with Poet notebook <demos/chorismate>`
 
 
 Index
@@ -31,3 +31,4 @@ Index
 
    poet
    demos/poet_demo.ipynb
+   demos/chorismate.ipynb
