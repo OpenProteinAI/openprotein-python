@@ -18,11 +18,10 @@ You can see details of each of these models (and more) with our python client. R
 .. note::
    For a practical example of using the this workflow, see the :doc:`embedding workflow notebook <demos/embedding_demo>`.
 
-
-Index
---------------------
 .. toctree::
    :maxdepth: 2
+   :caption: Contents
+   :hidden:
 
    embedding
    demos/embedding_demo.ipynb

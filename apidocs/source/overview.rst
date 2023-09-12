@@ -40,14 +40,4 @@ or ::
     session.poet.create_msa()
 
 .. note::
-   For practical examples, see the following notebooks:
-   
-   - :doc: `Core workflow notebook <demos/core_demo>`
-   - :doc:`Getting started with Poet <demos/poet_demo>` and `Designing new Chorismate mutase enzymes with Poet notebook <demos/chorismate>`
-   - :doc:`Embeddings workflow notebook <demos/embedding_demo>`
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Index:
-
-   basics
+   For practical examples, see the :ref:`Tutorials` page.

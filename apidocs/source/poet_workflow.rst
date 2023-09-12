@@ -4,8 +4,7 @@ De Novo prediction & generative models (PoET)
 PoET is a generative protein language model that allows controllable design of protein sequences and variant effect prediction. This model is controlled by providing it with a prompt, a set of sequences that represent homologues, family members, or some other grouping of related sequences that represent your protein of interest. We provide tools for creating these prompts from multiple sequence alignments (MSAs) and for using homology search to build MSAs from a seed sequence.
 
 
-Creating a prompt
--------------------
+.. rubric:: Creating a prompt
 
 You can create a prompt either from an MSA (see below), or by directly uploading a *de novo* prompt :py:meth:`openprotein.api.poet.PoetAPI.upload_prompt`. 
 
@@ -23,11 +22,10 @@ Once you have a viable prompt, you can execute the PoET workflows:
    For a practical example of using this workflow, see :doc:`Getting started with Poet <demos/poet_demo>` or :doc:`Designing new Chorismate mutase enzymes with Poet notebook <demos/chorismate>`
 
 
-Index
---------------------
-
 .. toctree::
    :maxdepth: 2
+   :caption: Contents
+   :hidden:
 
    poet
    demos/poet_demo.ipynb
