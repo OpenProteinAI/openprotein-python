@@ -40,4 +40,4 @@ or ::
     session.poet.create_msa()
 
 .. note::
-   For practical examples, see the :ref:`Tutorials` page.
+   For practical examples, see the :doc:`Tutorials <Tutorials>` page.
