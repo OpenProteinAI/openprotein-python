@@ -19,7 +19,7 @@ Quick-start:
    demos/embedding_demo.ipynb
    demos/poet_demo.ipynb
 
-Deep-dives:
+Case-studies:
 --------------
 
 - :doc:`Designing new Chorismate mutase enzymes with PoET notebook <demos/chorismate>`
