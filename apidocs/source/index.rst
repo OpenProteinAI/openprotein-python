@@ -20,8 +20,9 @@ We help you to design better proteins faster by giving you access to cutting-edg
 
 The documentation is divided into workflows below. For each workflow you can read the docs and see a demo of usage. 
 
+
 Table of Contents
------------------
+-------------------
 
 +----------------------------------------------------+------------------------------------------------------+
 | Workflow                                           | Description                                          |
@@ -43,9 +44,6 @@ Table of Contents
 | `Protein Language Models & Embeddings`_            |Covers methods for creating sequence                  |
 |                                                    |embeddings with proprietary & open-source models      |
 +----------------------------------------------------+------------------------------------------------------+
-| `Tutorials`_                                       |Quickstart Tutorials for all functions                |
-|                                                    |                                                      |
-+----------------------------------------------------+------------------------------------------------------+
 
 
 .. _installation: installation.html
@@ -53,17 +51,49 @@ Table of Contents
 .. _Asssay-based Sequence Learning: core_workflow.html
 .. _De Novo prediction & generative models (PoET): poet_workflow.html
 .. _Protein Language Models & Embeddings: embedding_workflow.html
-.. _Tutorials: Tutorials.html
+
+
+Tutorials
+------------
+
+We have a range of tutorials to get you started:
+
+Quick-start Guides
+=====================
+
+- :doc:`Sequence-based learning <demos/core_demo>`
+- :doc:`Sequence embeddings <demos/embedding_demo>`
+- :doc:`Getting started with Poet <demos/poet_demo>`
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Quick-start Guides
+   :hidden:
+
+   demos/core_demo.ipynb
+   demos/embedding_demo.ipynb
+   demos/poet_demo.ipynb
+
+Case-studies
+=============
+
+- :doc:`Designing new Chorismate mutase enzymes with PoET notebook <demos/chorismate>`
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Case-studies
+   :hidden:
+
+   demos/chorismate.ipynb
 
 
 .. toctree::
    :maxdepth: 2
-   :hidden:
-   :caption: Contents:
+   :caption: Index
 
    installation
    overview
    core_workflow
    poet_workflow
    embedding_workflow
-   Tutorials
+
