@@ -69,7 +69,7 @@ class DesignMetadata(NewModel):
     y_var: Optional[float] = None
 
 class DesignSubscore(NewModel):
-    score: int
+    score: float
     metadata: DesignMetadata
 
 class DesignStep(NewModel):
@@ -78,7 +78,7 @@ class DesignStep(NewModel):
     sequence: str
     # scores: List[int]
     # subscores_metadata: List[List[DesignSubscore]]
-    initial_scores: List[int] = Field(
+    initial_scores: List[float] = Field(
         ..., alias="scores"
     )  # renaming 'scores' to 'initial_scores'  # noqa: E501
     scores: List[List[DesignSubscore]] = Field(
