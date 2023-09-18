@@ -37,13 +37,16 @@ class APISession(requests.Session):
     --------
     >>> session = APISession("username", "password")
     """
+    
 
     def __init__(self, username:str,
                  password:str,
-                 backend:str = "https://api.openprotein.ai/api/" ):
+                 backend:str = "https://api.openprotein.ai/api/",
+                 timeout:int = 180):
         super().__init__()
         self.backend = backend
         self.verify = True
+        self.timeout = timeout
 
         # Custom retry strategies
         #auto retry for pesky connection reset errors and others
@@ -55,6 +58,28 @@ class APISession(requests.Session):
         self.mount('https://', adapter)
         self.login(username, password)
 
+
+    def post(self, url, data=None, json=None, **kwargs):
+        r"""Sends a POST request. Returns :class:`Response` object.
+
+        :param url: URL for the new :class:`Request` object.
+        :param data: (optional) Dictionary, list of tuples, bytes, or file-like
+            object to send in the body of the :class:`Request`.
+        :param json: (optional) json to send in the body of the :class:`Request`.
+        :param \*\*kwargs: Optional arguments that ``request`` takes.
+        :rtype: requests.Response
+        """
+        timeout = self.timeout
+        if 'timeout' in kwargs:
+            timeout = kwargs.pop('timeout')
+  
+        return self.request("POST",
+                            url,
+                            data=data,
+                            json=json,
+                            timeout=timeout,
+                            **kwargs)
+    
     def login(self, username:str, password:str):
         """ 
         Authenticate connection to OpenProtein with your credentials.
