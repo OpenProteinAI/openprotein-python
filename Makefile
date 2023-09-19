@@ -20,6 +20,7 @@ releasegit:
 	git push origin v$(VERSION)
 
 releasehere:
+	source activate py38
 	# Update Poetry version
 	poetry version $(VERSION)
 
