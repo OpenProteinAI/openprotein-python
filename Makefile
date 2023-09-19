@@ -1,4 +1,5 @@
-VERSION ?= 0.2.6
+VERSION ?= 0.2.7
+SHELL := /bin/bash
 
 .PHONY: releasehere
 releasegit:
@@ -20,7 +21,6 @@ releasegit:
 	git push origin v$(VERSION)
 
 releasehere:
-	source activate py38
 	# Update Poetry version
 	poetry version $(VERSION)
 
