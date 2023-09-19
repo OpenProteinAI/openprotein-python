@@ -1,6 +1,7 @@
 from openprotein.base import APISession
 from openprotein.api.jobs import (
     Job,
+    AsyncJobFuture,
     MappedAsyncJobFuture,
     PagedAsyncJobFuture,
     job_get,
@@ -504,7 +505,7 @@ class ProtembedModel:
         return SVDModel(self.session, metadata)
 
 
-class SVDModel:
+class SVDModel(AsyncJobFuture):
     """
     Class providing embedding endpoint for SVD models. \
         Also allows retrieving embeddings of sequences used to fit the SVD with `get`.
@@ -513,6 +514,7 @@ class SVDModel:
     def __init__(self, session: APISession, metadata: SVDMetadata):
         self.session = session
         self._metadata = metadata
+        self._job = None
 
     def __str__(self) -> str:
         return str(self.metadata)
@@ -563,6 +565,20 @@ class SVDModel:
     def get_job(self) -> Job:
         """Get job associated with this SVD model"""
         return job_get(self.session, self.id)
+    
+    def get(self):
+        # overload for AsyncJobFuture
+        return self
+    
+    @property
+    def job(self) -> Job:
+        if self._job is None:
+            self._job = self.get_job()
+        return self._job
+
+    @job.setter
+    def job(self, j):
+        self._job = j
 
     def get_inputs(self) -> List[bytes]:
         """
