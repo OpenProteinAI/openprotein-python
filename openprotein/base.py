@@ -7,7 +7,7 @@ from typing import Union
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
-from openprotein.errors import APIError, InvalidParameterError, MissingParameterError, AuthError
+from openprotein.errors import HTTPError, APIError, AuthError
 
 class BearerAuth(requests.auth.AuthBase):
     """
@@ -71,28 +71,28 @@ class APISession(requests.Session):
     def _get_auth_token(self, username:str, password:str):
         endpoint = "v1/login/user-access-token"
         url = urljoin(self.backend, endpoint)
-        response = self.post(
-            url, params={"username": username, "password": password}, timeout=3
-        )
-        if response.status_code == 200:
-            result = response.json()
-            token = result["access_token"]
-            return BearerAuth(token)
-        else:
-            raise AuthError(
-                f"Unable to authenticate with given credentials: {response.status_code} : {response.text}"
+        try:
+            response = self.post(
+                url, params={"username": username, "password": password}, timeout=3
             )
+        except HTTPError as e:
+            # if an error occured during auth, we raise an AuthError with reference to the HTTPError
+            raise AuthError(
+                f"Authentication failed. Please check your credentials and connection."
+            ) from e
+
+        result = response.json()
+        token = result["access_token"]
+        return BearerAuth(token)    
 
     def request(
         self, method: Union[str, bytes], url: Union[str, bytes], *args, **kwargs
     ):
         full_url = urljoin(self.backend, url)
         response = super().request(method, full_url, *args, **kwargs)
-        # allow 400 to pass to get caught by autherror
-        if response.status_code not in [200, 201, 202, 400]:
-            raise APIError(
-                f"Request failed: \n\t status: {response.status_code} \n\t message: {response.text} "
-            )
+        if not response.ok:
+            # raise custom exception that prints better error message than requests.HTTPError
+            raise HTTPError(response)
         return response
 
 
