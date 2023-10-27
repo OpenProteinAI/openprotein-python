@@ -443,7 +443,7 @@ class DataAPI:
         metadata.sequence_length = len(table["sequence"].values[0])
         return AssayDataset(self.session, metadata)
 
-    def get(self, assay_id: str) -> AssayDataset:
+    def get(self, assay_id: str) -> AssayMetadata:
         """
         Get an assay dataset by its ID.
 

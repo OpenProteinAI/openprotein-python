@@ -431,8 +431,6 @@ class TrainFutureMixin:
         The session object to use for API communication.
     job : Job
         The Job object for this training job.
-    crossvalidation : CVFuture
-        The CVFuture object for the associated cross-validation job.
 
     Methods
     -------
@@ -444,7 +442,7 @@ class TrainFutureMixin:
 
     session: APISession
     job: Job
-    crossvalidation: CVFuture = None
+    _crossvalidation = None
 
     def get_results(self) -> TrainGraph:
         """
@@ -459,7 +457,7 @@ class TrainFutureMixin:
 
     def crossvalidate(self):
         """
-        Submits a cross-validation job and binds it.
+        Submits a cross-validation job. 
 
         If a cross-validation job has already been created, it returns that job.
         Otherwise, it creates a new cross-validation job and returns it.
@@ -469,9 +467,11 @@ class TrainFutureMixin:
         CVFuture
             The cross-validation job associated with this training job.
         """
-        if self.crossvalidation is None:
-            self.crossvalidation = CVFuture(self.session, self.job.job_id)
-        return self.crossvalidation.crossvalidate()
+        if self._crossvalidation is None:
+            cv = CVFuture(self.session, train_job_id = self.job.job_id)
+            cv.crossvalidate()
+            self._crossvalidation = cv
+        return self._crossvalidation
 
     def get_assay_data(self):
         """
@@ -513,7 +513,6 @@ class TrainFuture(TrainFutureMixin, AsyncJobFuture):
     ):
         super().__init__(session, job)
         self.assaymetadata = assaymetadata
-        self.crossvalidation: Optional[CVFuture] = CVFuture(session, job.job_id, None)
 
     def __str__(self) -> str:
         return str(self.job)
