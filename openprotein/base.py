@@ -107,7 +107,9 @@ class APISession(requests.Session):
             ) from e
 
         result = response.json()
-        token = result["access_token"]
+        token = result.get("access_token")
+        if token is None: 
+            raise AuthError("Unable to authenticate with given credentials.")
         return BearerAuth(token)    
 
     def request(

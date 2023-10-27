@@ -306,7 +306,9 @@ class PredictFutureMixin:
 
 class PredictFuture(PredictFutureMixin, AsyncJobFuture):
     """Future Job for manipulating results"""
-    def __init__(self, session: APISession, job: Job, page_size=1000):
+    def __init__(self, session: APISession,
+                 job:Job,
+                 page_size=1000):
         super().__init__(session, job)
         self.page_size = page_size
 
@@ -352,9 +354,23 @@ class PredictFuture(PredictFutureMixin, AsyncJobFuture):
         return results
 
 
+class TrainPredictAdapter(PredictFuture):
+    """Future Job for manipulating results"""
+    def __init__(self, session: APISession,
+                 model_id:Optional[str] = None,
+                 page_size=1000):
+        super().__init__(session, job=None)
+        self.page_size = page_size
+        self.model_id = model_id
+
+    
+    def create(
+        self,
+        sequences: List) -> PredictFuture:
+        pass
+
 class PredictAPI:
     """API interface for calling Predict endpoints"""
-
     def __init__(self, session: APISession):
         """
         Initialize a new instance of the PredictAPI class.

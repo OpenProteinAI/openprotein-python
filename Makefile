@@ -1,4 +1,4 @@
-VERSION ?= 0.2.7
+VERSION ?= 0.2.9
 SHELL := /bin/bash
 
 .PHONY: releasehere
@@ -33,6 +33,10 @@ releasehere:
 
 	# Push changes and tag
 	git push 
+
+	# Create a Git tag and push it
+	git tag -a v$(VERSION) -m "Release $(VERSION)"
+	git push origin v$(VERSION)
 
 	# pypi 
 	poetry build 
