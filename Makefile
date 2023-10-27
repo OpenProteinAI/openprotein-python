@@ -1,4 +1,4 @@
-VERSION ?= 0.2.9
+VERSION ?= 0.3.1
 SHELL := /bin/bash
 
 .PHONY: releasehere
@@ -31,11 +31,11 @@ releasehere:
 	git add pyproject.toml anaconda_build/meta.yaml
 	git commit -m "Bump version to $(VERSION)"
 
-	# Push changes and tag
-	git push 
+	# Create a new tag
+	git tag -a v$(VERSION) -m "Release version $(VERSION)"
 
-	# Create a Git tag and push it
-	git tag -a v$(VERSION) -m "Release $(VERSION)"
+	# Push changes and tag
+	git push origin HEAD
 	git push origin v$(VERSION)
 
 	# pypi 
