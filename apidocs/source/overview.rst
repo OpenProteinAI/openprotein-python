@@ -40,14 +40,4 @@ or ::
     session.poet.create_msa()
 
 .. note::
-   For practical examples, see the following notebooks:
-   
-   - :doc:`Core workflow notebook <demos/core_demo>`
-   - :doc:`Poet workflow notebook <demos/poet_demo>`
-   - :doc:`Embeddings workflow notebook <demos/embedding_demo>`
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Index:
-
-   basics
+   For practical examples, see the :doc:`Tutorials <Tutorials>` page.

@@ -6,8 +6,8 @@ from typing import Union
 
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+from openprotein.errors import HTTPError, APIError, AuthError
 
-from openprotein.errors import APIError, InvalidParameterError, MissingParameterError, AuthError
 
 class BearerAuth(requests.auth.AuthBase):
     """
@@ -40,10 +40,12 @@ class APISession(requests.Session):
 
     def __init__(self, username:str,
                  password:str,
-                 backend:str = "https://api.openprotein.ai/api/" ):
+                 backend:str = "https://api.openprotein.ai/api/",
+                 timeout:int = 180):
         super().__init__()
         self.backend = backend
         self.verify = True
+        self.timeout = timeout
 
         # Custom retry strategies
         #auto retry for pesky connection reset errors and others
@@ -55,6 +57,27 @@ class APISession(requests.Session):
         self.mount('https://', adapter)
         self.login(username, password)
 
+    def post(self, url, data=None, json=None, **kwargs):
+        r"""Sends a POST request. Returns :class:`Response` object.
+
+        :param url: URL for the new :class:`Request` object.
+        :param data: (optional) Dictionary, list of tuples, bytes, or file-like
+            object to send in the body of the :class:`Request`.
+        :param json: (optional) json to send in the body of the :class:`Request`.
+        :param \*\*kwargs: Optional arguments that ``request`` takes.
+        :rtype: requests.Response
+        """
+        timeout = self.timeout
+        if 'timeout' in kwargs:
+            timeout = kwargs.pop('timeout')
+  
+        return self.request("POST",
+                            url,
+                            data=data,
+                            json=json,
+                            timeout=timeout,
+                            **kwargs)
+    
     def login(self, username:str, password:str):
         """ 
         Authenticate connection to OpenProtein with your credentials.
@@ -69,30 +92,32 @@ class APISession(requests.Session):
         self.auth = self._get_auth_token(username, password)
 
     def _get_auth_token(self, username:str, password:str):
-        endpoint = "v1/login/user-access-token"
+        endpoint = "v1/login/access-token"
         url = urljoin(self.backend, endpoint)
-        response = self.post(
-            url, params={"username": username, "password": password}, timeout=3
-        )
-        if response.status_code == 200:
-            result = response.json()
-            token = result["access_token"]
-            return BearerAuth(token)
-        else:
-            raise AuthError(
-                f"Unable to authenticate with given credentials: {response.status_code} : {response.text}"
+        try:
+            response = self.post(
+                url, data={"username": username, "password": password}, timeout=3
             )
+        except HTTPError as e:
+            # if an error occured during auth, we raise an AuthError with reference to the HTTPError
+            raise AuthError(
+                f"Authentication failed. Please check your credentials and connection."
+            ) from e
+
+        result = response.json()
+        token = result.get("access_token")
+        if token is None: 
+            raise AuthError("Unable to authenticate with given credentials.")
+        return BearerAuth(token)    
 
     def request(
         self, method: Union[str, bytes], url: Union[str, bytes], *args, **kwargs
     ):
         full_url = urljoin(self.backend, url)
         response = super().request(method, full_url, *args, **kwargs)
-        # allow 400 to pass to get caught by autherror
-        if response.status_code not in [200, 201, 202, 400]:
-            raise APIError(
-                f"Request failed: \n\t status: {response.status_code} \n\t message: {response.text} "
-            )
+        if not response.ok:
+            # raise custom exception that prints better error message than requests.HTTPError
+            raise HTTPError(response)
         return response
 
 

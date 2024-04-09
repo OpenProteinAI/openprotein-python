@@ -17,6 +17,15 @@ class APIError(Exception):
         self.message = message
         super().__init__(self.message)
 
+class HTTPError(APIError):
+    def __init__(self, response):
+        self.response = response
+        self.status_code = response.status_code
+        self.text = response.text
+        self.url = response.url
+        message = f"Status code {self.status_code}\non resource: {self.url}\n{self.text}"
+        super().__init__(message)
+
 class AuthError(Exception):
     """InvalidParameterError"""
     def __init__(self, message="Invalid authorization"):

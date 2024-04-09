@@ -1,7 +1,10 @@
 
 # SECRETS FILE
 secrets.config
-
+poetry.lock
+/.github/workflows/s3.yaml
+/htmlcov
+/apidocs/build
 # VS code
 .DS_store
 
@@ -136,3 +139,7 @@ dmypy.json
 .pyre/
 
 /.quarto/
+poet_demo.ipynb
+*chorismate_mutase_combined_seqs.fasta
+
+nohup.out
