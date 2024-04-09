@@ -5,7 +5,7 @@ import io
 import requests
 import json
 from urllib.parse import urljoin
-
+from tests.conf import BACKEND 
 class ResponseMock:
     def __init__(self):
         super().__init__()
@@ -50,12 +50,12 @@ def test_APISession_authenticate_failed(response_mock_unauthenticated):
 
     with patch.object(APISession, 'post', return_value=response_mock_unauthenticated):
         with pytest.raises(AuthError) as exc:
-            APISession(username, password)
+            APISession(username, password, backend=BACKEND)
 
         assert "Unable to authenticate with given credentials" in str(exc.value) 
         APISession.post.assert_called_once_with(
-            'https://api.openprotein.ai/api/v1/login/user-access-token',
-            params={'username': username, 'password': password}, timeout=3
+            f'{BACKEND}v1/login/access-token',
+            data={'username': username, 'password': password}, timeout=3
         )
 
 def test_APISession_authenticate_successful(response_mock_authenticated):
@@ -64,10 +64,10 @@ def test_APISession_authenticate_successful(response_mock_authenticated):
     token = 'testtoken'
 
     with patch.object(APISession, 'post', return_value=response_mock_authenticated):
-        session = APISession(username, password)
+        session = APISession(username, password, backend=BACKEND)
 
         assert session.auth.token == token
         session.post.assert_called_once_with(
-            'https://api.openprotein.ai/api/v1/login/user-access-token',
-            params={'username': username, 'password': password}, timeout=3
+            f'{BACKEND}v1/login/access-token',
+            data={'username': username, 'password': password}, timeout=3
         )

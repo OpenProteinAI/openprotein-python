@@ -1,12 +1,36 @@
 import pandas as pd
 import pydantic
-from typing import Optional, List
+from pydantic import BaseModel
+from typing import Optional, List, Union
+from datetime import datetime
 from io import BytesIO
-
-from openprotein.models import AssayMetadata, AssayDataPage
 from openprotein.errors import APIError
 from openprotein.base import APISession
 import openprotein.config as config
+
+
+class AssayMetadata(BaseModel):
+    assay_name: str
+    assay_description: str
+    assay_id: str
+    original_filename: str
+    created_date: datetime
+    num_rows: int
+    num_entries: int
+    measurement_names: List[str]
+    sequence_length: Optional[int] = None
+
+
+class AssayDataRow(BaseModel):
+    mut_sequence: str
+    measurement_values: List[Union[float, None]]
+
+
+class AssayDataPage(BaseModel):
+    assaymetadata: AssayMetadata
+    page_size: int
+    page_offset: int
+    assaydata: List[AssayDataRow]
 
 
 def list_models(session: APISession, assay_id: str) -> List:
@@ -117,7 +141,7 @@ def get_assay_metadata(session: APISession, assay_id: str) -> AssayMetadata:
         If no assay metadata with the specified assay_id is found.
     """
 
-    endpoint = f"v1/assaydata/metadata"
+    endpoint = "v1/assaydata/metadata"
     response = session.get(endpoint, params={"assay_id": assay_id})
     if response.status_code == 200:
         data = pydantic.parse_obj_as(AssayMetadata, response.json())
@@ -223,6 +247,7 @@ def assaydata_page_get(
 
 class AssayDataset:
     """Future Job for manipulating results"""
+
     def __init__(self, session: APISession, metadata: AssayMetadata):
         """
         init for AssayDataset.
@@ -443,7 +468,7 @@ class DataAPI:
         metadata.sequence_length = len(table["sequence"].values[0])
         return AssayDataset(self.session, metadata)
 
-    def get(self, assay_id: str) -> AssayDataset:
+    def get(self, assay_id: str) -> AssayMetadata:
         """
         Get an assay dataset by its ID.
 
@@ -464,7 +489,7 @@ class DataAPI:
         """
         return get_assay_metadata(self.session, assay_id)
 
-    def load_job(self, assay_id: str) -> AssayDataset:
+    def load_assay(self, assay_id: str) -> AssayDataset:
         """
         Reload a Submitted job to resume from where you left off!
 

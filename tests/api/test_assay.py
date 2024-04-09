@@ -13,6 +13,9 @@ import pydantic
 from unittest.mock import ANY
 import json
 from openprotein.base import BearerAuth
+from tests.conf import BACKEND 
+
+from openprotein.jobs import JobStatus, Job 
 
 
 class APISessionMock(APISession):
@@ -23,7 +26,7 @@ class APISessionMock(APISession):
     def __init__(self):
         username = "test_username"
         password = "test_password"
-        super().__init__(username, password)
+        super().__init__(username, password, backend=BACKEND)
 
     def _get_auth_token(self, username, password):
         return BearerAuth('AUTHORIZED')

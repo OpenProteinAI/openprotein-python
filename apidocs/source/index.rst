@@ -8,8 +8,8 @@ Welcome to OpenProtein's documentation!
 .. image:: coverage.svg
     :target: https://pypi.org/project/openprotein-python/
     :align: right
-.. image:: https://anaconda.org/openprotein/openprotein_python/badges/version.svg
-    :target: https://anaconda.org/openprotein/openprotein_python
+.. image:: https://anaconda.org/openprotein/openprotein-python/badges/version.svg
+    :target: https://anaconda.org/openprotein/openprotein-python
     :align: right
 
 Welcome to OpenProtein.AI! 
@@ -20,44 +20,50 @@ We help you to design better proteins faster by giving you access to cutting-edg
 
 The documentation is divided into workflows below. For each workflow you can read the docs and see a demo of usage. 
 
-Table of Contents
------------------
 
-+---+----------------------------------------------------+------------------------------------------------------+
-|   | Workflow                                           | Description                                          |
-+===+====================================================+======================================================+
-| 0 | `Installation`_                                    |Install guide for pip and conda.                      |
-|   |                                                    |                                                      |
-+---+----------------------------------------------------+------------------------------------------------------+
-| 1 | `Session management`_                              |An overview of the OpenProtein Python Client          |
-|   |                                                    |& the asynchronous jobs system.                       |
-+---+----------------------------------------------------+------------------------------------------------------+
-| 2 | `Asssay-based Sequence Learning`_                  |Covers core tasks such as data upload,                |
-|   |                                                    |model training & prediction, and sequence design      |
-|   |                                                    |                                                      |
-+---+----------------------------------------------------+------------------------------------------------------+
-| 3 | `De Novo prediction & generative models (PoET)`_   |Covers PoET, a protein LLM for *de novo* scoring,     |
-|   |                                                    |as well as sequence generation.                       |
-|   |                                                    |                                                      |
-+---+----------------------------------------------------+------------------------------------------------------+
-| 4 | `Protein Language Models & Embeddings`_            |Covers methods for creating sequence                  |
-|   |                                                    |embeddings with proprietary & open-source models      |
-+---+----------------------------------------------------+------------------------------------------------------+
+Table of Contents
+-------------------
+
++----------------------------------------------------+------------------------------------------------------+
+| Workflow                                           | Description                                          |
++====================================================+======================================================+
+| `Installation`_                                    |Install guide for pip and conda.                      |
+|                                                    |                                                      |
++----------------------------------------------------+------------------------------------------------------+
+| `Session management`_                              |An overview of the OpenProtein Python Client          |
+|                                                    |& the asynchronous jobs system.                       |
++----------------------------------------------------+------------------------------------------------------+
+| `Asssay-based Sequence Learning`_                  |Covers core tasks such as data upload,                |
+|                                                    |model training & prediction, and sequence design      |
+|                                                    |                                                      |
++----------------------------------------------------+------------------------------------------------------+
+| `De Novo prediction & generative models (PoET)`_   |Covers PoET, a protein LLM for *de novo* scoring,     |
+|                                                    |as well as sequence generation.                       |
+|                                                    |                                                      |
++----------------------------------------------------+------------------------------------------------------+
+| `Protein Language Models & Embeddings`_            |Covers methods for creating sequence                  |
+|                                                    |embeddings with proprietary & open-source models      |
++----------------------------------------------------+------------------------------------------------------+
+| `Protein Sequence Alignment`_                      |Covers methods for creating MSAs and Prompts for      |
+|                                                    |Poet and AlphaFold2 models.                           |
++----------------------------------------------------+------------------------------------------------------+
+| `Protein Folding`_                                 |Fold your protein sequences and return PDBs           |
+|                                                    |                                                      |
++----------------------------------------------------+------------------------------------------------------+
+
+
 
 .. _installation: installation.html
 .. _Session management: overview.html
 .. _Asssay-based Sequence Learning: core_workflow.html
 .. _De Novo prediction & generative models (PoET): poet_workflow.html
 .. _Protein Language Models & Embeddings: embedding_workflow.html
-
+.. _Protein Sequence Alignment: align.html
+.. _Protein Folding: fold.html
 
 .. toctree::
    :maxdepth: 2
+   :caption: Contents
    :hidden:
-   :caption: Contents:
 
-   installation
-   overview
-   core_workflow
-   poet_workflow
-   embedding_workflow
+.. include:: ./Tutorials.rst

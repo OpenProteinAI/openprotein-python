@@ -1,147 +1,20 @@
 # Jobs and job centric flows
 
 
-from datetime import datetime
-from typing import List, Optional, Union
+from typing import List, Union
 import concurrent.futures
 import time
-from enum import Enum
 
 import tqdm
 import pydantic
-from pydantic import BaseModel, ConfigDict
 
-from openprotein.errors import TimeoutException
 from openprotein.base import APISession
 import openprotein.config as config
+from openprotein.jobs import job_get, ResultsParser, Job
+from openprotein.futures import FutureFactory
 
 
-
-class NewModel(BaseModel):
-    model_config = ConfigDict(
-        protected_namespaces=()
-    )
-
-class JobStatus(str, Enum):
-    PENDING: str = "PENDING"
-    RUNNING: str = "RUNNING"
-    SUCCESS: str = "SUCCESS"
-    FAILURE: str = "FAILURE"
-    RETRYING: str = "RETRYING"
-    CANCELED: str = "CANCELED"
-
-    def done(self):
-        return (
-            (self is self.SUCCESS) or (self is self.FAILURE) or (self is self.CANCELED)
-        )  # noqa: E501
-
-    def cancelled(self):
-        return self is self.CANCELED
-
-
-
-class Job(NewModel):
-    status: JobStatus
-    job_id: str
-    job_type: str
-    created_date: Optional[datetime] = None
-    start_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
-    prerequisite_job_id: Optional[str]  = None
-    progress_message: Optional[str] = None
-    progress_counter: Optional[int] = 0
-    num_records: Optional[int] = None
-
-    def refresh(self, session: APISession):
-        """refresh job status"""
-        return job_get(session, self.job_id)
-
-    def done(self) -> bool:
-        """Check if job is complete"""
-        return self.status.done()
-
-    def cancelled(self) -> bool:
-        """check if job is cancelled"""
-        return self.status.cancelled()
-
-    def _update_progress(self, job) -> int:
-        """update rules for jobs without counters"""
-        progress = job.progress_counter
-        #if progress is not None:  # Check None before comparison
-        if progress is None:
-            if job.status == JobStatus.PENDING:
-                progress = 5
-            if job.status == JobStatus.RUNNING:
-                progress = 25
-        if job.status in [JobStatus.SUCCESS, JobStatus.FAILURE]:
-            progress = 100
-        return progress or 0 # never None
-
-    def wait(
-        self,
-        session: APISession,
-        interval: int = config.POLLING_INTERVAL,
-        timeout: Optional[int] = None,
-        verbose: bool = False,
-    ):
-        """
-        Wait for a job to finish, and then get the results.
-
-        Args:
-            session (APISession): Auth'd APIsession
-            interval (int): Wait between polls (secs). Defaults to POLLING_INTERVAL
-            timeout (int): Max. time to wait before raising error. Defaults to unlimited.
-            verbose (bool, optional): print status updates. Defaults to False.
-
-        Raises:
-            TimeoutException: _description_
-
-        Returns:
-            _type_: _description_
-        """
-        start_time = time.time()
-
-        def is_done(job: Job):
-            if timeout is not None:
-                elapsed_time = time.time() - start_time
-                if elapsed_time >= timeout:
-                    raise TimeoutException(
-                        f"Wait time exceeded timeout {timeout}, waited {elapsed_time}"
-                    )
-            return job.done()
-
-        pbar = None
-        if verbose:
-            pbar = tqdm.tqdm(total=100, desc="Waiting", position=0)
-
-        job = self.refresh(session)
-        while not is_done(job):
-            if verbose:
-                #pbar.update(1)
-                #pbar.set_postfix({"status": job.status})
-                progress = self._update_progress(job)
-                pbar.n = progress
-                pbar.set_postfix({"status": job.status})
-                #pbar.refresh()
-                # print(f'Retry {retries}, status={self.job.status}, time elapsed {time.time() - start_time:.2f}')
-            time.sleep(interval)
-            job = job.refresh(session)
-
-        if verbose:
-            #pbar.update(1)
-            #pbar.set_postfix({"status": job.status})
-            
-            progress = self._update_progress(job)
-            pbar.n = progress
-            pbar.set_postfix({"status": job.status})
-            #pbar.refresh()
-
-        return job
-
-    wait_until_done = wait
-
-
-def load_job(session: APISession, job_id: str) -> Job:
+def load_job(session: APISession, job_id: str) -> FutureFactory:
     """
     Reload a Submitted job to resume from where you left off!
 
@@ -164,22 +37,8 @@ def load_job(session: APISession, job_id: str) -> Job:
         If the request to the server fails.
 
     """
-    endpoint = f"v1/jobs/{job_id}"
-    response = session.get(endpoint)
-    return pydantic.parse_obj_as(Job, response.json())
+    return FutureFactory.create_future(session=session, job_id=job_id)
 
-
-def job_get(session: APISession, job_id) -> Job:
-    """Get job."""
-    endpoint = f"v1/jobs/{job_id}"
-    response = session.get(endpoint)
-    return Job(**response.json())
-
-def job_args_get(session: APISession, job_id) -> dict:
-    """Get job."""
-    endpoint = f"v1/jobs/{job_id}/args"
-    response = session.get(endpoint)
-    return dict(**response.json())
 
 def jobs_list(
     session: APISession,
@@ -222,11 +81,14 @@ def jobs_list(
         params["more_recent_than"] = more_recent_than
 
     response = session.get(endpoint, params=params)
-    return pydantic.parse_obj_as(List[Job], response.json())
+    # return jobs, not futures
+    return pydantic.parse_obj_as(List[ResultsParser], response.json())
 
 
 class JobsAPI:
     """API wrapper to get jobs."""
+
+    # This will continue to get jobs, not futures.
 
     def __init__(self, session: APISession):
         self.session = session
@@ -234,7 +96,7 @@ class JobsAPI:
     def list(
         self, status=None, job_type=None, assay_id=None, more_recent_than=None
     ) -> List[Job]:
-        """ List jobs"""
+        """List jobs"""
         return jobs_list(
             self.session,
             status=status,
@@ -245,7 +107,11 @@ class JobsAPI:
 
     def get(self, job_id) -> Job:
         """get Job by ID"""
-        return job_get(self.session, job_id)
+        return load_job(self.session, job_id)
+        # return job_get(self.session, job_id)
+
+    def __load(self, job_id) -> FutureFactory:
+        return load_job(self.session, job_id)
 
     def wait(
         self, job: Job, interval=config.POLLING_INTERVAL, timeout=None, verbose=False
@@ -263,7 +129,7 @@ class AsyncJobFuture:
         self.job = job
 
     def refresh(self):
-        """ refresh job status"""
+        """refresh job status"""
         self.job = self.job.refresh(self.session)
 
     @property
@@ -273,6 +139,7 @@ class AsyncJobFuture:
     @property
     def progress(self):
         return self.job.progress_counter or 0
+
     @property
     def num_records(self):
         return self.job.num_records
@@ -306,7 +173,12 @@ class AsyncJobFuture:
         self.job = job
         return self.done()
 
-    def wait(self, interval: int=config.POLLING_INTERVAL, timeout: int=None, verbose:bool=False):
+    def wait(
+        self,
+        interval: int = config.POLLING_INTERVAL,
+        timeout: int = None,
+        verbose: bool = False,
+    ):
         """
         Wait for job to complete, then fetch results.
 
@@ -318,7 +190,7 @@ class AsyncJobFuture:
         Returns:
             results: results of job
         """
-        time.sleep(1) # buffer for BE to register job
+        time.sleep(1)  # buffer for BE to register job
         job = self.job.wait(
             self.session, interval=interval, timeout=timeout, verbose=verbose
         )
@@ -330,7 +202,7 @@ class StreamingAsyncJobFuture(AsyncJobFuture):
     def stream(self):
         raise NotImplementedError()
 
-    def get(self, verbose=False):
+    def get(self, verbose=False) -> List:
         generator = self.stream()
         if verbose:
             total = None

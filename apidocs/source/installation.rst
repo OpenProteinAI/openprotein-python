@@ -2,7 +2,7 @@ Installation
 ======================
 
 
-You can install the package via `pip <https://pypi.org/project/openprotein-python/>`_ or `conda <https://anaconda.org/openprotein/openprotein_python/files>`_ as below:
+You can install the package via `pip <https://pypi.org/project/openprotein-python/>`_ or `conda <https://anaconda.org/openprotein/openprotein-python/files>`_ as below:
 
 pip
 -----
@@ -14,7 +14,7 @@ conda
 ------
 .. code-block:: bash
 
-   conda install -c openprotein openprotein_python
+   conda install -c openprotein openprotein-python
 
 Github
 --------
