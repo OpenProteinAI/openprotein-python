@@ -131,7 +131,7 @@ def get_align_job_inputs(
     requests.Response
         The response from the server.
     """
-    endpoint = "v1/poet/align/inputs"
+    endpoint = "v1/align/inputs"
 
     params = {"job_id": job_id, "msa_type": input_type}
     if prompt_index is not None:
@@ -263,7 +263,7 @@ def msa_post(session: APISession, msa_file=None, seed=None):
         msa_file is not None and seed is not None
     ):
         raise MissingParameterError("seed OR msa_file must be provided.")
-    endpoint = "v1/poet/align/msa"
+    endpoint = "v1/align/msa"
 
     is_seed = False
     if seed is not None:
@@ -331,7 +331,7 @@ def prompt_post(
     -------
     PromptJob
     """
-    endpoint = "v1/poet/align/prompt"
+    endpoint = "v1/align/prompt"
 
     if not (0 <= homology_level <= 1):
         raise InvalidParameterError("The 'homology_level' must be between 0 and 1.")
@@ -406,7 +406,7 @@ def upload_prompt_post(
         An object representing the status and results of the prompt job.
     """
 
-    endpoint = "v1/poet/align/upload_prompt"
+    endpoint = "v1/align/upload_prompt"
     files = {"prompt_file": prompt_file}
     try:
         response = session.post(endpoint, files=files)
