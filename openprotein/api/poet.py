@@ -1,5 +1,5 @@
 from typing import Iterator, Optional, List, Literal, Dict
-from pydantic import BaseModel, validator
+from openprotein.pydantic import BaseModel, validator
 from io import BytesIO
 import random
 import requests

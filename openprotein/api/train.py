@@ -1,7 +1,7 @@
 from typing import Optional, List, Union
-from pydantic import BaseModel
+from openprotein.pydantic import BaseModel
 
-import pydantic
+import openprotein.pydantic as pydantic
 from openprotein.base import APISession
 from openprotein.api.jobs import AsyncJobFuture, Job
 from openprotein.futures import FutureFactory, FutureBase

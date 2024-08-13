@@ -9,7 +9,7 @@ from openprotein.jobs import JobType, Job
 
 from openprotein.errors import APIError
 from openprotein.futures import FutureFactory, FutureBase
-from pydantic import BaseModel, Field, validator
+from openprotein.pydantic import BaseModel, Field, validator
 from datetime import datetime
 import re
 

@@ -1,12 +1,12 @@
 # Jobs and job centric flows
 
 
-from typing import List, Union
+from typing import List, Union, Optional
 import concurrent.futures
 import time
 
 import tqdm
-import pydantic
+import openprotein.pydantic as pydantic
 
 from openprotein.base import APISession
 import openprotein.config as config
@@ -105,7 +105,7 @@ class JobsAPI:
             more_recent_than=more_recent_than,
         )
 
-    def get(self, job_id) -> Job:
+    def get(self, job_id: str, verbose: bool = False) -> Job:
         """get Job by ID"""
         return load_job(self.session, job_id)
         # return job_get(self.session, job_id)
@@ -150,7 +150,7 @@ class AsyncJobFuture:
     def cancelled(self):
         return self.job.cancelled()
 
-    def get(self, verbose=False):
+    def get(self, verbose: bool = False):
         raise NotImplementedError()
 
     def wait_until_done(
@@ -176,7 +176,7 @@ class AsyncJobFuture:
     def wait(
         self,
         interval: int = config.POLLING_INTERVAL,
-        timeout: int = None,
+        timeout: Optional[int] = None,
         verbose: bool = False,
     ):
         """
@@ -195,7 +195,7 @@ class AsyncJobFuture:
             self.session, interval=interval, timeout=timeout, verbose=verbose
         )
         self.job = job
-        return self.get(verbose=verbose)
+        return self.get()
 
 
 class StreamingAsyncJobFuture(AsyncJobFuture):

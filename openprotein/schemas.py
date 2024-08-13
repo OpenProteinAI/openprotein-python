@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from openprotein.pydantic import BaseModel, ConfigDict
 from enum import Enum
 
 

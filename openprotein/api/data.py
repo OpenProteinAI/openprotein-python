@@ -1,6 +1,6 @@
 import pandas as pd
-import pydantic
-from pydantic import BaseModel
+import openprotein.pydantic as pydantic
+from openprotein.pydantic import BaseModel
 from typing import Optional, List, Union
 from datetime import datetime
 from io import BytesIO
@@ -468,7 +468,7 @@ class DataAPI:
         metadata.sequence_length = len(table["sequence"].values[0])
         return AssayDataset(self.session, metadata)
 
-    def get(self, assay_id: str) -> AssayMetadata:
+    def get(self, assay_id: str, verbose: bool = False) -> AssayMetadata:
         """
         Get an assay dataset by its ID.
 
