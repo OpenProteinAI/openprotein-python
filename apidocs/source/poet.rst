@@ -1,1 +1,0 @@
-This page has been moved. Please visit :doc:`Embeddings <embedding>`.
