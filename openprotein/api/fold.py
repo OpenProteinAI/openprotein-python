@@ -3,7 +3,7 @@ from openprotein.api.jobs import Job, MappedAsyncJobFuture
 import openprotein.config as config
 from openprotein.api.embedding import ModelMetadata
 from openprotein.api.align import validate_msa, MSAFuture
-import pydantic
+import openprotein.pydantic as pydantic
 from typing import Optional, List, Union, Tuple
 from openprotein.futures import FutureBase, FutureFactory
 from abc import ABC, abstractmethod

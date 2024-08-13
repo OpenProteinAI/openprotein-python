@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, Literal
 import time
-from pydantic import BaseModel, Field
+from openprotein.pydantic import BaseModel, Field
 from openprotein.errors import TimeoutException
 from openprotein.base import APISession
 import openprotein.config as config
@@ -13,7 +13,7 @@ from openprotein.schemas import JobStatus, JobType
 
 class Job(BaseModel):
     status: JobStatus
-    job_id: str
+    job_id: Optional[str]  # must be optional as predict can return None
     # new emb service get doesnt have job_type
     job_type: Optional[Literal[tuple(member.value for member in JobType.__members__.values())]]  # type: ignore
     created_date: Optional[datetime] = None

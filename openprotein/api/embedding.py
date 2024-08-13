@@ -11,7 +11,7 @@ from openprotein.api.poet import (
 )
 from openprotein.futures import FutureBase, FutureFactory
 
-from pydantic import BaseModel, parse_obj_as
+from openprotein.pydantic import BaseModel, parse_obj_as
 import numpy as np
 from typing import Optional, List, Union, Any
 import io
@@ -247,7 +247,7 @@ class EmbeddingResultFuture(MappedAsyncJobFuture, FutureBase):
 
     def get(self, verbose=False) -> List:
         return super().get(verbose=verbose)
-    
+
     @property
     def sequences(self):
         if self._sequences is None:
@@ -305,9 +305,7 @@ def embedding_model_post(
     """
     endpoint = PATH_PREFIX + f"/models/{model_id}/embed"
 
-    sequences_unicode = [
-        (s if isinstance(s, str) else s.decode()) for s in sequences 
-    ]
+    sequences_unicode = [(s if isinstance(s, str) else s.decode()) for s in sequences]
     body = {
         "sequences": sequences_unicode,
     }
@@ -345,9 +343,7 @@ def embedding_model_logits_post(
     """
     endpoint = PATH_PREFIX + f"/models/{model_id}/logits"
 
-    sequences_unicode = [
-        (s if isinstance(s, str) else s.decode()) for s in sequences 
-    ]
+    sequences_unicode = [(s if isinstance(s, str) else s.decode()) for s in sequences]
     body = {
         "sequences": sequences_unicode,
     }
@@ -385,9 +381,7 @@ def embedding_model_attn_post(
     """
     endpoint = PATH_PREFIX + f"/models/{model_id}/attn"
 
-    sequences_unicode = [
-        (s if isinstance(s, str) else s.decode()) for s in sequences 
-    ]
+    sequences_unicode = [(s if isinstance(s, str) else s.decode()) for s in sequences]
     body = {
         "sequences": sequences_unicode,
     }
@@ -500,9 +494,7 @@ def svd_embed_post(session: APISession, svd_id: str, sequences: List[bytes]) -> 
     """
     endpoint = PATH_PREFIX + f"/svd/{svd_id}/embed"
 
-    sequences_unicode = [
-        (s if isinstance(s, str) else s.decode()) for s in sequences 
-    ]
+    sequences_unicode = [(s if isinstance(s, str) else s.decode()) for s in sequences]
     body = {
         "sequences": sequences_unicode,
     }
@@ -715,7 +707,7 @@ class SVDModel(AsyncJobFuture, FutureBase):
         """Get job associated with this SVD model"""
         return job_get(self.session, self.id)
 
-    def get(self):
+    def get(self, verbose: bool = False):
         # overload for AsyncJobFuture
         return self
 
@@ -963,7 +955,7 @@ class PoETModel(OpenProteinModel, EmbBase):
         sequences: List[bytes],
         n_components: int = 1024,
         reduction: Optional[str] = None,
-    ) -> SVDModel:
+    ) -> SVDModel:  # type: ignore
         """
         Fit an SVD on the embedding results of this model. 
 

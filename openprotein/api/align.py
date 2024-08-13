@@ -1,5 +1,5 @@
 from typing import Iterator, Optional, List, BinaryIO, Literal, Union
-from pydantic import BaseModel, Field, validator, root_validator
+from openprotein.pydantic import BaseModel, Field, validator, root_validator
 from enum import Enum
 from io import BytesIO
 import random
