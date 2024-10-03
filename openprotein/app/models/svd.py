@@ -50,19 +50,19 @@ class SVDModel(Future):
 
     @property
     def id(self):
-        return self.metadata.id
+        return self._metadata.id
 
     @property
     def n_components(self):
-        return self.metadata.n_components
+        return self._metadata.n_components
 
     @property
     def sequence_length(self):
-        return self.metadata.sequence_length
+        return self._metadata.sequence_length
 
     @property
     def reduction(self):
-        return self.metadata.reduction
+        return self._metadata.reduction
 
     @property
     def metadata(self):

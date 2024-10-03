@@ -1,4 +1,4 @@
-VERSION ?= 0.5.0.dev0
+VERSION ?= 0.5.0.dev1
 SHELL := /bin/bash
 
 .PHONY: releasehere
@@ -48,8 +48,8 @@ releasehere:
 	source activate bld && conda build ./anaconda_build
 
 condabld:
-        micromamba activate openprotein-sdk-build
-        conda build -c conda-forge --numpy 2.1 ./anaconda_build
+	micromamba activate openprotein-sdk-build
+	conda build -c conda-forge --numpy 2.1 ./anaconda_build
 
 proddocs:
 	cd apidocs && make clean && make html 
