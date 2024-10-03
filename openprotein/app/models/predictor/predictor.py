@@ -48,15 +48,15 @@ class PredictorModel(Future):
 
     @property
     def id(self):
-        return self.metadata.id
+        return self._metadata.id
 
     @property
     def reduction(self):
-        return self.metadata.model_spec.features.reduction
+        return self._metadata.model_spec.features.reduction
 
     @property
     def sequence_length(self):
-        if (constraints := self.metadata.model_spec.constraints) is not None:
+        if (constraints := self._metadata.model_spec.constraints) is not None:
             return constraints.sequence_length
         return None
 
@@ -68,7 +68,7 @@ class PredictorModel(Future):
 
     @property
     def training_properties(self) -> list[str]:
-        return self.metadata.training_dataset.properties
+        return self._metadata.training_dataset.properties
 
     @property
     def metadata(self):
