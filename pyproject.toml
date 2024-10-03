@@ -1,26 +1,63 @@
-[tool.poetry]
+[project]
 name = "openprotein_python"
-packages = [{include = "openprotein"}]
-version = "0.4.1"
+packages = [{ include = "openprotein" }]
+version = "0.5.0.dev0"
 description = "OpenProtein Python interface."
 license = "MIT"
 readme = "README.md"
 homepage = "https://docs.openprotein.ai/"
-authors = ["OpenProtein <info@ne47.bio>"]
+authors = [{ name = "Mark Gee", email = "markgee@ne47.bio" }]
 classifiers = [
-    "Development Status :: 4 - Beta",
-    "Programming Language :: Python :: 3",
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python :: 3",
+]
+dependencies = [
+  "requests>=2.32.3,<3",
+  "pydantic>=2.5,<3",
+  "tqdm>=4.66.5,<5",
+  "pandas>=2.1.4,<3",
+  "numpy>=2.1.1,<3",
+]
+requires-python = ">=3.10,<3.11"
+
+[project.optional-dependencies]
+dev = [
+  "ipykernel>=6.29.5,<7",
+  "pytest>=8.3.3,<9",
+  "pandas-stubs>=2.1.4.240909,<3",
+  "hatchling>=1.25.0,<2",
+  "matplotlib>=3.9.2,<4",
+  "scipy>=1.14.1,<2",
 ]
 
-[tool.poetry.dependencies]
-python = "^3.8"
-requests = ">=2"
-pydantic = ">=1"
-tqdm = ">=4"
-pandas = ">=1"
+[tool.pixi.project]
+channels = ["conda-forge"]
+platforms = ["linux-64", "linux-aarch64", "osx-arm64"]
 
-[tool.poetry.dev-dependencies]
+[tool.pixi.dependencies]
+python = ">=3.10,<3.11"
+
+[tool.pixi.environments]
+default = { solve-group = "default" }
+dev = { features = ["dev"], solve-group = "default" }
+
+[tool.pixi.tasks]
+postinstall = "pip install --no-build-isolation --no-deps --disable-pip-version-check -e ."
+
+[tool.pixi.feature.dev.dependencies]
+pip = ">=24.2,<25"
+editables = ">=0.5,<0.6"
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+[tool.hatch.build.targets.sdist]
+packages = ["openprotein"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["openprotein"]
+
+[tool.pyright]
+# typeCheckingMode = "off" # this shit too hard LOL
+typeCheckingMode = "basic" # LETS DO THIS SHIT
