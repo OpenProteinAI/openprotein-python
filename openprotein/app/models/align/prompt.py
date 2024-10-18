@@ -59,12 +59,7 @@ class PromptFuture(AlignFuture, Future):
         if msa_id is None:
             msa_id = job_api.job_args_get(self.session, job.job_id).get("root_msa")
         self._msa_id = msa_id
-
-    @property
-    def prompt_id(self) -> str:
-        if self._prompt_id is None:
-            self._prompt_id = self.job.job_id
-        return self._prompt_id
+        self.prompt_id = self.job.job_id
 
     # def wait(self, verbose: bool = False, **kwargs) -> Iterator[list[str]]:
     #     _ = self.job.wait(

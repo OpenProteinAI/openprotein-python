@@ -2,7 +2,13 @@ from typing import TYPE_CHECKING
 
 from openprotein.api import embedding, poet
 from openprotein.base import APISession
-from openprotein.schemas import ModelMetadata, ReductionType
+from openprotein.schemas import (
+    ModelMetadata,
+    PoetGenerateJob,
+    PoetScoreJob,
+    PoetSSPJob,
+    ReductionType,
+)
 
 from ..align import PromptFuture
 from ..assaydata import AssayDataset, AssayMetadata
@@ -299,15 +305,18 @@ class PoETModel(EmbeddingModel):
                 Sequence to analyse.
             Returns
             -------
-                ScoreFuture
+                PoetScoreFuture
             """
             prompt_id = prompt.id if isinstance(prompt, PromptFuture) else prompt
-            return PoetScoreFuture.create(
+            # HACK - manually construct the job and future since job types have been overwritten
+            return PoetScoreFuture(
                 session=self.session,
-                job=poet.poet_score_post(
-                    session=self.session,
-                    prompt_id=prompt_id,
-                    queries=sequences,
+                job=PoetScoreJob(
+                    **poet.poet_score_post(
+                        session=self.session,
+                        prompt_id=prompt_id,
+                        queries=sequences,
+                    ).model_dump()
                 ),
             )
 
@@ -328,12 +337,15 @@ class PoETModel(EmbeddingModel):
                 ScoreFuture
             """
             prompt_id = prompt.id if isinstance(prompt, PromptFuture) else prompt
-            return PoetSingleSiteFuture.create(
+            # HACK - manually construct the job and future since job types have been overwritten
+            return PoetSingleSiteFuture(
                 session=self.session,
-                job=poet.poet_single_site_post(
-                    session=self.session,
-                    prompt_id=prompt_id,
-                    variant=sequence,
+                job=PoetSSPJob(
+                    **poet.poet_single_site_post(
+                        session=self.session,
+                        prompt_id=prompt_id,
+                        variant=sequence,
+                    ).model_dump()
                 ),
             )
 
@@ -378,16 +390,19 @@ class PoETModel(EmbeddingModel):
                 An object representing the status and information about the generation job.
             """
             prompt_id = prompt.id if isinstance(prompt, PromptFuture) else prompt
-            return PoetGenerateFuture.create(
+            # HACK - manually construct the job and future since job types have been overwritten
+            return PoetGenerateFuture(
                 session=self.session,
-                job=poet.poet_generate_post(
-                    session=self.session,
-                    prompt_id=prompt_id,
-                    num_samples=num_samples,
-                    temperature=temperature,
-                    topk=topk,
-                    topp=topp,
-                    max_length=max_length,
-                    random_seed=seed,
+                job=PoetGenerateJob(
+                    **poet.poet_generate_post(
+                        session=self.session,
+                        prompt_id=prompt_id,
+                        num_samples=num_samples,
+                        temperature=temperature,
+                        topk=topk,
+                        topp=topp,
+                        max_length=max_length,
+                        random_seed=seed,
+                    ).model_dump()
                 ),
             )

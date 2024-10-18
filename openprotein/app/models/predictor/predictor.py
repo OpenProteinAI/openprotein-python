@@ -1,15 +1,47 @@
+import numpy as np
 from openprotein.api import assaydata
 from openprotein.api import job as job_api
 from openprotein.api import predictor, svd
 from openprotein.base import APISession
 from openprotein.errors import InvalidParameterError
-from openprotein.schemas import PredictorMetadata, TrainJob
+from openprotein.schemas import CVJob, PredictorMetadata, TrainJob
 
 from ..assaydata import AssayDataset
 from ..embeddings import EmbeddingModel
 from ..futures import Future
 from ..svd import SVDModel
 from .predict import PredictionResultFuture
+
+
+class CVResultFuture(Future):
+    """Future Job for manipulating results"""
+
+    job: CVJob
+
+    def __init__(
+        self,
+        session: APISession,
+        job: CVJob,
+    ):
+        super().__init__(session, job)
+
+    @property
+    def id(self):
+        return self.job.job_id
+
+    def get(self, verbose: bool = False) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Get embedding results for specified sequence.
+
+        Args:
+            sequence (bytes): sequence to fetch results for
+
+        Returns:
+            mu (np.ndarray): means of predictions
+            var (np.ndarray): variances of predictions
+        """
+        data = predictor.predictor_crossvalidate_get(self.session, self.job.job_id)
+        return predictor.decode_crossvalidate(data)
 
 
 class PredictorModel(Future):
@@ -125,6 +157,16 @@ class PredictorModel(Future):
             ),
         )
 
+    def crossvalidate(self, n_splits: int | None = None) -> CVResultFuture:
+        return CVResultFuture.create(
+            session=self.session,
+            job=predictor.predictor_crossvalidate_post(
+                session=self.session,
+                predictor_id=self.id,
+                n_splits=n_splits,
+            ),
+        )
+
     def predict(self, sequences: list[bytes] | list[str]) -> PredictionResultFuture:
         if self.sequence_length is not None:
             for sequence in sequences:
@@ -137,5 +179,18 @@ class PredictorModel(Future):
             session=self.session,
             job=predictor.predictor_predict_post(
                 session=self.session, predictor_id=self.id, sequences=sequences
+            ),
+        )
+
+    def single_site(self, sequence: bytes | str) -> PredictionResultFuture:
+        if self.sequence_length is not None:
+            if len(sequence) != self.sequence_length:
+                raise InvalidParameterError(
+                    f"Expected sequence to predict to be of length {self.sequence_length}"
+                )
+        return PredictionResultFuture.create(
+            session=self.session,
+            job=predictor.predictor_predict_single_site_post(
+                session=self.session, predictor_id=self.id, base_sequence=sequence
             ),
         )

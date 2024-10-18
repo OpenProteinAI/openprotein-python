@@ -128,7 +128,7 @@ class TrainFuture(Future):
         CVFuture
             The cross-validation job associated with this training job.
         """
-        return CVFuture.create(
+        cv_future = CVFuture.create(
             session=self.session,
             job=train.crossvalidate(
                 session=self.session,
@@ -136,6 +136,8 @@ class TrainFuture(Future):
             ),
             train_job_id=self.id,
         )
+        self.crossvalidation = cv_future
+        return cv_future
 
     def list_models(self):
         """
@@ -233,7 +235,7 @@ class CVFuture(PagedFuture, Future):
         self,
         session: APISession,
         job: WorkflowCVJob,
-        train_job_id: str,
+        train_job_id: str | None = None,
         page_size: int = 1000,
     ):
         """
@@ -249,6 +251,11 @@ class CVFuture(PagedFuture, Future):
             The Job object for this cross-validation job.
         """
         super().__init__(session=session, job=job, page_size=page_size)
+        if train_job_id is None:
+            assert (
+                job.prerequisite_job_id is not None
+            ), "expected prerequisite train job id"
+            train_job_id = job.prerequisite_job_id
         self.train_job_id = train_job_id
 
     def __str__(self) -> str:
@@ -261,12 +268,8 @@ class CVFuture(PagedFuture, Future):
     def id(self):
         return self.job.job_id
 
-    def _fmt_results(self, results: WorkflowCVJob):
-        return (
-            [i.model_dump() for i in results.result]
-            if results.result is not None
-            else []
-        )
+    def _fmt_results(self, results: WorkflowCVJob) -> list[WorkflowCVItem]:
+        return results.result if results.result is not None else []
 
     def get_slice(self, start: int, end: int):
         results = self.get_crossvalidation(page_size=end - start, page_offset=start)

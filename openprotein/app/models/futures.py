@@ -403,29 +403,44 @@ class PagedFuture(StreamingFuture, ABC):
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
             # submit the paged requests
-            futures = []
+            futures: dict[concurrent.futures.Future, int] = {}
+            index: int = 0
             for _ in range(num_workers * 2):
                 f = executor.submit(self.get_slice, offset, offset + step)
-                futures.append(f)
+                futures[f] = index
+                index += 1
                 offset += step
 
             # until we've retrieved all pages (known by retrieving a page with less than the requested number of records)
             done = False
             while not done:
-                futures_next = []
+                results: list[list | None] = [None] * len(futures)
+                futures_next: dict[concurrent.futures.Future, int] = {}
+                index_next: int = 0
+                next_result_index = 0
                 # iterate the futures and submit new requests as needed
                 for f in concurrent.futures.as_completed(futures):
+                    index = futures[f]
                     result_page = f.result()
+                    results[index] = result_page
                     # check if we're done, meaning the result page is not full
                     done = done or len(result_page) < step
                     # if we aren't done, submit another request
                     if not done:
                         f = executor.submit(self.get_slice, offset, offset + step)
-                        futures_next.append(f)
+                        futures_next[f] = index_next
+                        index_next += 1
                         offset += step
                     # yield the results from this page
-                    for result in result_page:
-                        yield result
+                    while (
+                        next_result_index < len(results)
+                        and results[next_result_index] is not None
+                    ):
+                        result_page = results[next_result_index]
+                        assert result_page is not None  # checked above
+                        for result in result_page:
+                            yield result
+                        next_result_index += 1
                 # update the list of futures and wait on them again
                 futures = futures_next
 

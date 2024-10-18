@@ -1,3 +1,5 @@
+import logging
+
 from openprotein.api import predict
 from openprotein.base import APISession
 from openprotein.schemas import (
@@ -7,6 +9,8 @@ from openprotein.schemas import (
 )
 
 from .futures import Future, PagedFuture
+
+logger = logging.getLogger(__name__)
 
 
 class PredictFuture(PagedFuture, Future):
@@ -32,10 +36,9 @@ class PredictFuture(PagedFuture, Future):
     def id(self):
         return self.job.job_id
 
-    def _fmt_results(self, job: WorkflowPredictJob):
-        results = job.result
+    def _fmt_results(self, results: list[WorkflowPredictJob.SequencePrediction]):
         dict_results = {}
-        if results is not None:
+        if len(results) > 0:
             properties = set(
                 list(i["properties"].keys())[0]
                 for i in results[0].model_dump()["predictions"]
@@ -53,10 +56,11 @@ class PredictFuture(PagedFuture, Future):
                     }
         return dict_results
 
-    def _fmt_ssp_results(self, job: WorkflowPredictSingleSiteJob):
-        results = job.result
+    def _fmt_ssp_results(
+        self, results: list[WorkflowPredictSingleSiteJob.MutantPrediction]
+    ):
         dict_results = {}
-        if results is not None:
+        if len(results) > 0:
             properties = set(
                 list(i["properties"].keys())[0]
                 for i in results[0].model_dump()["predictions"]
@@ -109,12 +113,33 @@ class PredictFuture(PagedFuture, Future):
     #     else:
     #         return self._fmt_ssp_results(results)
 
-    def get_slice(self, start: int, end: int):
-        results = self.get_results(page_size=end - start, page_offset=start)
-        if isinstance(results, WorkflowPredictSingleSiteJob):
+    def get_dict(self, verbose: bool = False) -> dict:
+
+        results: list = []
+        num_returned = self.page_size
+        offset = 0
+
+        while num_returned >= self.page_size:
+            try:
+                predict_job_results = self.get_results(
+                    page_offset=offset, page_size=self.page_size
+                )
+                if predict_job_results.result is not None:
+                    results += predict_job_results.result
+                    num_returned = len(predict_job_results.result)
+                offset += num_returned
+            except Exception as exc:
+                if verbose:
+                    logging.error(f"Failed to get results: {exc}")
+
+        if self.job.job_type == JobType.workflow_predict_single_site:
             return self._fmt_ssp_results(results)
         else:
             return self._fmt_results(results)
+
+    def get_slice(self, start: int, end: int):
+        results = self.get_results(page_size=end - start, page_offset=start)
+        return results.result or []  # could be none
 
     def get_results(
         self, page_size: int | None = None, page_offset: int | None = None

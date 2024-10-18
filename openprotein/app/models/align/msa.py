@@ -54,14 +54,7 @@ class MSAFuture(AlignFuture, Future):
         """
         super().__init__(session, job)
         self.page_size = page_size
-        self._msa_id = None
-        self._prompt_id = None
-
-    @property
-    def msa_id(self) -> str:
-        if self._msa_id is None:
-            self._msa_id = self.job.job_id
-        return self._msa_id
+        self.msa_id = self.job.job_id
 
     # def wait(self, verbose: bool = False):
     #     _ = self.job.wait(

@@ -16,9 +16,9 @@ class CVItem(BaseModel):
 
 class CVJob(Job):
     job_type: Literal[JobType.workflow_crossvalidate]
-    num_rows: int
-    page_size: int
-    page_offset: int
+    num_rows: int | None = None
+    page_size: int | None = None
+    page_offset: int | None = None
     result: list[CVItem] | None = None
 
 

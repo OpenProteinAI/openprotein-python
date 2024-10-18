@@ -102,6 +102,19 @@ class Job(BaseModel):
             raise ValueError(f"Error parsing job from obj: {obj}: {e}")
         return job  # type: ignore - static checker cannot know runtime type
 
+    # hide extra allowed fields
+    def __repr_args__(self):
+        for k, v in self.__dict__.items():
+            field = self.model_fields.get(k)
+            if field and field.repr:
+                yield k, v
+
+        yield from (
+            (k, getattr(self, k))
+            for k, v in self.model_computed_fields.items()
+            if v.repr
+        )
+
     # allows to carry over subclassed job fields when factory creating
     model_config = ConfigDict(extra="allow")
 

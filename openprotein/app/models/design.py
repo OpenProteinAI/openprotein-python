@@ -1,6 +1,6 @@
 from openprotein.api import design
 from openprotein.base import APISession
-from openprotein.schemas import DesignJob, DesignResults
+from openprotein.schemas import DesignJob, DesignResults, DesignStep
 
 from .futures import Future, PagedFuture
 
@@ -20,8 +20,14 @@ class DesignFuture(PagedFuture, Future):
     def __repr__(self) -> str:
         return repr(self.job)
 
-    def _fmt_results(self, results: DesignResults) -> list[dict]:
-        return [i.model_dump() for i in results.result]
+    def _fmt_results(
+        self, results: DesignResults
+    ) -> (
+        # list[dict]
+        list[DesignStep]
+    ):
+        # return [i.model_dump() for i in results.result]
+        return results.result
 
     @property
     def id(self):

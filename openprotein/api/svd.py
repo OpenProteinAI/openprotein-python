@@ -1,6 +1,9 @@
+import io
+
+import numpy as np
 from openprotein.base import APISession
 from openprotein.errors import InvalidParameterError
-from openprotein.schemas import FitJob, Job, SVDEmbeddingsJob, SVDMetadata
+from openprotein.schemas import FitJob, SVDEmbeddingsJob, SVDMetadata
 from pydantic import TypeAdapter
 
 PATH_PREFIX = "v1/embeddings/svd"
@@ -38,6 +41,46 @@ def svd_get_sequences(session: APISession, svd_id: str) -> list[bytes]:
     endpoint = PATH_PREFIX + f"/{svd_id}/sequences"
     response = session.get(endpoint)
     return TypeAdapter(list[bytes]).validate_python(response.json())
+
+
+def embed_get_sequence_result(
+    session: APISession, job_id: str, sequence: str | bytes
+) -> bytes:
+    """
+    Get encoded svd embeddings result for a sequence from the request ID.
+
+    Parameters
+    ----------
+    session : APISession
+        Session object for API communication.
+    job_id : str
+        job ID to retrieve results from
+    sequence : bytes
+        sequence to retrieve results for
+
+    Returns
+    -------
+    result : bytes
+    """
+    if isinstance(sequence, bytes):
+        sequence = sequence.decode()
+    endpoint = PATH_PREFIX + f"/embed/{job_id}/{sequence}"
+    response = session.get(endpoint)
+    return response.content
+
+
+def embed_decode(data: bytes) -> np.ndarray:
+    """
+    Decode embedding.
+
+    Args:
+        data (bytes): raw bytes encoding the array received over the API
+
+    Returns:
+        np.ndarray: decoded array
+    """
+    s = io.BytesIO(data)
+    return np.load(s, allow_pickle=False)
 
 
 def svd_delete(session: APISession, svd_id: str):
@@ -121,7 +164,7 @@ def svd_fit_post(
 
 
 def svd_embed_post(
-    session: APISession, svd_id: str, sequences: list[bytes]
+    session: APISession, svd_id: str, sequences: list[bytes] | list[str]
 ) -> SVDEmbeddingsJob:
     """
     POST a request for embeddings from the given SVD model.
@@ -139,7 +182,7 @@ def svd_embed_post(
     -------
     Job
     """
-    endpoint = PATH_PREFIX + f"/svd/{svd_id}/embed"
+    endpoint = PATH_PREFIX + f"/{svd_id}/embed"
 
     sequences_unicode = [(s if isinstance(s, str) else s.decode()) for s in sequences]
     body = {

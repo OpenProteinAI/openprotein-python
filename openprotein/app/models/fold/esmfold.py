@@ -26,6 +26,9 @@ class ESMFoldModel(FoldModel):
         -------
             FoldResultFuture
         """
-        return fold.fold_models_esmfold_post(
-            self.session, sequences, num_recycles=num_recycles
+        return FoldResultFuture.create(
+            session=self.session,
+            job=fold.fold_models_esmfold_post(
+                self.session, sequences, num_recycles=num_recycles
+            ),
         )

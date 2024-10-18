@@ -1,6 +1,6 @@
 from openprotein.api.embedding import ModelMetadata
 from openprotein.base import APISession
-from openprotein.schemas import Job
+from openprotein.schemas import FoldJob
 from pydantic import TypeAdapter
 
 PATH_PREFIX = "v1/fold"
@@ -80,7 +80,7 @@ def fold_models_esmfold_post(
     session: APISession,
     sequences: list[bytes],
     num_recycles: int | None = None,
-) -> Job:
+) -> FoldJob:
     """
     POST a request for structure prediction using ESMFold. Returns a Job object referring to this request
     that can be used to retrieve results later.
@@ -108,7 +108,7 @@ def fold_models_esmfold_post(
         body["num_recycles"] = num_recycles
 
     response = session.post(endpoint, json=body)
-    return Job.model_validate(response.json())
+    return FoldJob.model_validate(response.json())
 
 
 def fold_models_alphafold2_post(
@@ -117,7 +117,7 @@ def fold_models_alphafold2_post(
     num_recycles: int | None = None,
     num_models: int = 1,
     num_relax: int = 0,
-) -> Job:
+) -> FoldJob:
     """
     POST a request for structure prediction using AlphaFold2. Returns a Job object referring to this request
     that can be used to retrieve results later.
@@ -152,4 +152,4 @@ def fold_models_alphafold2_post(
     response = session.post(endpoint, json=body)
     # GET endpoint for AF2 expects the query sequence (first sequence) within the MSA
     # since we don't know what the is, leave the sequence out of the future to be retrieved when calling get()
-    return Job.model_validate(response.json())
+    return FoldJob.model_validate(response.json())

@@ -6,7 +6,15 @@ import numpy as np
 from openprotein.api.align import csv_stream
 from openprotein.base import APISession
 from openprotein.errors import InvalidParameterError
-from openprotein.schemas import AttnJob, EmbeddingsJob, Job, LogitsJob, ModelMetadata
+from openprotein.schemas import (
+    AttnJob,
+    EmbeddingsJob,
+    GenerateJob,
+    LogitsJob,
+    ModelMetadata,
+    ScoreJob,
+    ScoreSingleSiteJob,
+)
 from pydantic import TypeAdapter
 
 PATH_PREFIX = "v1/embeddings"
@@ -256,7 +264,7 @@ def request_score_post(
     model_id: str,
     sequences: list[bytes] | list[str],
     prompt_id: str | None = None,
-) -> Job:
+) -> ScoreJob:
     """
     POST a request for sequence scoring for the given model ID. \
         Returns a Job object referring to this request \
@@ -284,15 +292,15 @@ def request_score_post(
     if prompt_id is not None:
         body["prompt_id"] = prompt_id
     response = session.post(endpoint, json=body)
-    return Job.model_validate(response.json())
+    return ScoreJob.model_validate(response.json())
 
 
 def request_score_single_site_post(
     session: APISession,
     model_id: str,
-    base_sequence: bytes,
+    base_sequence: bytes | str,
     prompt_id: str | None = None,
-) -> Job:
+) -> ScoreSingleSiteJob:
     """
     POST a request for single site mutation scoring for the given model ID. \
         Returns a Job object referring to this request \
@@ -314,12 +322,16 @@ def request_score_single_site_post(
     endpoint = PATH_PREFIX + f"/models/{model_id}/score_single_site"
 
     body: dict = {
-        "base_sequence": base_sequence.decode(),
+        "base_sequence": (
+            base_sequence.decode()
+            if isinstance(base_sequence, bytes)
+            else base_sequence
+        ),
     }
     if prompt_id is not None:
         body["prompt_id"] = prompt_id
     response = session.post(endpoint, json=body)
-    return Job.model_validate(response.json())
+    return ScoreSingleSiteJob.model_validate(response.json())
 
 
 def request_generate_post(
@@ -332,7 +344,7 @@ def request_generate_post(
     max_length: int = 1000,
     random_seed: int | None = None,
     prompt_id: str | None = None,
-) -> Job:
+) -> GenerateJob:
     """
     POST a request for sequence generation for the given model ID. \
         Returns a Job object referring to this request \
@@ -364,7 +376,7 @@ def request_generate_post(
         random_seed = random.randrange(2**32)
 
     body: dict = {
-        "generate_n": num_samples,
+        "n_sequences": num_samples,
         "temperature": temperature,
         "maxlen": max_length,
     }
@@ -377,4 +389,4 @@ def request_generate_post(
     if prompt_id is not None:
         body["prompt_id"] = prompt_id
     response = session.post(endpoint, json=body)
-    return Job.model_validate(response.json())
+    return GenerateJob.model_validate(response.json())
