@@ -1,14 +1,17 @@
 from openprotein._version import __version__
-
+from openprotein.app import (
+    SVDAPI,
+    AlignAPI,
+    AssayDataAPI,
+    DesignAPI,
+    EmbeddingsAPI,
+    FoldAPI,
+    JobsAPI,
+    PredictorAPI,
+    TrainingAPI,
+)
+from openprotein.app.models import Future
 from openprotein.base import APISession
-from openprotein.api.jobs import JobsAPI, Job
-from openprotein.api.data import DataAPI
-from openprotein.api.align import AlignAPI
-from openprotein.api.embedding import EmbeddingAPI
-from openprotein.api.train import TrainingAPI
-from openprotein.api.design import DesignAPI
-from openprotein.api.fold import FoldAPI
-from openprotein.api.jobs import load_job
 
 
 class OpenProtein(APISession):
@@ -17,20 +20,22 @@ class OpenProtein(APISession):
     """
 
     _embedding = None
+    _svd = None
     _fold = None
     _align = None
     _jobs = None
     _data = None
     _train = None
     _design = None
+    _predictor = None
 
-    def wait(self, job: Job, *args, **kwargs):
-        return job.wait(self, *args, **kwargs)
+    def wait(self, future: Future, *args, **kwargs):
+        return future.wait(*args, **kwargs)
 
     wait_until_done = wait
 
     def load_job(self, job_id):
-        return load_job(self, job_id)
+        return self.jobs.__load(job_id=job_id)
 
     @property
     def jobs(self) -> JobsAPI:
@@ -42,12 +47,12 @@ class OpenProtein(APISession):
         return self._jobs
 
     @property
-    def data(self) -> DataAPI:
+    def data(self) -> AssayDataAPI:
         """
         The data submodule gives access to functionality for uploading and accessing user data.
         """
         if self._data is None:
-            self._data = DataAPI(self)
+            self._data = AssayDataAPI(self)
         return self._data
 
     @property
@@ -62,20 +67,38 @@ class OpenProtein(APISession):
     @property
     def align(self) -> AlignAPI:
         """
-        The PoET submodule gives access to the PoET generative model and MSA and prompt creation interfaces.
+        The Align submodule gives access to the sequence alignment capabilities by building MSAs and prompts that can be used with PoET.
         """
         if self._align is None:
             self._align = AlignAPI(self)
         return self._align
 
     @property
-    def embedding(self) -> EmbeddingAPI:
+    def embedding(self) -> EmbeddingsAPI:
         """
         The embedding submodule gives access to protein embedding models and their inference endpoints.
         """
         if self._embedding is None:
-            self._embedding = EmbeddingAPI(self)
+            self._embedding = EmbeddingsAPI(self)
         return self._embedding
+
+    @property
+    def svd(self) -> SVDAPI:
+        """
+        The embedding submodule gives access to protein embedding models and their inference endpoints.
+        """
+        if self._svd is None:
+            self._svd = SVDAPI(self, self.embedding)
+        return self._svd
+
+    @property
+    def predictor(self) -> PredictorAPI:
+        """
+        The predictor submodule gives access to training and predicting with predictors built on top of embeddings.
+        """
+        if self._predictor is None:
+            self._predictor = PredictorAPI(self, self.embedding, self.svd)
+        return self._predictor
 
     @property
     def design(self) -> DesignAPI:

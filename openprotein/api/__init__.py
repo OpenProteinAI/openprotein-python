@@ -1,7 +1,2 @@
-from . import data 
-from . import design
-from . import train 
-from . import predict
-from . import align 
-from . import embedding
-from . import fold 
+from . import align, assaydata, design, embedding, fold, predict, predictor, train
+from .deprecated import poet
