@@ -1,12 +1,12 @@
-import openprotein.config as config
+from typing import Union
+from urllib.parse import urljoin
 
 import requests
-from urllib.parse import urljoin
-from typing import Union
-
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
-from openprotein.errors import HTTPError, APIError, AuthError
+
+import openprotein.config as config
+from openprotein.errors import APIError, AuthError, HTTPError
 
 
 class BearerAuth(requests.auth.AuthBase):
@@ -38,23 +38,28 @@ class APISession(requests.Session):
     >>> session = APISession("username", "password")
     """
 
-    def __init__(self, username:str,
-                 password:str,
-                 backend:str = "https://api.openprotein.ai/api/",
-                 timeout:int = 180):
+    def __init__(
+        self,
+        username: str,
+        password: str,
+        backend: str = "https://api.openprotein.ai/api/",
+        timeout: int = 180,
+    ):
         super().__init__()
         self.backend = backend
         self.verify = True
         self.timeout = timeout
 
         # Custom retry strategies
-        #auto retry for pesky connection reset errors and others
+        # auto retry for pesky connection reset errors and others
         # 503 will catch if BE is refreshing
-        retry = Retry(total=4,
-                      backoff_factor=3, #0,1,4,13s
-                      status_forcelist=[500, 502, 503, 504, 101, 104]) 
+        retry = Retry(
+            total=4,
+            backoff_factor=3,  # 0,1,4,13s
+            status_forcelist=[500, 502, 503, 504, 101, 104],
+        )
         adapter = HTTPAdapter(max_retries=retry)
-        self.mount('https://', adapter)
+        self.mount("https://", adapter)
         self.login(username, password)
 
     def post(self, url, data=None, json=None, **kwargs):
@@ -68,30 +73,27 @@ class APISession(requests.Session):
         :rtype: requests.Response
         """
         timeout = self.timeout
-        if 'timeout' in kwargs:
-            timeout = kwargs.pop('timeout')
-  
-        return self.request("POST",
-                            url,
-                            data=data,
-                            json=json,
-                            timeout=timeout,
-                            **kwargs)
-    
-    def login(self, username:str, password:str):
-        """ 
+        if "timeout" in kwargs:
+            timeout = kwargs.pop("timeout")
+
+        return self.request(
+            "POST", url, data=data, json=json, timeout=timeout, **kwargs
+        )
+
+    def login(self, username: str, password: str):
+        """
         Authenticate connection to OpenProtein with your credentials.
-        
+
         Parameters
         -----------
         username: str
-            username 
+            username
         password: str
             password
         """
         self.auth = self._get_auth_token(username, password)
 
-    def _get_auth_token(self, username:str, password:str):
+    def _get_auth_token(self, username: str, password: str):
         endpoint = "v1/login/access-token"
         url = urljoin(self.backend, endpoint)
         try:
@@ -106,9 +108,9 @@ class APISession(requests.Session):
 
         result = response.json()
         token = result.get("access_token")
-        if token is None: 
+        if token is None:
             raise AuthError("Unable to authenticate with given credentials.")
-        return BearerAuth(token)    
+        return BearerAuth(token)
 
     def request(
         self, method: Union[str, bytes], url: Union[str, bytes], *args, **kwargs
