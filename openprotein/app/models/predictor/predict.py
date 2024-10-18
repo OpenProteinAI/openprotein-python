@@ -59,9 +59,9 @@ class PredictionResultFuture(Future):
         data = predictor.predictor_predict_get_sequence_result(
             self.session, self.job.job_id, sequence
         )
-        return predictor.decode_score(data)
+        return predictor.decode_predict(data)
 
-    def get(self) -> tuple[np.ndarray, np.ndarray]:
+    def get(self, verbose: bool = False) -> tuple[np.ndarray, np.ndarray]:
         """
         Get embedding results for specified sequence.
 
@@ -75,4 +75,4 @@ class PredictionResultFuture(Future):
         data = predictor.predictor_predict_get_batched_result(
             self.session, self.job.job_id
         )
-        return predictor.decode_score(data, batched=True)
+        return predictor.decode_predict(data, batched=True)

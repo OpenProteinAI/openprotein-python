@@ -24,8 +24,8 @@ class DesignStep(BaseModel):
     sequence: str
     # scores: List[int]
     # subscores_metadata: List[List[DesignSubscore]]
-    scores: list[float]
-    subscores_metadata: list[list[DesignSubscore]]
+    # scores: list[float]
+    scores: list[list[DesignSubscore]] = Field(..., alias="subscores_metadata")
     # umap1: float
     # umap2: float
 

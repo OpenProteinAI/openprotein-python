@@ -1,7 +1,7 @@
 [project]
 name = "openprotein_python"
 packages = [{ include = "openprotein" }]
-version = "0.5.0.dev1"
+version = "0.5.0"
 description = "OpenProtein Python interface."
 license = "MIT"
 readme = "README.md"

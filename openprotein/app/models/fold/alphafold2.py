@@ -2,6 +2,7 @@ from openprotein.api import fold
 
 from ..align import MSAFuture
 from .base import FoldModel
+from .future import FoldResultFuture
 
 
 class AlphaFold2Model(FoldModel):
@@ -18,7 +19,7 @@ class AlphaFold2Model(FoldModel):
         num_recycles: int | None = None,
         num_models: int = 1,
         num_relax: int = 0,
-    ):
+    ) -> FoldResultFuture:
         """
         Post sequences to alphafold model.
 
@@ -41,10 +42,13 @@ class AlphaFold2Model(FoldModel):
         """
         msa_id = msa.id if isinstance(msa, MSAFuture) else msa
 
-        return fold.fold_models_alphafold2_post(
-            self.session,
-            msa_id=msa_id,
-            num_recycles=num_recycles,
-            num_models=num_models,
-            num_relax=num_relax,
+        return FoldResultFuture.create(
+            session=self.session,
+            job=fold.fold_models_alphafold2_post(
+                self.session,
+                msa_id=msa_id,
+                num_recycles=num_recycles,
+                num_models=num_models,
+                num_relax=num_relax,
+            ),
         )

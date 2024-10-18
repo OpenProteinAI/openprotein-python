@@ -3,7 +3,16 @@ import io
 import numpy as np
 import pandas as pd
 from openprotein.base import APISession
-from openprotein.schemas import Job, PredictorMetadata
+from openprotein.schemas import (
+    CVJob,
+    Job,
+    PredictJob,
+    PredictMultiJob,
+    PredictMultiSingleSiteJob,
+    PredictorMetadata,
+    PredictSingleSiteJob,
+    TrainJob,
+)
 from pydantic import TypeAdapter
 
 PATH_PREFIX = "v1/predictor"
@@ -99,11 +108,31 @@ def predictor_fit_gp_post(
         body["description"] = description
 
     response = session.post(endpoint, json=body)
-    return Job.model_validate(response.json())
+    return TrainJob.model_validate(response.json())
 
 
 def predictor_delete(session: APISession, predictor_id: str):
     raise NotImplementedError()
+
+
+def predictor_crossvalidate_post(
+    session: APISession, predictor_id: str, n_splits: int | None = None
+):
+    endpoint = PATH_PREFIX + f"/{predictor_id}/crossvalidate"
+
+    params = {}
+    if n_splits is not None:
+        params["n_splits"] = n_splits
+    response = session.post(endpoint, params=params)
+
+    return CVJob.model_validate(response.json())
+
+
+def predictor_crossvalidate_get(session: APISession, crossvalidate_job_id: str):
+    endpoint = PATH_PREFIX + f"/crossvalidate/{crossvalidate_job_id}"
+
+    response = session.get(endpoint)
+    return response.content
 
 
 def predictor_predict_post(
@@ -117,7 +146,25 @@ def predictor_predict_post(
     }
     response = session.post(endpoint, json=body)
 
-    return Job.model_validate(response.json())
+    return PredictJob.model_validate(response.json())
+
+
+def predictor_predict_single_site_post(
+    session: APISession,
+    predictor_id: str,
+    base_sequence: bytes | str,
+):
+    endpoint = PATH_PREFIX + f"/{predictor_id}/predict_single_site"
+
+    base_sequence = (
+        base_sequence.decode() if isinstance(base_sequence, bytes) else base_sequence
+    )
+    body = {
+        "base_sequence": base_sequence,
+    }
+    response = session.post(endpoint, json=body)
+
+    return PredictSingleSiteJob.model_validate(response.json())
 
 
 def predictor_predict_get_sequences(
@@ -179,9 +226,9 @@ def predictor_predict_get_batched_result(
     return response.content
 
 
-def decode_score(data: bytes, batched: bool = False) -> tuple[np.ndarray, np.ndarray]:
+def decode_predict(data: bytes, batched: bool = False) -> tuple[np.ndarray, np.ndarray]:
     """
-    Decode embedding.
+    Decode prediction scores.
 
     Args:
         data (bytes): raw bytes encoding the array received over the API
@@ -203,3 +250,25 @@ def decode_score(data: bytes, batched: bool = False) -> tuple[np.ndarray, np.nda
     mus = scores[:, ::2]
     vars = scores[:, 1::2]
     return mus, vars
+
+
+def decode_crossvalidate(data: bytes) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Decode crossvalidate scores.
+
+    Args:
+        data (bytes): raw bytes encoding the array received over the API
+
+    Returns:
+        mus (np.ndarray): decoded array of means
+        vars (np.ndarray): decoded array of variances
+    """
+    s = io.BytesIO(data)
+    # should contain header and sequence column
+    df = pd.read_csv(s)
+    scores = df.values
+    # row_num, seq, measurement_name, y, y_mu, y_var
+    y = scores[:, 3]
+    mus = scores[:, 4]
+    vars = scores[:, 5]
+    return y, mus, vars

@@ -30,7 +30,7 @@ class EmbeddingResultFuture(MappedFuture, Future):
         self,
         session: APISession,
         job: EmbeddingsJob | AttnJob | LogitsJob,
-        sequences: list[bytes] | None = None,
+        sequences: list[bytes] | list[str] | None = None,
         max_workers: int = config.MAX_CONCURRENT_WORKERS,
     ):
         super().__init__(session=session, job=job, max_workers=max_workers)
@@ -40,7 +40,7 @@ class EmbeddingResultFuture(MappedFuture, Future):
         return super().get(verbose=verbose)
 
     @property
-    def sequences(self) -> list[bytes]:
+    def sequences(self) -> list[bytes] | list[str]:
         if self._sequences is None:
             self._sequences = embedding.get_request_sequences(
                 self.session, self.job.job_id
@@ -79,8 +79,20 @@ class EmbeddingsScoreResultFuture(StreamingFuture, Future):
         self,
         session: APISession,
         job: ScoreJob | ScoreSingleSiteJob | GenerateJob,
+        sequences: list[bytes] | list[str] | None = None,
     ):
         super().__init__(session=session, job=job)
+        self._sequences = sequences
+
+    @property
+    def sequences(self) -> list[bytes] | list[str]:
+        if isinstance(self.job, GenerateJob):
+            raise Exception("generate job does not support listing sequences")
+        if self._sequences is None:
+            self._sequences = embedding.get_request_sequences(
+                self.session, self.job.job_id
+            )
+        return self._sequences
 
     def stream(self) -> Generator:
         if self.job_type == JobType.poet_generate:
@@ -91,8 +103,17 @@ class EmbeddingsScoreResultFuture(StreamingFuture, Future):
             stream = embedding.request_get_score_result(
                 session=self.session, job_id=self.id
             )
+        # mut_code, ... for ssp
+        # name, sequence, ... for score
         header = next(stream)
-        Score = namedtuple("Score", header)
+        score_start_index = 0
+        for i, col_name in enumerate(header):
+            if col_name.startswith("score"):
+                score_start_index = i
+                break
+        Score = namedtuple("Score", header[:score_start_index] + ["score"])
         for line in stream:
-            output = Score(*line)
+            # combine scores into numpy array
+            scores = np.array([float(s) for s in line[score_start_index:]])
+            output = Score(*line[:score_start_index], scores)
             yield output

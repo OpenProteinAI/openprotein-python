@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from openprotein.api import embedding, predictor, svd
+from openprotein.api import assaydata, embedding, predictor, svd
 from openprotein.base import APISession
 from openprotein.errors import InvalidParameterError
 from openprotein.schemas import FeatureType, ModelMetadata, ReductionType
@@ -97,7 +97,7 @@ class EmbeddingModel:
 
     def embed(
         self,
-        sequences: list[bytes],
+        sequences: list[bytes] | list[str],
         reduction: ReductionType | None = ReductionType.MEAN,
         **kwargs,
     ) -> EmbeddingResultFuture:
@@ -118,15 +118,18 @@ class EmbeddingModel:
         return EmbeddingResultFuture.create(
             session=self.session,
             job=embedding.request_post(
-                self.session,
+                session=self.session,
                 model_id=self.id,
                 sequences=sequences,
                 reduction=reduction,
                 **kwargs,
             ),
+            sequences=sequences,
         )
 
-    def logits(self, sequences: list[bytes], **kwargs) -> EmbeddingResultFuture:
+    def logits(
+        self, sequences: list[bytes] | list[str], **kwargs
+    ) -> EmbeddingResultFuture:
         """
         logit embeddings for sequences using this model.
 
@@ -141,11 +144,15 @@ class EmbeddingModel:
         """
         return EmbeddingResultFuture.create(
             session=self.session,
-            job=embedding.request_logits_post(self.session, self.id, sequences),
-            **kwargs,
+            job=embedding.request_logits_post(
+                session=self.session, model_id=self.id, sequences=sequences, **kwargs
+            ),
+            sequences=sequences,
         )
 
-    def attn(self, sequences: list[bytes], **kwargs) -> EmbeddingResultFuture:
+    def attn(
+        self, sequences: list[bytes] | list[str], **kwargs
+    ) -> EmbeddingResultFuture:
         """
         Attention embeddings for sequences using this model.
 
@@ -160,8 +167,10 @@ class EmbeddingModel:
         """
         return EmbeddingResultFuture.create(
             session=self.session,
-            job=embedding.request_attn_post(self.session, self.id, sequences),
-            **kwargs,
+            job=embedding.request_attn_post(
+                session=self.session, model_id=self.id, sequences=sequences, **kwargs
+            ),
+            sequences=sequences,
         )
 
     def fit_svd(
@@ -242,14 +251,20 @@ class EmbeddingModel:
         from ..predictor import PredictorModel
 
         model_id = self.id
-        # extract assay_id
-        assay_id = (
-            assay.assay_id
-            if isinstance(assay, AssayMetadata)
-            else assay.id if isinstance(assay, AssayDataset) else assay
+        # get assay if str
+        assay = (
+            assaydata.get_assay_metadata(session=self.session, assay_id=assay)
+            if isinstance(assay, str)
+            else assay
         )
+        # extract assay_id
+        assay_id = assay.assay_id if isinstance(assay, AssayMetadata) else assay.id
         if len(properties) == 0:
             raise InvalidParameterError("Expected (at-least) 1 property to train")
+        if not set(properties) <= set(assay.measurement_names):
+            raise InvalidParameterError(
+                f"Expected all provided properties to be a subset of assay's measurements: {assay.measurement_names}"
+            )
         # TODO - support multitask
         if len(properties) > 1:
             raise InvalidParameterError(

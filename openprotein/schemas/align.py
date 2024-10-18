@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 
 from .job import Job, JobType
 
@@ -34,22 +34,16 @@ class PromptPostParams(BaseModel):
 
 
 class MSAJob(Job):
-    msa_id: str | None = None
     job_type: Literal[JobType.align_align]
 
-    @model_validator(mode="before")
-    def set_msa_id(cls, values):
-        if not values.get("msa_id"):
-            values["msa_id"] = values.get("job_id")
-        return values
+    @property
+    def msa_id(self):
+        return self.msa_id
 
 
 class PromptJob(MSAJob, Job):
-    prompt_id: str | None = None
     job_type: Literal[JobType.align_prompt]
 
-    @model_validator(mode="before")
-    def set_prompt_id(cls, values):
-        if not values.get("prompt_id"):
-            values["prompt_id"] = values.get("job_id")
-        return values
+    @property
+    def prompt_id(self):
+        return self.job_id

@@ -16,7 +16,15 @@ from .predict import (
     PredictJob as WorkflowPredictJob,
     PredictSingleSiteJob as WorkflowPredictSingleSiteJob,
 )
-from .design import DesignJobCreate, DesignMetadata, DesignResults, DesignJob
+from .design import (
+    ModelCriterion,
+    Criterion,
+    DesignJobCreate,
+    DesignMetadata,
+    DesignResults,
+    DesignStep,
+    DesignJob,
+)
 from .deprecated.poet import (
     PoetScoreJob,
     PoetSSPJob,
