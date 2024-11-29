@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from openprotein.api import assaydata, embedding, predictor, svd
+from openprotein.api import assaydata, embedding, predictor, svd, umap
 from openprotein.base import APISession
 from openprotein.errors import InvalidParameterError
 from openprotein.schemas import FeatureType, ModelMetadata, ReductionType
@@ -11,6 +11,7 @@ from .future import EmbeddingResultFuture
 if TYPE_CHECKING:
     from ..predictor import PredictorModel
     from ..svd import SVDModel
+    from ..umap import UMAPModel
 
 
 class EmbeddingModel:
@@ -221,6 +222,58 @@ class EmbeddingModel:
             **kwargs,
         )
         return SVDModel.create(session=self.session, job=job)
+
+    def fit_umap(
+        self,
+        sequences: list[bytes] | list[str] | None = None,
+        assay: AssayDataset | None = None,
+        n_components: int = 2,
+        reduction: ReductionType | None = ReductionType.MEAN,
+        **kwargs,
+    ) -> "UMAPModel":
+        """
+        Fit an UMAP on the embedding results of this model. 
+
+        This function will create an UMAPModel based on the embeddings from this model \
+            as well as the hyperparameters specified in the args.  
+
+        Parameters
+        ----------
+        sequences : list[bytes] | None
+            Optional sequences to fit UMAP with. Either use sequences or assay. sequences is preferred.
+        assay: AssayDataset | None
+            Optional assay containing sequences to fit UMAP with. Either use sequences or assay. Ignored if sequences are provided.
+        n_components: int 
+            Number of components in UMAP fit. Will determine output shapes. Defaults to 2.
+        reduction: ReductionType | None
+            Embeddings reduction to use (e.g. mean). Defaults to MEAN.
+
+        Returns
+        -------
+            UMAPModel
+        """
+        # local import for cyclic dep
+        from ..umap import UMAPModel
+
+        # Ensure either or
+        if (assay is None and sequences is None) or (
+            assay is not None and sequences is not None
+        ):
+            raise InvalidParameterError(
+                "Expected either assay or sequences to fit UMAP on!"
+            )
+        model_id = self.id
+        job = umap.umap_fit_post(
+            session=self.session,
+            model_id=model_id,
+            feature_type=FeatureType.PLM,
+            sequences=sequences,
+            assay_id=assay.id if assay is not None else None,
+            n_components=n_components,
+            reduction=reduction,
+            **kwargs,
+        )
+        return UMAPModel.create(session=self.session, job=job)
 
     def fit_gp(
         self,

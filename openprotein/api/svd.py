@@ -3,7 +3,7 @@ import io
 import numpy as np
 from openprotein.base import APISession
 from openprotein.errors import InvalidParameterError
-from openprotein.schemas import FitJob, SVDEmbeddingsJob, SVDMetadata
+from openprotein.schemas import SVDEmbeddingsJob, SVDFitJob, SVDMetadata
 from pydantic import TypeAdapter
 
 PATH_PREFIX = "v1/embeddings/svd"
@@ -112,7 +112,7 @@ def svd_fit_post(
     n_components: int = 1024,
     reduction: str | None = None,
     prompt_id: str | None = None,
-) -> FitJob:
+) -> SVDFitJob:
     """
     Create SVD fit job.
 
@@ -160,7 +160,7 @@ def svd_fit_post(
 
     response = session.post(endpoint, json=body)
     # return job for metadata
-    return FitJob.model_validate(response.json())
+    return SVDFitJob.model_validate(response.json())
 
 
 def svd_embed_post(

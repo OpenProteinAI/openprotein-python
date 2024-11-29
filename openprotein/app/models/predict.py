@@ -1,7 +1,9 @@
 import logging
+from typing import TYPE_CHECKING
 
 from openprotein.api import predict
 from openprotein.base import APISession
+from openprotein.errors import MissingParameterError
 from openprotein.schemas import (
     JobType,
     WorkflowPredictJob,
@@ -10,10 +12,13 @@ from openprotein.schemas import (
 
 from .futures import Future, PagedFuture
 
+if TYPE_CHECKING:
+    from .train import TrainFuture
+
 logger = logging.getLogger(__name__)
 
 
-class PredictFuture(PagedFuture, Future):
+class PredictionResultFuture(PagedFuture, Future):
     """Future Job for manipulating results"""
 
     job: WorkflowPredictJob | WorkflowPredictSingleSiteJob
@@ -22,8 +27,23 @@ class PredictFuture(PagedFuture, Future):
         self,
         session: APISession,
         job: WorkflowPredictJob | WorkflowPredictSingleSiteJob,
+        sequences: list[str] | None = None,
+        sequence: str | None = None,
+        train_job: "TrainFuture | None" = None,
+        model_ids: list[str] | None = None,
         page_size: int = 1000,
     ):
+        if job.job_id is None:
+            if (sequences is None and sequence is None) or (
+                train_job is None and model_ids is None
+            ):
+                raise MissingParameterError(
+                    "Expected job_id from predict job or predict params"
+                )
+            self.sequences = sequences
+            self.sequence = sequence
+            self.train_job = train_job
+            self.model_ids = model_ids
         super().__init__(session=session, job=job, page_size=page_size)
 
     def __str__(self) -> str:
@@ -166,7 +186,32 @@ class PredictFuture(PagedFuture, Future):
         HTTPError
             If the GET request does not succeed.
         """
-        assert self.id is not None
+        if self.id is None:
+            # use old caching method of resubmitting POSTs
+            if self.job.job_type is JobType.workflow_predict_single_site:
+                assert self.sequence is not None
+                assert self.train_job is not None or self.model_ids is not None
+                train_job_id = self.train_job.id if self.train_job is not None else None
+                return predict.create_predict_single_site(
+                    session=self.session,
+                    sequence=self.sequence,
+                    train_job_id=train_job_id,
+                    model_ids=self.model_ids,
+                    page_size=page_size,
+                    page_offset=page_offset,
+                )
+            else:
+                assert self.sequences is not None
+                assert self.train_job is not None or self.model_ids is not None
+                train_job_id = self.train_job.id if self.train_job is not None else None
+                return predict.create_predict_job(
+                    session=self.session,
+                    sequences=self.sequences,
+                    train_job_id=train_job_id,
+                    model_ids=self.model_ids,
+                    page_size=page_size,
+                    page_offset=page_offset,
+                )
         if self.job.job_type is JobType.workflow_predict_single_site:
             return predict.get_single_site_prediction_results(
                 session=self.session,

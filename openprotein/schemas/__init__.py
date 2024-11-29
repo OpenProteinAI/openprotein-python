@@ -18,19 +18,14 @@ from .predict import (
 )
 from .design import (
     ModelCriterion,
+    NMutationCriterion,
+    n_mutations,
+    Subcriterion,
     Criterion,
-    DesignJobCreate,
-    DesignMetadata,
-    DesignResults,
-    DesignStep,
-    DesignJob,
-)
-from .deprecated.poet import (
-    PoetScoreJob,
-    PoetSSPJob,
-    PoetScoreResult,
-    PoetSSPResult,
-    PoetGenerateJob,
+    Criteria,
+    DesignJobCreate as WorkflowDesignJobCreate,
+    DesignJob as WorkflowDesignJob,
+    Design as WorkflowDesign,
 )
 from .align import MSAJob, MSASamplingMethod, PoetInputType, PromptJob, PromptPostParams
 from .embeddings import (
@@ -47,15 +42,20 @@ from .embeddings import (
     GenerateJob,
 )
 from .fold import FoldJob
+from .features import FeatureType
 from .svd import (
     SVDMetadata,
-    FitJob,
+    FitJob as SVDFitJob,
     EmbeddingsJob as SVDEmbeddingsJob,
+)
+from .umap import (
+    UMAPMetadata,
+    FitJob as UMAPFitJob,
+    EmbeddingsJob as UMAPEmbeddingsJob,
 )
 from .predictor import (
     Constraints,
     CVJob,
-    FeatureType,
     Kernel,
     PredictJob,
     PredictMultiJob,
@@ -64,4 +64,10 @@ from .predictor import (
     PredictorMetadata,
     PredictSingleSiteJob,
     TrainJob,
+)
+from .designer import (
+    Design,
+    DesignJob,
+    DesignAlgorithm,
+    DesignConstraint,
 )

@@ -2,10 +2,11 @@ from typing import Collection, Iterator
 
 import numpy as np
 from openprotein import config
-from openprotein.api import align, poet
+from openprotein.api.deprecated import poet
 from openprotein.base import APISession
+from openprotein.csv import csv_stream
 from openprotein.errors import APIError
-from openprotein.schemas import (
+from openprotein.schemas.deprecated.poet import (
     PoetGenerateJob,
     PoetScoreJob,
     PoetScoreResult,
@@ -167,7 +168,7 @@ class PoetGenerateFuture(StreamingFuture, Future):
         """
         try:
             response = poet.poet_generate_get(self.session, self.job.job_id)
-            for tokens in align.csv_stream(response):
+            for tokens in csv_stream(response):
                 try:
                     name, sequence = tokens[:2]
                     score = [float(s) for s in tokens[2:]]

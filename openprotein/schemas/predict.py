@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict
 
 from .job import Job, JobType
 
@@ -44,8 +44,7 @@ class Prediction(BaseModel):
     model_name: str
     properties: dict[str, dict[str, float]]
 
-    class Config:
-        protected_namespaces = ()
+    model_config = ConfigDict(protected_namespaces=())
 
 
 class PredictJobBase(BaseModel):

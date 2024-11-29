@@ -1,25 +1,25 @@
 from typing import TYPE_CHECKING
 
-from openprotein.api import embedding, poet
+from openprotein.api import embedding
+from openprotein.api.deprecated import poet
 from openprotein.base import APISession
-from openprotein.schemas import (
-    ModelMetadata,
+from openprotein.schemas import ModelMetadata, ReductionType
+from openprotein.schemas.deprecated.poet import (
     PoetGenerateJob,
     PoetScoreJob,
     PoetSSPJob,
-    ReductionType,
 )
 
 from ..align import PromptFuture
 from ..assaydata import AssayDataset, AssayMetadata
 from ..deprecated.poet import PoetGenerateFuture, PoetScoreFuture, PoetSingleSiteFuture
-from ..futures import Future
 from .base import EmbeddingModel
 from .future import EmbeddingResultFuture, EmbeddingsScoreResultFuture
 
 if TYPE_CHECKING:
     from ..predictor import PredictorModel
     from ..svd import SVDModel
+    from ..umap import UMAPModel
 
 
 class PoETModel(EmbeddingModel):
@@ -226,7 +226,7 @@ class PoETModel(EmbeddingModel):
         reduction: ReductionType | None = None,
     ) -> "SVDModel":
         """
-        Fit an SVD on the embedding results of this model. 
+        Fit an SVD on the embedding results of PoET. 
 
         This function will create an SVDModel based on the embeddings from this model \
             as well as the hyperparameters specified in the args.  
@@ -249,6 +249,46 @@ class PoETModel(EmbeddingModel):
         """
         prompt_id = prompt.id if isinstance(prompt, PromptFuture) else prompt
         return super().fit_svd(
+            sequences=sequences,
+            assay=assay,
+            n_components=n_components,
+            reduction=reduction,
+            prompt_id=prompt_id,
+        )
+
+    def fit_umap(
+        self,
+        prompt: str | PromptFuture,
+        sequences: list[bytes] | list[str] | None = None,
+        assay: AssayDataset | None = None,
+        n_components: int = 2,
+        reduction: ReductionType | None = ReductionType.MEAN,
+    ) -> "UMAPModel":
+        """
+        Fit a UMAP on assay using PoET and hyperparameters.
+
+        This function will create a UMAP based on the embeddings from this PoET model \
+            as well as the hyperparameters specified in the args.  
+
+        Parameters
+        ----------
+        prompt: Union[str, PromptFuture]
+            prompt from an align workflow to condition Poet model
+        sequences : list[bytes] | None
+            Optional sequences to fit UMAP with. Either use sequences or assay. sequences is preferred.
+        assay: AssayDataset | None
+            Optional assay containing sequences to fit UMAP with. Either use sequences or assay. Ignored if sequences are provided.
+        n_components: int
+            Number of components in UMAP fit. Will determine output shapes. Defaults to 2.
+        reduction: ReductionType | None
+            Embeddings reduction to use (e.g. mean). Defaults to MEAN.
+
+        Returns
+        -------
+            PredictorModel
+        """
+        prompt_id = prompt.id if isinstance(prompt, PromptFuture) else prompt
+        return super().fit_umap(
             sequences=sequences,
             assay=assay,
             n_components=n_components,

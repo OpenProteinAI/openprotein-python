@@ -1,6 +1,7 @@
 from openprotein.base import APISession
 from openprotein.errors import InvalidParameterError
 from openprotein.schemas import WorkflowPredictJob, WorkflowPredictSingleSiteJob
+from pydantic import TypeAdapter
 
 
 def _create_predict_job(
@@ -9,7 +10,9 @@ def _create_predict_job(
     payload: dict,
     model_ids: list[str] | None = None,
     train_job_id: str | None = None,
-) -> WorkflowPredictJob:
+    page_size: int | None = None,
+    page_offset: int | None = None,
+) -> WorkflowPredictJob | WorkflowPredictSingleSiteJob:
     """
     Creates a Predict request and returns the job object.
 
@@ -60,9 +63,16 @@ def _create_predict_job(
         payload["model_id"] = model_ids
     else:
         payload["train_job_id"] = train_job_id
+    params = {}
+    if page_size is not None:
+        params["page_size"] = page_size
+    if page_offset is not None:
+        params["page_offset"] = page_offset
 
-    response = session.post(endpoint, json=payload)
-    return WorkflowPredictJob.model_validate(response.json())
+    response = session.post(endpoint, json=payload, params=params)
+    return TypeAdapter(
+        WorkflowPredictJob | WorkflowPredictSingleSiteJob
+    ).validate_python(response.json())
 
 
 def create_predict_job(
@@ -70,6 +80,8 @@ def create_predict_job(
     sequences: list[str],
     train_job_id: str | None = None,
     model_ids: list[str] | None = None,
+    page_size: int | None = None,
+    page_offset: int | None = None,
 ) -> WorkflowPredictJob:
     """
     Creates a predict job with a given set of sequences and a train job.
@@ -107,9 +119,19 @@ def create_predict_job(
         model_ids = [model_ids]
     endpoint = "v1/workflow/predict"
     payload = {"sequences": sequences}
-    return _create_predict_job(
-        session, endpoint, payload, model_ids=model_ids, train_job_id=train_job_id
+    pj = _create_predict_job(
+        session=session,
+        endpoint=endpoint,
+        payload=payload,
+        model_ids=model_ids,
+        train_job_id=train_job_id,
+        page_size=page_size,
+        page_offset=page_offset,
     )
+    assert isinstance(
+        pj, WorkflowPredictJob
+    ), "Expected WorkflowPredictJob to be returned"
+    return pj
 
 
 def create_predict_single_site(
@@ -117,7 +139,9 @@ def create_predict_single_site(
     sequence: str,
     train_job_id: str | None = None,
     model_ids: list[str] | None = None,
-) -> WorkflowPredictJob:
+    page_size: int | None = None,
+    page_offset: int | None = None,
+) -> WorkflowPredictSingleSiteJob:
     """
     Creates a predict job for single site mutants with a given sequence and a train job.
 
@@ -150,9 +174,19 @@ def create_predict_single_site(
     """
     endpoint = "v1/workflow/predict/single_site"
     payload = {"sequence": sequence}
-    return _create_predict_job(
-        session, endpoint, payload, model_ids=model_ids, train_job_id=train_job_id
+    pj = _create_predict_job(
+        session=session,
+        endpoint=endpoint,
+        payload=payload,
+        model_ids=model_ids,
+        train_job_id=train_job_id,
+        page_size=page_size,
+        page_offset=page_offset,
     )
+    assert isinstance(
+        pj, WorkflowPredictSingleSiteJob
+    ), "Expected WorkflowPredictSingleSiteJob to be returned"
+    return pj
 
 
 def get_prediction_results(
@@ -236,4 +270,4 @@ def get_single_site_prediction_results(
 
     response = session.get(endpoint, params=params)
     # get results to assemble into list
-    return WorkflowPredictSingleSiteJob.model_validate(response)
+    return WorkflowPredictSingleSiteJob.model_validate(response.json())

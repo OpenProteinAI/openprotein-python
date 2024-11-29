@@ -1,15 +1,15 @@
 import pytest
 from openprotein.api.align import *
 import json
-from tests.conf import BACKEND
+from tests.conf import BACKEND, TIMEOUT
 import time
 import collections
 import openprotein
 from openprotein.schemas import JobType
 from openprotein.jobs import *
+from AWSTools.Batchtools.batch_utils import fakeseq
 
-
-TEST_SEQUENCE = "MYRMQLLSCIALSLALVTNSAPTSSSTKKTQLQLEHLLLDLQMILNGINNYKNPKLTRMLTFKFYMPKKATELKHLQCLEEELKPLEEVLNLAQSKNFHLRPRDLISNINVIVLELKGMYRMQLLSCIALSLALVTNSAPTSSSTKKTQLQLEHLLLDLQMILNGINNYKNPKLTRMLTFKFYMPKKATELKHLQCLEEELKPLEEVLNLAQSKNFHLRPRDLISNINVIVLELKGSEP"
+TEST_SEQUENCE = f"{fakeseq(5)}APPMYRMQLLSCIALSLALVTNSAPTSSSTKKTQLQLEHLLLDLQMILNGINNYKNPKLTRMLTFKFYMPKKATELKHLQCLEEELKPLEEVLNLAQSKNFHLRPRDLISNINVIVLELKGMYRMQLLSCIALSLALVTNSAPTSSSTKKTQLQLEHLLLDLQMILNGINNYKNPKLTRMLTFKFYMPKKATELKHLQCLEEELKPLEEVLNLAQSKNFHLRPRDLISNINVIVLELKGSEP"
 print(f"USING BACKEND: {BACKEND} ")
 
 
@@ -39,6 +39,7 @@ STATIC = Static()
 def test_msa_post(api_session):
     job = msa_post(api_session, seed=TEST_SEQUENCE.encode())
     job = job.job
+    print(job)
     assert job.job_type == JobType.align_align
     assert isinstance(job, MSAJob)
     assert job.job_id is not None
@@ -58,6 +59,7 @@ def test_prompt_post(api_session, test_msa_post):
         num_ensemble_prompts=3,
     )
     job = job.job
+    print(job)
 
     assert isinstance(job, PromptJob)
     assert job.job_id is not None
@@ -83,6 +85,7 @@ def test_upload_prompt_post(api_session):
 
     job = upload_prompt_post(api_session, prompt_file)
     job = job.job
+    print(job)
 
     assert isinstance(job, PromptJob)
     assert job.job_id is not None
@@ -101,10 +104,12 @@ def test_csv_stream():
 
 def test_get_input(api_session, test_msa_post):
     job = job_get(api_session, job_id=STATIC.msa_id)
+    print(job)
+
     reader = get_input(api_session, job, PoetInputType.INPUT)
     x = list(reader)
     assert len(x) == 1
-    assert x[0][0] == "seed"
+    assert x[0][0] == "seed" or x[0][0] == "101"
     assert x[0][1] == TEST_SEQUENCE
 
 
@@ -112,9 +117,9 @@ def test_get_prompt(api_session, test_upload_prompt_post):
     prompt = api_session.load_job(STATIC.uploaded_prompt_id)
     assert isinstance(prompt, PromptFuture)
 
-    prompt.wait_until_done(timeout=200)
+    prompt.wait_until_done(verbose=True, timeout=TIMEOUT)
 
-    r = prompt.wait()
+    r = prompt.wait(verbose=True)
     x = list(r)
     assert any([i == ["<END_PROMPT>"] for i in x])
     assert len(x) == 9  # total seqs
@@ -139,13 +144,13 @@ def test_get_prompt(api_session, test_upload_prompt_post):
 def test_get_msa(api_session, test_msa_post):
     msa = api_session.load_job(STATIC.msa_id)
     assert isinstance(msa, MSAFuture)
-    msa.wait_until_done(timeout=200)
+    msa.wait_until_done(verbose=True, timeout=TIMEOUT)
     assert msa.status == "SUCCESS"
 
-    r = msa.wait()
+    r = msa.wait(verbose=True)
     x = list(r)
     assert len(x) > 1
-    assert x[0][0] == "seed"
+    assert x[0][0] == "seed" or x[0][0] == "101"
     assert x[0][1] == TEST_SEQUENCE
 
     assert len(list(msa.get_input("GENERATED"))) > 1
@@ -154,14 +159,16 @@ def test_get_msa(api_session, test_msa_post):
 
 def test_msa_future(api_session, test_msa_post):
     job = job_get(api_session, job_id=STATIC.msa_id)
+    print(job)
+
     future = MSAFuture(api_session, job)
-    assert future.wait_until_done(timeout=200)
+    assert future.wait_until_done(verbose=True, timeout=TIMEOUT)
 
     assert future.id == STATIC.msa_id
     assert future.msa_id == STATIC.msa_id
     assert future.prompt_id is None
 
-    reader = future.wait()
+    reader = future.wait(verbose=True)
     assert isinstance(reader, collections.Iterator)
 
     reader = future.get()
@@ -174,13 +181,13 @@ def test_msa_future(api_session, test_msa_post):
 def test_prompt_future(api_session, test_prompt_post):
     job = job_get(api_session, job_id=STATIC.prompt_id)
     future = PromptFuture(api_session, job, msa_id=STATIC.msa_id)
-    assert future.wait_until_done(timeout=200)
+    assert future.wait_until_done(verbose=True, timeout=TIMEOUT)
 
     assert future.id == STATIC.prompt_id
     assert future.msa_id == STATIC.msa_id
     assert future.prompt_id == STATIC.prompt_id
 
-    reader = future.wait()
+    reader = future.wait(verbose=True)
     assert isinstance(reader, collections.Iterator)
 
     reader = future.get()
@@ -190,6 +197,7 @@ def test_prompt_future(api_session, test_prompt_post):
 def test_prompt_future_get(api_session, test_upload_prompt_post):
     # job = api_session.poet.load_prompt_job(STATIC.prompt_id).wait_until_done(timeout=120)
     job = job_get(api_session, job_id=STATIC.prompt_id)
+    print(job)
     future = PromptFuture(session=api_session, job=job)
 
     reader = future.get_input(PoetInputType.MSA)

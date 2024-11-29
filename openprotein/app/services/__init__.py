@@ -1,11 +1,17 @@
-"""Application services for OpenProtein."""
+"""
+Application services for OpenProtein.
 
-from .align import AlignAPI
+isort:skip_file
+"""
+
 from .assaydata import AssayDataAPI
+from .train import TrainingAPI
 from .design import DesignAPI
+from .align import AlignAPI
 from .embeddings import EmbeddingsAPI
 from .fold import FoldAPI
 from .job import JobsAPI
-from .predictor import PredictorAPI
 from .svd import SVDAPI
-from .train import TrainingAPI
+from .umap import UMAPAPI
+from .predictor import PredictorAPI
+from .designer import DesignerAPI

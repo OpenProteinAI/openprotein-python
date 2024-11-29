@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Literal
 
 import numpy as np
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from .job import BatchJob, Job, JobType
 
@@ -51,11 +51,10 @@ class EmbeddedSequence(BaseModel):
     Represented as an iterable yielding the sequence followed by the embedding.
     """
 
-    class Config:
-        arbitrary_types_allowed = True
-
     sequence: bytes
     embedding: np.ndarray
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def __iter__(self):
         yield self.sequence

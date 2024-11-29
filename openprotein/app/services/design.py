@@ -1,7 +1,7 @@
 from openprotein.api import design
-from openprotein.app.models import DesignFuture
+from openprotein.app.models import WorkflowDesignFuture
 from openprotein.base import APISession
-from openprotein.schemas import DesignJobCreate, DesignResults
+from openprotein.schemas import WorkflowDesign, WorkflowDesignJobCreate
 
 
 class DesignAPI:
@@ -10,7 +10,9 @@ class DesignAPI:
     def __init__(self, session: APISession):
         self.session = session
 
-    def create_design_job(self, design_job: DesignJobCreate) -> DesignFuture:
+    def create_design_job(
+        self, design_job: WorkflowDesignJobCreate
+    ) -> WorkflowDesignFuture:
         """
         Start a protein design job based on your assaydata, a trained ML model and Criteria (specified here).
 
@@ -19,7 +21,7 @@ class DesignAPI:
         design_job : DesignJobCreate
             The details of the design job to be created, with the following parameters:
             - assay_id: The ID for the assay.
-            - criteria: A list of CriterionItem lists for evaluating the design.
+            - criteria: Criteria for evaluating the design.
             - num_steps: The number of steps in the genetic algo. Default is 8.
             - pop_size: The population size for the genetic algo. Default is None.
             - n_offsprings: The number of offspring for the genetic algo. Default is None.
@@ -33,7 +35,7 @@ class DesignAPI:
         DesignFuture
             The created job as a DesignFuture instance.
         """
-        return DesignFuture.create(
+        return WorkflowDesignFuture.create(
             session=self.session, job=design.create_design_job(self.session, design_job)
         )
 
@@ -43,7 +45,7 @@ class DesignAPI:
         step: int | None = None,
         page_size: int | None = None,
         page_offset: int | None = None,
-    ) -> DesignResults:
+    ) -> WorkflowDesign:
         """
         Retrieves the results of a Design job.
 
@@ -60,7 +62,7 @@ class DesignAPI:
 
         Returns
         -------
-        DesignJob
+        WorkflowDesignJob
             The job object representing the Design job.
 
         Raises

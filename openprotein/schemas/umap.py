@@ -1,19 +1,23 @@
-"""Schemas for OpenProtein SVD system."""
+"""Schemas for OpenProtein UMAP system."""
 
 from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
+from .features import FeatureType
 from .job import BatchJob, Job, JobStatus, JobType
 
 
-class SVDMetadata(BaseModel):
+class UMAPMetadata(BaseModel):
     id: str
     status: JobStatus
     created_date: datetime | None = None
     model_id: str
-    n_components: int
+    feature_type: FeatureType
+    n_components: int = 2
+    n_neighbors: int = 15
+    min_dist: float = 0.1
     reduction: str | None = None
     sequence_length: int | None = None
 
@@ -24,8 +28,8 @@ class SVDMetadata(BaseModel):
 
 
 class FitJob(Job):
-    job_type: Literal[JobType.svd_fit]
+    job_type: Literal[JobType.umap_fit]
 
 
 class EmbeddingsJob(Job, BatchJob):
-    job_type: Literal[JobType.svd_embed]
+    job_type: Literal[JobType.umap_embed]

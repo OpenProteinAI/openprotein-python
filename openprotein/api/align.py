@@ -1,5 +1,3 @@
-import codecs
-import csv
 import io
 import random
 from typing import BinaryIO, Iterator
@@ -7,29 +5,9 @@ from typing import BinaryIO, Iterator
 import openprotein.config as config
 import requests
 from openprotein.base import APISession
+from openprotein.csv import csv_stream
 from openprotein.errors import APIError, InvalidParameterError, MissingParameterError
 from openprotein.schemas import Job, MSASamplingMethod, PoetInputType
-
-
-def csv_stream(response: requests.Response) -> Iterator[list[str]]:
-    """
-    Returns a CSV reader from a requests.Response object.
-
-    Parameters
-    ----------
-    response : requests.Response
-        The response object to parse.
-
-    Returns
-    -------
-    csv.reader
-        A csv reader object for the response.
-    """
-    raw_content = response.raw  # the raw bytes stream
-    content = codecs.getreader("utf-8")(
-        raw_content
-    )  # force the response to be encoded as utf-8
-    return csv.reader(content)
 
 
 def get_align_job_inputs(

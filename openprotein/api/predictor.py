@@ -3,6 +3,7 @@ import io
 import numpy as np
 import pandas as pd
 from openprotein.base import APISession
+from openprotein.csv import csv_stream
 from openprotein.schemas import (
     CVJob,
     Job,
@@ -149,6 +150,21 @@ def predictor_predict_post(
     return PredictJob.model_validate(response.json())
 
 
+def predictor_predict_multi_post(
+    session: APISession, predictor_ids: list[str], sequences: list[bytes] | list[str]
+):
+    endpoint = PATH_PREFIX + f"/predict"
+
+    sequences_unicode = [(s if isinstance(s, str) else s.decode()) for s in sequences]
+    body = {
+        "model_ids": predictor_ids,
+        "sequences": sequences_unicode,
+    }
+    response = session.post(endpoint, json=body)
+
+    return PredictMultiJob.model_validate(response.json())
+
+
 def predictor_predict_single_site_post(
     session: APISession,
     predictor_id: str,
@@ -165,6 +181,25 @@ def predictor_predict_single_site_post(
     response = session.post(endpoint, json=body)
 
     return PredictSingleSiteJob.model_validate(response.json())
+
+
+def predictor_predict_multi_single_site_post(
+    session: APISession,
+    predictor_ids: list[str],
+    base_sequence: bytes | str,
+):
+    endpoint = PATH_PREFIX + f"/predict_single_site"
+
+    base_sequence = (
+        base_sequence.decode() if isinstance(base_sequence, bytes) else base_sequence
+    )
+    body = {
+        "model_ids": predictor_ids,
+        "base_sequence": base_sequence,
+    }
+    response = session.post(endpoint, json=body)
+
+    return PredictMultiSingleSiteJob.model_validate(response.json())
 
 
 def predictor_predict_get_sequences(
@@ -189,7 +224,7 @@ def predictor_predict_get_sequence_result(
     job_id : str
         job ID to retrieve results from
     sequence from: bytes
-        sequence to retrieve results for
+        sequence to retrieve predictions for
 
     Returns
     -------

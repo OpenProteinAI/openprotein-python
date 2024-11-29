@@ -9,7 +9,7 @@ from urllib.parse import urljoin
 
 from typing import List, Optional, Union
 from io import BytesIO
-import pydantic
+import openprotein.pydantic as pydantic
 from unittest.mock import ANY
 import json
 from openprotein.base import BearerAuth

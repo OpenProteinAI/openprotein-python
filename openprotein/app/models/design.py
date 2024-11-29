@@ -1,6 +1,6 @@
 from openprotein.api import design
 from openprotein.base import APISession
-from openprotein.schemas import DesignJob, DesignResults, DesignStep
+from openprotein.schemas import WorkflowDesign, WorkflowDesignJob
 
 from .futures import Future, PagedFuture
 
@@ -8,9 +8,11 @@ from .futures import Future, PagedFuture
 class DesignFuture(PagedFuture, Future):
     """Future Job for manipulating results"""
 
-    job: DesignJob
+    job: WorkflowDesignJob
 
-    def __init__(self, session: APISession, job: DesignJob, page_size: int = 1000):
+    def __init__(
+        self, session: APISession, job: WorkflowDesignJob, page_size: int = 1000
+    ):
         super().__init__(session, job)
         self.page_size = page_size
 
@@ -20,12 +22,7 @@ class DesignFuture(PagedFuture, Future):
     def __repr__(self) -> str:
         return repr(self.job)
 
-    def _fmt_results(
-        self, results: DesignResults
-    ) -> (
-        # list[dict]
-        list[DesignStep]
-    ):
+    def _fmt_results(self, results: WorkflowDesign):
         # return [i.model_dump() for i in results.result]
         return results.result
 
@@ -76,7 +73,7 @@ class DesignFuture(PagedFuture, Future):
         step: int | None = None,
         page_size: int | None = None,
         page_offset: int | None = None,
-    ) -> DesignResults:
+    ) -> WorkflowDesign:
         """
         Retrieves the results of a Design job.
 
@@ -91,7 +88,7 @@ class DesignFuture(PagedFuture, Future):
 
         Returns
         -------
-        DesignJob
+        WorkflowDesignJob
             The job object representing the Design job.
 
         Raises

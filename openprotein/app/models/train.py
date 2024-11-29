@@ -12,7 +12,7 @@ from openprotein.schemas import (
 
 from .assaydata import AssayDataset
 from .futures import Future, PagedFuture
-from .predict import PredictFuture
+from .predict import PredictionResultFuture
 
 
 class TrainFuture(Future):
@@ -159,7 +159,7 @@ class TrainFuture(Future):
 
     def predict(
         self, sequences: list[str], model_ids: list[str] | None = None
-    ) -> PredictFuture:
+    ) -> PredictionResultFuture:
         """
         Creates a predict job based on the training job.
 
@@ -183,7 +183,7 @@ class TrainFuture(Future):
         self,
         sequence: str,
         model_ids: list[str] | None = None,
-    ) -> PredictFuture:
+    ) -> PredictionResultFuture:
         """
         Creates a new Predict job for single site mutation analysis with a trained model.
 

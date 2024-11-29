@@ -1,7 +1,7 @@
 import logging
 
 from openprotein.api import predict
-from openprotein.app.models import PredictFuture, TrainFuture
+from openprotein.app.models import TrainFuture, WorkflowPredictionResultFuture
 from openprotein.base import APISession
 from openprotein.errors import InvalidParameterError
 
@@ -27,7 +27,7 @@ class PredictService:
         sequences: list[str],
         train_job: TrainFuture,
         model_ids: list[str] | None = None,
-    ) -> PredictFuture:
+    ) -> WorkflowPredictionResultFuture:
         """
         Creates a new Predict job for a given list of sequences and a trained model.
 
@@ -69,8 +69,11 @@ class PredictService:
             #    f"train job has status {train_job.status.value}, Predict requires status SUCCESS"
             # )
 
-        return PredictFuture.create(
+        return WorkflowPredictionResultFuture.create(
             session=self.session,
+            sequences=sequences,
+            train_job=train_job,
+            model_ids=model_ids,
             job=predict.create_predict_job(
                 session=self.session,
                 sequences=sequences,
@@ -84,7 +87,7 @@ class PredictService:
         sequence: str,
         train_job: TrainFuture,
         model_ids: list[str] | None = None,
-    ) -> PredictFuture:
+    ) -> WorkflowPredictionResultFuture:
         """
         Creates a new Predict job for single site mutation analysis with a trained model.
 
@@ -128,8 +131,11 @@ class PredictService:
             #    f"train job has status {train_job.status.value}, Predict requires status SUCCESS"
             # )
 
-        return PredictFuture.create(
+        return WorkflowPredictionResultFuture.create(
             session=self.session,
+            sequence=sequence,
+            train_job=train_job,
+            model_ids=model_ids,
             job=predict.create_predict_single_site(
                 session=self.session,
                 sequence=sequence,

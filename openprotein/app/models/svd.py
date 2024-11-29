@@ -3,10 +3,10 @@ from typing import TYPE_CHECKING
 import numpy as np
 from openprotein.api import assaydata
 from openprotein.api import job as job_api
-from openprotein.api import predictor, svd
+from openprotein.api import predictor, svd, umap
 from openprotein.base import APISession
 from openprotein.errors import InvalidParameterError
-from openprotein.schemas import FeatureType, FitJob, SVDEmbeddingsJob, SVDMetadata
+from openprotein.schemas import FeatureType, SVDEmbeddingsJob, SVDFitJob, SVDMetadata
 
 from .assaydata import AssayDataset, AssayMetadata
 from .embeddings import EmbeddingModel, EmbeddingResultFuture
@@ -14,6 +14,7 @@ from .futures import Future
 
 if TYPE_CHECKING:
     from .predictor import PredictorModel
+    from .umap import UMAPModel
 
 
 class SVDModel(Future):
@@ -23,12 +24,12 @@ class SVDModel(Future):
     Implements a Future to allow waiting for a fit job.
     """
 
-    job: FitJob
+    job: SVDFitJob
 
     def __init__(
         self,
         session: APISession,
-        job: FitJob | None = None,
+        job: SVDFitJob | None = None,
         metadata: SVDMetadata | None = None,
     ):
         """Initializes with either job get or svd metadata get."""
@@ -39,7 +40,7 @@ class SVDModel(Future):
             metadata = svd.svd_get(session, job.job_id)
         self._metadata = metadata
         if job is None:
-            job = FitJob.create(job_api.job_get(session=session, job_id=metadata.id))
+            job = SVDFitJob.create(job_api.job_get(session=session, job_id=metadata.id))
         # getter initializes job if not provided
         super().__init__(session, job)
 
@@ -126,6 +127,54 @@ class SVDModel(Future):
             ),
             sequences=sequences,
         )
+
+    def fit_umap(
+        self,
+        sequences: list[bytes] | list[str] | None = None,
+        assay: AssayDataset | None = None,
+        n_components: int = 2,
+        **kwargs,
+    ) -> "UMAPModel":
+        """
+        Fit an UMAP on the embedding results of this model. 
+
+        This function will create an UMAPModel based on the embeddings from this model \
+            as well as the hyperparameters specified in the args.  
+
+        Parameters
+        ----------
+        sequences : List[bytes] 
+            sequences to UMAP
+        n_components: int 
+            number of components in UMAP. Will determine output shapes
+        reduction: ReductionType | None
+            embeddings reduction to use (e.g. mean)
+
+        Returns
+        -------
+            UMAPModel
+        """
+        # local import for cyclic dep
+        from .umap import UMAPModel
+
+        # Ensure either or
+        if (assay is None and sequences is None) or (
+            assay is not None and sequences is not None
+        ):
+            raise InvalidParameterError(
+                "Expected either assay or sequences to fit UMAP on!"
+            )
+        model_id = self.id
+        job = umap.umap_fit_post(
+            session=self.session,
+            model_id=model_id,
+            feature_type=FeatureType.SVD,
+            sequences=sequences,
+            assay_id=assay.id if assay is not None else None,
+            n_components=n_components,
+            **kwargs,
+        )
+        return UMAPModel.create(session=self.session, job=job)
 
     def fit_gp(
         self,
