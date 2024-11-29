@@ -1,1 +1,2 @@
-BACKEND = "https://dev.api.openprotein.ai/api/"
+BACKEND = "https://api.openprotein.ai/api/"
+TIMEOUT = 900

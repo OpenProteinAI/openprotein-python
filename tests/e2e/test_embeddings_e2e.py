@@ -1,18 +1,19 @@
 import pytest
-from openprotein.base import APISession
-from openprotein.api.embedding import (
-    embedding_models_list_get,
-    embedding_model_get,
-    embedding_get,
-)
-import json
-from tests.conf import BACKEND
-from openprotein.api.embedding import *
-from openprotein.jobs import *
-from openprotein.api.jobs import load_job
 import time
+
 import numpy as np
+from openprotein.base import APISession
 from AWSTools.Batchtools.batch_utils import fakeseq
+from openprotein.api.embedding import *
+from openprotein.api.embedding import (
+    embedding_get,
+    embedding_model_get,
+    embedding_models_list_get,
+)
+from openprotein.api.jobs import load_job
+from openprotein.base import APISession
+from openprotein.jobs import *
+from tests.conf import BACKEND
 
 
 class Static:
@@ -158,7 +159,7 @@ def tst_svd_get(api_session, test_svd_post):
 def test_svd_model_embed(api_session, test_svd_post):
     svd_id = STATIC.svd_id
     meta = svd_get(api_session, STATIC.svd_id)
-    svd_model = SVDModel(api_session, meta)
+    svd_model = SVDModel(session=api_session, metadata=meta)
     sequences = [b"AAAPPPLLL"]
     future = svd_model.embed(sequences)
     assert isinstance(future, EmbeddingResultFuture)

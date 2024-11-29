@@ -1,8 +1,10 @@
+from datetime import datetime
+
 from openprotein import config
 from openprotein.api import job
 from openprotein.app.models import Future
 from openprotein.base import APISession
-from openprotein.schemas import Job
+from openprotein.schemas import Job, JobStatus, JobType
 
 
 class JobsAPI:
@@ -14,9 +16,19 @@ class JobsAPI:
         self.session = session
 
     def list(
-        self, status=None, job_type=None, assay_id=None, more_recent_than=None
+        self,
+        status: JobStatus | None = None,
+        job_type: JobType | None = None,
+        assay_id: str | None = None,
+        more_recent_than: datetime | str | None = None,
+        limit: int = 100,
     ) -> list[Job]:
         """List jobs."""
+        more_recent_than_str = (
+            more_recent_than.isoformat()
+            if isinstance(more_recent_than, datetime)
+            else more_recent_than
+        )
         return [
             Job.create(j)
             for j in job.jobs_list(
@@ -24,7 +36,8 @@ class JobsAPI:
                 status=status,
                 job_type=job_type,
                 assay_id=assay_id,
-                more_recent_than=more_recent_than,
+                more_recent_than=more_recent_than_str,
+                limit=limit,
             )
         ]
 

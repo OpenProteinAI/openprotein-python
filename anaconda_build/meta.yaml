@@ -1,6 +1,6 @@
 package:
   name: openprotein-python
-  version: "0.5.0"
+  version: "0.5.2"
 
 source:
   path: ../
@@ -12,19 +12,19 @@ build:
 
 requirements:
   build:
-    - python >=3.10,<3.11
+    - python >=3.10
     - hatchling >=1.25.0,<2
   host:
-    - python >=3.10,<3.11
+    - python >=3.10
     - pip
     - hatchling >=1.25.0,<2
   run:
-    - python >=3.10,<3.11
+    - python >=3.10
     - requests >=2.32.3,<3
     - pydantic >=2.5,<3
     - tqdm >=4.66.5,<5
-    - pandas >=2.1.4,<3
-    - numpy >=2.1.1,<3
+    - pandas >=2.2.2,<3
+    - numpy >=1.9,<3
 
 about:
   home: https://www.openprotein.ai/

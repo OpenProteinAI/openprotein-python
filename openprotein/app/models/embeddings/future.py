@@ -34,7 +34,12 @@ class EmbeddingResultFuture(MappedFuture, Future):
         max_workers: int = config.MAX_CONCURRENT_WORKERS,
     ):
         super().__init__(session=session, job=job, max_workers=max_workers)
-        self._sequences = sequences
+        # ensure all list[bytes]
+        self._sequences = (
+            [seq.encode() if isinstance(seq, str) else seq for seq in sequences]
+            if sequences is not None
+            else sequences
+        )
 
     def get(self, verbose=False) -> list:
         return super().get(verbose=verbose)
@@ -43,7 +48,7 @@ class EmbeddingResultFuture(MappedFuture, Future):
     def sequences(self) -> list[bytes] | list[str]:
         if self._sequences is None:
             self._sequences = embedding.get_request_sequences(
-                self.session, self.job.job_id
+                session=self.session, job_id=self.job.job_id, job_type=self.job.job_type
             )
         return self._sequences
 
@@ -65,7 +70,10 @@ class EmbeddingResultFuture(MappedFuture, Future):
             np.ndarray: embeddings
         """
         data = embedding.request_get_sequence_result(
-            self.session, self.job.job_id, sequence
+            session=self.session,
+            job_id=self.job.job_id,
+            sequence=sequence,
+            job_type=self.job.job_type,
         )
         return embedding.result_decode(data)
 

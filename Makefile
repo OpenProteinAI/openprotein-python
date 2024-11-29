@@ -1,4 +1,4 @@
-VERSION ?= 0.5.0
+VERSION ?= 0.5.2
 SHELL := /bin/bash
 
 .PHONY: releasehere

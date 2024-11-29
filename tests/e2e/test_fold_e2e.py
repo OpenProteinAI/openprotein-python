@@ -1,11 +1,13 @@
 import pytest
 import json
-from tests.conf import BACKEND
+from tests.conf import BACKEND, TIMEOUT
 from openprotein.api.fold import *
 import time
 import openprotein
 from openprotein.api.align import msa_post, MSAFuture, MSAJob
 from openprotein.jobs import job_get
+
+from AWSTools.Batchtools.batch_utils import fakeseq
 
 
 class Static:
@@ -26,7 +28,7 @@ def api_session():
     yield sess
 
 
-SEQUENCES = [b"AAAPPPLLL"]
+SEQUENCES = [b"LAAAPPPLLL"]
 AF_SEQUENCE = "MYRMQLLSCIALSLALVTNSAPTSSSTKKTQLQLEHLLLDLQMILNGINNYKNPKLTRMLTFKFYMPKKATELKHLQCLEEELKPLEEVLNLAQSKNFHLRPRDLISNINVIVLELKGMYRMQLLSCIALSLALVTNSAPTSSSTKKTQLQLEHLLLDLQMILNGINNYKNPKLTRMLTFKFYMPKKATELKHLQCLEEELKPLEEVLNLAQSKNFHLRPRDLISNINVIVLELKGSEP"
 print(f"USING BACKEND: {BACKEND} ")
 
@@ -66,17 +68,23 @@ def test_fold_get(api_session, test_fold_post):
     time.sleep(4)
     # job.wait_until_done(api_session)
 
-    job_details = api_session.load_job(STATIC.esmfold_id)
-    assert job_details
+    f = api_session.load_job(STATIC.esmfold_id)
+    assert f
+    assert f.wait_until_done(timeout=TIMEOUT)
+    pdb = f.get()
+    print(pdb)
+    pdb = pdb[0][1]
+    assert "ATOM" in pdb.decode()
+    assert len(pdb.decode().split("\n")) > 10
 
     sequences = fold_get_sequences(api_session, job_id=STATIC.esmfold_id)
     assert sorted(sequences) == sorted(SEQUENCES)
 
-    pdb = fold_get_sequence_result(
+    pdbresult = fold_get_sequence_result(
         api_session, job_id=STATIC.esmfold_id, sequence=SEQUENCES[0]
     )
-    assert "ATOM" in pdb.decode()
-    assert len(pdb.decode().split("\n")) > 10
+    assert "ATOM" in pdbresult.decode()
+    assert len(pdbresult.decode().split("\n")) > 10
 
 
 def test_fold_model(api_session):
@@ -86,11 +94,11 @@ def test_fold_model(api_session):
     assert model.id == "esmfold"
 
     future = model.fold(SEQUENCES)
-    assert future.wait(timeout=400)
-    result = future.wait(verbose=True, timeout=100)
+    assert future.wait(timeout=TIMEOUT)
+    result = future.wait(verbose=True, timeout=TIMEOUT)
     assert len(result) == 1
     assert len(result[0]) == 2
-    assert result[0][0] == b"AAAPPPLLL"
+    assert result[0][0] == SEQUENCES[0]
     assert "ATOM" in result[0][1].decode()
 
 
@@ -107,7 +115,7 @@ def test_fold_api(api_session):
     result = f.wait()
     assert len(result) == 1
     assert len(result[0]) == 2
-    assert result[0][0] == b"AAAPPPLLL"
+    assert result[0][0] == SEQUENCES[0]
     assert "ATOM" in result[0][1].decode()
 
 
@@ -133,8 +141,8 @@ def test_fold_api_colabfold(api_session, test_msa_post):
     assert "alphafold2" in [m.id for m in models]
 
     f = api_session.fold.alphafold2.fold(msa=test_msa_post, num_recycles=1)
-
-    assert f.wait_until_done(timeout=600)
+    time.sleep(2)  # wait for job to reg
+    assert f.wait_until_done(timeout=TIMEOUT)
     result = f.wait()
     assert len(result) == 1
     assert len(result[0]) == 2

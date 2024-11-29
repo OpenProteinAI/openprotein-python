@@ -52,6 +52,7 @@ def jobs_list(
     job_type: str | None = None,
     assay_id: str | None = None,
     more_recent_than: str | None = None,
+    limit: int | None = None,
 ) -> List[Job]:
     """
     Retrieve a list of jobs filtered by specific criteria.
@@ -85,6 +86,8 @@ def jobs_list(
         params["assay_id"] = assay_id
     if more_recent_than is not None:
         params["more_recent_than"] = more_recent_than
+    if limit is not None:
+        params["limit"] = limit
 
     response = session.get(endpoint, params=params)
     # return jobs, not futures

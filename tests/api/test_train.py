@@ -1,21 +1,20 @@
-import pytest
 from datetime import datetime
 from unittest.mock import MagicMock
 
+import pytest
 from openprotein.api.data import AssayDataset, AssayMetadata
-from openprotein.jobs import Job, JobType
-
 from openprotein.api.train import (
     TrainFuture,
     TrainingAPI,
-    create_train_job,
+    TrainJob,
     _create_train_job_br,
     _create_train_job_gp,
+    create_train_job,
     get_training_results,
 )
 from openprotein.base import APISession
 from openprotein.errors import InvalidParameterError
-from openprotein.api.train import TrainGraph
+from openprotein.jobs import Job, JobType
 from tests.conf import BACKEND
 
 # pending refactor
@@ -102,7 +101,7 @@ def test_get_training_results(mock_setup):
     session_mock.get.return_value.json.return_value = response_data
     train_graph = get_training_results(session_mock, "5678")
     session_mock.get.assert_called_once_with("v1/workflow/train/5678")
-    assert isinstance(train_graph, TrainGraph)
+    assert isinstance(train_graph, TrainJob)
     assert len(train_graph.traingraph) == 2
     assert train_graph.traingraph[0].step == 1
     assert train_graph.traingraph[0].loss == 0.123
@@ -116,7 +115,7 @@ def test_get_training_results2():
     session = MagicMock(spec=APISession)
     job_id = "1234"
 
-    expected_train_graph = TrainGraph(
+    expected_train_graph = TrainJob(
         traingraph=[], created_date=datetime.now(), job_id="1234"
     )
 

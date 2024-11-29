@@ -1,31 +1,25 @@
-import pytest
-from unittest.mock import MagicMock
-from typing import List, Optional, Union
 import io
-from unittest.mock import ANY
 import json
-from urllib.parse import urljoin
 from datetime import datetime
+from typing import List, Optional, Union
+from unittest.mock import ANY, MagicMock
+from urllib.parse import urljoin
 
-
-from openprotein.base import APISession
-from openprotein.api.jobs import Job
+import pytest
 from openprotein.api.design import (
-    DesignJobCreate,
-    DesignResults,
-    ModelCriterion,
     Criterion,
-)
-from openprotein.api.design import (
-    create_design_job,
-    get_design_results,
     DesignAPI,
     DesignFuture,
+    ModelCriterion,
+    WorkflowDesignJobCreate,
+    WorkflowDesignResults,
+    create_design_job,
+    get_design_results,
 )
-from openprotein.api.jobs import load_job
-from openprotein.base import BearerAuth
-from tests.conf import BACKEND
+from openprotein.api.jobs import Job, load_job
+from openprotein.base import APISession, BearerAuth
 from openprotein.jobs import Job, JobType
+from tests.conf import BACKEND
 
 
 class APISessionMock(APISession):
@@ -124,7 +118,7 @@ def test_create_design_job(api_session_mock):
     ]
     assay_id = "assay123"
 
-    design_job = DesignJobCreate(assay_id=assay_id, criteria=criteria)
+    design_job = WorkflowDesignJobCreate(assay_id=assay_id, criteria=criteria)
     result = create_design_job(api_session_mock, design_job)
 
     api_session_mock.post.assert_called_once_with(
@@ -207,7 +201,7 @@ def test_design_api_create_design_job(api_session_mock):
             )
         ]
     ]
-    job_create_sample = DesignJobCreate(assay_id=assay_id, criteria=criteria)
+    job_create_sample = WorkflowDesignJobCreate(assay_id=assay_id, criteria=criteria)
 
     job_response = {
         "status": "SUCCESS",
@@ -262,7 +256,7 @@ def test_design_future_get(api_session_mock):
         ],
     }
 
-    design_results = DesignResults(**results)
+    design_results = WorkflowDesignResults(**results)
 
     DesignFuture.get_results = MagicMock(return_value=design_results)
 
@@ -331,4 +325,4 @@ def test_design_api_get_design_results(api_session_mock):
     )
 
     # Verify that the correct results were returned
-    assert results == DesignResults(**job_sample)
+    assert results == WorkflowDesignResults(**job_sample)

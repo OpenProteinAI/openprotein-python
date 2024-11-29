@@ -3,13 +3,14 @@ import random
 from typing import Iterator
 
 import numpy as np
-from openprotein.api.align import csv_stream
 from openprotein.base import APISession
+from openprotein.csv import csv_stream
 from openprotein.errors import InvalidParameterError
 from openprotein.schemas import (
     AttnJob,
     EmbeddingsJob,
     GenerateJob,
+    JobType,
     LogitsJob,
     ModelMetadata,
     ScoreJob,
@@ -44,7 +45,9 @@ def get_model(session: APISession, model_id: str) -> ModelMetadata:
     return ModelMetadata(**result)
 
 
-def get_request_sequences(session: APISession, job_id: str) -> list[bytes]:
+def get_request_sequences(
+    session: APISession, job_id: str, job_type: JobType = JobType.embeddings_embed
+) -> list[bytes]:
     """
     Get results associated with the given request ID.
 
@@ -59,13 +62,18 @@ def get_request_sequences(session: APISession, job_id: str) -> list[bytes]:
     -------
     sequences : List[bytes]
     """
-    endpoint = PATH_PREFIX + f"/{job_id}/sequences"
+    # NOTE - allow to handle svd/embed and umap/embed directly too instead of redirect
+    path = "v1" + job_type.value
+    endpoint = path + f"/{job_id}/sequences"
     response = session.get(endpoint)
     return TypeAdapter(list[bytes]).validate_python(response.json())
 
 
 def request_get_sequence_result(
-    session: APISession, job_id: str, sequence: str | bytes
+    session: APISession,
+    job_id: str,
+    sequence: str | bytes,
+    job_type: JobType = JobType.embeddings_embed,
 ) -> bytes:
     """
     Get encoded result for a sequence from the request ID.
@@ -83,9 +91,11 @@ def request_get_sequence_result(
     -------
     result : bytes
     """
+    # NOTE - allow to handle svd/embed and umap/embed directly too instead of redirect
+    path = "v1" + job_type.value
     if isinstance(sequence, bytes):
         sequence = sequence.decode()
-    endpoint = PATH_PREFIX + f"/{job_id}/{sequence}"
+    endpoint = path + f"/{job_id}/{sequence}"
     response = session.get(endpoint)
     return response.content
 

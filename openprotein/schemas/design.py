@@ -1,24 +1,30 @@
 import re
-from datetime import datetime
 from enum import Enum
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    RootModel,
+    field_validator,
+    model_serializer,
+)
 
 from .job import Job, JobType
 
 
-class DesignMetadata(BaseModel):
+class SubscoreMetadata(BaseModel):
     y_mu: float | None = None
     y_var: float | None = None
 
 
 class DesignSubscore(BaseModel):
     score: float
-    metadata: DesignMetadata
+    metadata: SubscoreMetadata
 
 
-class DesignStep(BaseModel):
+class DesignResult(BaseModel):
     step: int
     sample_index: int
     sequence: str
@@ -30,46 +36,155 @@ class DesignStep(BaseModel):
     # umap2: float
 
 
-class DesignResults(BaseModel):
-    status: str
-    job_id: str
-    job_type: str
-    created_date: datetime
-    start_date: datetime
-    end_date: datetime | None
+class DesignJob(Job):
+    job_type: Literal[JobType.workflow_design]
+
+
+class Design(DesignJob):
     assay_id: str
     num_rows: int
-    result: list[DesignStep]
+    result: list[DesignResult]
 
 
-class DirectionEnum(str, Enum):
-    gt = ">"
-    lt = "<"
-    eq = "="
+class CriterionType(str, Enum):
+    model = "model"
+    n_mutations = "n_mutations"
 
 
-class Criterion(BaseModel):
-    target: float
-    weight: float
-    direction: str
+class Subcriterion(BaseModel):
+
+    criterion_type: CriterionType
+
+    def __and__(self, other: "Subcriterion | Criterion | Any") -> "Criterion":
+        """Returns a Criterion with the two subcriteria AND-ed."""
+        others = []
+        if isinstance(other, Subcriterion):
+            others = [other]
+        elif isinstance(other, Criterion):
+            others = other.root
+        else:
+            raise ValueError(
+                f"Expected to chain only with criterion or subcriterion, got {type(other)}"
+            )
+        return Criterion([self] + others)  # type: ignore - doesnt like Self
+
+    def __or__(self, other: "Subcriterion | Criterion | Any") -> "Criteria":
+        """Returns a Criteria with the two subcriteria OR-ed."""
+        if isinstance(other, Criterion):
+            pass
+        elif isinstance(other, Subcriterion):
+            other = Criterion([other])
+        else:
+            raise ValueError(
+                f"Expected to chain only with criterion or subcriterion, got {type(other)}"
+            )
+        return Criteria([Criterion([self]), other])
 
 
-class ModelCriterion(BaseModel):
-    criterion_type: Literal["model"]
+class ModelCriterion(Subcriterion):
+
+    class Criterion(BaseModel):
+        class DirectionEnum(str, Enum):
+            gt = ">"
+            lt = "<"
+            eq = "="
+
+        weight: float = 1.0
+        direction: DirectionEnum | None = None
+        target: float | None = None
+
+    criterion_type: CriterionType = CriterionType.model
     model_id: str
     measurement_name: str
-    criterion: Criterion
+    criterion: Criterion = Criterion()
 
-    class Config:
-        protected_namespaces = ()
+    model_config = ConfigDict(protected_namespaces=())
+
+    def __mul__(self, weight: float) -> "ModelCriterion":
+        self.criterion.weight = weight
+        return self
+
+    def __lt__(self, other: float) -> "ModelCriterion":
+        self.criterion.target = other
+        self.criterion.direction = ModelCriterion.Criterion.DirectionEnum.lt
+        return self
+
+    def __gt__(self, other: float) -> "ModelCriterion":
+        self.criterion.target = other
+        self.criterion.direction = ModelCriterion.Criterion.DirectionEnum.gt
+        return self
+
+    def __eq__(self, other: float) -> "ModelCriterion":
+        self.criterion.target = other
+        self.criterion.direction = ModelCriterion.Criterion.DirectionEnum.eq
+        return self
+
+    __rmul__ = __mul__
+
+    @model_serializer(mode="wrap")
+    def validate_criterion_before_serialize(self, handler):
+        if (
+            self.criterion is None
+            or self.criterion.direction is None
+            or self.criterion.target is None
+        ):
+            raise ValueError("Expected direction and target to be set")
+        return handler(self)
 
 
-class NMutationCriterion(BaseModel):
-    criterion_type: Literal["n_mutations"]
-    # sequences: list[str] | None
+class NMutationCriterion(Subcriterion):
+    criterion_type: CriterionType = CriterionType.n_mutations
+    sequences: list[str] = Field(default_factory=list)
+
+    @model_serializer(mode="wrap")
+    def remove_empty_sequences(self, handler):
+        d = handler(self)
+        if not d["sequences"]:
+            del d["sequences"]
+        return d
 
 
-CriterionItem = ModelCriterion | NMutationCriterion
+n_mutations = NMutationCriterion
+
+
+class Criterion(RootModel):
+    root: list[ModelCriterion | NMutationCriterion | Subcriterion]
+
+    def __and__(self, other: "Criterion | Subcriterion") -> "Criterion":
+        """Returns a Criteria with the other criterion OR-ed with itself."""
+        others = []
+
+        if isinstance(other, Subcriterion):
+            others = [other]
+        elif isinstance(other, Criterion):
+            others = other.root
+
+        return Criterion(self.root + others)
+
+    def __or__(self, other: "Criterion | Subcriterion") -> "Criteria":
+        """Returns a Criteria with the other criterion OR-ed with itself."""
+
+        if isinstance(other, Criterion):
+            pass
+        elif isinstance(other, Subcriterion):
+            other = Criterion([other])
+
+        return Criteria([self, other])
+
+
+class Criteria(RootModel):
+    root: list[Criterion]
+
+    def __or__(self, other: "Criterion | Subcriterion | Criteria") -> "Criteria":
+        """Returns a Criteria with the other criteria OR-ed with itself."""
+        if isinstance(other, Criteria):
+            pass
+        if isinstance(other, Criterion):
+            other = Criteria([other])
+        elif isinstance(other, Subcriterion):
+            other = Criteria([Criterion([other])])
+
+        return Criteria(self.root + other.root)
 
 
 class DesignConstraint:
@@ -114,8 +229,8 @@ class DesignConstraint:
 
 class DesignJobCreate(BaseModel):
     assay_id: str
-    criteria: list[list[CriterionItem]]
-    num_steps: int | None = 8
+    criteria: Criteria
+    num_steps: int = 8
     pop_size: int | None = None
     n_offsprings: int | None = None
     crossover_prob: float | None = None
@@ -123,8 +238,7 @@ class DesignJobCreate(BaseModel):
     mutation_average_mutations_per_seq: int | None = None
     allowed_tokens: DesignConstraint | dict[int, list[str]] | None = None
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @field_validator("allowed_tokens", mode="before")
     def ensure_dict(cls, v):
@@ -245,7 +359,3 @@ def no_change(sequence: str):
 
 def keep_cys(sequence: str):
     return {k + 1: [v] for k, v in enumerate(sequence) if v == "C"}
-
-
-class DesignJob(Job):
-    job_type: Literal[JobType.workflow_design]

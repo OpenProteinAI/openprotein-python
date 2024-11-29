@@ -44,6 +44,9 @@ class JobType(str, Enum):
     svd_fit = "/svd/fit"
     svd_embed = "/svd/embed"
 
+    umap_fit = "/umap/fit"
+    umap_embed = "/umap/embed"
+
     embeddings_fold = "/embeddings/fold"
 
     # predictor jobs
@@ -53,6 +56,9 @@ class JobType(str, Enum):
     predictor_predict_single_site = "/predictor/predict_single_site"
     predictor_predict_multi = "/predictor/predict_multi"
     predictor_predict_multi_single_site = "/predictor/predict_multi_single_site"
+
+    # designer
+    designer = "/design"
 
 
 class JobStatus(str, Enum):

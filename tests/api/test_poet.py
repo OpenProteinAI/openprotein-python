@@ -246,7 +246,7 @@ def test_poet_msa_post(api_session_mock):
     result = msa_post(api_session_mock, msa_file=msa_fasta)
 
     api_session_mock.post.assert_called_once_with(
-        "v1/poet/align/msa", files={"msa_file": msa_fasta}, params={"is_seed": False}
+        "v1/align/msa", files={"msa_file": msa_fasta}, params={"is_seed": False}
     )
     assert result.msa_id == "12345"
 
@@ -265,7 +265,7 @@ def test_poet_upload_prompt_post(api_session_mock):
     result = upload_prompt_post(api_session_mock, prompt_file=prompt_fasta)
 
     api_session_mock.post.assert_called_once_with(
-        "v1/poet/align/upload_prompt", files={"prompt_file": prompt_fasta}
+        "v1/align/upload_prompt", files={"prompt_file": prompt_fasta}
     )
     assert result.job.job_id == "j123"
 
@@ -298,7 +298,7 @@ def test_poet_prompt_post(api_session_mock):
     )
 
     api_session_mock.post.assert_called_once_with(
-        "v1/poet/align/prompt",
+        "v1/align/prompt",
         params={
             "msa_id": msa_id,
             "msa_method": MSASamplingMethod.NEIGHBORS_NONGAP_NORM_NO_LIMIT,
@@ -324,7 +324,7 @@ def test_poet_get_align_job_inputs(api_session_mock):
     result = get_align_job_inputs(api_session_mock, job_id, input_type)
 
     api_session_mock.get.assert_called_once_with(
-        "v1/poet/align/inputs",
+        "v1/align/inputs",
         params={"job_id": job_id, "msa_type": input_type},
         stream=True,
     )
@@ -344,7 +344,7 @@ def test_poet_get_align_job_inputs_prompt_index(api_session_mock):
     )
 
     api_session_mock.get.assert_called_once_with(
-        "v1/poet/align/inputs",
+        "v1/align/inputs",
         params={"job_id": job_id, "msa_type": input_type, "replicate": prompt_index},
         stream=True,
     )

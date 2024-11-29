@@ -1,11 +1,20 @@
+"""
+OpenProtein APIs.
+
+A collection of the available APIs available on the pythonic interface.
+isort:skip_file
+"""
+
 from .services import (
-    SVDAPI,
-    AlignAPI,
+    JobsAPI,
     AssayDataAPI,
+    TrainingAPI,
     DesignAPI,
+    AlignAPI,
     EmbeddingsAPI,
     FoldAPI,
-    JobsAPI,
+    SVDAPI,
+    UMAPAPI,
     PredictorAPI,
-    TrainingAPI,
+    DesignerAPI,
 )

@@ -5,7 +5,11 @@ import requests
 from openprotein import config
 from openprotein.base import APISession
 from openprotein.errors import APIError, InvalidParameterError, MissingParameterError
-from openprotein.schemas import PoetGenerateJob, PoetScoreJob, PoetSSPJob
+from openprotein.schemas.deprecated.poet import (
+    PoetGenerateJob,
+    PoetScoreJob,
+    PoetSSPJob,
+)
 
 
 def poet_score_post(

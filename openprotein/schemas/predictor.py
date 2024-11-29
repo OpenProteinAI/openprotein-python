@@ -1,8 +1,8 @@
-from enum import Enum
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
+from .features import FeatureType
 from .job import Job, JobStatus, JobType
 
 
@@ -15,19 +15,12 @@ class Constraints(BaseModel):
     sequence_length: int | None = None
 
 
-class FeatureType(str, Enum):
-
-    PLM = "PLM"
-    SVD = "SVD"
-
-
 class Features(BaseModel):
     type: FeatureType
     model_id: str | None = None
     reduction: str | None = None
 
-    class Config:
-        protected_namespaces = ()
+    model_config = ConfigDict(protected_namespaces=())
 
 
 class PredictorArgs(BaseModel):
@@ -55,8 +48,7 @@ class PredictorMetadata(BaseModel):
     def is_done(self):
         return self.status.done()
 
-    class Config:
-        protected_namespaces = ()
+    model_config = ConfigDict(protected_namespaces=())
 
 
 class TrainJob(Job):

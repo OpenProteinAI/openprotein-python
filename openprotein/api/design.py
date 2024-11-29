@@ -1,8 +1,12 @@
 from openprotein.base import APISession
-from openprotein.schemas import DesignJobCreate, DesignResults, Job
+from openprotein.schemas import (
+    WorkflowDesign,
+    WorkflowDesignJob,
+    WorkflowDesignJobCreate,
+)
 
 
-def create_design_job(session: APISession, design_job: DesignJobCreate):
+def create_design_job(session: APISession, design_job: WorkflowDesignJobCreate):
     """
     Send a POST request for protein design job.
 
@@ -13,7 +17,7 @@ def create_design_job(session: APISession, design_job: DesignJobCreate):
     design_job : DesignJobCreate
         The details of the design job to be created, with the following parameters:
         - assay_id: The ID for the assay.
-        - criteria: A list of CriterionItem lists for evaluating the design.
+        - criteria: Criteria for evaluating the design.
         - num_steps: The number of steps in the genetic algo. Default is 8.
         - pop_size: The population size for the genetic algo. Default is None.
         - n_offsprings: The number of offspring for the genetic algo. Default is None.
@@ -24,13 +28,13 @@ def create_design_job(session: APISession, design_job: DesignJobCreate):
 
     Returns
     -------
-    Job
+    WorkflowDesignJob
         The created job as a Job instance.
     """
     params = design_job.model_dump(exclude_none=True)
     # print(f"sending design: {params}")
     response = session.post("v1/workflow/design/genetic-algorithm", json=params)
-    return Job.model_validate(response.json())
+    return WorkflowDesignJob.model_validate(response.json())
 
 
 def get_design_results(
@@ -39,7 +43,7 @@ def get_design_results(
     step: int | None = None,
     page_size: int | None = None,
     page_offset: int | None = None,
-) -> DesignResults:
+) -> WorkflowDesign:
     """
     Retrieves the results of a Design job.
 
@@ -60,7 +64,7 @@ def get_design_results(
 
     Returns
     -------
-    DesignJob
+    WorkflowDesignJob
         The job object representing the Design job.
 
     Raises
@@ -79,4 +83,4 @@ def get_design_results(
 
     response = session.get(endpoint, params=params)
 
-    return DesignResults.model_validate(response.json())
+    return WorkflowDesign.model_validate(response.json())
