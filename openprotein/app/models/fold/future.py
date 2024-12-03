@@ -25,18 +25,21 @@ class FoldResultFuture(MappedFuture, Future):
 
     @property
     def sequences(self) -> list[bytes]:
+        """Sequences submitted for fold request."""
         if self._sequences is None:
             self._sequences = fold.fold_get_sequences(self.session, self.job.job_id)
         return self._sequences
 
     @property
     def id(self):
+        """ID of fold request."""
         return self.job.job_id
 
     def keys(self):
         return self.sequences
 
     def get(self, verbose=False) -> list[tuple[str, str]]:
+        """Retrieve the fold results as a tuple of sequence to pdb-encoded string."""
         return super().get(verbose=verbose)
 
     def get_item(self, sequence: bytes) -> bytes:

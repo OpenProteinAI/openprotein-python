@@ -1,21 +1,17 @@
-import pytest
-from unittest.mock import MagicMock
-from openprotein.base import APISession
-from datetime import datetime
-from openprotein.api.align import *
 import io
+import json
+from datetime import datetime
+from io import BytesIO
+from typing import List, Optional, Union
+from unittest.mock import ANY, MagicMock
 from urllib.parse import urljoin
 
-from typing import List, Optional, Union
-from io import BytesIO
-from unittest.mock import ANY
-import json
-from openprotein.base import BearerAuth
-from tests.conf import BACKEND
+import pytest
+from openprotein.api.align import *
 from openprotein.api.poet import *
-
-
+from openprotein.base import APISession, BearerAuth
 from requests import Response
+from tests.conf import BACKEND
 
 
 class ResponseMock:
@@ -316,7 +312,7 @@ def test_poet_prompt_post(api_session_mock):
 
 def test_poet_get_align_job_inputs(api_session_mock):
     job_id = "12345"
-    input_type = PoetInputType.INPUT
+    input_type = AlignType.INPUT
 
     response_mock = MagicMock()
     api_session_mock.get = MagicMock(return_value=response_mock)
@@ -333,7 +329,7 @@ def test_poet_get_align_job_inputs(api_session_mock):
 
 def test_poet_get_align_job_inputs_prompt_index(api_session_mock):
     job_id = "12345"
-    input_type = PoetInputType.PROMPT
+    input_type = AlignType.PROMPT
     prompt_index = 1
 
     response_mock = MagicMock()

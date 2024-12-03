@@ -1,13 +1,14 @@
-import pytest
-from openprotein.api.align import *
-import json
-from tests.conf import BACKEND, TIMEOUT
-import time
 import collections
+import json
+import time
+
 import openprotein
-from openprotein.schemas import JobType
-from openprotein.jobs import *
+import pytest
 from AWSTools.Batchtools.batch_utils import fakeseq
+from openprotein.api.align import *
+from openprotein.jobs import *
+from openprotein.schemas import JobType
+from tests.conf import BACKEND, TIMEOUT
 
 TEST_SEQUENCE = f"{fakeseq(5)}APPMYRMQLLSCIALSLALVTNSAPTSSSTKKTQLQLEHLLLDLQMILNGINNYKNPKLTRMLTFKFYMPKKATELKHLQCLEEELKPLEEVLNLAQSKNFHLRPRDLISNINVIVLELKGMYRMQLLSCIALSLALVTNSAPTSSSTKKTQLQLEHLLLDLQMILNGINNYKNPKLTRMLTFKFYMPKKATELKHLQCLEEELKPLEEVLNLAQSKNFHLRPRDLISNINVIVLELKGSEP"
 print(f"USING BACKEND: {BACKEND} ")
@@ -106,7 +107,7 @@ def test_get_input(api_session, test_msa_post):
     job = job_get(api_session, job_id=STATIC.msa_id)
     print(job)
 
-    reader = get_input(api_session, job, PoetInputType.INPUT)
+    reader = get_input(api_session, job, AlignType.INPUT)
     x = list(reader)
     assert len(x) == 1
     assert x[0][0] == "seed" or x[0][0] == "101"
@@ -200,7 +201,7 @@ def test_prompt_future_get(api_session, test_upload_prompt_post):
     print(job)
     future = PromptFuture(session=api_session, job=job)
 
-    reader = future.get_input(PoetInputType.MSA)
+    reader = future.get_input(AlignType.MSA)
     assert isinstance(reader, collections.Iterator)
 
     reader = future.get_prompt()

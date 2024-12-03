@@ -3,7 +3,7 @@ from typing import BinaryIO, Iterator
 from openprotein.api import align
 from openprotein.app.models import MSAFuture, PromptFuture
 from openprotein.base import APISession
-from openprotein.schemas import Job, PoetInputType
+from openprotein.schemas import AlignType, Job
 
 
 class AlignAPI:
@@ -106,7 +106,7 @@ class AlignAPI:
         return align.get_input(
             session=self.session,
             job=job,
-            input_type=PoetInputType.PROMPT,
+            input_type=AlignType.PROMPT,
             prompt_index=prompt_index,
         )
 
@@ -125,7 +125,7 @@ class AlignAPI:
             A CSV reader for the response data.
         """
         return align.get_input(
-            session=self.session, job=job, input_type=PoetInputType.INPUT
+            session=self.session, job=job, input_type=AlignType.INPUT
         )
 
     def get_msa(self, job: Job) -> Iterator[list[str]]:
@@ -142,6 +142,4 @@ class AlignAPI:
         csv.reader
             A CSV reader for the response data.
         """
-        return align.get_input(
-            session=self.session, job=job, input_type=PoetInputType.MSA
-        )
+        return align.get_input(session=self.session, job=job, input_type=AlignType.MSA)

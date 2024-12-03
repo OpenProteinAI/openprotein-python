@@ -92,34 +92,45 @@ class PredictorModel(Future):
             )
         raise self.InvalidMultitaskModelToCriterion()
 
-    class InvalidMultitaskModelToCriterion(Exception): ...
+    class InvalidMultitaskModelToCriterion(Exception):
+        """
+        Exception raised when trying to create model criterion from multitask predictor.
+
+        :meta private:
+        """
 
     @property
     def id(self):
+        """ID of predictor."""
         return self._metadata.id
 
     @property
     def reduction(self):
+        """The reduction of th embeddings used to train the predictor, if any."""
         return self._metadata.model_spec.features.reduction
 
     @property
     def sequence_length(self):
+        """The sequence length constraint on the predictor, if any."""
         if (constraints := self._metadata.model_spec.constraints) is not None:
             return constraints.sequence_length
         return None
 
     @property
     def training_assay(self) -> AssayDataset:
+        """The assay the predictor was trained on."""
         if self._training_assay is None:
             self._training_assay = self.get_assay()
         return self._training_assay
 
     @property
     def training_properties(self) -> list[str]:
+        """The list of properties the predictor was trained on."""
         return self._metadata.training_dataset.properties
 
     @property
     def metadata(self):
+        """The predictor metadata."""
         self._refresh_metadata()
         return self._metadata
 
@@ -128,7 +139,7 @@ class PredictorModel(Future):
             self._metadata = predictor.predictor_get(self.session, self._metadata.id)
 
     def get_model(self) -> EmbeddingModel | SVDModel | None:
-        """Fetch embeddings model"""
+        """Retrieve the embeddings or SVD model used to create embeddings to train on."""
         if (features := self._metadata.model_spec.features) and (
             model_id := features.model_id
         ) is None:
@@ -146,6 +157,7 @@ class PredictorModel(Future):
 
     @property
     def model(self) -> EmbeddingModel | SVDModel | None:
+        """The embeddings or SVD model used to create embeddings to train on."""
         return self.get_model()
 
     def delete(self) -> bool:
@@ -155,8 +167,10 @@ class PredictorModel(Future):
         return predictor.predictor_delete(self.session, self.id)
 
     def get(self, verbose: bool = False):
-        # overload for Future
-        return self
+        """
+        Returns the train loss curves.
+        """
+        return self.metadata.traingraphs
 
     def get_assay(self) -> AssayDataset:
         """
@@ -174,6 +188,9 @@ class PredictorModel(Future):
         )
 
     def crossvalidate(self, n_splits: int | None = None) -> CVResultFuture:
+        """
+        Run a crossvalidation on the trained predictor.
+        """
         return CVResultFuture.create(
             session=self.session,
             job=predictor.predictor_crossvalidate_post(
@@ -184,6 +201,9 @@ class PredictorModel(Future):
         )
 
     def predict(self, sequences: list[bytes] | list[str]) -> PredictionResultFuture:
+        """
+        Make predictions about the trained properties for a list of sequences.
+        """
         if self.sequence_length is not None:
             for sequence in sequences:
                 # convert to string to check token length
@@ -200,6 +220,9 @@ class PredictorModel(Future):
         )
 
     def single_site(self, sequence: bytes | str) -> PredictionResultFuture:
+        """
+        Compute the single-site mutated predictions of a base sequence.
+        """
         if self.sequence_length is not None:
             # convert to string to check token length
             seq = sequence if isinstance(sequence, str) else sequence.decode()
@@ -267,6 +290,9 @@ class PredictorModelGroup(Future):
         )
 
     def predict(self, sequences: list[bytes] | list[str]) -> PredictionResultFuture:
+        """
+        Make predictions about the trained properties for a list of sequences.
+        """
         if self.sequence_length is not None:
             for sequence in sequences:
                 # convert to string to check token length
@@ -285,6 +311,9 @@ class PredictorModelGroup(Future):
         )
 
     def single_site(self, sequence: bytes | str) -> PredictionResultFuture:
+        """
+        Compute the single-site mutated predictions of a base sequence.
+        """
         if self.sequence_length is not None:
             # convert to string to check token length
             seq = sequence if isinstance(sequence, str) else sequence.decode()
@@ -300,5 +329,12 @@ class PredictorModelGroup(Future):
         )
 
     def get(self, verbose: bool = False):
-        # overload for Future
+        """
+        Returns the predictor model.
+
+        :meta private:
+        """
         return self
+
+    def delete(self):
+        return predictor.predictor_delete(session=self.session, predictor_id=self.id)

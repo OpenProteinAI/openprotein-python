@@ -3,33 +3,27 @@ assumes models are available at data/models
 change seeds at the appropriate places to avoid backend caching
 set --longrun flag when running pytest to run these tests
 """
+
 import json
 import os
 import time
 from pathlib import Path
 from typing import Optional, Union
 
-import numpy as np
-
-import torch
-
 import fsspec
-from fsspec.implementations.dirfs import DirFileSystem
-
+import numpy as np
+import openprotein
 import pytest
-
+import torch
 from esm import ESM2, ProteinBertModel
-from esm.pretrained import load_model_and_alphabet_core, _has_regression_weights
-
+from esm.pretrained import _has_regression_weights, load_model_and_alphabet_core
+from fsspec.implementations.dirfs import DirFileSystem
+from openprotein import OpenProtein
+from openprotein.api.embedding import SVDModel
 from protembed.alphabets import Uniprot21
 from protembed.datasets import pad_tensor_1d
 from protembed.factory import ProtembedModelLoader
-
-import openprotein
-from openprotein import OpenProtein
-from openprotein.api.embedding import SVDModel
 from tests.utils.svd import TorchLowRankSVDTransform
-
 
 ALPHABET = Uniprot21()
 
@@ -40,7 +34,9 @@ def load_model_and_alphabet_local(model_location, device):
     model_data = torch.load(str(model_location), map_location=device)
     model_name = model_location.stem
     if _has_regression_weights(model_name):
-        regression_location = str(model_location.with_suffix("")) + "-contact-regression.pt"
+        regression_location = (
+            str(model_location.with_suffix("")) + "-contact-regression.pt"
+        )
         regression_data = torch.load(regression_location, map_location=device)
     else:
         regression_data = None
@@ -60,7 +56,7 @@ def session() -> OpenProtein:
 
 @pytest.fixture()
 def loader() -> ProtembedModelLoader:
-    root_fs = fsspec.filesystem('file')
+    root_fs = fsspec.filesystem("file")
     dir_fs = DirFileSystem("data/models", root_fs)
     return ProtembedModelLoader(dir_fs)
 
@@ -69,11 +65,13 @@ def loader() -> ProtembedModelLoader:
 def sequences() -> list[bytes]:
     rng = np.random.default_rng(188501)
     return [
-        ALPHABET.decode(rng.integers(
-            low=0,
-            high=21,
-            size=rng.integers(250, 500),
-        ))
+        ALPHABET.decode(
+            rng.integers(
+                low=0,
+                high=21,
+                size=rng.integers(250, 500),
+            )
+        )
         for _ in range(5)
     ]
 
@@ -81,17 +79,17 @@ def sequences() -> list[bytes]:
 @pytest.fixture()
 def same_length_sequences() -> list[bytes]:
     rng = np.random.default_rng(376735)
-    return [
-        ALPHABET.decode(rng.integers(low=0, high=21, size=331))
-        for _ in range(5)
-    ]
+    return [ALPHABET.decode(rng.integers(low=0, high=21, size=331)) for _ in range(5)]
 
 
 @pytest.mark.longrun
-@pytest.mark.parametrize("local_model_id,model_id", [
-    ("prosst", "prot-seq"),
-    ("rotaprot-seq-900m-uniref90-v1", "rotaprot-large-uniref90-ft"),
-])
+@pytest.mark.parametrize(
+    "local_model_id,model_id",
+    [
+        ("prosst", "prot-seq"),
+        ("rotaprot-seq-900m-uniref90-v1", "rotaprot-large-uniref90-ft"),
+    ],
+)
 @torch.inference_mode()
 def test_protembed(
     loader: ProtembedModelLoader,
@@ -102,7 +100,7 @@ def test_protembed(
 ):
     print("testing...", model_id)
     local_model = loader.load_model(local_model_id, device=torch.device("cuda"))
-    model = session.embedding.get_model(model_id=model_id)
+    model = session.embeddings.get_model(model_id=model_id)
 
     sequences_as_idxs, mask = pad_tensor_1d(
         [torch.from_numpy(ALPHABET.encode(s)).cuda().long() for s in sequences],
@@ -120,14 +118,13 @@ def test_protembed(
         # the same
         attn = torch.stack(attn, dim=1)
     attn = [
-        x.float().cpu().numpy()[-1][:, :len(s), :len(s)]
+        x.float().cpu().numpy()[-1][:, : len(s), : len(s)]
         for s, x in zip(sequences, attn)
     ]
     embeddings = [
-        x.float().cpu().numpy()[:len(s)]
-        for s, x in zip(sequences, embeddings)
+        x.float().cpu().numpy()[: len(s)] for s, x in zip(sequences, embeddings)
     ]
-    logits = [x.float().cpu().numpy()[:len(s)] for s, x in zip(sequences, logits)]
+    logits = [x.float().cpu().numpy()[: len(s)] for s, x in zip(sequences, logits)]
 
     # we can't really make these difference tests too stringent, probably due to
     # numerical precision issues (fp16 may be particuarly problematic)
@@ -183,14 +180,13 @@ def test_esm(session: OpenProtein, model_id: str, sequences: list[bytes]):
     print("testing...", model_id)
     device = (
         torch.device("cpu")  # using cpu in case of low vram
-        if model_id != "esm2_t6_8M_UR50D" else torch.device("cuda")
+        if model_id != "esm2_t6_8M_UR50D"
+        else torch.device("cuda")
     )
     local_model: Union[ESM2, ProteinBertModel]
     model_dir = "data/models"
     model_pt_path = os.path.join(model_dir, f"{model_id}.pt")
-    local_model, alphabet = load_model_and_alphabet_local(
-        model_pt_path, device
-    )
+    local_model, alphabet = load_model_and_alphabet_local(model_pt_path, device)
     batch_converter = alphabet.get_batch_converter()
     local_model = local_model.eval()  # disables dropout for deterministic results
     if isinstance(local_model, ESM2):
@@ -199,10 +195,14 @@ def test_esm(session: OpenProtein, model_id: str, sequences: list[bytes]):
     local_model = local_model.to(device)
     can_predict_contacts = _has_regression_weights(model_id)
 
-    _, _, batch_tokens = batch_converter(list(zip(
-        [f"{i}" for i in range(len(sequences))],
-        [s.decode().replace("X", "<mask>") for s in sequences],
-    )))
+    _, _, batch_tokens = batch_converter(
+        list(
+            zip(
+                [f"{i}" for i in range(len(sequences))],
+                [s.decode().replace("X", "<mask>") for s in sequences],
+            )
+        )
+    )
     results = local_model(
         batch_tokens.to(device),
         repr_layers=[local_model.num_layers],
@@ -219,23 +219,17 @@ def test_esm(session: OpenProtein, model_id: str, sequences: list[bytes]):
         contacts = None
 
     batch_lens = (batch_tokens != alphabet.padding_idx).sum(1)
-    embeddings = [
-        embeddings[i, :tokens_len]
-        for i, tokens_len in enumerate(batch_lens)
-    ]
+    embeddings = [embeddings[i, :tokens_len] for i, tokens_len in enumerate(batch_lens)]
     mean_embeddings = torch.vstack([e[1:-1].mean(dim=0) for e in embeddings])
     sum_embeddings = torch.vstack([e[1:-1].sum(dim=0) for e in embeddings])
     attn = [
         attn[i, -1, :, :tokens_len, :tokens_len]
         for i, tokens_len in enumerate(batch_lens)
     ]
-    logits = [
-        logits[i, :tokens_len]
-        for i, tokens_len in enumerate(batch_lens)
-    ]
+    logits = [logits[i, :tokens_len] for i, tokens_len in enumerate(batch_lens)]
     if contacts is not None:
         contacts = [
-            contacts[i, :tokens_len-2, :tokens_len-2]
+            contacts[i, : tokens_len - 2, : tokens_len - 2]
             for i, tokens_len in enumerate(batch_lens)
         ]
     else:
@@ -247,11 +241,10 @@ def test_esm(session: OpenProtein, model_id: str, sequences: list[bytes]):
     attn = [x.float().cpu().numpy() for x in attn]
     logits = [x.float().cpu().numpy() for x in logits]
     contacts = (
-        [x.float().cpu().numpy() for x in contacts]
-        if contacts is not None else None
+        [x.float().cpu().numpy() for x in contacts] if contacts is not None else None
     )
 
-    model = session.embedding.get_model(model_id=model_id)
+    model = session.embeddings.get_model(model_id=model_id)
     future = model.attn(sequences)
     time.sleep(1)
     future.wait_until_done()
@@ -313,7 +306,7 @@ def test_svd(
     # it depends on the svd random_state being the same
     model_id = "prot-seq"
     n_components = 1024
-    model = session.embedding.get_model(model_id=model_id)
+    model = session.embeddings.get_model(model_id=model_id)
 
     # get embeddings to svd
     future = model.embed(sequences, reduction=reduction)
@@ -330,12 +323,14 @@ def test_svd(
     local_svd = TorchLowRankSVDTransform(
         n_components=n_components, random_state=random_state, device="cpu"
     )
-    reduced_embeddings = local_svd.fit_transform(
-        torch.from_numpy(embeddings).float()
-    ).cpu().numpy()
+    reduced_embeddings = (
+        local_svd.fit_transform(torch.from_numpy(embeddings).float()).cpu().numpy()
+    )
 
     # get svd from remote
-    svd: SVDModel = model.fit_svd(sequences, n_components=n_components, reduction=reduction)
+    svd: SVDModel = model.fit_svd(
+        sequences, n_components=n_components, reduction=reduction
+    )
     time.sleep(1)
     svd.get_job().wait_until_done(session=session)
     future = svd.embed(sequences)

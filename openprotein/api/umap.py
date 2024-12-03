@@ -3,7 +3,7 @@ import io
 import numpy as np
 import pandas as pd
 from openprotein.base import APISession
-from openprotein.errors import InvalidParameterError
+from openprotein.errors import APIError, InvalidParameterError
 from openprotein.schemas import FeatureType, UMAPEmbeddingsJob, UMAPFitJob, UMAPMetadata
 from pydantic import TypeAdapter
 
@@ -142,8 +142,11 @@ def umap_delete(session: APISession, umap_id: str) -> bool:
     """
 
     endpoint = PATH_PREFIX + f"/{umap_id}"
-    session.delete(endpoint)
-    return True
+    response = session.delete(endpoint)
+    if 200 <= response.status_code < 300:
+        return True
+    else:
+        raise APIError(response.text)
 
 
 def umap_fit_post(

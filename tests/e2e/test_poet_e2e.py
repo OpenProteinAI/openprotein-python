@@ -1,16 +1,17 @@
-import pytest
-from openprotein.api.align import *
-import json
-from tests.conf import BACKEND, TIMEOUT
-import time
 import collections
-import openprotein
-from openprotein.schemas import JobType
-from openprotein.jobs import *
+import json
+import time
+
 import numpy as np
-from openprotein.api.poet import *
-from openprotein.api.jobs import load_job
+import openprotein
+import pytest
 from AWSTools.Batchtools.batch_utils import fakeseq
+from openprotein.api.align import *
+from openprotein.api.jobs import load_job
+from openprotein.api.poet import *
+from openprotein.jobs import *
+from openprotein.schemas import JobType
+from tests.conf import BACKEND, TIMEOUT
 
 TEST_SEQUENCE = f"{fakeseq(5)}MYRMQLLSCIALSLALVTNSAPTSSSTKKTQLQLEHLLLDLQMILNGINNYKNPKLTRMLTFKFYMPKKATELKHLQCLEEELKPLEEVLNLAQSKNFHLRPRDLISNINVIVLELKGMYRMQLLSCIALSLALVTNSAPTSSSTKKTQLQLEHLLLDLQMILNGINNYKNPKLTRMLTFKFYMPKKATELKHLQCLEEELKPLEEVLNLAQSKNFHLRPRDLISNINVIVLELKGSEP"
 print(f"USING BACKEND: {BACKEND} ")
@@ -204,7 +205,7 @@ def test_poet_future(api_session, test_upload_prompt_post):
     future = PoetScoreFuture(session=api_session, job=job)
     # future = PromptFuture(session=api_session, job=job)
 
-    reader = future.get_input(PoetInputType.MSA)
+    reader = future.get_input(AlignType.MSA)
     assert isinstance(reader, collections.Iterator)
 
     reader = future.get_prompt()

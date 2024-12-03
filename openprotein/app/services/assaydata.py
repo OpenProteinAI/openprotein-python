@@ -6,18 +6,10 @@ from openprotein.app.models import AssayDataset, AssayMetadata
 from openprotein.base import APISession
 
 
-class AssayDataAPI:
+class DataAPI:
     """API interface for calling AssayData endpoints"""
 
     def __init__(self, session: APISession):
-        """
-        init the DataAPI.
-
-        Parameters
-        ----------
-        session : APISession
-            Session object for API communication.
-        """
         self.session = session
 
     def list(self) -> list[AssayDataset]:

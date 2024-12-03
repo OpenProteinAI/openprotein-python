@@ -107,6 +107,9 @@ def designer_create_genetic_algorithm(
     elif isinstance(criteria, Criterion):
         criteria = Criteria([criteria])
 
+    if isinstance(allowed_tokens, DesignConstraint):
+        allowed_tokens = allowed_tokens.as_dict()
+
     endpoint = PATH_PREFIX + "/genetic-algorithm"
 
     body = {

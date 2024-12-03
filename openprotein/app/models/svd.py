@@ -9,7 +9,7 @@ from openprotein.errors import InvalidParameterError
 from openprotein.schemas import FeatureType, SVDEmbeddingsJob, SVDFitJob, SVDMetadata
 
 from .assaydata import AssayDataset, AssayMetadata
-from .embeddings import EmbeddingModel, EmbeddingResultFuture
+from .embeddings import EmbeddingModel, EmbeddingsResultFuture
 from .futures import Future
 
 if TYPE_CHECKING:
@@ -106,7 +106,7 @@ class SVDModel(Future):
 
     def embed(
         self, sequences: list[bytes] | list[str], **kwargs
-    ) -> EmbeddingResultFuture:
+    ) -> EmbeddingsResultFuture:
         """
         Use this SVD model to get reduced embeddings from input sequences.
 
@@ -120,7 +120,7 @@ class SVDModel(Future):
         EmbeddingResultFuture
             Class for further job manipulation.
         """
-        return EmbeddingResultFuture.create(
+        return EmbeddingsResultFuture.create(
             session=self.session,
             job=svd.svd_embed_post(
                 session=self.session, svd_id=self.id, sequences=sequences, **kwargs
@@ -241,7 +241,7 @@ class SVDModel(Future):
         return PredictorModel.create(session=self.session, job=job)
 
 
-class SVDEmbeddingResultFuture(EmbeddingResultFuture, Future):
+class SVDEmbeddingResultFuture(EmbeddingsResultFuture, Future):
     """Future for manipulating results for embeddings-related requests."""
 
     job: SVDEmbeddingsJob

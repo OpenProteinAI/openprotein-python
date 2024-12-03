@@ -1,1 +1,9 @@
-from . import align, assaydata, design, embedding, fold, predict, predictor, train
+from . import align, assaydata, embedding, fold, predictor
+
+__all__ = [
+    "align",
+    "assaydata",
+    "embedding",
+    "fold",
+    "predictor",
+]

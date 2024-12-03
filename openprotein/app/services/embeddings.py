@@ -1,6 +1,13 @@
-from openprotein.base import APISession
-from openprotein.app.models.embeddings import EmbeddingModel, OpenProteinModel, ESMModel, PoETModel, EmbeddingResultFuture
 from openprotein.api import embedding
+from openprotein.app.models.embeddings import (
+    EmbeddingModel,
+    EmbeddingsResultFuture,
+    ESMModel,
+    OpenProteinModel,
+    PoETModel,
+)
+from openprotein.base import APISession
+
 
 class EmbeddingsAPI:
     """
@@ -39,17 +46,17 @@ class EmbeddingsAPI:
     rotaprot_large_uniref90_ft: OpenProteinModel
     poet: PoETModel
 
-    esm1b: ESMModel # alias
+    esm1b: ESMModel  # alias
     esm1b_t33_650M_UR50S: ESMModel
 
-    esm1v: ESMModel # alias
+    esm1v: ESMModel  # alias
     esm1v_t33_650M_UR90S_1: ESMModel
     esm1v_t33_650M_UR90S_2: ESMModel
     esm1v_t33_650M_UR90S_3: ESMModel
     esm1v_t33_650M_UR90S_4: ESMModel
     esm1v_t33_650M_UR90S_5: ESMModel
 
-    esm2: ESMModel # alias
+    esm2: ESMModel  # alias
     esm2_t12_35M_UR50D: ESMModel
     esm2_t30_150M_UR50D: ESMModel
     esm2_t33_650M_UR50D: ESMModel
@@ -109,7 +116,7 @@ class EmbeddingsAPI:
         model_name = name.replace("-", "_")
         return getattr(self, model_name)
 
-    def __get_results(self, job) -> EmbeddingResultFuture:
+    def __get_results(self, job) -> EmbeddingsResultFuture:
         """
         Retrieves the results of an embedding job.
 
@@ -123,4 +130,4 @@ class EmbeddingsAPI:
         EmbeddingResultFuture
             An instance of EmbeddingResultFuture
         """
-        return EmbeddingResultFuture(job=job, session=self.session)
+        return EmbeddingsResultFuture(job=job, session=self.session)
