@@ -1,6 +1,7 @@
 import logging
 from typing import TYPE_CHECKING
 
+from openprotein import config
 from openprotein.api import predict
 from openprotein.base import APISession
 from openprotein.errors import MissingParameterError
@@ -132,6 +133,23 @@ class PredictionResultFuture(PagedFuture, Future):
     #         return self._fmt_results(results)
     #     else:
     #         return self._fmt_ssp_results(results)
+
+    def wait_until_done(
+        self, interval: int = config.POLLING_INTERVAL, timeout=None, verbose=False
+    ):
+        if self.id is not None:
+            return super().wait_until_done(interval, timeout, verbose)
+        return True
+
+    def wait(
+        self,
+        interval: int = config.POLLING_INTERVAL,
+        timeout: int | None = None,
+        verbose: bool = False,
+    ):
+        if self.id is not None:
+            return super().wait(interval, timeout, verbose)
+        return self.get(verbose=verbose)
 
     def get_dict(self, verbose: bool = False) -> dict:
 
