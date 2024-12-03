@@ -30,6 +30,11 @@ class JobType(str, Enum):
 
     align_align = "/align/align"
     align_prompt = "/align/prompt"
+
+    clustalo = "/align/clustalo"
+    mafft = "/align/mafft"
+    abnumber = "/align/abnumber"
+
     poet = "/poet"
     poet_score = "/poet/score"
     poet_single_site = "/poet/single_site"
@@ -105,7 +110,7 @@ class Job(BaseModel):
             job_classes = Job.__subclasses__()
             job = TypeAdapter(Union[tuple(job_classes)]).validate_python(d | kwargs)  # type: ignore
         except Exception as e:
-            raise ValueError(f"Error parsing job from obj: {obj}: {e}")
+            job = Job.model_validate(d | kwargs)
         return job  # type: ignore - static checker cannot know runtime type
 
     # hide extra allowed fields

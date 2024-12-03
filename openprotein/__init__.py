@@ -47,7 +47,7 @@ class OpenProtein(APISession):
     wait_until_done = wait
 
     def load_job(self, job_id):
-        return self.jobs.__load(job_id=job_id)
+        return self.jobs.get(job_id=job_id)
 
     @property
     def data(self) -> AssayDataAPI:
