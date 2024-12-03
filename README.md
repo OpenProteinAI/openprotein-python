@@ -22,7 +22,7 @@ The OpenProtein.AI Python Interface provides a user-friendly library to interact
 
 # Quick-start
 
-Get started with our quickstart README! You can peruse the [official documentation](https://docs.openprotein.ai/python-api/) for more details!
+Get started with our quickstart README! You can peruse the [official documentation](https://docs.openprotein.ai/api-python/) for more details!
 ## Installation 
 
 To install the python interface using pip, run the following command: 
@@ -46,7 +46,7 @@ conda install -c openprotein openprotein-python
 # Getting started
 
 
-Read on below for the quick-start guide, or see the [docs](https://docs.openprotein.ai/python-api/) for more information!
+Read on below for the quick-start guide, or see the [docs](https://docs.openprotein.ai/api-python/) for more information!
 
 To begin, create a session using your login credentials.
 ```
