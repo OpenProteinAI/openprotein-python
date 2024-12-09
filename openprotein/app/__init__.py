@@ -7,14 +7,12 @@ isort:skip_file
 
 from .services import (
     JobsAPI,
-    AssayDataAPI,
-    TrainingAPI,
-    DesignAPI,
+    DataAPI,
     AlignAPI,
     EmbeddingsAPI,
     FoldAPI,
     SVDAPI,
     UMAPAPI,
     PredictorAPI,
-    DesignerAPI,
+    DesignAPI,
 )

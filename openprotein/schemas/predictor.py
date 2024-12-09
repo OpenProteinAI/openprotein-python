@@ -44,11 +44,17 @@ class PredictorMetadata(BaseModel):
     status: JobStatus
     model_spec: ModelSpec
     training_dataset: Dataset
+    traingraphs: list["TrainGraph"]
 
     def is_done(self):
         return self.status.done()
 
     model_config = ConfigDict(protected_namespaces=())
+
+    class TrainGraph(BaseModel):
+        measurement_name: str
+        hyperparam_search_step: int
+        losses: list[float]
 
 
 class TrainJob(Job):

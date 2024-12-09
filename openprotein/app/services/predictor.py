@@ -149,7 +149,7 @@ class PredictorAPI:
                 **kwargs,
             )
 
-    def __delete_predictor(self, predictor_id: str) -> bool:
+    def delete_predictor(self, predictor_id: str) -> bool:
         """
         Delete predictor model.
 

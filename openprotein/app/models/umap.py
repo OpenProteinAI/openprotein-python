@@ -4,7 +4,7 @@ from openprotein.api import umap
 from openprotein.base import APISession
 from openprotein.schemas import UMAPEmbeddingsJob, UMAPFitJob, UMAPMetadata
 
-from .embeddings import EmbeddingModel, EmbeddingResultFuture
+from .embeddings import EmbeddingModel, EmbeddingsResultFuture
 from .futures import Future
 
 
@@ -127,7 +127,7 @@ class UMAPModel(Future):
 
     def embed(
         self, sequences: list[bytes] | list[str], **kwargs
-    ) -> EmbeddingResultFuture:
+    ) -> EmbeddingsResultFuture:
         """
         Use this UMAP model to get reduced embeddings from input sequences.
 
@@ -141,7 +141,7 @@ class UMAPModel(Future):
         EmbeddingResultFuture
             Class for further job manipulation.
         """
-        return EmbeddingResultFuture.create(
+        return EmbeddingsResultFuture.create(
             session=self.session,
             job=umap.umap_embed_post(
                 session=self.session, umap_id=self.id, sequences=sequences, **kwargs
@@ -150,7 +150,7 @@ class UMAPModel(Future):
         )
 
 
-class UMAPEmbeddingResultFuture(EmbeddingResultFuture, Future):
+class UMAPEmbeddingResultFuture(EmbeddingsResultFuture, Future):
     """Future for manipulating results for embeddings-related requests."""
 
     job: UMAPEmbeddingsJob

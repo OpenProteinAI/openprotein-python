@@ -1,3 +1,4 @@
+import warnings
 from typing import TYPE_CHECKING
 
 from openprotein.api import embedding
@@ -12,11 +13,15 @@ from openprotein.schemas.deprecated.poet import (
 
 from ..align import PromptFuture
 from ..assaydata import AssayDataset, AssayMetadata
-from ..deprecated.poet import PoetGenerateFuture, PoetScoreFuture, PoetSingleSiteFuture
 from .base import EmbeddingModel
-from .future import EmbeddingResultFuture, EmbeddingsScoreResultFuture
+from .future import (
+    EmbeddingsGenerateFuture,
+    EmbeddingsResultFuture,
+    EmbeddingsScoreFuture,
+)
 
 if TYPE_CHECKING:
+    from ..deprecated import PoetGenerateFuture, PoetScoreFuture, PoetSingleSiteFuture
     from ..predictor import PredictorModel
     from ..svd import SVDModel
     from ..umap import UMAPModel
@@ -40,6 +45,7 @@ class PoETModel(EmbeddingModel):
     """
 
     model_id = "poet"
+    _deprecated: "Deprecated | None" = None
 
     # TODO - Add model to explicitly require prompt_id
     def __init__(
@@ -48,7 +54,6 @@ class PoETModel(EmbeddingModel):
         self.session = session
         self.id = model_id
         self._metadata = metadata
-        self.deprecated = self.Deprecated(session=session)
         # could add prompt here?
 
     def embed(
@@ -56,7 +61,7 @@ class PoETModel(EmbeddingModel):
         prompt: str | PromptFuture,
         sequences: list[bytes],
         reduction: ReductionType | None = ReductionType.MEAN,
-    ) -> EmbeddingResultFuture:
+    ) -> EmbeddingsResultFuture:
         """
         Embed sequences using this model.
 
@@ -70,7 +75,8 @@ class PoETModel(EmbeddingModel):
             embeddings reduction to use (e.g. mean)
         Returns
         -------
-            EmbeddingResultFuture
+        EmbeddingResultFuture
+            A future object that returns the embeddings of the submitted sequences.
         """
         prompt_id = prompt.id if isinstance(prompt, PromptFuture) else prompt
         return super().embed(
@@ -81,7 +87,7 @@ class PoETModel(EmbeddingModel):
         self,
         prompt: str | PromptFuture,
         sequences: list[bytes],
-    ) -> EmbeddingResultFuture:
+    ) -> EmbeddingsResultFuture:
         """
         logit embeddings for sequences using this model.
 
@@ -94,7 +100,8 @@ class PoETModel(EmbeddingModel):
 
         Returns
         -------
-            EmbeddingResultFuture
+        EmbeddingResultFuture
+            A future object that returns the logits of the submitted sequences.
         """
         prompt_id = prompt.id if isinstance(prompt, PromptFuture) else prompt
         return super().logits(
@@ -108,22 +115,24 @@ class PoETModel(EmbeddingModel):
 
     def score(
         self, prompt: str | PromptFuture, sequences: list[bytes]
-    ) -> EmbeddingsScoreResultFuture:
+    ) -> EmbeddingsScoreFuture:
         """
         Score query sequences using the specified prompt.
 
         Parameters
         ----------
-        prompt: Union[str, PromptFuture]
-            prompt from an align workflow to condition Poet model
-        sequence : bytes
-            Sequence to analyse.
+        prompt: str | PromptFuture
+            Prompt or prompt_id or prompt from an align workflow to condition Poet model
+        sequence: list[bytes]
+            Sequences to score.
+
         Returns
         -------
-            ScoreFuture
+        EmbeddingsScoreFuture
+            A future object that returns the scores of the submitted sequences.
         """
         prompt_id = prompt.id if isinstance(prompt, PromptFuture) else prompt
-        return EmbeddingsScoreResultFuture.create(
+        return EmbeddingsScoreFuture.create(
             session=self.session,
             job=embedding.request_score_post(
                 session=self.session,
@@ -135,23 +144,24 @@ class PoETModel(EmbeddingModel):
 
     def single_site(
         self, prompt: str | PromptFuture, sequence: bytes
-    ) -> EmbeddingsScoreResultFuture:
+    ) -> EmbeddingsScoreFuture:
         """
         Score all single substitutions of the query sequence using the specified prompt.
 
         Parameters
         ----------
-        prompt: Union[str, PromptFuture]
-            prompt from an align workflow to condition Poet model
-        sequence : bytes
+        prompt: str | PromptFuture
+            Prompt or prompt_id or prompt from an align workflow to condition Poet model
+        sequence: bytes
             Sequence to analyse.
+
         Returns
         -------
-        results
-            The scores of the mutated sequence.
+        EmbeddingsScoreFuture
+            A future object that returns the scores of the mutated sequence.
         """
         prompt_id = prompt.id if isinstance(prompt, PromptFuture) else prompt
-        return EmbeddingsScoreResultFuture.create(
+        return EmbeddingsScoreFuture.create(
             session=self.session,
             job=embedding.request_score_single_site_post(
                 session=self.session,
@@ -170,7 +180,7 @@ class PoETModel(EmbeddingModel):
         topp: float | None = None,
         max_length: int = 1000,
         seed: int | None = None,
-    ) -> EmbeddingsScoreResultFuture:
+    ) -> EmbeddingsScoreFuture:
         """
         Generate protein sequences conditioned on a prompt.
 
@@ -178,31 +188,26 @@ class PoETModel(EmbeddingModel):
         ----------
         prompt: Union[str, PromptFuture]
             prompt from an align workflow to condition Poet model
-        num_samples : int, optional
+        num_samples: int, optional
             The number of samples to generate, by default 100.
-        temperature : float, optional
+        temperature: float, optional
             The temperature for sampling. Higher values produce more random outputs, by default 1.0.
-        topk : int, optional
+        topk: int, optional
             The number of top-k residues to consider during sampling, by default None.
-        topp : float, optional
+        topp: float, optional
             The cumulative probability threshold for top-p sampling, by default None.
-        max_length : int, optional
+        max_length: int, optional
             The maximum length of generated proteins, by default 1000.
-        seed : int, optional
+        seed: int, optional
             Seed for random number generation, by default a random number.
-
-        Raises
-        ------
-        APIError
-            If there is an issue with the API request.
 
         Returns
         -------
-        Job
-            An object representing the status and information about the generation job.
+        EmbeddingsGenerateFuture
+            A future object representing the status and information about the generation job.
         """
         prompt_id = prompt.id if isinstance(prompt, PromptFuture) else prompt
-        return EmbeddingsScoreResultFuture.create(
+        return EmbeddingsGenerateFuture.create(
             session=self.session,
             job=embedding.request_generate_post(
                 session=self.session,
@@ -245,7 +250,8 @@ class PoETModel(EmbeddingModel):
 
         Returns
         -------
-            SVDModel
+        SVDModel
+            A future that represents the fitted SVD model.
         """
         prompt_id = prompt.id if isinstance(prompt, PromptFuture) else prompt
         return super().fit_svd(
@@ -285,7 +291,8 @@ class PoETModel(EmbeddingModel):
 
         Returns
         -------
-            PredictorModel
+        UMAPModel
+            A future that represents the fitted UMAP model.
         """
         prompt_id = prompt.id if isinstance(prompt, PromptFuture) else prompt
         return super().fit_umap(
@@ -317,12 +324,28 @@ class PoETModel(EmbeddingModel):
 
         Returns
         -------
-            PredictorModel
+        PredictorModel
+            A future that represents the trained predictor model.
         """
         prompt_id = prompt.id if isinstance(prompt, PromptFuture) else prompt
         return super().fit_gp(
             assay=assay, properties=properties, prompt_id=prompt_id, **kwargs
         )
+
+    @property
+    def deprecated(self):
+        if self._deprecated is None:
+            warnings.warn(
+                "The old interface to PoET is deprecated! Support will be dropped in the future. Please migrate your code to use the new interface."
+            )
+            from ..deprecated import (
+                PoetGenerateFuture,
+                PoetScoreFuture,
+                PoetSingleSiteFuture,
+            )
+
+            self._deprecated = self.Deprecated(session=self.session)
+        return self._deprecated
 
     class Deprecated:
 
@@ -333,20 +356,23 @@ class PoETModel(EmbeddingModel):
             self,
             prompt: str | PromptFuture,
             sequences: list[bytes],
-        ) -> PoetScoreFuture:
+        ) -> "PoetScoreFuture":
             """
-            Score query sequences using the specified prompt.
+            (Deprecated) Score query sequences using the specified prompt.
 
             Parameters
             ----------
             prompt: Union[str, PromptFuture]
-                prompt from an align workflow to condition Poet model
-            sequence : bytes
-                Sequence to analyse.
+                Prompt or prompt_id of prompt from an align workflow to condition Poet model
+            sequences : list[bytes]
+                Sequences to score.
             Returns
             -------
-                PoetScoreFuture
+            PoetScoreFuture
+                A future object that returns the scores of the submitted sequences.
             """
+            from ..deprecated import PoetScoreFuture
+
             prompt_id = prompt.id if isinstance(prompt, PromptFuture) else prompt
             # HACK - manually construct the job and future since job types have been overwritten
             return PoetScoreFuture(
@@ -362,20 +388,23 @@ class PoETModel(EmbeddingModel):
 
         def single_site(
             self, prompt: str | PromptFuture, sequence: bytes
-        ) -> PoetSingleSiteFuture:
+        ) -> "PoetSingleSiteFuture":
             """
-            Score query sequences using the specified prompt.
+            (Deprecated) Score query sequences using the specified prompt.
 
             Parameters
             ----------
-            prompt: Union[str, PromptFuture]
-                prompt from an align workflow to condition Poet model
-            sequence : bytes
+            prompt: str | PromptFuture
+                Prompt or prompt_id of prompt from an align workflow to condition Poet model
+            sequence: bytes
                 Sequence to analyse.
             Returns
             -------
-                ScoreFuture
+            PoetSingleSiteFuture
+                A future object that returns the scores of the mutated sequence.
             """
+            from ..deprecated import PoetSingleSiteFuture
+
             prompt_id = prompt.id if isinstance(prompt, PromptFuture) else prompt
             # HACK - manually construct the job and future since job types have been overwritten
             return PoetSingleSiteFuture(
@@ -398,7 +427,7 @@ class PoETModel(EmbeddingModel):
             topp: float | None = None,
             max_length: int = 1000,
             seed: int | None = None,
-        ) -> PoetGenerateFuture:
+        ) -> "PoetGenerateFuture":
             """
             (Deprecated) Generate protein sequences conditioned on a prompt.
 
@@ -419,16 +448,13 @@ class PoETModel(EmbeddingModel):
             seed : int, optional
                 Seed for random number generation, by default a random number.
 
-            Raises
-            ------
-            APIError
-                If there is an issue with the API request.
-
             Returns
             -------
-            Job
-                An object representing the status and information about the generation job.
+            PoetGenerateFuture
+                A future object representing the status and information about the generation job.
             """
+            from ..deprecated import PoetGenerateFuture
+
             prompt_id = prompt.id if isinstance(prompt, PromptFuture) else prompt
             # HACK - manually construct the job and future since job types have been overwritten
             return PoetGenerateFuture(

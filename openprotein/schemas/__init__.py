@@ -6,16 +6,6 @@ isort:skip_file
 
 from .job import Job, JobStatus, JobType
 from .assaydata import AssayDataPage, AssayMetadata
-from .train import (
-    CVItem as WorkflowCVItem,
-    CVJob as WorkflowCVJob,
-    TrainJob as WorkflowTrainJob,
-    TrainStep as WorkflowTrainStep,
-)
-from .predict import (
-    PredictJob as WorkflowPredictJob,
-    PredictSingleSiteJob as WorkflowPredictSingleSiteJob,
-)
 from .design import (
     ModelCriterion,
     NMutationCriterion,
@@ -23,11 +13,8 @@ from .design import (
     Subcriterion,
     Criterion,
     Criteria,
-    DesignJobCreate as WorkflowDesignJobCreate,
-    DesignJob as WorkflowDesignJob,
-    Design as WorkflowDesign,
 )
-from .align import MSAJob, MSASamplingMethod, PoetInputType, PromptJob, PromptPostParams
+from .align import MSAJob, MSASamplingMethod, AlignType, PromptJob, PromptPostParams
 from .embeddings import (
     ModelMetadata,
     ModelDescription,
@@ -71,3 +58,5 @@ from .designer import (
     DesignAlgorithm,
     DesignConstraint,
 )
+
+from .deprecated import *

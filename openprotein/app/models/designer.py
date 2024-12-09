@@ -11,7 +11,7 @@ from .futures import Future, StreamingFuture
 
 
 class DesignFuture(StreamingFuture, Future):
-    """Future Job for manipulating results"""
+    """A future object that will hold the results of the design job."""
 
     job: DesignJob
 
@@ -21,7 +21,13 @@ class DesignFuture(StreamingFuture, Future):
         job: DesignJob | None = None,
         metadata: Design | None = None,
     ):
-        """Initializes with either job get or design get."""
+        """
+        Construct a future for a design job.
+
+        Takes in either a design job, or the design metadata.
+
+        :meta private:
+        """
         self._design_assay = None
         if metadata is None:
             if job is None:
@@ -34,56 +40,69 @@ class DesignFuture(StreamingFuture, Future):
 
     @property
     def id(self):
+        """ID of the design."""
         return self._metadata.id
 
     @property
     def assay(self) -> AssayDataset:
+        """Assay used in the design."""
         if self._design_assay is None:
             self._design_assay = self.get_assay()
         return self._design_assay
 
     @property
     def algorithm(self) -> DesignAlgorithm:
+        """Algorithm used in the design."""
         return self._metadata.algorithm
 
     @property
     def criteria(self) -> Criteria:
+        """Criteria used in the design."""
         return self._metadata.criteria
 
     @property
     def num_steps(self):
+        """Number of steps used in the design."""
         return self._metadata.num_steps
 
     @property
     def num_rows(self):
+        """Number of rows in the total design output (across all steps)."""
         return self._metadata.num_rows
 
     @property
     def allowed_tokens(self) -> dict[str, list[str]] | None:
+        """Allowed tokens used in the design."""
         return self._metadata.allowed_tokens
 
     @property
     def pop_size(self) -> int:
+        """Population size used in the design."""
         return self._metadata.pop_size
 
     @property
     def n_offsprings(self) -> int:
+        """Number of offsprings used in the design."""
         return self._metadata.n_offsprings
 
     @property
     def crossover_prob(self) -> float:
+        """Crossover probability used in the design."""
         return self._metadata.crossover_prob
 
     @property
     def crossover_prob_pointwise(self) -> float:
+        """Crossover probability pointwise used in the design."""
         return self._metadata.crossover_prob_pointwise
 
     @property
     def mutation_average_mutations_per_seq(self) -> int:
+        """Average mutations per sequence used in the design."""
         return self._metadata.mutation_average_mutations_per_seq
 
     @property
     def metadata(self):
+        """Design metadata."""
         self._refresh_metadata()
         return self._metadata
 
@@ -93,9 +112,11 @@ class DesignFuture(StreamingFuture, Future):
                 session=self.session, design_id=self._metadata.id
             )
 
-    def delete(self) -> bool:
+    def __delete(self) -> bool:
         """
         Delete this design.
+
+        TODO - implementation
         """
         return designer.design_delete(session=self.session, design_id=self.id)
 
@@ -111,7 +132,8 @@ class DesignFuture(StreamingFuture, Future):
 
         Returns
         -------
-            AssayDataset: Assay dataset used for design.
+        AssayDataset
+            Assay dataset used for design.
         """
         return AssayDataset(
             session=self.session,
