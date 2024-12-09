@@ -6,22 +6,26 @@ A pythonic interface for interacting with our cutting-edge protein engineering p
 isort:skip_file
 """
 
+from typing import TYPE_CHECKING
+import warnings
+
 from openprotein._version import __version__
 from openprotein.app import (
-    AssayDataAPI,
+    DataAPI,
     JobsAPI,
-    TrainingAPI,
-    DesignAPI,
     AlignAPI,
     EmbeddingsAPI,
     FoldAPI,
     SVDAPI,
     UMAPAPI,
     PredictorAPI,
-    DesignerAPI,
+    DesignAPI,
 )
 from openprotein.app.models import Future
 from openprotein.base import APISession
+
+if TYPE_CHECKING:
+    from openprotein.app.deprecated import TrainingAPI, DesignAPI
 
 
 class OpenProtein(APISession):
@@ -31,15 +35,14 @@ class OpenProtein(APISession):
 
     _data = None
     _jobs = None
-    _train = None
-    _design = None
     _align = None
-    _embedding = None
+    _embeddings = None
     _svd = None
     _umap = None
     _fold = None
     _predictor = None
     _designer = None
+    _deprecated = None
 
     def wait(self, future: Future, *args, **kwargs):
         return future.wait(*args, **kwargs)
@@ -50,13 +53,19 @@ class OpenProtein(APISession):
         return self.jobs.get(job_id=job_id)
 
     @property
-    def data(self) -> AssayDataAPI:
+    def data(self) -> DataAPI:
         """
         The data submodule gives access to functionality for uploading and accessing user data.
         """
         if self._data is None:
-            self._data = AssayDataAPI(self)
+            self._data = DataAPI(self)
         return self._data
+
+    @property
+    def train(self):
+        raise AttributeError(
+            "Access to deprecated train module is under the deprecated property, i.e. session.deprecated.train"
+        )
 
     @property
     def jobs(self) -> JobsAPI:
@@ -66,24 +75,6 @@ class OpenProtein(APISession):
         if self._jobs is None:
             self._jobs = JobsAPI(self)
         return self._jobs
-
-    @property
-    def train(self) -> TrainingAPI:
-        """
-        The train submodule gives access to functionality for training and validating ML models.
-        """
-        if self._train is None:
-            self._train = TrainingAPI(self)
-        return self._train
-
-    @property
-    def design(self) -> DesignAPI:
-        """
-        The design submodule gives access to functionality for designing new sequences using models from train.
-        """
-        if self._design is None:
-            self._design = DesignAPI(self)
-        return self._design
 
     @property
     def align(self) -> AlignAPI:
@@ -99,9 +90,11 @@ class OpenProtein(APISession):
         """
         The embedding submodule gives access to protein embedding models and their inference endpoints.
         """
-        if self._embedding is None:
-            self._embedding = EmbeddingsAPI(self)
-        return self._embedding
+        if self._embeddings is None:
+            self._embeddings = EmbeddingsAPI(self)
+        return self._embeddings
+
+    embeddings = embedding
 
     @property
     def svd(self) -> SVDAPI:
@@ -109,7 +102,7 @@ class OpenProtein(APISession):
         The embedding submodule gives access to protein embedding models and their inference endpoints.
         """
         if self._svd is None:
-            self._svd = SVDAPI(self, self.embedding)
+            self._svd = SVDAPI(self, self.embeddings)
         return self._svd
 
     @property
@@ -127,16 +120,16 @@ class OpenProtein(APISession):
         The predictor submodule gives access to training and predicting with predictors built on top of embeddings.
         """
         if self._predictor is None:
-            self._predictor = PredictorAPI(self, self.embedding, self.svd)
+            self._predictor = PredictorAPI(self, self.embeddings, self.svd)
         return self._predictor
 
     @property
-    def designer(self) -> DesignerAPI:
+    def design(self) -> DesignAPI:
         """
         The designer submodule gives access to functionality for designing new sequences using models from predictor train.
         """
         if self._designer is None:
-            self._designer = DesignerAPI(self)
+            self._designer = DesignAPI(self)
         return self._designer
 
     @property
@@ -147,6 +140,46 @@ class OpenProtein(APISession):
         if self._fold is None:
             self._fold = FoldAPI(self)
         return self._fold
+
+    @property
+    def deprecated(self) -> "Deprecated":
+
+        if self._deprecated is None:
+            warnings.warn(
+                "Support for deprecated APIs will be dropped in the future! Read the documentation to migrate to the updated APIs."
+            )
+            self._deprecated = self.Deprecated(self)
+        return self._deprecated
+
+    class Deprecated:
+
+        _train = None
+        _design = None
+
+        def __init__(self, session: APISession):
+            self.session = session
+
+        @property
+        def train(self) -> "TrainingAPI":
+            """
+            The train submodule gives access to functionality for training and validating ML models.
+            """
+            from openprotein.app.deprecated import TrainingAPI
+
+            if self._train is None:
+                self._train = TrainingAPI(self.session)
+            return self._train
+
+        @property
+        def design(self) -> "DesignAPI":
+            """
+            The design submodule gives access to functionality for designing new sequences using models from train.
+            """
+            from openprotein.app.deprecated import DesignAPI
+
+            if self._design is None:
+                self._design = DesignAPI(self.session)
+            return self._design
 
 
 connect = OpenProtein

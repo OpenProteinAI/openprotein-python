@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from .job import Job, JobType
 
 
-class PoetInputType(str, Enum):
+class AlignType(str, Enum):
     INPUT = "RAW"
     MSA = "GENERATED"
     PROMPT = "PROMPT"

@@ -1,13 +1,13 @@
 from openprotein.api import align
 from openprotein.base import APISession
-from openprotein.schemas import Job, PoetInputType
+from openprotein.schemas import AlignType, Job
 
 
 class AlignFuture:
     session: APISession
     job: Job
 
-    def get_input(self, input_type: PoetInputType):
+    def get_input(self, input_type: AlignType):
         """See child function docs."""
         return align.get_input(self.session, self.job, input_type)
 

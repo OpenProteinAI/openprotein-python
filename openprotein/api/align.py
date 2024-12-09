@@ -7,13 +7,13 @@ import requests
 from openprotein.base import APISession
 from openprotein.csv import csv_stream
 from openprotein.errors import APIError, InvalidParameterError, MissingParameterError
-from openprotein.schemas import Job, MSASamplingMethod, PoetInputType
+from openprotein.schemas import AlignType, Job, MSASamplingMethod
 
 
 def get_align_job_inputs(
     session: APISession,
     job_id: str,
-    input_type: PoetInputType,
+    input_type: AlignType,
     prompt_index: int | None = None,
 ) -> requests.Response:
     """
@@ -52,7 +52,7 @@ def get_align_job_inputs(
 def get_input(
     session: APISession,
     job: Job,
-    input_type: PoetInputType,
+    input_type: AlignType,
     prompt_index: int | None = None,
 ) -> Iterator[list[str]]:
     """
@@ -104,7 +104,7 @@ def get_prompt(
     return get_input(
         session=session,
         job=job,
-        input_type=PoetInputType.PROMPT,
+        input_type=AlignType.PROMPT,
         prompt_index=prompt_index,
     )
 
@@ -125,7 +125,7 @@ def get_seed(session: APISession, job: Job) -> Iterator[list[str]]:
     Iterator[list[str]]
         A CSV reader for the seed sequence.
     """
-    return get_input(session=session, job=job, input_type=PoetInputType.INPUT)
+    return get_input(session=session, job=job, input_type=AlignType.INPUT)
 
 
 def get_msa(session: APISession, job: Job) -> Iterator[list[str]]:
@@ -144,7 +144,7 @@ def get_msa(session: APISession, job: Job) -> Iterator[list[str]]:
     Iterator[list[str]]
         A CSV reader for the MSA data.
     """
-    return get_input(session=session, job=job, input_type=PoetInputType.MSA)
+    return get_input(session=session, job=job, input_type=AlignType.MSA)
 
 
 def msa_post(

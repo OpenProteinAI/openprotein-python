@@ -6,7 +6,7 @@ from openprotein.errors import InvalidParameterError
 from openprotein.schemas import FeatureType, ModelMetadata, ReductionType
 
 from ..assaydata import AssayDataset, AssayMetadata
-from .future import EmbeddingResultFuture
+from .future import EmbeddingsResultFuture
 
 if TYPE_CHECKING:
     from ..predictor import PredictorModel
@@ -101,7 +101,7 @@ class EmbeddingModel:
         sequences: list[bytes] | list[str],
         reduction: ReductionType | None = ReductionType.MEAN,
         **kwargs,
-    ) -> EmbeddingResultFuture:
+    ) -> EmbeddingsResultFuture:
         """
         Embed sequences using this model.
 
@@ -116,7 +116,7 @@ class EmbeddingModel:
         -------
             EmbeddingResultFuture
         """
-        return EmbeddingResultFuture.create(
+        return EmbeddingsResultFuture.create(
             session=self.session,
             job=embedding.request_post(
                 session=self.session,
@@ -130,7 +130,7 @@ class EmbeddingModel:
 
     def logits(
         self, sequences: list[bytes] | list[str], **kwargs
-    ) -> EmbeddingResultFuture:
+    ) -> EmbeddingsResultFuture:
         """
         logit embeddings for sequences using this model.
 
@@ -143,7 +143,7 @@ class EmbeddingModel:
         -------
             EmbeddingResultFuture
         """
-        return EmbeddingResultFuture.create(
+        return EmbeddingsResultFuture.create(
             session=self.session,
             job=embedding.request_logits_post(
                 session=self.session, model_id=self.id, sequences=sequences, **kwargs
@@ -153,7 +153,7 @@ class EmbeddingModel:
 
     def attn(
         self, sequences: list[bytes] | list[str], **kwargs
-    ) -> EmbeddingResultFuture:
+    ) -> EmbeddingsResultFuture:
         """
         Attention embeddings for sequences using this model.
 
@@ -166,7 +166,7 @@ class EmbeddingModel:
         -------
             EmbeddingResultFuture
         """
-        return EmbeddingResultFuture.create(
+        return EmbeddingsResultFuture.create(
             session=self.session,
             job=embedding.request_attn_post(
                 session=self.session, model_id=self.id, sequences=sequences, **kwargs

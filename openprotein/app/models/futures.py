@@ -46,15 +46,17 @@ class Future(ABC):
         """
         Create and return an instance of the appropriate Future class based on the job type.
 
-        Parameters:
-        - session: Session for API interactions.
-        - job_id: The optional job_id of the Job to initialize this future with.
-        - job: The optional Job to initialize this future with.
-        - response: The optional response from a job request returning a job-like object.
-        - **kwargs: Additional keyword arguments to pass to the Future class constructor.
+        Args:
+            session: Session for API interactions.
+            job_id: The optional job_id of the Job to initialize this future with.
+            job: The optional Job to initialize this future with.
+            response: The optional response from a job request returning a job-like object.
+            **kwargs: Additional keyword arguments to pass to the Future class constructor.
 
         Returns:
-        - An instance of the appropriate Future class.
+            An instance of the appropriate Future class.
+
+        :meta private:
         """
 
         # parse job
@@ -159,6 +161,7 @@ class Future(ABC):
 
     @abstractmethod
     def get(self, verbose: bool = False):
+        """Return the results from this job."""
         raise NotImplementedError()
 
     def _wait_job(
@@ -265,9 +268,11 @@ class Future(ABC):
 class StreamingFuture(ABC):
     @abstractmethod
     def stream(self) -> Generator:
+        """Return the results from this job as a generator."""
         raise NotImplementedError()
 
     def get(self, verbose: bool = False) -> list:
+        """Return the results from this job."""
         generator = self.stream()
         if verbose:
             total = None
@@ -307,13 +312,21 @@ class MappedFuture(StreamingFuture, ABC):
         raise NotImplementedError()
 
     def stream_sync(self):
-        """Stream the results back in-sync."""
+        """
+        Stream the results back in-sync.
+
+        :meta private:
+        """
         for k in self.keys():
             v = self[k]
             yield k, v
 
     def stream_parallel(self):
-        """Stream the results back in parallel."""
+        """
+        Stream the results back in parallel.
+
+        :meta private:
+        """
         num_workers = self.max_workers
 
         def process(k):
@@ -333,7 +346,7 @@ class MappedFuture(StreamingFuture, ABC):
                 yield f.result()
 
     def stream(self):
-        """Stream results."""
+        """Retrieve results for this job as a stream."""
         if self.max_workers > 0:
             return self.stream_parallel()
         return self.stream_sync()

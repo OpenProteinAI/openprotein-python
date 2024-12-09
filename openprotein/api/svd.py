@@ -2,7 +2,7 @@ import io
 
 import numpy as np
 from openprotein.base import APISession
-from openprotein.errors import InvalidParameterError
+from openprotein.errors import APIError, InvalidParameterError
 from openprotein.schemas import SVDEmbeddingsJob, SVDFitJob, SVDMetadata
 from pydantic import TypeAdapter
 
@@ -100,8 +100,11 @@ def svd_delete(session: APISession, svd_id: str):
     """
 
     endpoint = PATH_PREFIX + f"/{svd_id}"
-    session.delete(endpoint)
-    return True
+    response = session.delete(endpoint)
+    if 200 <= response.status_code < 300:
+        return True
+    else:
+        raise APIError(response.text)
 
 
 def svd_fit_post(

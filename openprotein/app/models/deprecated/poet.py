@@ -2,10 +2,12 @@ from typing import Collection, Iterator
 
 import numpy as np
 from openprotein import config
+from openprotein.api import align
 from openprotein.api.deprecated import poet
 from openprotein.base import APISession
 from openprotein.csv import csv_stream
 from openprotein.errors import APIError
+from openprotein.schemas import AlignType
 from openprotein.schemas.deprecated.poet import (
     PoetGenerateJob,
     PoetScoreJob,
@@ -17,7 +19,27 @@ from openprotein.schemas.deprecated.poet import (
 from ..futures import Future, PagedFuture, StreamingFuture
 
 
-class PoetScoreFuture(PagedFuture, Future):
+class AlignPrompted(Future):
+    """Requests conditioned on an MSA prompt."""
+
+    def get_input(self, input_type: AlignType):
+        """Get prompt's input - can be INPUT (seed), GENERATED (aligned msa) or PROMPT."""
+        return align.get_input(self.session, self.job, input_type)
+
+    def get_prompt(self, prompt_index: int | None = None):
+        """Get sampled prompt."""
+        return align.get_prompt(self.session, self.job, prompt_index=prompt_index)
+
+    def get_seed(self):
+        """Get seed sequence to MSA."""
+        return align.get_seed(self.session, self.job)
+
+    def get_msa(self):
+        """Get aligned MSA."""
+        return align.get_msa(self.session, self.job)
+
+
+class PoetScoreFuture(PagedFuture, AlignPrompted, Future):
     """
     Represents a result of a PoET scoring job.
 
@@ -44,7 +66,6 @@ class PoetScoreFuture(PagedFuture, Future):
         session: APISession,
         job: PoetScoreJob,
         page_size=config.POET_PAGE_SIZE,
-        **kwargs,
     ):
         """
         init a PoetScoreFuture instance.
@@ -63,7 +84,7 @@ class PoetScoreFuture(PagedFuture, Future):
         # Format results after getting is complete
         return [(p.name, p.sequence, np.asarray(p.score)) for p in results]
 
-    def get_slice(self, start: int, end: int, **kwargs) -> Collection:
+    def get_slice(self, start: int, end: int) -> Collection:
         results = poet.poet_score_get(
             self.session,
             self.id,
@@ -75,7 +96,7 @@ class PoetScoreFuture(PagedFuture, Future):
         return []
 
 
-class PoetSingleSiteFuture(PagedFuture, Future):
+class PoetSingleSiteFuture(PagedFuture, AlignPrompted, Future):
     """
     Represents a result of a PoET single-site analysis job.
 
@@ -102,7 +123,6 @@ class PoetSingleSiteFuture(PagedFuture, Future):
         session: APISession,
         job: PoetSSPJob,
         page_size=config.POET_PAGE_SIZE,
-        **kwargs,
     ):
         """
         init a PoetSingleSiteFuture instance.
@@ -121,7 +141,7 @@ class PoetSingleSiteFuture(PagedFuture, Future):
         # Format results after getting is complete
         return {p.sequence: np.asarray(p.score) for p in results}
 
-    def get_slice(self, start: int, end: int, **kwargs) -> Collection:
+    def get_slice(self, start: int, end: int) -> Collection:
         results = poet.poet_single_site_get(
             self.session,
             self.id,
@@ -133,7 +153,7 @@ class PoetSingleSiteFuture(PagedFuture, Future):
         return []
 
 
-class PoetGenerateFuture(StreamingFuture, Future):
+class PoetGenerateFuture(StreamingFuture, AlignPrompted, Future):
     """
     Represents a result of a PoET generation job.
 

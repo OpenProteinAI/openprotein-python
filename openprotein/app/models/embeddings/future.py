@@ -21,7 +21,7 @@ from openprotein.schemas import (
 from ..futures import Future, MappedFuture, StreamingFuture
 
 
-class EmbeddingResultFuture(MappedFuture, Future):
+class EmbeddingsResultFuture(MappedFuture, Future):
     """Future for manipulating results for embeddings-related requests."""
 
     job: EmbeddingsJob | AttnJob | LogitsJob
@@ -78,10 +78,10 @@ class EmbeddingResultFuture(MappedFuture, Future):
         return embedding.result_decode(data)
 
 
-class EmbeddingsScoreResultFuture(StreamingFuture, Future):
+class EmbeddingsScoreFuture(StreamingFuture, Future):
     """Future for manipulating results for embeddings score-related requests."""
 
-    job: ScoreJob | ScoreSingleSiteJob | GenerateJob
+    job: ScoreJob | ScoreSingleSiteJob
 
     def __init__(
         self,
@@ -94,8 +94,6 @@ class EmbeddingsScoreResultFuture(StreamingFuture, Future):
 
     @property
     def sequences(self) -> list[bytes] | list[str]:
-        if isinstance(self.job, GenerateJob):
-            raise Exception("generate job does not support listing sequences")
         if self._sequences is None:
             self._sequences = embedding.get_request_sequences(
                 self.session, self.job.job_id
@@ -125,3 +123,13 @@ class EmbeddingsScoreResultFuture(StreamingFuture, Future):
             scores = np.array([float(s) for s in line[score_start_index:]])
             output = Score(*line[:score_start_index], scores)
             yield output
+
+
+class EmbeddingsGenerateFuture(EmbeddingsScoreFuture):
+    """Future for manipulating results for embeddings generate-related requests."""
+
+    job: GenerateJob
+
+    @property
+    def sequences(self):
+        raise Exception("generate job does not support listing sequences")

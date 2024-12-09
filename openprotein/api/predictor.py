@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from openprotein.base import APISession
 from openprotein.csv import csv_stream
+from openprotein.errors import APIError
 from openprotein.schemas import (
     CVJob,
     Job,
@@ -113,7 +114,12 @@ def predictor_fit_gp_post(
 
 
 def predictor_delete(session: APISession, predictor_id: str):
-    raise NotImplementedError()
+    endpoint = PATH_PREFIX + f"/{predictor_id}"
+    response = session.delete(endpoint)
+    if 200 <= response.status_code < 300:
+        return True
+    else:
+        raise APIError(response.text)
 
 
 def predictor_crossvalidate_post(

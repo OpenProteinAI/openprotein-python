@@ -1,7 +1,7 @@
 [project]
 name = "openprotein_python"
 packages = [{ include = "openprotein" }]
-version = "0.5.5"
+version = "0.6.0"
 description = "OpenProtein Python interface."
 license = "MIT"
 readme = "README.md"
@@ -27,7 +27,7 @@ dev = [
   "pandas-stubs>=2.1.4.240909,<3",
   "matplotlib>=3.9.2,<4",
   "scipy>=1.14.1,<2",
-  "hatchling>=1.26.1",
+  "hatchling>=1.26.1", "editables>=0.5,<0.6", "seaborn>=0.13.2,<0.14",
 ]
 
 [tool.pixi.project]
