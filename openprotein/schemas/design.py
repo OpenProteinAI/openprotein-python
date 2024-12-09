@@ -150,29 +150,46 @@ class DesignConstraint:
         self.sequence = sequence
         self.mutations = self.initialize(sequence)
 
-    def initialize(self, sequence: str) -> dict[int, list[str]]:
+    def initialize(self, sequence: str) -> dict[int, set[str]]:
         """Initialize with no changes allowed to the sequence."""
-        return {i: [aa] for i, aa in enumerate(sequence, start=1)}
+        return {i: {aa} for i, aa in enumerate(sequence, start=1)}
 
-    def allow(self, positions: int | list[int], amino_acids: list[str] | str) -> None:
+    def allow(
+        self,
+        amino_acids: list[str] | str | None = None,
+        positions: int | list[int] | None = None,
+    ) -> None:
         """Allow specific amino acids at given positions."""
         if isinstance(positions, int):
             positions = [positions]
+        elif positions is None:
+            positions = [i + 1 for i in range(len(self.sequence))]
         if isinstance(amino_acids, str):
             amino_acids = list(amino_acids)
+        elif amino_acids is None:
+            amino_acids = list(self.sequence)
 
         for position in positions:
             if position in self.mutations:
-                self.mutations[position].extend(amino_acids)
+                for aa in amino_acids:
+                    self.mutations[position].add(aa)
             else:
-                self.mutations[position] = amino_acids
+                self.mutations[position] = set(amino_acids)
 
-    def remove(self, positions: int | list[int], amino_acids: list[str] | str) -> None:
+    def remove(
+        self,
+        amino_acids: list[str] | str | None = None,
+        positions: int | list[int] | None = None,
+    ) -> None:
         """Remove specific amino acids from being allowed at given positions."""
         if isinstance(positions, int):
             positions = [positions]
+        elif positions is None:
+            positions = [i + 1 for i in range(len(self.sequence))]
         if isinstance(amino_acids, str):
             amino_acids = list(amino_acids)
+        elif amino_acids is None:
+            amino_acids = list(self.sequence)
 
         for position in positions:
             if position in self.mutations:
@@ -182,4 +199,4 @@ class DesignConstraint:
 
     def as_dict(self) -> dict[int, list[str]]:
         """Convert the internal mutations representation into a dictionary."""
-        return self.mutations
+        return {i: list(aa) for i, aa in self.mutations.items()}

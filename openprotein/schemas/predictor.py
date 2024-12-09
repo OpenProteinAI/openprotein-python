@@ -44,7 +44,7 @@ class PredictorMetadata(BaseModel):
     status: JobStatus
     model_spec: ModelSpec
     training_dataset: Dataset
-    traingraphs: list["TrainGraph"]
+    traingraphs: list["TrainGraph"] | None = None
 
     def is_done(self):
         return self.status.done()
