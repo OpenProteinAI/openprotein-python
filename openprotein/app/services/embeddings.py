@@ -4,6 +4,7 @@ from openprotein.app.models.embeddings import (
     EmbeddingsResultFuture,
     ESMModel,
     OpenProteinModel,
+    PoET2Model,
     PoETModel,
 )
 from openprotein.base import APISession
@@ -45,6 +46,8 @@ class EmbeddingsAPI:
     rotaprot_large_uniref50w: OpenProteinModel
     rotaprot_large_uniref90_ft: OpenProteinModel
     poet: PoETModel
+    poet_2: PoET2Model
+    poet2: PoET2Model
 
     esm1b: ESMModel  # alias
     esm1b_t33_650M_UR50S: ESMModel
@@ -78,6 +81,7 @@ class EmbeddingsAPI:
         self.esm1b = self.esm1b_t33_650M_UR50S
         self.esm1v = self.esm1v_t33_650M_UR90S_1
         self.esm2 = self.esm2_t33_650M_UR50D
+        self.poet2 = self.poet_2
 
     def list_models(self) -> list[EmbeddingModel]:
         """list models available for creating embeddings of your sequences"""

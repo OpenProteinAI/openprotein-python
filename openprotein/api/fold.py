@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+
 from openprotein.api.embedding import ModelMetadata
 from openprotein.base import APISession
 from openprotein.schemas import FoldJob
@@ -78,7 +80,7 @@ def fold_get_sequence_result(
 
 def fold_models_esmfold_post(
     session: APISession,
-    sequences: list[bytes],
+    sequences: Sequence[bytes | str],
     num_recycles: int | None = None,
 ) -> FoldJob:
     """
@@ -89,7 +91,7 @@ def fold_models_esmfold_post(
     ----------
     session : APISession
         Session object for API communication.
-    sequences : List[bytes]
+    sequences : Sequence[bytes | str]
         sequences to request results for
     num_recycles : Optional[int]
         number of recycles for structure prediction
@@ -100,7 +102,7 @@ def fold_models_esmfold_post(
     """
     endpoint = PATH_PREFIX + "/models/esmfold"
 
-    sequences_unicode = [(s if isinstance(s, str) else s.decode()) for s in sequences]
+    sequences_unicode = [s if isinstance(s, str) else s.decode() for s in sequences]
     body: dict = {
         "sequences": sequences_unicode,
     }

@@ -134,7 +134,7 @@ def design_delete(session: APISession, design_id: str):
 def designer_get_design_results(
     session: APISession,
     design_id: str,
-    step: int | None = -1,
+    step: int | None = None,
 ) -> Iterator[list[str]]:
     """
     Get csv encoded results for a design ID.
@@ -154,6 +154,8 @@ def designer_get_design_results(
     """
     params = {}
     if step is not None:
+        if step != -1:
+            step -= 1
         params["step"] = step
     endpoint = PATH_PREFIX + f"/{design_id}/results"
     response = session.get(endpoint, params=params, stream=True)
@@ -195,8 +197,8 @@ def decode_design_result(
     )
     preds = np.array([float(pred) for pred in row[pred_start_index:]])
     result = DesignResult(
-        step=int(row[0]),
-        sample_index=int(row[1]),
+        step=int(row[0]) + 1,
+        sample_index=int(row[1]) + 1,
         sequence=row[2],
         scores=scores,
         subscores=subscores,

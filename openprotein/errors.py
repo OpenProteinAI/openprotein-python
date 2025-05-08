@@ -60,3 +60,11 @@ class TimeoutException(Exception):
     def __init__(self, message="Request timed out!"):
         self.message = message
         super().__init__(self.message)
+
+
+class DeprecationError(Exception):
+    """DeprecationError used for flagging to the user to not use this interface anymore."""
+
+    def __init__(self, message="This API is deprecated and no longer supported"):
+        self.message = message
+        super().__init__(self.message)

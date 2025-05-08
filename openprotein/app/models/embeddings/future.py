@@ -125,7 +125,7 @@ class EmbeddingsScoreFuture(StreamingFuture, Future):
             yield output
 
 
-class EmbeddingsGenerateFuture(EmbeddingsScoreFuture):
+class EmbeddingsGenerateFuture(EmbeddingsScoreFuture, StreamingFuture, Future):
     """Future for manipulating results for embeddings generate-related requests."""
 
     job: GenerateJob

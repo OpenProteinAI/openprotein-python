@@ -1,3 +1,5 @@
+from datetime import datetime
+from enum import Enum
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
@@ -15,6 +17,11 @@ class Constraints(BaseModel):
     sequence_length: int | None = None
 
 
+class PredictorType(str, Enum):
+    GP = "GP"
+    ENSEMBLE = "ENSEMBLE"
+
+
 class Features(BaseModel):
     type: FeatureType
     model_id: str | None = None
@@ -24,12 +31,13 @@ class Features(BaseModel):
 
 
 class PredictorArgs(BaseModel):
-    kernel: Kernel
+    kernel: Kernel | None = None
 
 
 class ModelSpec(PredictorArgs, BaseModel):
+    type: PredictorType
     constraints: Constraints | None = None
-    features: Features
+    features: Features | None = None
 
 
 class Dataset(BaseModel):
@@ -42,7 +50,9 @@ class PredictorMetadata(BaseModel):
     name: str
     description: str | None = None
     status: JobStatus
+    created_date: datetime
     model_spec: ModelSpec
+    ensemble_model_ids: list[str] | None = None
     training_dataset: Dataset
     traingraphs: list["TrainGraph"] | None = None
 
@@ -55,6 +65,11 @@ class PredictorMetadata(BaseModel):
         measurement_name: str
         hyperparam_search_step: int
         losses: list[float]
+
+
+class EnsembleJob(Job):
+    job_id: None = None
+    progress_counter: None = None
 
 
 class TrainJob(Job):

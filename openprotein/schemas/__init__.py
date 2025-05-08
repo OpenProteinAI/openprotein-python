@@ -14,7 +14,17 @@ from .design import (
     Criterion,
     Criteria,
 )
-from .align import MSAJob, MSASamplingMethod, AlignType, PromptJob, PromptPostParams
+from .align import (
+    MSAJob,
+    MSASamplingMethod,
+    AlignType,
+    PromptJob,
+    PromptPostParams,
+    MafftJob,
+    ClustalOJob,
+    AbNumberJob,
+)
+from .prompt import PromptMetadata, QueryMetadata
 from .embeddings import (
     ModelMetadata,
     ModelDescription,
@@ -44,6 +54,7 @@ from .predictor import (
     Constraints,
     CVJob,
     Kernel,
+    PredictorType,
     PredictJob,
     PredictMultiJob,
     PredictMultiSingleSiteJob,
@@ -51,6 +62,7 @@ from .predictor import (
     PredictorMetadata,
     PredictSingleSiteJob,
     TrainJob,
+    EnsembleJob,
 )
 from .designer import (
     Design,

@@ -1,12 +1,16 @@
 [project]
-name = "openprotein_python"
-packages = [{ include = "openprotein" }]
-version = "0.6.1"
+name = "openprotein-python"
+# packages = [{ include = "openprotein" }]
+version = "0.7.0"
 description = "OpenProtein Python interface."
 license = "MIT"
 readme = "README.md"
-homepage = "https://docs.openprotein.ai/"
-authors = [{ name = "Mark Gee", email = "markgee@ne47.bio" }]
+# homepage = "https://docs.openprotein.ai/"
+authors = [
+  { name = "Mark Gee", email = "markgee@ne47.bio" },
+  { name = "Timothy Truong Jr.", email = "ttruong@ne47.bio" },
+  { name = "Tristan Bepler", email = "tbepler@ne47.bio" },
+]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python :: 3",
@@ -17,35 +21,58 @@ dependencies = [
   "tqdm>=4.66.5,<5",
   "pandas>=2.2.2,<3",
   "numpy>=1.9,<3",
+  "gemmi>=0.7.0,<0.8",
 ]
 requires-python = ">=3.10"
 
 [project.optional-dependencies]
 dev = [
+  "pip>=24.2,<25",
   "ipykernel>=6.29.5,<7",
   "pytest>=8.3.3,<9",
   "pandas-stubs>=2.1.4.240909,<3",
   "matplotlib>=3.9.2,<4",
   "scipy>=1.14.1,<2",
-  "hatchling>=1.26.1", "editables>=0.5,<0.6", "seaborn>=0.13.2,<0.14",
+  "hatchling>=1.26.1",
+  "editables>=0.5,<0.6",
+  "seaborn>=0.13.2,<0.14",
 ]
 
-[tool.pixi.project]
+[dependency-groups]
+dev = ["jupyterlab>=4.4.1,<5"]
+
+[tool.pixi.workspace]
 channels = ["conda-forge"]
 platforms = ["linux-64", "linux-aarch64", "osx-arm64"]
+preview = ["pixi-build"]
 
 [tool.pixi.dependencies]
-python = ">=3.10"
-
-# allow installing as editable
-[tool.pixi.feature.dev.dependencies]
-pip = ">=24.2,<25"
+python = ">=3.10,<3.13"
 
 [tool.pixi.feature.dev.tasks]
 postinstall = "pip install --no-build-isolation --no-deps --disable-pip-version-check -e ."
+jupyterinstall = "python -m ipykernel install --user --name=openprotein-python"
 
 [tool.pixi.environments]
 dev = ["dev"]
+
+[tool.pixi.package]
+name = "openprotein-python"
+
+[tool.pixi.package.build]
+backend = { name = "pixi-build-python", version = "0.1.*" }
+channels = ["conda-forge"]
+
+[tool.pixi.package.host-dependencies]
+hatchling = "*"
+
+[tool.pixi.package.run-dependencies]
+requests = ">=2.32.3,<3"
+pydantic = ">=2.5,<3"
+tqdm = ">=4.66.5,<5"
+pandas = ">=2.2.2,<3"
+numpy = ">=1.9,<3"
+gemmi = ">=0.7.0,<0.8"
 
 [build-system]
 requires = ["hatchling>=1.26.1"]
@@ -57,20 +84,44 @@ packages = ["openprotein"]
 [tool.hatch.build.targets.wheel]
 packages = ["openprotein"]
 
-[tool.hatch.env]
-requires = [
-  "hatch-conda>=0.5.2",
-]
-
-[tool.hatch.envs.conda]
-type = "conda"
-command = "micromamba"
-dependencies = [
-  "conda-build>=24.9.0",
-]
-requires = [
-  "hatch-conda-build",
-]
-
 [tool.pyright]
 typeCheckingMode = "basic"
+
+[tool.black]
+line-length = 88
+exclude = '''
+(
+  /(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+  )/
+)
+'''
+
+[tool.isort]
+profile = "black"
+skip = [
+  '.eggs',
+  '.git',
+  '.hg',
+  '.mypy_cache',
+  '.nox',
+  '.pants.d',
+  '.tox',
+  '.venv',
+  '_build',
+  'buck-out',
+  'build',
+  'dist',
+  'node_modules',
+  'venv',
+]
+skip_gitignore = true

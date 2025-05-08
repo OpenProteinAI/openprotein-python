@@ -160,7 +160,7 @@ class Future(ABC):
         self.job = self._refresh_job()
 
     @abstractmethod
-    def get(self, verbose: bool = False):
+    def get(self, verbose: bool = False, **kwargs):
         """Return the results from this job."""
         raise NotImplementedError()
 
@@ -267,13 +267,13 @@ class Future(ABC):
 
 class StreamingFuture(ABC):
     @abstractmethod
-    def stream(self) -> Generator:
+    def stream(self, **kwargs) -> Generator:
         """Return the results from this job as a generator."""
         raise NotImplementedError()
 
-    def get(self, verbose: bool = False) -> list:
+    def get(self, verbose: bool = False, **kwargs) -> list:
         """Return the results from this job."""
-        generator = self.stream()
+        generator = self.stream(**kwargs)
         if verbose:
             total = None
             if hasattr(self, "__len__"):
@@ -342,7 +342,7 @@ class MappedFuture(StreamingFuture, ABC):
                     f = executor.submit(process, k)
                     futures.append(f)
 
-            for f in concurrent.futures.as_completed(futures):
+            for f in futures:
                 yield f.result()
 
     def stream(self):

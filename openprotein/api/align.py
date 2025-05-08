@@ -2,8 +2,9 @@ import io
 import random
 from typing import BinaryIO, Iterator
 
-import openprotein.config as config
 import requests
+
+import openprotein.config as config
 from openprotein.base import APISession
 from openprotein.csv import csv_stream
 from openprotein.errors import APIError, InvalidParameterError, MissingParameterError
@@ -79,34 +80,6 @@ def get_input(
         session=session, job_id=job_id, input_type=input_type, prompt_index=prompt_index
     )
     return csv_stream(response)
-
-
-def get_prompt(
-    session: APISession, job: Job, prompt_index: int | None = None
-) -> Iterator[list[str]]:
-    """
-    Get the prompt for a given job.
-
-    Parameters
-    ----------
-    session : APISession
-        The API session.
-    job : Job
-        The job for which to retrieve the prompt.
-    prompt_index : Optional[int], default=None
-        The index of the prompt. If None, it returns all.
-
-    Returns
-    -------
-    Iterator[list[str]]
-        A CSV reader for the prompt data.
-    """
-    return get_input(
-        session=session,
-        job=job,
-        input_type=AlignType.PROMPT,
-        prompt_index=prompt_index,
-    )
 
 
 def get_seed(session: APISession, job: Job) -> Iterator[list[str]]:
@@ -195,6 +168,135 @@ def msa_post(
 
     response = session.post(endpoint, files=files, params=params)
     return Job.model_validate(response.json())
+
+
+# TODO - document the `ep` and `op` parameters
+def mafft_post(
+    session: APISession,
+    sequence_file: BinaryIO,
+    auto: bool = True,
+    ep: float | None = None,
+    op: float | None = None,
+) -> Job:
+    """
+    Align sequences using the `mafft` algorithm. Sequences can be provided as `fasta` or `csv` formats. If `csv`, the file must be headerless with either a single sequence column or name, sequence columns.
+
+    Set auto to True to automatically attempt the best params. Leave a parameter as None to use system defaults.
+
+    Parameters
+    ----------
+    session : APISession
+    sequence_file : BinaryIO
+        Sequences to align in fasta or csv format.
+    auto : bool = True, optional
+        Set to true to automatically set algorithm parameters.
+    ep : float, optional
+        mafft parameter
+    op : float, optional
+        mafft parameter
+
+    Returns
+    -------
+    Job
+        Job details.
+    """
+    endpoint = "v1/align/mafft"
+
+    files = {"file": sequence_file}
+    params: dict = {"auto": auto}
+    if ep is not None:
+        params["ep"] = ep
+    if op is not None:
+        params["op"] = op
+
+    response = session.post(endpoint, files=files, params=params)
+    return Job.model_validate(response.json())
+
+
+# TODO - document the `clustersize` and `iterations` parameters
+def clustalo_post(
+    session: APISession,
+    sequence_file: BinaryIO,
+    clustersize: int | None = None,
+    iterations: int | None = None,
+) -> Job:
+    """
+    Align sequences using the `clustal omega` algorithm. Sequences can be provided as `fasta` or `csv` formats. If `csv`, the file must be headerless with either a single sequence column or name, sequence columns.
+
+    Leave a parameter as None to use system defaults.
+
+    Parameters
+    ----------
+    session : APISession
+    sequence_file : BinaryIO
+        Sequences to align in fasta or csv format.
+    clustersize : int, optional
+        clustal omega parameter
+    iterations : int, optional
+        clustal omega parameter
+
+    Returns
+    -------
+    Job
+        Job details.
+    """
+    endpoint = "v1/align/clustalo"
+
+    files = {"file": sequence_file}
+    params = {}
+    if clustersize is not None:
+        params["clustersize"] = clustersize
+    if iterations is not None:
+        params["iterations"] = iterations
+
+    response = session.post(endpoint, files=files, params=params)
+    return Job.model_validate(response.json())
+
+
+def abnumber_post(
+    session: APISession,
+    sequence_file: BinaryIO,
+    scheme: str = "imgt",
+) -> Job:
+    """
+    Align antibody using `AbNumber`. Sequences can be provided as `fasta` or `csv` formats. If `csv`, the file must be headerless with either a single sequence column or name, sequence columns.
+
+    The antibody numbering scheme can be specified from `imgt` (default), `chothia`, `kabat`, or `aho`.
+
+    Parameters
+    ----------
+    session : APISession
+    sequence_file : BinaryIO
+        Sequences to align in fasta or csv format.
+    scheme : str = 'imgt'
+        Antibody numbering scheme. Can be one of 'imgt', 'chothia', 'kabat', or 'aho'
+
+    Returns
+    -------
+    Job
+        Job details.
+    """
+    endpoint = "v1/align/abnumber"
+
+    valid_schemes = ["imgt", "chothia", "kabat", "aho"]
+    if scheme not in valid_schemes:
+        raise Exception(
+            f"Antibody numbering {scheme} not recognized. Must be one of {valid_schemes}."
+        )
+
+    files = {"file": sequence_file}
+    params = {"scheme": scheme}
+
+    response = session.post(endpoint, files=files, params=params)
+    return Job.model_validate(response.json())
+
+
+# TODO - implement support for getting the antibody numbering from an `AbNumber` job
+def antibody_schema_get(session: APISession, job_id: str):
+    """
+    Return the antibody numbering for an `AbNumber` job.
+    """
+    raise NotImplementedError()
 
 
 def prompt_post(
@@ -295,127 +397,4 @@ def prompt_post(
         params["max_msa_tokens"] = num_residues
 
     response = session.post(endpoint, params=params)
-    return Job.model_validate(response.json())
-
-
-def upload_prompt_post(
-    session: APISession,
-    prompt_file: BinaryIO,
-):
-    """
-    Directly upload a prompt.
-
-    Bypass post_msa and prompt_post steps entirely. In this case PoET will use the prompt as is.
-    You can specify multiple prompts (one per replicate) with an `<END_PROMPT>\n` between CSVs.
-
-    Parameters
-    ----------
-    session : APISession
-        An instance of APISession to manage interactions with the API.
-    prompt_file : BinaryIO
-        Binary I/O object representing the prompt file.
-
-    Raises
-    ------
-    APIError
-        If there is an issue with the API request.
-
-    Returns
-    -------
-    Job
-        An object representing the status and results of the prompt job.
-    """
-
-    endpoint = "v1/align/upload_prompt"
-    files = {"prompt_file": prompt_file}
-    try:
-        response = session.post(endpoint, files=files)
-        return Job.model_validate(response.json())
-    except Exception as exc:
-        raise APIError(f"Failed to upload prompt post: {exc}") from exc
-
-
-def poet_score_post(
-    session: APISession, prompt_id: str, queries: list[bytes | str]
-) -> Job:
-    """
-    Submits a job to score sequences based on the given prompt.
-
-    Parameters
-    ----------
-    session : APISession
-        An instance of APISession to manage interactions with the API.
-    prompt_id : str
-        The ID of the prompt.
-    queries : List[str]
-        A list of query sequences to be scored.
-
-    Raises
-    ------
-    APIError
-        If there is an issue with the API request.
-
-    Returns
-    -------
-    Job
-        An object representing the status and results of the scoring job.
-    """
-    endpoint = "v1/poet/score"
-
-    if len(queries) == 0:
-        raise MissingParameterError("Must include queries for scoring!")
-    if not prompt_id:
-        raise MissingParameterError("Must include prompt_id in request!")
-
-    queries_bytes = [i.encode() if isinstance(i, str) else i for i in queries]
-    try:
-        variant_file = io.BytesIO(b"\n".join(queries_bytes))
-        params = {"prompt_id": prompt_id}
-        response = session.post(
-            endpoint, files={"variant_file": variant_file}, params=params
-        )
-        return Job.model_validate(response.json())
-    except Exception as exc:
-        raise APIError(f"Failed to post poet score: {exc}") from exc
-
-
-def poet_score_get(
-    session: APISession, job_id, page_size=config.POET_PAGE_SIZE, page_offset=0
-) -> Job:
-    """
-    Fetch a page of results from a PoET score job.
-
-    Parameters
-    ----------
-    session : APISession
-        An instance of APISession to manage interactions with the API.
-    job_id : str
-        The ID of the PoET scoring job to fetch results from.
-    page_size : int, optional
-        The number of results to fetch in a single page. Defaults to config.POET_PAGE_SIZE.
-    page_offset : int, optional
-        The offset (number of results) to start fetching results from. Defaults to 0.
-
-    Raises
-    ------
-    APIError
-        If the provided page size is larger than the maximum allowed page size.
-
-    Returns
-    -------
-    Job
-        An object representing the PoET scoring job, including its current status and results (if any).
-    """
-    endpoint = "v1/poet/score"
-
-    if page_size > config.POET_MAX_PAGE_SIZE:
-        raise APIError(
-            f"Page size must be less than the max for PoET: {config.POET_MAX_PAGE_SIZE}"
-        )
-
-    response = session.get(
-        endpoint,
-        params={"job_id": job_id, "page_size": page_size, "page_offset": page_offset},
-    )
-
     return Job.model_validate(response.json())

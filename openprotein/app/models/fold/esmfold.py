@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+
 from openprotein.api import fold
 
 from .base import FoldModel
@@ -12,15 +14,17 @@ class ESMFoldModel(FoldModel):
         super().__init__(session, model_id, metadata)
         self.id = self.model_id
 
-    def fold(self, sequences: list[bytes], num_recycles: int = 1) -> FoldResultFuture:
+    def fold(
+        self, sequences: Sequence[bytes | str], num_recycles: int | None = None
+    ) -> FoldResultFuture:
         """
         Fold sequences using this model.
 
         Parameters
         ----------
-        sequences : List[bytes]
+        sequences : Sequence[bytes | str]
             sequences to fold
-        num_recycles : int
+        num_recycles : int | None
             number of times to recycle models
         Returns
         -------

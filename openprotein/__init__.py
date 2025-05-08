@@ -14,6 +14,7 @@ from openprotein.app import (
     DataAPI,
     JobsAPI,
     AlignAPI,
+    PromptAPI,
     EmbeddingsAPI,
     FoldAPI,
     SVDAPI,
@@ -36,6 +37,7 @@ class OpenProtein(APISession):
     _data = None
     _jobs = None
     _align = None
+    _prompt = None
     _embeddings = None
     _svd = None
     _umap = None
@@ -84,6 +86,15 @@ class OpenProtein(APISession):
         if self._align is None:
             self._align = AlignAPI(self)
         return self._align
+
+    @property
+    def prompt(self) -> PromptAPI:
+        """
+        The Align submodule gives access to the sequence alignment capabilities by building MSAs and prompts that can be used with PoET.
+        """
+        if self._prompt is None:
+            self._prompt = PromptAPI(self)
+        return self._prompt
 
     @property
     def embedding(self) -> EmbeddingsAPI:

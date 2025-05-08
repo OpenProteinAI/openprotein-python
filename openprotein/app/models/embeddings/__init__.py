@@ -9,3 +9,4 @@ from .future import (
 )
 from .openprotein import OpenProteinModel
 from .poet import PoETModel
+from .poet2 import PoET2Model

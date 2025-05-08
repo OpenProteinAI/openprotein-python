@@ -3,7 +3,14 @@ from openprotein.api import job as job_api
 from openprotein.api import predictor, svd
 from openprotein.base import APISession
 from openprotein.errors import InvalidParameterError
-from openprotein.schemas import Criterion, ModelCriterion, PredictorMetadata, TrainJob
+from openprotein.schemas import (
+    EnsembleJob,
+    ModelCriterion,
+    PredictorMetadata,
+    PredictorType,
+    TrainJob,
+)
+from openprotein.schemas.job import JobType
 
 from ..assaydata import AssayDataset
 from ..embeddings import EmbeddingModel
@@ -20,24 +27,33 @@ class PredictorModel(Future):
     Also implements a Future that waits for train job.
     """
 
-    job: TrainJob
+    job: TrainJob | None
 
     def __init__(
         self,
         session: APISession,
-        job: TrainJob | None = None,
+        job: TrainJob | EnsembleJob | None = None,
         metadata: PredictorMetadata | None = None,
     ):
         """Initializes with either job get or predictor get."""
         self._training_assay = None
         # initialize the metadata
         if metadata is None:
-            if job is None:
+            if job is None or job.job_id is None:
                 raise ValueError("Expected predictor metadata or job")
             metadata = predictor.predictor_get(session, job.job_id)
         self._metadata = metadata
         if job is None:
-            job = TrainJob.create(job_api.job_get(session=session, job_id=metadata.id))
+            if metadata.model_spec.type != PredictorType.ENSEMBLE:
+                job = TrainJob.create(
+                    job_api.job_get(session=session, job_id=metadata.id)
+                )
+            else:
+                job = EnsembleJob(
+                    created_date=self._metadata.created_date,
+                    status=self._metadata.status,
+                    job_type=JobType.predictor_train,
+                )
         super().__init__(session, job)
 
     def __str__(self) -> str:
@@ -107,7 +123,11 @@ class PredictorModel(Future):
     @property
     def reduction(self):
         """The reduction of th embeddings used to train the predictor, if any."""
-        return self._metadata.model_spec.features.reduction
+        return (
+            self._metadata.model_spec.features.reduction
+            if self._metadata.model_spec.features is not None
+            else None
+        )
 
     @property
     def sequence_length(self):
@@ -140,9 +160,11 @@ class PredictorModel(Future):
 
     def get_model(self) -> EmbeddingModel | SVDModel | None:
         """Retrieve the embeddings or SVD model used to create embeddings to train on."""
-        if (features := self._metadata.model_spec.features) and (
-            model_id := features.model_id
-        ) is None:
+        if (
+            (features := self._metadata.model_spec.features)
+            and (model_id := features.model_id) is None
+            or features is None
+        ):
             return None
         elif features.type.upper() == "PLM":
             model = EmbeddingModel.create(session=self.session, model_id=model_id)

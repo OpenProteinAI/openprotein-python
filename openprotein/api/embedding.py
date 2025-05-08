@@ -3,6 +3,8 @@ import random
 from typing import Iterator
 
 import numpy as np
+from pydantic import TypeAdapter
+
 from openprotein.base import APISession
 from openprotein.csv import csv_stream
 from openprotein.errors import InvalidParameterError
@@ -16,7 +18,6 @@ from openprotein.schemas import (
     ScoreJob,
     ScoreSingleSiteJob,
 )
-from pydantic import TypeAdapter
 
 PATH_PREFIX = "v1/embeddings"
 
@@ -161,7 +162,7 @@ def request_post(
     model_id: str,
     sequences: list[bytes] | list[str],
     reduction: str | None = "MEAN",
-    prompt_id: str | None = None,
+    **kwargs,
 ) -> EmbeddingsJob:
     """
     POST a request for embeddings from the given model ID. Returns a Job object referring to this request
@@ -177,8 +178,8 @@ def request_post(
         sequences to request results for
     reduction : str | None
         reduction to apply to the embeddings. options are None, "MEAN", or "SUM". defaul: "MEAN"
-    kwargs:
-        accepts prompt_id for Poet Jobs
+    **kwargs:
+        Optional parameters for models, e.g. prompt_id for PoET
 
     Returns
     -------
@@ -190,10 +191,16 @@ def request_post(
     body: dict = {
         "sequences": sequences_unicode,
     }
-    if prompt_id is not None:
-        body["prompt_id"] = prompt_id
     if reduction is not None:
         body["reduction"] = reduction
+    if kwargs.get("prompt_id"):
+        body["prompt_id"] = kwargs["prompt_id"]
+    if kwargs.get("query_id"):
+        body["query_id"] = kwargs["query_id"]
+        if "use_query_structure_in_decoder" in kwargs:
+            body["use_query_structure_in_decoder"] = kwargs[
+                "use_query_structure_in_decoder"
+            ]
     response = session.post(endpoint, json=body)
     return EmbeddingsJob.model_validate(response.json())
 
@@ -202,7 +209,7 @@ def request_logits_post(
     session: APISession,
     model_id: str,
     sequences: list[bytes] | list[str],
-    prompt_id: str | None = None,
+    **kwargs,
 ) -> LogitsJob:
     """
     POST a request for logits from the given model ID. Returns a Job object referring to this request
@@ -216,6 +223,8 @@ def request_logits_post(
         model ID to request results from
     sequences : List[bytes]
         sequences to request results for
+    **kwargs:
+        Optional parameters for models, e.g. prompt_id for PoET
 
     Returns
     -------
@@ -227,8 +236,14 @@ def request_logits_post(
     body: dict = {
         "sequences": sequences_unicode,
     }
-    if prompt_id is not None:
-        body["prompt_id"] = prompt_id
+    if kwargs.get("prompt_id"):
+        body["prompt_id"] = kwargs["prompt_id"]
+    if kwargs.get("query_id"):
+        body["query_id"] = kwargs["query_id"]
+        if "use_query_structure_in_decoder" in kwargs:
+            body["use_query_structure_in_decoder"] = kwargs[
+                "use_query_structure_in_decoder"
+            ]
     response = session.post(endpoint, json=body)
     return LogitsJob.model_validate(response.json())
 
@@ -237,7 +252,7 @@ def request_attn_post(
     session: APISession,
     model_id: str,
     sequences: list[bytes] | list[str],
-    prompt_id: str | None = None,
+    **kwargs,
 ) -> AttnJob:
     """
     POST a request for attention embeddings from the given model ID. \
@@ -252,6 +267,8 @@ def request_attn_post(
         model ID to request results from
     sequences : List[bytes]
         sequences to request results for
+    **kwargs:
+        Optional parameters for models, e.g. prompt_id for PoET
 
     Returns
     -------
@@ -263,8 +280,14 @@ def request_attn_post(
     body: dict = {
         "sequences": sequences_unicode,
     }
-    if prompt_id is not None:
-        body["prompt_id"] = prompt_id
+    if kwargs.get("prompt_id"):
+        body["prompt_id"] = kwargs["prompt_id"]
+    if kwargs.get("query_id"):
+        body["query_id"] = kwargs["query_id"]
+        if "use_query_structure_in_decoder" in kwargs:
+            body["use_query_structure_in_decoder"] = kwargs[
+                "use_query_structure_in_decoder"
+            ]
     response = session.post(endpoint, json=body)
     return AttnJob.model_validate(response.json())
 
@@ -273,7 +296,7 @@ def request_score_post(
     session: APISession,
     model_id: str,
     sequences: list[bytes] | list[str],
-    prompt_id: str | None = None,
+    **kwargs,
 ) -> ScoreJob:
     """
     POST a request for sequence scoring for the given model ID. \
@@ -294,13 +317,18 @@ def request_score_post(
     job : Job
     """
     endpoint = PATH_PREFIX + f"/models/{model_id}/score"
-
     sequences_unicode = [(s if isinstance(s, str) else s.decode()) for s in sequences]
     body: dict = {
         "sequences": sequences_unicode,
     }
-    if prompt_id is not None:
-        body["prompt_id"] = prompt_id
+    if kwargs.get("prompt_id"):
+        body["prompt_id"] = kwargs["prompt_id"]
+    if kwargs.get("query_id"):
+        body["query_id"] = kwargs["query_id"]
+        if "use_query_structure_in_decoder" in kwargs:
+            body["use_query_structure_in_decoder"] = kwargs[
+                "use_query_structure_in_decoder"
+            ]
     response = session.post(endpoint, json=body)
     return ScoreJob.model_validate(response.json())
 
@@ -309,7 +337,7 @@ def request_score_single_site_post(
     session: APISession,
     model_id: str,
     base_sequence: bytes | str,
-    prompt_id: str | None = None,
+    **kwargs,
 ) -> ScoreSingleSiteJob:
     """
     POST a request for single site mutation scoring for the given model ID. \
@@ -324,6 +352,8 @@ def request_score_single_site_post(
         model ID to request results from
     sequences : List[bytes]
         sequences to request results for
+    **kwargs:
+        Optional parameters for models, e.g. prompt_id for PoET
 
     Returns
     -------
@@ -338,8 +368,14 @@ def request_score_single_site_post(
             else base_sequence
         ),
     }
-    if prompt_id is not None:
-        body["prompt_id"] = prompt_id
+    if kwargs.get("prompt_id"):
+        body["prompt_id"] = kwargs["prompt_id"]
+    if kwargs.get("query_id"):
+        body["query_id"] = kwargs["query_id"]
+        if "use_query_structure_in_decoder" in kwargs:
+            body["use_query_structure_in_decoder"] = kwargs[
+                "use_query_structure_in_decoder"
+            ]
     response = session.post(endpoint, json=body)
     return ScoreSingleSiteJob.model_validate(response.json())
 
@@ -353,7 +389,7 @@ def request_generate_post(
     topp: float | None = None,
     max_length: int = 1000,
     random_seed: int | None = None,
-    prompt_id: str | None = None,
+    **kwargs,
 ) -> GenerateJob:
     """
     POST a request for sequence generation for the given model ID. \
@@ -366,6 +402,8 @@ def request_generate_post(
         Session object for API communication.
     model_id : str
         model ID to request results from
+    **kwargs:
+        Optional parameters for models, e.g. prompt_id for PoET
 
     Returns
     -------
@@ -396,7 +434,13 @@ def request_generate_post(
         body["topp"] = topp
     if random_seed is not None:
         body["seed"] = random_seed
-    if prompt_id is not None:
-        body["prompt_id"] = prompt_id
+    if kwargs.get("prompt_id"):
+        body["prompt_id"] = kwargs["prompt_id"]
+    if kwargs.get("query_id"):
+        body["query_id"] = kwargs["query_id"]
+        if "use_query_structure_in_decoder" in kwargs:
+            body["use_query_structure_in_decoder"] = kwargs[
+                "use_query_structure_in_decoder"
+            ]
     response = session.post(endpoint, json=body)
     return GenerateJob.model_validate(response.json())

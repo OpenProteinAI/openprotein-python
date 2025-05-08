@@ -1,28 +1,31 @@
-import warnings
 from typing import TYPE_CHECKING
 
-from openprotein.api import embedding
 from openprotein.base import APISession
+from openprotein.protein import Protein
 from openprotein.schemas import ModelMetadata, ReductionType
+from openprotein.utils import uuid
 
 from ..assaydata import AssayDataset, AssayMetadata
-from ..prompt import Prompt
+from ..prompt import Prompt, Query
 from .base import EmbeddingModel
 from .future import (
     EmbeddingsGenerateFuture,
     EmbeddingsResultFuture,
     EmbeddingsScoreFuture,
 )
+from .poet import PoETModel
 
 if TYPE_CHECKING:
+    from openprotein import OpenProtein
+
     from ..predictor import PredictorModel
     from ..svd import SVDModel
     from ..umap import UMAPModel
 
 
-class PoETModel(EmbeddingModel):
+class PoET2Model(PoETModel, EmbeddingModel):
     """
-    Class for OpenProtein's foundation model PoET - NB. PoET functions are dependent on a prompt supplied via the align endpoints.
+    Class for OpenProtein's foundation model PoET 2 - NB. PoET functions are dependent on a prompt supplied via the align endpoints.
 
     Examples
     --------
@@ -32,170 +35,185 @@ class PoETModel(EmbeddingModel):
 
         import openprotein
         session = openprotein.connect(username="user", password="password")
-        session.embedding.poet.<embeddings_method>
+        session.embedding.poet2.<embeddings_method>
 
 
     """
 
-    model_id = "poet"
+    model_id = "poet-2"
 
     # TODO - Add model to explicitly require prompt_id
     def __init__(
-        self, session: APISession, model_id: str, metadata: ModelMetadata | None = None
+        self,
+        session: "OpenProtein",
+        model_id: str,
+        metadata: ModelMetadata | None = None,
     ):
         self.session = session
         self.id = model_id
         self._metadata = metadata
         # could add prompt here?
 
+    def __resolve_query(
+        self,
+        query: str | bytes | Protein | Query | None = None,
+    ) -> str | None:
+        if query is None:
+            query_id = None
+        elif (
+            isinstance(query, Protein)
+            or isinstance(query, bytes)
+            or (isinstance(query, str) and not uuid.is_valid_uuid(query))
+        ):
+            query_ = self.session.prompt.create_query(query=query)
+            query_id = query_.id
+        else:
+            query_id = query if isinstance(query, str) else query.id
+        return query_id
+
     def embed(
         self,
         sequences: list[bytes],
-        prompt: str | Prompt | None = None,
         reduction: ReductionType | None = ReductionType.MEAN,
-        **kwargs,
+        prompt: str | Prompt | None = None,
+        query: str | bytes | Protein | Query | None = None,
+        use_query_structure_in_decoder: bool = True,
     ) -> EmbeddingsResultFuture:
         """
         Embed sequences using this model.
 
         Parameters
         ----------
-        prompt: str | Prompt
-            prompt from an align workflow to condition Poet model
         sequence : bytes
             Sequence to embed.
         reduction: str
             embeddings reduction to use (e.g. mean)
+        prompt: str | Prompt
+            Prompt or prompt_id or prompt from an align workflow to condition Poet model
+        query: str | bytes | Protein | Query | None
+            Query to use with prompt. Optional
 
         Returns
         -------
         EmbeddingResultFuture
             A future object that returns the embeddings of the submitted sequences.
         """
-        if prompt is None:
-            prompt_id = None
-        else:
-            prompt_id = prompt if isinstance(prompt, str) else prompt.id
+        query_id = self.__resolve_query(query=query)
         return super().embed(
             sequences=sequences,
             reduction=reduction,
-            prompt_id=prompt_id,
-            **kwargs,
+            prompt=prompt,
+            query_id=query_id,
+            use_query_structure_in_decoder=use_query_structure_in_decoder,
         )
 
     def logits(
         self,
         sequences: list[bytes],
         prompt: str | Prompt | None = None,
-        **kwargs,
+        query: str | bytes | Protein | Query | None = None,
+        use_query_structure_in_decoder: bool = True,
     ) -> EmbeddingsResultFuture:
         """
         logit embeddings for sequences using this model.
 
         Parameters
         ----------
-        prompt: str | Prompt
-            prompt from an align workflow to condition Poet model
         sequence : bytes
             Sequence to analyse.
+        prompt: str | Prompt
+            Prompt or prompt_id or prompt from an align workflow to condition Poet model
+        query: str | bytes | Protein | Query | None
+            Query to use with prompt. Optional
 
         Returns
         -------
         EmbeddingResultFuture
             A future object that returns the logits of the submitted sequences.
         """
-        if prompt is None:
-            prompt_id = None
-        else:
-            prompt_id = prompt if isinstance(prompt, str) else prompt.id
-        return super().logits(sequences=sequences, prompt_id=prompt_id)
-
-    def attn(self):
-        """Not Available for Poet."""
-        raise ValueError("Attn not yet supported for poet")
+        query_id = self.__resolve_query(query=query)
+        return super().logits(
+            sequences=sequences,
+            prompt=prompt,
+            query_id=query_id,
+            use_query_structure_in_decoder=use_query_structure_in_decoder,
+        )
 
     def score(
         self,
         sequences: list[bytes],
         prompt: str | Prompt | None = None,
-        **kwargs,
+        query: str | bytes | Protein | Query | None = None,
+        use_query_structure_in_decoder: bool = True,
     ) -> EmbeddingsScoreFuture:
         """
         Score query sequences using the specified prompt.
 
         Parameters
         ----------
-        prompt: str | Prompt
-            Prompt or prompt_id or prompt from an align workflow to condition Poet model
         sequence: list[bytes]
             Sequences to score.
+        prompt: str | Prompt
+            Prompt or prompt_id or prompt from an align workflow to condition Poet model
+        query: str | bytes | Protein | Query | None
+            Query to use with prompt. Optional
 
         Returns
         -------
         EmbeddingsScoreFuture
             A future object that returns the scores of the submitted sequences.
         """
-        if prompt is None:
-            prompt_id = None
-        else:
-            prompt_id = prompt if isinstance(prompt, str) else prompt.id
-        return EmbeddingsScoreFuture.create(
-            session=self.session,
-            job=embedding.request_score_post(
-                session=self.session,
-                model_id=self.id,
-                prompt_id=prompt_id,
-                sequences=sequences,
-                **kwargs,
-            ),
+        query_id = self.__resolve_query(query=query)
+        return super().score(
+            sequences=sequences,
+            prompt=prompt,
+            query_id=query_id,
+            use_query_structure_in_decoder=use_query_structure_in_decoder,
         )
 
     def single_site(
         self,
         sequence: bytes,
         prompt: str | Prompt | None = None,
-        **kwargs,
+        query: str | bytes | Protein | Query | None = None,
+        use_query_structure_in_decoder: bool = True,
     ) -> EmbeddingsScoreFuture:
         """
         Score all single substitutions of the query sequence using the specified prompt.
 
         Parameters
         ----------
-        prompt: str | Prompt
-            Prompt or prompt_id or prompt from an align workflow to condition Poet model
         sequence: bytes
             Sequence to analyse.
+        prompt: str | Prompt
+            Prompt or prompt_id or prompt from an align workflow to condition Poet model
+        query: str | bytes | Protein | Query | None
+            Query to use with prompt. Optional
 
         Returns
         -------
         EmbeddingsScoreFuture
             A future object that returns the scores of the mutated sequence.
         """
-        if prompt is None:
-            prompt_id = None
-        else:
-            prompt_id = prompt if isinstance(prompt, str) else prompt.id
-        return EmbeddingsScoreFuture.create(
-            session=self.session,
-            job=embedding.request_score_single_site_post(
-                session=self.session,
-                model_id=self.id,
-                base_sequence=sequence,
-                prompt_id=prompt_id,
-                **kwargs,
-            ),
+        query_id = self.__resolve_query(query=query)
+        return super().single_site(
+            sequence=sequence,
+            prompt=prompt,
+            query_id=query_id,
+            use_query_structure_in_decoder=use_query_structure_in_decoder,
         )
 
     def generate(
         self,
         prompt: str | Prompt,
+        query: str | bytes | Protein | Query | None = None,
+        use_query_structure_in_decoder: bool = True,
         num_samples: int = 100,
         temperature: float = 1.0,
         topk: float | None = None,
         topp: float | None = None,
         max_length: int = 1000,
         seed: int | None = None,
-        **kwargs,
     ) -> EmbeddingsGenerateFuture:
         """
         Generate protein sequences conditioned on a prompt.
@@ -203,7 +221,9 @@ class PoETModel(EmbeddingModel):
         Parameters
         ----------
         prompt: str | Prompt
-            Prompt from an align workflow to condition Poet model
+            prompt from an align workflow to condition Poet model
+        query: str | bytes | Protein | Query | None
+            Query to use with prompt. Optional
         num_samples: int, optional
             The number of samples to generate, by default 100.
         temperature: float, optional
@@ -222,31 +242,28 @@ class PoETModel(EmbeddingModel):
         EmbeddingsGenerateFuture
             A future object representing the status and information about the generation job.
         """
-        prompt_id = prompt if isinstance(prompt, str) else prompt.id
-        return EmbeddingsGenerateFuture.create(
-            session=self.session,
-            job=embedding.request_generate_post(
-                session=self.session,
-                model_id=self.id,
-                num_samples=num_samples,
-                temperature=temperature,
-                topk=topk,
-                topp=topp,
-                max_length=max_length,
-                random_seed=seed,
-                prompt_id=prompt_id,
-                **kwargs,
-            ),
+        query_id = self.__resolve_query(query=query)
+        return super().generate(
+            prompt=prompt,
+            num_samples=num_samples,
+            temperature=temperature,
+            topk=topk,
+            topp=topp,
+            max_length=max_length,
+            seed=seed,
+            query_id=query_id,
+            use_query_structure_in_decoder=use_query_structure_in_decoder,
         )
 
     def fit_svd(
         self,
-        prompt: str | Prompt | None = None,
         sequences: list[bytes] | list[str] | None = None,
         assay: AssayDataset | None = None,
         n_components: int = 1024,
         reduction: ReductionType | None = None,
-        **kwargs,
+        prompt: str | Prompt | None = None,
+        query: str | bytes | Protein | Query | None = None,
+        use_query_structure_in_decoder: bool = True,
     ) -> "SVDModel":
         """
         Fit an SVD on the embedding results of PoET. 
@@ -258,6 +275,8 @@ class PoETModel(EmbeddingModel):
         ----------
         prompt: str | Prompt
             prompt from an align workflow to condition Poet model
+        query: str | bytes | Protein | Query | None
+            Query to use with prompt. Optional
         sequences : List[bytes] 
             sequences to SVD
         n_components: int 
@@ -271,27 +290,26 @@ class PoETModel(EmbeddingModel):
         SVDModel
             A future that represents the fitted SVD model.
         """
-        if prompt is None:
-            prompt_id = None
-        else:
-            prompt_id = prompt if isinstance(prompt, str) else prompt.id
+        query_id = self.__resolve_query(query=query)
         return super().fit_svd(
             sequences=sequences,
             assay=assay,
             n_components=n_components,
             reduction=reduction,
-            prompt_id=prompt_id,
-            **kwargs,
+            prompt=prompt,
+            query_id=query_id,
+            use_query_structure_in_decoder=use_query_structure_in_decoder,
         )
 
     def fit_umap(
         self,
-        prompt: str | Prompt | None = None,
         sequences: list[bytes] | list[str] | None = None,
         assay: AssayDataset | None = None,
         n_components: int = 2,
         reduction: ReductionType | None = ReductionType.MEAN,
-        **kwargs,
+        prompt: str | Prompt | None = None,
+        query: str | bytes | Protein | Query | None = None,
+        use_query_structure_in_decoder: bool = True,
     ) -> "UMAPModel":
         """
         Fit a UMAP on assay using PoET and hyperparameters.
@@ -317,17 +335,15 @@ class PoETModel(EmbeddingModel):
         UMAPModel
             A future that represents the fitted UMAP model.
         """
-        if prompt is None:
-            prompt_id = None
-        else:
-            prompt_id = prompt if isinstance(prompt, str) else prompt.id
+        query_id = self.__resolve_query(query=query)
         return super().fit_umap(
             sequences=sequences,
             assay=assay,
             n_components=n_components,
             reduction=reduction,
-            prompt_id=prompt_id,
-            **kwargs,
+            prompt=prompt,
+            query_id=query_id,
+            use_query_structure_in_decoder=use_query_structure_in_decoder,
         )
 
     def fit_gp(
@@ -335,6 +351,8 @@ class PoETModel(EmbeddingModel):
         assay: AssayMetadata | AssayDataset | str,
         properties: list[str],
         prompt: str | Prompt | None = None,
+        query: str | bytes | Protein | Query | None = None,
+        use_query_structure_in_decoder: bool = True,
         **kwargs,
     ) -> "PredictorModel":
         """
@@ -348,19 +366,20 @@ class PoETModel(EmbeddingModel):
             Properties in the assay to fit the gp on.
         reduction : str
             Type of embedding reduction to use for computing features. PLM must use reduction.
+        query: str | bytes | Protein | Query | None
+            Query to use with prompt. Optional
 
         Returns
         -------
         PredictorModel
             A future that represents the trained predictor model.
         """
-        if prompt is None:
-            prompt_id = None
-        else:
-            prompt_id = prompt if isinstance(prompt, str) else prompt.id
+        query_id = self.__resolve_query(query=query)
         return super().fit_gp(
             assay=assay,
             properties=properties,
-            prompt_id=prompt_id,
+            prompt=prompt,
+            query_id=query_id,
+            use_query_structure_in_decoder=use_query_structure_in_decoder,
             **kwargs,
         )
