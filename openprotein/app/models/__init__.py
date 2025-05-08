@@ -10,7 +10,8 @@ from .assaydata import AssayDataPage, AssayDataset, AssayMetadata
 from .futures import Future, MappedFuture, StreamingFuture
 
 # poet system
-from .align import MSAFuture, PromptFuture
+from .align import MSAFuture
+from .prompt import Prompt, Query
 
 # distributed system
 from .embeddings import (
@@ -21,6 +22,7 @@ from .embeddings import (
     ESMModel,
     OpenProteinModel,
     PoETModel,
+    PoET2Model,
 )
 from .svd import SVDModel
 from .umap import UMAPModel

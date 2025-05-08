@@ -120,9 +120,9 @@ class DesignFuture(StreamingFuture, Future):
         """
         return designer.design_delete(session=self.session, design_id=self.id)
 
-    def stream(self) -> Generator:
+    def stream(self, step: int | None = None) -> Generator:
         stream = designer.designer_get_design_results(
-            session=self.session, design_id=self.id
+            session=self.session, design_id=self.id, step=step
         )
         return designer.decode_design_results_stream(data=stream)
 

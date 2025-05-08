@@ -113,6 +113,17 @@ def predictor_fit_gp_post(
     return TrainJob.model_validate(response.json())
 
 
+def predictor_ensemble(session: APISession, predictor_ids: list[str]):
+    endpoint = PATH_PREFIX + f"/ensemble"
+
+    body = {
+        "model_ids": predictor_ids,
+    }
+
+    response = session.post(endpoint, json=body)
+    return TypeAdapter(PredictorMetadata).validate_python(response.json())
+
+
 def predictor_delete(session: APISession, predictor_id: str):
     endpoint = PATH_PREFIX + f"/{predictor_id}"
     response = session.delete(endpoint)

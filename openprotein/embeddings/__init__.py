@@ -9,6 +9,7 @@ from openprotein.app.models import (
     ESMModel,
     OpenProteinModel,
     PoETModel,
+    PoET2Model,
     SVDModel,
     UMAPModel,
     EmbeddingsResultFuture,

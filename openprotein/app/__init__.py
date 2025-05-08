@@ -9,6 +9,7 @@ from .services import (
     JobsAPI,
     DataAPI,
     AlignAPI,
+    PromptAPI,
     EmbeddingsAPI,
     FoldAPI,
     SVDAPI,

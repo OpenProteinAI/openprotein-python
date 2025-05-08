@@ -102,8 +102,8 @@ class PredictorAPI:
             Protembed/SVD model to use depending on feature type.
         reduction : str | None
             Type of embedding reduction to use for computing features. default = None
-        prompt: PromptFuture | str | None
-            Prompt if using PoET-based models.
+        kwargs:
+            Additional keyword arguments to be passed to foundational models, e.g. prompt for PoET models.
 
         Returns
         -------
@@ -166,3 +166,27 @@ class PredictorAPI:
         return predictor.predictor_delete(
             session=self.session, predictor_id=predictor_id
         )
+
+    def ensemble(self, predictors: list[PredictorModel]) -> PredictorModel:
+        """
+        Ensemble predictor models together.
+
+        Parameters
+        __________
+        predictors: list[PredictorModel]
+            List of predictors to ensemble together.
+        Returns
+        -------
+        PredictorModel
+            Ensembled predictor model
+        """
+        return PredictorModel(
+            session=self.session,
+            metadata=predictor.predictor_ensemble(
+                session=self.session,
+                predictor_ids=[predictor.id for predictor in predictors],
+            ),
+        )
+
+
+# tell me about the above code

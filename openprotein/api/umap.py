@@ -2,10 +2,11 @@ import io
 
 import numpy as np
 import pandas as pd
+from pydantic import TypeAdapter
+
 from openprotein.base import APISession
 from openprotein.errors import APIError, InvalidParameterError
 from openprotein.schemas import FeatureType, UMAPEmbeddingsJob, UMAPFitJob, UMAPMetadata
-from pydantic import TypeAdapter
 
 PATH_PREFIX = "v1/umap"
 
@@ -159,7 +160,7 @@ def umap_fit_post(
     n_neighbors: int = 15,
     min_dist: float = 0.1,
     reduction: str | None = None,
-    prompt_id: str | None = None,
+    **kwargs,
 ) -> UMAPFitJob:
     """
     Create UMAP fit job.
@@ -201,8 +202,14 @@ def umap_fit_post(
     }
     if reduction is not None:
         body["reduction"] = reduction
-    if prompt_id is not None:
-        body["prompt_id"] = prompt_id
+    if kwargs.get("prompt_id"):
+        body["prompt_id"] = kwargs["prompt_id"]
+    if kwargs.get("query_id"):
+        body["query_id"] = kwargs["query_id"]
+        if "use_query_structure_in_decoder" in kwargs:
+            body["use_query_structure_in_decoder"] = kwargs[
+                "use_query_structure_in_decoder"
+            ]
     if sequences is not None:
         # both provided
         if assay_id is not None:

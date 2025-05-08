@@ -1,3 +1,4 @@
+import os
 from typing import Union
 from urllib.parse import urljoin
 
@@ -7,6 +8,9 @@ from requests.packages.urllib3.util.retry import Retry
 
 import openprotein.config as config
 from openprotein.errors import APIError, AuthError, HTTPError
+
+
+BACKEND = os.getenv("OPENPROTEIN_API_BACKEND", "https://api.openprotein.ai/api/")
 
 
 class BearerAuth(requests.auth.AuthBase):
@@ -42,7 +46,7 @@ class APISession(requests.Session):
         self,
         username: str,
         password: str,
-        backend: str = "https://api.openprotein.ai/api/",
+        backend: str = BACKEND,
         timeout: int = 180,
     ):
         super().__init__()
@@ -76,9 +80,7 @@ class APISession(requests.Session):
         if "timeout" in kwargs:
             timeout = kwargs.pop("timeout")
 
-        return self.request(
-            "POST", url, data=data, json=json, timeout=timeout, **kwargs
-        )
+        return self.request("POST", url, data=data, json=json, timeout=timeout, **kwargs)
 
     def login(self, username: str, password: str):
         """
@@ -97,9 +99,7 @@ class APISession(requests.Session):
         endpoint = "v1/login/access-token"
         url = urljoin(self.backend, endpoint)
         try:
-            response = self.post(
-                url, data={"username": username, "password": password}, timeout=3
-            )
+            response = self.post(url, data={"username": username, "password": password}, timeout=3)
         except HTTPError as e:
             # if an error occured during auth, we raise an AuthError with reference to the HTTPError
             raise AuthError(
@@ -112,9 +112,7 @@ class APISession(requests.Session):
             raise AuthError("Unable to authenticate with given credentials.")
         return BearerAuth(token)
 
-    def request(
-        self, method: Union[str, bytes], url: Union[str, bytes], *args, **kwargs
-    ):
+    def request(self, method: Union[str, bytes], url: Union[str, bytes], *args, **kwargs):
         full_url = urljoin(self.backend, url)
         response = super().request(method, full_url, *args, **kwargs)
         if not response.ok:

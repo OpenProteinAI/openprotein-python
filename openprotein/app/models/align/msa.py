@@ -3,13 +3,21 @@ from typing import Iterator
 from openprotein import config
 from openprotein.api import align
 from openprotein.base import APISession
-from openprotein.schemas import JobType, MSAJob, MSASamplingMethod
+from openprotein.schemas import (
+    AbNumberJob,
+    ClustalOJob,
+    JobType,
+    MafftJob,
+    MSAJob,
+    MSASamplingMethod,
+)
 
 from ..futures import Future, InvalidFutureError
+from ..prompt import Prompt
 from .base import AlignFuture
-from .prompt import PromptFuture
 
 
+# TODO - AbNumber should probably be  different subclass, because it supports an additional `get` API for the antibody numbering
 class MSAFuture(AlignFuture, Future):
     """
     Represents a result of a MSA job.
@@ -19,35 +27,35 @@ class MSAFuture(AlignFuture, Future):
     session : APISession
         An instance of APISession for API interactions.
     job : Job
-        The PoET scoring job.
+        The MSA job.
     page_size : int
         The number of results to fetch in a single page.
 
     Methods
     -------
     get(verbose=False)
-        Get the final results of the PoET scoring job.
+        Get the MSA.
 
     Returns
     -------
-    List[PoetScoreResult]
-        The list of results from the PoET scoring job.
+    Iterator[list[str]]
+        A CSV reader for the MSA data.
     """
 
-    job: MSAJob
+    job: MSAJob | MafftJob | ClustalOJob | AbNumberJob
 
     def __init__(
         self, session: APISession, job: MSAJob, page_size: int = config.POET_PAGE_SIZE
     ):
         """
-        init a PoetScoreFuture instance.
+        Init a MSAFuture instance.
 
         Parameters
         ----------
         session : APISession
             An instance of APISession for API interactions.
         job : Job
-            The PoET scoring job.
+            The MSA job.
         page_size : int
             The number of results to fetch in a single page.
 
@@ -55,15 +63,6 @@ class MSAFuture(AlignFuture, Future):
         super().__init__(session, job)
         self.page_size = page_size
         self.msa_id = self.job.job_id
-
-    # def wait(self, verbose: bool = False):
-    #     _ = self.job.wait(
-    #         self.session,
-    #         interval=config.POLLING_INTERVAL,
-    #         timeout=config.POLLING_TIMEOUT,
-    #         verbose=verbose,
-    #     )  # no progress to track
-    #     return self.get()
 
     def get(self, verbose: bool = False) -> Iterator[list[str]]:
         return align.get_msa(self.session, self.job)
@@ -79,7 +78,7 @@ class MSAFuture(AlignFuture, Future):
         always_include_seed_sequence: bool = False,
         num_ensemble_prompts: int = 1,
         random_seed: int | None = None,
-    ) -> PromptFuture:
+    ) -> Prompt:
         """
         Create a protein sequence prompt from a linked MSA (Multiple Sequence Alignment) for PoET Jobs.
 
@@ -129,5 +128,7 @@ class MSAFuture(AlignFuture, Future):
             num_ensemble_prompts=num_ensemble_prompts,
             random_seed=random_seed,
         )
-        future = PromptFuture.create(session=self.session, job=job)
+        future = Prompt.create(
+            session=self.session, job=job, num_replicates=num_ensemble_prompts
+        )
         return future

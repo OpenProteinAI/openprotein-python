@@ -39,6 +39,18 @@ class MSAJob(Job):
     @property
     def msa_id(self):
         return self.msa_id
+    
+
+class MafftJob(MSAJob, Job):
+    job_type: Literal[JobType.mafft]
+
+
+class ClustalOJob(MSAJob, Job):
+    job_type: Literal[JobType.clustalo]
+
+
+class AbNumberJob(MSAJob, Job):
+    job_type: Literal[JobType.abnumber]
 
 
 class PromptJob(MSAJob, Job):
