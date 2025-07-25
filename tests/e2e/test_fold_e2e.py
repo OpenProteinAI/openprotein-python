@@ -1,150 +1,199 @@
+"""End-to-end tests for the fold domain."""
+
+from typing import List, Tuple
+
 import pytest
-import json
-from tests.conf import BACKEND, TIMEOUT
-from openprotein.api.fold import *
-import time
-import openprotein
-from openprotein.api.align import msa_post, MSAFuture, MSAJob
-from openprotein.jobs import job_get
 
-from AWSTools.Batchtools.batch_utils import fakeseq
+from openprotein import OpenProtein
+from openprotein.align.msa import MSAFuture
+from openprotein.chains import Ligand
+from openprotein.fold.future import FoldComplexResultFuture, FoldResultFuture
+from openprotein.protein import Protein
+from tests.utils.sequences import generate_mutated_sequences
 
-
-class Static:
-    esmfold_id: str = None
-    msa_id: str = None
+BASE_SEQUENCE = "MQYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE"
+E2E_TIMEOUT = 600  # 10 minutes for long-running E2E tests
 
 
-STATIC = Static()
-
-
-@pytest.fixture
-def api_session():
-    with open("./secrets.config", "r") as f:
-        secrets = json.load(f)
-    sess = openprotein.connect(
-        username=secrets["username"], password=secrets["password"], backend=BACKEND
-    )
-    yield sess
-
-
-SEQUENCES = [b"LAAAPPPLLL"]
-AF_SEQUENCE = "MYRMQLLSCIALSLALVTNSAPTSSSTKKTQLQLEHLLLDLQMILNGINNYKNPKLTRMLTFKFYMPKKATELKHLQCLEEELKPLEEVLNLAQSKNFHLRPRDLISNINVIVLELKGMYRMQLLSCIALSLALVTNSAPTSSSTKKTQLQLEHLLLDLQMILNGINNYKNPKLTRMLTFKFYMPKKATELKHLQCLEEELKPLEEVLNLAQSKNFHLRPRDLISNINVIVLELKGSEP"
-print(f"USING BACKEND: {BACKEND} ")
-
-
-def test_fold_models_get(api_session):
-    models = fold_models_list_get(api_session)
-    assert isinstance(models, list)
-    assert all(isinstance(model, str) for model in models)
-    assert "esmfold" in models
-
-
-def test_fold_modelmeta(api_session):
-    meta = fold_model_get(api_session, "esmfold")
-    assert isinstance(meta, ModelMetadata)
-    assert meta.model_id == "esmfold"
-
-
-@pytest.fixture()
-def test_fold_post(api_session):
-    job = fold_models_esmfold_post(api_session, sequences=SEQUENCES)
-    job = job.job
-
-    assert isinstance(job, Job)
-    assert isinstance(job.job_id, str)
-    assert job.status in ["PENDING", "RUNNING", "SUCCESS"]
-    if STATIC.esmfold_id is None:
-        STATIC.esmfold_id = job.job_id
-
-
-def test_fold_get(api_session, test_fold_post):
-    job = job_get(api_session, STATIC.esmfold_id)
-
-    assert isinstance(job, Job)
-    assert isinstance(job.job_id, str)
-    assert job.status in ["PENDING", "RUNNING", "SUCCESS"]
-
-    time.sleep(4)
-    # job.wait_until_done(api_session)
-
-    f = api_session.load_job(STATIC.esmfold_id)
-    assert f
-    assert f.wait_until_done(timeout=TIMEOUT)
-    pdb = f.get()
-    print(pdb)
-    pdb = pdb[0][1]
-    assert "ATOM" in pdb.decode()
-    assert len(pdb.decode().split("\n")) > 10
-
-    sequences = fold_get_sequences(api_session, job_id=STATIC.esmfold_id)
-    assert sorted(sequences) == sorted(SEQUENCES)
-
-    pdbresult = fold_get_sequence_result(
-        api_session, job_id=STATIC.esmfold_id, sequence=SEQUENCES[0]
-    )
-    assert "ATOM" in pdbresult.decode()
-    assert len(pdbresult.decode().split("\n")) > 10
-
-
-def test_fold_model(api_session):
-    model = ESMFoldModel(api_session, "esmfold")
-    assert isinstance(model.metadata, ModelMetadata)
-    assert model.metadata.model_id == "esmfold"
-    assert model.id == "esmfold"
-
-    future = model.fold(SEQUENCES)
-    assert future.wait(timeout=TIMEOUT)
-    result = future.wait(verbose=True, timeout=TIMEOUT)
-    assert len(result) == 1
-    assert len(result[0]) == 2
-    assert result[0][0] == SEQUENCES[0]
-    assert "ATOM" in result[0][1].decode()
-
-
-def test_fold_api(api_session):
+@pytest.mark.e2e
+def test_e2e_list_models(api_session: OpenProtein):
+    """Test listing all available fold models."""
     models = api_session.fold.list_models()
-    assert all(
-        [isinstance(m, ESMFoldModel) or isinstance(m, AlphaFold2Model) for m in models]
+    assert models
+    assert len(models) > 0
+
+
+@pytest.mark.e2e
+def test_e2e_fold_with_esmfold(api_session: OpenProtein):
+    """Test folding a single chain with ESMFold."""
+    sequence = generate_mutated_sequences(BASE_SEQUENCE, num_sequences=2)[1]
+    future = api_session.fold.esmfold.fold(sequences=[sequence])
+    assert isinstance(future, FoldResultFuture)
+    assert future.wait_until_done(timeout=E2E_TIMEOUT)
+    results = future.get()
+    assert isinstance(results, list)
+    assert len(results) == 1
+    pdb_string = results[0][1].decode("utf-8")
+    assert pdb_string
+    assert "ATOM" in pdb_string
+
+
+@pytest.mark.e2e
+def test_e2e_fold_with_alphafold2_complex(
+    api_session: OpenProtein,
+    protein_complex_with_msa: Tuple[List[Protein], MSAFuture],
+):
+    """Test folding a multi-chain complex with AlphaFold2."""
+    proteins, msa_future = protein_complex_with_msa
+    future = api_session.fold.alphafold2.fold(proteins=proteins)
+    assert isinstance(future, FoldComplexResultFuture)
+    # The MSA is already waited on in the fixture, so we just wait for the fold
+    assert future.wait_until_done(timeout=E2E_TIMEOUT)
+    result_bytes = future.get()
+    assert result_bytes and "ATOM" in result_bytes.decode("utf-8")
+
+
+@pytest.mark.e2e
+def test_e2e_fold_with_boltz1(
+    api_session: OpenProtein,
+    protein_complex_with_msa: Tuple[List[Protein], MSAFuture],
+):
+    """
+    Test folding with Boltz-1.
+    """
+    proteins, _ = protein_complex_with_msa
+    future = api_session.fold.boltz1.fold(proteins=proteins)
+    assert isinstance(future, FoldComplexResultFuture)
+    assert future.wait_until_done(timeout=E2E_TIMEOUT)
+    result_bytes = future.get()
+    assert result_bytes and "ATOM" in result_bytes.decode("utf-8")
+
+
+@pytest.mark.e2e
+def test_e2e_fold_with_boltz1x(
+    api_session: OpenProtein,
+    protein_complex_with_msa: Tuple[List[Protein], MSAFuture],
+):
+    """
+    Test folding with Boltz-1x.
+    """
+    proteins, _ = protein_complex_with_msa
+    future = api_session.fold.boltz1x.fold(proteins=proteins)
+    assert isinstance(future, FoldComplexResultFuture)
+    assert future.wait_until_done(timeout=E2E_TIMEOUT)
+    result_bytes = future.get()
+    assert result_bytes and "ATOM" in result_bytes.decode("utf-8")
+
+
+@pytest.mark.e2e
+def test_e2e_fold_with_boltz_cyclic_protein(
+    api_session: OpenProtein,
+    protein_complex_with_msa: Tuple[List[Protein], MSAFuture],
+):
+    """Test folding with a Boltz model and a cyclic protein."""
+    proteins, _ = protein_complex_with_msa
+    proteins[0].cyclic = True  # set first to cyclic
+
+    future = api_session.fold.boltz1.fold(proteins=proteins)
+    assert isinstance(future, FoldComplexResultFuture)
+    assert future.wait_until_done(timeout=E2E_TIMEOUT)
+    result_bytes = future.get()
+    assert result_bytes and "ATOM" in result_bytes.decode("utf-8")
+
+
+@pytest.mark.e2e
+def test_e2e_fold_with_boltz_bond_constraint(
+    api_session: OpenProtein,
+    protein_complex_with_msa: Tuple[List[Protein], MSAFuture],
+):
+    """Test folding with a Boltz model using a 'bond' constraint."""
+    proteins, _ = protein_complex_with_msa
+    constraints = [{"bond": {"atom1": ["A", 10, "CA"], "atom2": ["B", 20, "CA"]}}]
+    future = api_session.fold.boltz1.fold(proteins=proteins, constraints=constraints)
+    assert isinstance(future, FoldComplexResultFuture)
+    assert future.wait_until_done(timeout=E2E_TIMEOUT)
+    result_bytes = future.get()
+    assert result_bytes and "ATOM" in result_bytes.decode("utf-8")
+
+
+@pytest.mark.e2e
+def test_e2e_fold_with_boltz_pocket_constraint(
+    api_session: OpenProtein,
+    protein_complex_with_msa: Tuple[List[Protein], MSAFuture],
+):
+    """Test folding with a Boltz model using a 'pocket' constraint."""
+    proteins, _ = protein_complex_with_msa
+    ligand = Ligand(chain_id="D", smiles="CCO")  # Use a different chain ID
+    constraints = [
+        {
+            "pocket": {
+                "binder": "D",
+                "contacts": [["A", 15], ["B", 22]],
+                "max_distance": 10.0,
+            }
+        }
+    ]
+    future = api_session.fold.boltz1.fold(
+        proteins=proteins, ligands=[ligand], constraints=constraints
     )
-    assert "esmfold" in [m.id for m in models]
-
-    f = api_session.fold.esmfold.fold(SEQUENCES)
-
-    assert f.wait_until_done()
-    result = f.wait()
-    assert len(result) == 1
-    assert len(result[0]) == 2
-    assert result[0][0] == SEQUENCES[0]
-    assert "ATOM" in result[0][1].decode()
+    assert isinstance(future, FoldComplexResultFuture)
+    assert future.wait_until_done(timeout=E2E_TIMEOUT)
+    result_bytes = future.get()
+    assert result_bytes and "ATOM" in result_bytes.decode("utf-8")
 
 
-@pytest.fixture(autouse=False)
-def test_msa_post(api_session):
-    job = msa_post(api_session, seed=AF_SEQUENCE.encode())
-    job = job.job
+@pytest.mark.e2e
+def test_e2e_fold_with_boltz_contact_constraint(
+    api_session: OpenProtein,
+    protein_complex_with_msa: Tuple[List[Protein], MSAFuture],
+):
+    """Test folding with a Boltz-1 model using a 'contact' constraint."""
+    proteins, _ = protein_complex_with_msa
+    constraints = [
+        {"contact": {"token1": ["A", 10], "token2": ["B", 20], "max_distance": 15.0}}
+    ]
+    future = api_session.fold.boltz1.fold(proteins=proteins, constraints=constraints)
+    assert isinstance(future, FoldComplexResultFuture)
+    assert future.wait_until_done(timeout=E2E_TIMEOUT)
+    result_bytes = future.get()
+    assert result_bytes and "ATOM" in result_bytes.decode("utf-8")
 
-    assert isinstance(job, MSAJob)
-    msaf = MSAFuture(api_session, job)
-    assert job.job_id is not None
-    assert job.status in ["PENDING", "RUNNING", "SUCCESS"]
-    if STATIC.msa_id is None:
-        STATIC.msa_id = job.job_id
-    yield msaf
+
+@pytest.mark.e2e
+def test_e2e_fold_with_boltz2(
+    api_session: OpenProtein,
+    protein_complex_with_msa: Tuple[List[Protein], MSAFuture],
+):
+    """
+    Test folding with Boltz-2.
+    """
+    proteins, _ = protein_complex_with_msa
+    future = api_session.fold.boltz2.fold(proteins=proteins)
+    assert isinstance(future, FoldComplexResultFuture)
+    assert future.wait_until_done(timeout=E2E_TIMEOUT)
+    result_bytes = future.get()
+    assert result_bytes and "ATOM" in result_bytes.decode("utf-8")
+    # affinity not found
+    with pytest.raises(ValueError, match="affinity not found for request"):
+        _ = future.affinity
 
 
-def test_fold_api_colabfold(api_session, test_msa_post):
-    models = api_session.fold.list_models()
-    assert all(
-        [isinstance(m, ESMFoldModel) or isinstance(m, AlphaFold2Model) for m in models]
+@pytest.mark.e2e
+def test_e2e_fold_with_boltz2_with_affinity(
+    api_session: OpenProtein,
+    protein_complex_with_msa: Tuple[List[Protein], MSAFuture],
+):
+    """Test folding with Boltz-2 and requesting the affinity property."""
+    proteins, _ = protein_complex_with_msa
+    ligand = Ligand(chain_id="D", smiles="CCO")  # Use a different chain ID
+    properties = [{"affinity": {"binder": "D"}}]
+    constraints = [
+        {"contact": {"token1": ["A", 10], "token2": ["B", 20], "max_distance": 15.0}}
+    ]
+    future = api_session.fold.boltz2.fold(
+        proteins=proteins,
+        ligands=[ligand],
+        properties=properties,
+        constraints=constraints,
     )
-    assert "alphafold2" in [m.id for m in models]
-
-    f = api_session.fold.alphafold2.fold(msa=test_msa_post, num_recycles=1)
-    time.sleep(2)  # wait for job to reg
-    assert f.wait_until_done(timeout=TIMEOUT)
-    result = f.wait()
-    assert len(result) == 1
-    assert len(result[0]) == 2
-    assert result[0][0] == AF_SEQUENCE.encode()
-    assert "ATOM" in result[0][1].decode()
+    assert isinstance(future, FoldComplexResultFuture)

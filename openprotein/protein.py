@@ -1,13 +1,16 @@
 import io
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 import gemmi
 import numpy as np
 import numpy.typing as npt
 
 from . import fasta
+
+if TYPE_CHECKING:
+    from openprotein.align import MSAFuture
 
 
 # fmt: off
@@ -137,6 +140,7 @@ class Protein:
             self._name = name if isinstance(name, str) else name.decode()
         else:
             self._name = name
+        self._tags = {}
 
     @property
     def name(self) -> str | None:
@@ -172,6 +176,30 @@ class Protein:
     def plddt(self, x: npt.NDArray[np.float32]) -> None:
         assert len(x) == len(self)
         self._plddt = x
+
+    @property
+    def chain_id(self) -> str | list[str] | None:
+        return self._tags.get("chain_id")
+
+    @chain_id.setter
+    def chain_id(self, chain_id: str | list[str]) -> None:
+        self._tags["chain_id"] = chain_id
+
+    @property
+    def cyclic(self) -> bool:
+        return self._tags.get("cyclic") or False
+
+    @cyclic.setter
+    def cyclic(self, cyclic: bool) -> None:
+        self._tags["cyclic"] = cyclic
+
+    @property
+    def msa(self) -> "str | MSAFuture | None":
+        return self._tags.get("msa")
+
+    @msa.setter
+    def msa(self, msa: "str | MSAFuture | None") -> None:
+        self._tags["msa"] = msa
 
     def __len__(self):
         lengths = {

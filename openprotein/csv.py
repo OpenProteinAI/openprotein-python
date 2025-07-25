@@ -1,11 +1,18 @@
-import codecs
 import csv
 from typing import Iterator
 
-import requests
+
+def ensure_str_lines(
+    lines: Iterator[str] | Iterator[bytes], encoding="utf-8"
+) -> Iterator[str]:
+    for line in lines:
+        if isinstance(line, bytes):
+            yield line.decode(encoding)
+        else:
+            yield line
 
 
-def csv_stream(response: requests.Response) -> Iterator[list[str]]:
+def parse_stream(lines: Iterator[str] | Iterator[bytes]) -> Iterator[list[str]]:
     """
     Returns a CSV reader from a requests.Response object.
 
@@ -19,8 +26,6 @@ def csv_stream(response: requests.Response) -> Iterator[list[str]]:
     csv.reader
         A csv reader object for the response.
     """
-    # get raw bytes stream
-    raw_content = response.raw
-    # force the response to be encoded as utf-8
-    content = codecs.getreader("utf-8")(raw_content)
-    return csv.reader(content)
+    reader = csv.reader(ensure_str_lines(lines))
+    for row in reader:
+        yield row
