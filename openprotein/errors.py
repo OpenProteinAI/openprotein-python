@@ -1,3 +1,4 @@
+from pydantic import BaseModel
 from requests import Response
 
 
@@ -16,6 +17,11 @@ class MissingParameterError(Exception):
     def __init__(self, message="Required parameter is missing"):
         self.message = message
         super().__init__(self.message)
+
+
+class RawAPIError(BaseModel):
+
+    detail: str
 
 
 class APIError(Exception):

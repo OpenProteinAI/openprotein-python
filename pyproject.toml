@@ -1,7 +1,7 @@
 [project]
 name = "openprotein-python"
 # packages = [{ include = "openprotein" }]
-version = "0.7.0"
+version = "0.8.0"
 description = "OpenProtein Python interface."
 license = "MIT"
 readme = "README.md"
@@ -25,7 +25,7 @@ dependencies = [
 ]
 requires-python = ">=3.10"
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
   "pip>=24.2,<25",
   "ipykernel>=6.29.5,<7",
@@ -36,10 +36,8 @@ dev = [
   "hatchling>=1.26.1",
   "editables>=0.5,<0.6",
   "seaborn>=0.13.2,<0.14",
+  "jupyterlab>=4.4.1,<5",
 ]
-
-[dependency-groups]
-dev = ["jupyterlab>=4.4.1,<5"]
 
 [tool.pixi.workspace]
 channels = ["conda-forge"]
@@ -86,6 +84,11 @@ packages = ["openprotein"]
 
 [tool.pyright]
 typeCheckingMode = "basic"
+
+[tool.pytest.ini_options]
+markers = [
+  "e2e: marks tests as end-to-end",
+]
 
 [tool.black]
 line-length = 88

@@ -1,0 +1,6 @@
+[tools]
+pixi = "latest"
+"npm:pyright" = "latest"
+
+[env]
+_.python.venv = ".pixi/envs/default"

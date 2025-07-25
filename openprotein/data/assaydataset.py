@@ -1,40 +1,15 @@
-"""OpenProtein's data structures for assay datasets."""
-
-from datetime import datetime
-
 import pandas as pd
+
 from openprotein import config
 from openprotein.base import APISession
 from openprotein.errors import APIError
-from pydantic import BaseModel
 
-
-class AssayMetadata(BaseModel):
-    assay_name: str
-    assay_description: str
-    assay_id: str
-    original_filename: str
-    created_date: datetime
-    num_rows: int
-    num_entries: int
-    measurement_names: list[str]
-    sequence_length: int | None = None
-
-
-class AssayDataRow(BaseModel):
-    mut_sequence: str
-    measurement_values: list[float | None]
-
-
-class AssayDataPage(BaseModel):
-    assaymetadata: AssayMetadata
-    page_size: int
-    page_offset: int
-    assaydata: list[AssayDataRow]
+from . import api
+from .schemas import AssayDataPage, AssayMetadata
 
 
 class AssayDataset:
-    """Future Job for manipulating results"""
+    """Assay dataset which contains your sequences and measurements which can be used for training predictors."""
 
     def __init__(self, session: APISession, metadata: AssayMetadata):
         """
@@ -95,9 +70,6 @@ class AssayDataset:
         List
             List of models
         """
-
-        from . import assaydata_api as api
-
         return api.list_models(self.session, self.id)
 
     def update(
@@ -117,9 +89,6 @@ class AssayDataset:
         -------
         None
         """
-
-        from . import assaydata_api as api
-
         metadata = api.assaydata_put(
             self.session,
             self.id,
@@ -164,9 +133,6 @@ class AssayDataset:
         pd.DataFrame
             Dataframe containing the slice of assay data.
         """
-
-        from . import assaydata_api as api
-
         rows = []
         entries = api.assaydata_page_get(
             self.session, self.id, page_offset=0, page_size=1
@@ -174,7 +140,7 @@ class AssayDataset:
         for row in entries.assaydata:
             row = [row.mut_sequence] + row.measurement_values
             rows.append(row)
-        table = pd.DataFrame(rows, columns=["sequence"] + self.measurement_names)
+        table = pd.DataFrame(rows, columns=["sequence"] + self.measurement_names)  # type: ignore
         return table
 
     def get_slice(self, start: int, end: int) -> pd.DataFrame:
@@ -193,9 +159,6 @@ class AssayDataset:
         pd.DataFrame
             Dataframe containing the slice of assay data.
         """
-
-        from . import assaydata_api as api
-
         rows = []
         page_size = self.page_size
         # loop over the range
@@ -211,5 +174,5 @@ class AssayDataset:
                 row = [row.mut_sequence] + row.measurement_values
                 rows.append(row)
 
-        table = pd.DataFrame(rows, columns=["sequence"] + self.measurement_names)
+        table = pd.DataFrame(rows, columns=["sequence"] + self.measurement_names)  # type: ignore
         return table

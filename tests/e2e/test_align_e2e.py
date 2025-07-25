@@ -1,213 +1,146 @@
-import pytest
-from openprotein.api.align import *
-import json
-from tests.conf import BACKEND, TIMEOUT
+"""E2E tests for align workflows."""
+
 import time
-import collections
-import openprotein
-from openprotein.schemas import JobType
-from openprotein.jobs import *
-from AWSTools.Batchtools.batch_utils import fakeseq
 
-TEST_SEQUENCE = f"{fakeseq(5)}APPMYRMQLLSCIALSLALVTNSAPTSSSTKKTQLQLEHLLLDLQMILNGINNYKNPKLTRMLTFKFYMPKKATELKHLQCLEEELKPLEEVLNLAQSKNFHLRPRDLISNINVIVLELKGMYRMQLLSCIALSLALVTNSAPTSSSTKKTQLQLEHLLLDLQMILNGINNYKNPKLTRMLTFKFYMPKKATELKHLQCLEEELKPLEEVLNLAQSKNFHLRPRDLISNINVIVLELKGSEP"
-print(f"USING BACKEND: {BACKEND} ")
+import pytest
+
+from openprotein import OpenProtein
+from openprotein.align.schemas import AbNumberScheme
+from tests.utils.sequences import generate_mutated_sequences
+
+# Base sequence to generate mutations from
+BASE_SEQUENCE = "MQYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE"
+E2E_TIMEOUT = 600  # 10 minutes for long-running E2E tests
+
+# Base sequence for antibody numbering
+TEST_ANTIBODY_SEQUENCE = "EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAKYYYYGMDVWGQGTTVTVSS"
 
 
-@pytest.fixture
-def api_session():
-    with open("./secrets.config", "r") as f:
-        secrets = json.load(f)
-    session = openprotein.connect(
-        username=secrets["username"], password=secrets["password"], backend=BACKEND
+@pytest.mark.e2e
+def test_e2e_mafft_workflow(api_session: OpenProtein):
+    """
+    Tests the full MAFFT alignment workflow:
+    1. Starts a MAFFT job with dynamically generated sequences to avoid caching.
+    2. Waits for it to complete.
+    3. Fetches and validates the resulting MSA.
+    """
+    # 1. Generate unique sequences for this test run
+    generated_sequences = generate_mutated_sequences(
+        BASE_SEQUENCE, num_sequences=3, mutation_rate=0.05
     )
-    yield session
+
+    # 2. Start a MAFFT job
+    align_future = api_session.align.mafft(sequences=generated_sequences)
+
+    # 3. Wait for completion
+    align_future.wait_until_done(verbose=True, timeout=E2E_TIMEOUT)
+
+    # 4. Assert status and get results
+    assert align_future.status == "SUCCESS"
+
+    msa_iterator = align_future.get()
+    msa_proteins = list(msa_iterator)
+
+    # The number of rows should be the number of sequences
+    assert len(msa_proteins) == len(
+        generated_sequences
+    ), "MSA data should contain a row for each sequence"
+
+    # Verify that the original sequences can be recovered by removing gaps from the data rows
+    original_sequences_from_msa = {row[1].replace("-", "") for row in msa_proteins}
+    assert set(generated_sequences) == original_sequences_from_msa
 
 
-class Static:
-    msa_id: str = None
-    prompt_id: str = None
-    score_job_id: str = None
-    ssp_job_id: str = None
-    generate_job_id: str = None
-    uploaded_prompt_id: str = None
+@pytest.mark.e2e
+def test_e2e_mafft_caching(api_session: OpenProtein):
+    """
+    Tests that submitting an identical job soon after the first one completes
+    returns a cached result almost instantly.
+    """
+    # Use a static, non-random set of sequences for this test
+    static_sequences = [
+        BASE_SEQUENCE,
+        "MQYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVAAAA",
+    ]
+
+    # 1. First Run (to populate the cache)
+    align_future_1 = api_session.align.mafft(sequences=static_sequences)
+    align_future_1.wait_until_done(verbose=True, timeout=E2E_TIMEOUT)
+    assert align_future_1.status == "SUCCESS"
+
+    # 2. Second Run (should hit the cache)
+    caching_timeout = 10  # seconds
+
+    start_time = time.time()
+    align_future_2 = api_session.align.mafft(sequences=static_sequences)
+    align_future_2.wait_until_done(verbose=True, timeout=caching_timeout)
+    end_time = time.time()
+
+    duration = end_time - start_time
+
+    assert align_future_2.status == "SUCCESS"
+    assert (
+        duration < caching_timeout
+    ), f"Cached job took {duration:.2f}s, which is longer than the {caching_timeout}s timeout."
 
 
-STATIC = Static()
-
-
-@pytest.fixture(autouse=False)
-def test_msa_post(api_session):
-    job = msa_post(api_session, seed=TEST_SEQUENCE.encode())
-    job = job.job
-    print(job)
-    assert job.job_type == JobType.align_align
-    assert isinstance(job, MSAJob)
-    assert job.job_id is not None
-    assert job.status in ["PENDING", "RUNNING", "SUCCESS"]
-    if STATIC.msa_id is None:
-        STATIC.msa_id = job.job_id
-    yield job.job_id
-
-
-@pytest.fixture(autouse=False)
-def test_prompt_post(api_session, test_msa_post):
-    job = prompt_post(
-        api_session,
-        STATIC.msa_id,
-        num_sequences=10,
-        min_similarity=0.1,
-        num_ensemble_prompts=3,
+@pytest.mark.e2e
+def test_e2e_clustalo_workflow(api_session: OpenProtein):
+    """
+    Tests the full ClustalO alignment workflow.
+    """
+    # 1. Generate unique sequences for this test run
+    generated_sequences = generate_mutated_sequences(
+        BASE_SEQUENCE, num_sequences=3, mutation_rate=0.05
     )
-    job = job.job
-    print(job)
 
-    assert isinstance(job, PromptJob)
-    assert job.job_id is not None
-    assert job.status in ["PENDING", "RUNNING", "SUCCESS"]
-    if STATIC.prompt_id is None:
-        STATIC.prompt_id = job.job_id
-    yield job.job_id
+    # 2. Start a ClustalO job
+    align_future = api_session.align.clustalo(sequences=generated_sequences)
 
+    # 3. Wait for completion
+    align_future.wait_until_done(verbose=True, timeout=E2E_TIMEOUT)
 
-def test_upload_invalid_prompt_post(api_session):
-    sep = "<END_PROMPT>\n"
-    prompt_file = "\n".join(["BB??BB"] * 3) + "\n"
-    prompt_file = prompt_file + sep + "AAAAA"
-    with pytest.raises(APIError):
-        upload_prompt_post(api_session, prompt_file)
+    # 4. Assert status and get results
+    assert align_future.status == "SUCCESS"
 
+    msa_iterator = align_future.get()
+    msa_data = list(msa_iterator)
 
-@pytest.fixture(autouse=False)
-def test_upload_prompt_post(api_session):
-    sep = "<END_PROMPT>\n"
-    prompt_file = "\n".join(["LKLK"] * 3) + "\n"
-    prompt_file = prompt_file + sep + "AAAAA"
-
-    job = upload_prompt_post(api_session, prompt_file)
-    job = job.job
-    print(job)
-
-    assert isinstance(job, PromptJob)
-    assert job.job_id is not None
-    assert job.status in ["PENDING", "RUNNING", "SUCCESS"]
-    if STATIC.uploaded_prompt_id is None:
-        STATIC.uploaded_prompt_id = job.job_id
-    yield job.job_id
+    # Verify that the original sequences can be recovered by removing gaps
+    assert len(msa_data) == len(
+        generated_sequences
+    ), "MSA data should contain a row for each sequence"
+    original_sequences_from_msa = {row[1].replace("-", "") for row in msa_data}
+    assert set(generated_sequences) == original_sequences_from_msa
 
 
-def test_csv_stream():
-    response = requests.Response()
-    response.raw = BytesIO(b"col1,col2\nval1,val2")
-    reader = csv_stream(response)
-    assert list(reader) == [["col1", "col2"], ["val1", "val2"]]
+@pytest.mark.e2e
+def test_e2e_abnumber_workflow(api_session: OpenProtein):
+    """
+    Tests the full antibody numbering workflow.
+    """
+    # 1. Generate unique antibody sequences for this test run
+    generated_sequences = generate_mutated_sequences(
+        TEST_ANTIBODY_SEQUENCE, num_sequences=3, mutation_rate=0.02
+    )
 
+    # 2. Start an AbNumber job
+    align_future = api_session.align.abnumber(
+        sequences=generated_sequences, scheme=AbNumberScheme.CHOTHIA
+    )
 
-def test_get_input(api_session, test_msa_post):
-    job = job_get(api_session, job_id=STATIC.msa_id)
-    print(job)
+    # 3. Wait for completion
+    align_future.wait_until_done(verbose=True, timeout=E2E_TIMEOUT)
 
-    reader = get_input(api_session, job, PoetInputType.INPUT)
-    x = list(reader)
-    assert len(x) == 1
-    assert x[0][0] == "seed" or x[0][0] == "101"
-    assert x[0][1] == TEST_SEQUENCE
+    # 4. Assert status and get results
+    assert align_future.status == "SUCCESS"
 
+    msa_iterator = align_future.get()
+    msa_data = list(msa_iterator)
 
-def test_get_prompt(api_session, test_upload_prompt_post):
-    prompt = api_session.load_job(STATIC.uploaded_prompt_id)
-    assert isinstance(prompt, PromptFuture)
-
-    prompt.wait_until_done(verbose=True, timeout=TIMEOUT)
-
-    r = prompt.wait(verbose=True)
-    x = list(r)
-    assert any([i == ["<END_PROMPT>"] for i in x])
-    assert len(x) == 9  # total seqs
-    for i in x:
-        if not i == ["<END_PROMPT>"]:
-            assert len(i) == 2
-
-    p1 = list(prompt.get_prompt(1))
-    assert len(p1) > 0
-    for i in p1:
-        assert len(i) == 2
-
-    p2 = list(prompt.get_prompt(2))
-    assert len(p2) > 0
-    for i in p2:
-        assert len(i) == 2
-
-    p3 = list(prompt.get_prompt(3))
-    assert len(p3) == 0  # only 2 prompts
-
-
-def test_get_msa(api_session, test_msa_post):
-    msa = api_session.load_job(STATIC.msa_id)
-    assert isinstance(msa, MSAFuture)
-    msa.wait_until_done(verbose=True, timeout=TIMEOUT)
-    assert msa.status == "SUCCESS"
-
-    r = msa.wait(verbose=True)
-    x = list(r)
-    assert len(x) > 1
-    assert x[0][0] == "seed" or x[0][0] == "101"
-    assert x[0][1] == TEST_SEQUENCE
-
-    assert len(list(msa.get_input("GENERATED"))) > 1
-    assert len(list(msa.get_input("RAW"))) == 1
-
-
-def test_msa_future(api_session, test_msa_post):
-    job = job_get(api_session, job_id=STATIC.msa_id)
-    print(job)
-
-    future = MSAFuture(api_session, job)
-    assert future.wait_until_done(verbose=True, timeout=TIMEOUT)
-
-    assert future.id == STATIC.msa_id
-    assert future.msa_id == STATIC.msa_id
-    assert future.prompt_id is None
-
-    reader = future.wait(verbose=True)
-    assert isinstance(reader, collections.Iterator)
-
-    reader = future.get()
-    assert isinstance(reader, collections.Iterator)
-
-    prompt_future = future.sample_prompt()
-    assert isinstance(prompt_future, PromptFuture)
-
-
-def test_prompt_future(api_session, test_prompt_post):
-    job = job_get(api_session, job_id=STATIC.prompt_id)
-    future = PromptFuture(api_session, job, msa_id=STATIC.msa_id)
-    assert future.wait_until_done(verbose=True, timeout=TIMEOUT)
-
-    assert future.id == STATIC.prompt_id
-    assert future.msa_id == STATIC.msa_id
-    assert future.prompt_id == STATIC.prompt_id
-
-    reader = future.wait(verbose=True)
-    assert isinstance(reader, collections.Iterator)
-
-    reader = future.get()
-    assert isinstance(reader, collections.Iterator)
-
-
-def test_prompt_future_get(api_session, test_upload_prompt_post):
-    # job = api_session.poet.load_prompt_job(STATIC.prompt_id).wait_until_done(timeout=120)
-    job = job_get(api_session, job_id=STATIC.prompt_id)
-    print(job)
-    future = PromptFuture(session=api_session, job=job)
-
-    reader = future.get_input(PoetInputType.MSA)
-    assert isinstance(reader, collections.Iterator)
-
-    reader = future.get_prompt()
-    assert isinstance(reader, collections.Iterator)
-
-    reader = future.get_seed()
-    assert isinstance(reader, collections.Iterator)
-
-    reader = future.get_msa()
-    assert isinstance(reader, collections.Iterator)
+    # Verify that the original sequences can be recovered
+    assert len(msa_data) == len(
+        generated_sequences
+    ), "MSA data should contain a row for each sequence"
+    original_sequences_from_msa = {row[1].replace("-", "") for row in msa_data}
+    assert set(generated_sequences) == original_sequences_from_msa
