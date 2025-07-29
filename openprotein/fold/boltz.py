@@ -111,7 +111,7 @@ class BoltzModel(FoldModel):
         Parameters
         ----------
         proteins : List[Protein] | MSAFuture | None
-            List of protein sequences to include in folded output. `Protein` objects must be tagged with an `msa`, unless `force_single_sequence_mode` is true. Alternatively, supply an `MSAFuture` to use all query sequences as a multimer.
+            List of protein sequences to include in folded output. `Protein` objects must be tagged with an `msa`, which can be a `Protein.single_sequence_mode` for single sequence mode. Alternatively, supply an `MSAFuture` to use all query sequences as a multimer.
         dna : List[DNA] | None
             List of DNA sequences to include in folded output.
         rna : List[RNA] | None
@@ -128,8 +128,6 @@ class BoltzModel(FoldModel):
             Scaling factor for diffusion steps.
         constraints : Optional[List[dict]]
             List of constraints.
-        force_single_sequence_mode: bool
-            Force the use of single sequence mode. Needed if providing protein sequences without MSA.
 
         Returns
         -------
@@ -189,9 +187,9 @@ class BoltzModel(FoldModel):
         for protein in proteins or []:
             # check the msa
             msa = protein.msa
-            if msa == None and not force_single_sequence_mode:
+            if msa is None:
                 raise ValueError(
-                    "Expected all protein sequences to have `.msa` set or explicitly use `force_single_sequence_mode`"
+                    "Expected all protein sequences to have `.msa` set with an `MSAFuture` or `Protein.single_sequence_mode` for single sequence mode."
                 )
             # convert to msa id or null for single sequence mode
             msa_id = (
@@ -286,7 +284,6 @@ class Boltz2Model(BoltzModel, FoldModel):
         constraints: list[dict] | None = None,
         templates: list[dict] | None = None,
         properties: list[dict] | None = None,
-        force_single_sequence_mode: bool = False,
         method: str | None = None,
     ) -> FoldComplexResultFuture:
         """
@@ -295,7 +292,7 @@ class Boltz2Model(BoltzModel, FoldModel):
         Parameters
         ----------
         proteins : List[Protein] | MSAFuture | None
-            List of protein sequences to include in folded output. `Protein` objects must be tagged with an `msa`, unless `force_single_sequence_mode` is true. Alternatively, supply an `MSAFuture` to use all query sequences as a multimer.
+            List of protein sequences to include in folded output. `Protein` objects must be tagged with an `msa`, which can be a `Protein.single_sequence_mode` for single sequence mode. Alternatively, supply an `MSAFuture` to use all query sequences as a multimer.
         dna : List[DNA] | None
             List of DNA sequences to include in folded output.
         rna : List[RNA] | None
@@ -318,8 +315,6 @@ class Boltz2Model(BoltzModel, FoldModel):
             List of templates to use for structure prediction.
         properties: list[dict] | None = None
             List of additional properties to predict. Should match the `BoltzProperties`
-        force_single_sequence_mode: bool
-            Force the use of single sequence mode. Needed if providing protein sequences without MSA.
         method: str | None
             The experimental method or supervision source used for the prediction. Defults to None.
             Supported values (case-insensitive) include:
@@ -373,7 +368,6 @@ class Boltz2Model(BoltzModel, FoldModel):
             constraints=constraints,
             templates=templates,
             properties=properties,
-            force_single_sequence_mode=force_single_sequence_mode,
             method=method,
         )
 
@@ -396,7 +390,6 @@ class Boltz1xModel(BoltzModel, FoldModel):
         sampling_steps: int = 200,
         step_scale: float = 1.638,
         constraints: list[dict] | None = None,
-        force_single_sequence_mode: bool = False,
     ) -> FoldComplexResultFuture:
         """
         Post sequences to Boltz-1x model. Uses potentials with Boltz-1 model.
@@ -404,7 +397,7 @@ class Boltz1xModel(BoltzModel, FoldModel):
         Parameters
         ----------
         proteins : List[Protein] | MSAFuture | None
-            List of protein sequences to include in folded output. `Protein` objects must be tagged with an `msa`, unless `force_single_sequence_mode` is true. Alternatively, supply an `MSAFuture` to use all query sequences as a multimer.
+            List of protein sequences to include in folded output. `Protein` objects must be tagged with an `msa`, which can be a `Protein.single_sequence_mode` for single sequence mode. Alternatively, supply an `MSAFuture` to use all query sequences as a multimer.
         dna : List[DNA] | None
             List of DNA sequences to include in folded output.
         rna : List[RNA] | None
@@ -421,8 +414,6 @@ class Boltz1xModel(BoltzModel, FoldModel):
             Scaling factor for diffusion steps.
         constraints : Optional[List[dict]]
             List of constraints.
-        force_single_sequence_mode: bool
-            Force the use of single sequence mode. Needed if providing protein sequences without MSA.
 
         Returns
         -------
@@ -441,7 +432,6 @@ class Boltz1xModel(BoltzModel, FoldModel):
             step_scale=step_scale,
             use_potentials=True,
             constraints=constraints,
-            force_single_sequence_mode=force_single_sequence_mode,
         )
 
 
@@ -464,7 +454,6 @@ class Boltz1Model(BoltzModel, FoldModel):
         step_scale: float = 1.638,
         use_potentials: bool = False,
         constraints: list[dict] | None = None,
-        force_single_sequence_mode: bool = False,
     ) -> FoldComplexResultFuture:
         """
         Post sequences to Boltz-1 model.
@@ -472,7 +461,7 @@ class Boltz1Model(BoltzModel, FoldModel):
         Parameters
         ----------
         proteins : List[Protein] | MSAFuture | None
-            List of protein sequences to include in folded output. `Protein` objects must be tagged with an `msa`, unless `force_single_sequence_mode` is true. Alternatively, supply an `MSAFuture` to use all query sequences as a multimer.
+            List of protein sequences to include in folded output. `Protein` objects must be tagged with an `msa`, which can be a `Protein.single_sequence_mode` for single sequence mode. Alternatively, supply an `MSAFuture` to use all query sequences as a multimer.
         dna : List[DNA] | None
             List of DNA sequences to include in folded output.
         rna : List[RNA] | None
@@ -491,8 +480,6 @@ class Boltz1Model(BoltzModel, FoldModel):
             Whether or not to use potentials.
         constraints : Optional[List[dict]]
             List of constraints.
-        force_single_sequence_mode: bool
-            Force the use of single sequence mode. Needed if providing protein sequences without MSA.
 
         Returns
         -------
@@ -511,7 +498,6 @@ class Boltz1Model(BoltzModel, FoldModel):
             step_scale=step_scale,
             use_potentials=use_potentials,
             constraints=constraints,
-            force_single_sequence_mode=force_single_sequence_mode,
         )
 
 
