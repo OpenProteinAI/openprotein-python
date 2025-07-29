@@ -193,12 +193,16 @@ class Protein:
     def cyclic(self, cyclic: bool) -> None:
         self._tags["cyclic"] = cyclic
 
+    class NullMSA: ...
+
+    single_sequence_mode = NullMSA
+
     @property
-    def msa(self) -> "str | MSAFuture | None":
+    def msa(self) -> "str | MSAFuture | None | NullMSA":
         return self._tags.get("msa")
 
     @msa.setter
-    def msa(self, msa: "str | MSAFuture | None") -> None:
+    def msa(self, msa: "str | MSAFuture | None | NullMSA") -> None:
         self._tags["msa"] = msa
 
     def __len__(self):
