@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from openprotein import config
 from openprotein.base import APISession
 from openprotein.common import FeatureType
 from openprotein.data import AssayDataset, AssayMetadata, DataAPI
@@ -21,9 +22,9 @@ if TYPE_CHECKING:
 
 class SVDModel(Future):
     """
-    Class providing embedding endpoint for SVD models. \
-        Also allows retrieving embeddings of sequences used to fit the SVD with `get`.
-    Implements a Future to allow waiting for a fit job.
+    SVD model that can be used to create reduced embeddings.
+
+    The model is also implemented as a `Future` to allow waiting for a fit job.
     """
 
     job: SVDFitJob
@@ -61,18 +62,22 @@ class SVDModel(Future):
 
     @property
     def n_components(self):
+        """Number of components of the SVD."""
         return self._metadata.n_components
 
     @property
     def sequence_length(self):
+        """Sequence length constraint of the SVD."""
         return self._metadata.sequence_length
 
     @property
     def reduction(self):
+        """Reduction of embeddings used to fit the SVD."""
         return self._metadata.reduction
 
     @property
     def metadata(self):
+        """Metadata of the SVD."""
         self._refresh_metadata()
         return self._metadata
 
@@ -81,12 +86,12 @@ class SVDModel(Future):
             self._metadata = api.svd_get(session=self.session, svd_id=self._metadata.id)
 
     def get_model(self) -> EmbeddingModel:
-        """Fetch embeddings model"""
         model = EmbeddingModel.create(session=self.session, model_id=self._metadata.id)
         return model
 
     @property
     def model(self) -> EmbeddingModel:
+        """Base embeddings model used for the SVD."""
         return self.get_model()
 
     def delete(self) -> bool:
@@ -96,7 +101,7 @@ class SVDModel(Future):
         return api.svd_delete(self.session, self.id)
 
     def get(self, verbose: bool = False):
-        # overload for AsyncJobFuture
+        """Retrieve this SVD model itself."""
         return self
 
     def get_inputs(self) -> list[bytes]:
@@ -105,13 +110,14 @@ class SVDModel(Future):
 
         Returns
         -------
-            List[bytes]: list of sequences
+        list[bytes]
+            List of sequences
         """
         return api.svd_get_sequences(session=self.session, svd_id=self.id)
 
     def embed(
         self, sequences: list[bytes] | list[str], **kwargs
-    ) -> EmbeddingsResultFuture:
+    ) -> "SVDEmbeddingsResultFuture":
         """
         Use this SVD model to get reduced embeddings from input sequences.
 
@@ -122,10 +128,10 @@ class SVDModel(Future):
 
         Returns
         -------
-        EmbeddingResultFuture
-            Class for further job manipulation.
+        SVDEmbeddingsResultFuture
+            Future result containing the reduced embeddings.
         """
-        return EmbeddingsResultFuture.create(
+        return SVDEmbeddingsResultFuture.create(
             session=self.session,
             job=api.svd_embed_post(
                 session=self.session, svd_id=self.id, sequences=sequences, **kwargs
@@ -157,7 +163,8 @@ class SVDModel(Future):
 
         Returns
         -------
-            UMAPModel
+        UMAPModel
+            UMAP model fitted on the reduced embeddings from provided sequences or assay.    
         """
         # local import for cyclic dep
         from openprotein.umap import UMAPAPI
@@ -195,29 +202,27 @@ class SVDModel(Future):
 
         Parameters
         ----------
-        assay : AssayMetadata | str
-            Assay to fit GP on.
-        properties: list[str]
+        assay : AssayMetadata or AssayDataset or str
+            Assay to fit GP on. Or its assay_id.
+        properties: list of str
             Properties in the assay to fit the gp on.
 
         Returns
         -------
-            PredictorModel
+        PredictorModel
+            Property predictor model trained using the reduced embeddings with provided assay and properties.
         """
         # local import to resolve cyclic
         from openprotein.predictor import PredictorAPI
 
-        data_api = getattr(self.session, "jobs", None)
+        data_api = getattr(self.session, "data", None)
         assert isinstance(data_api, DataAPI)
 
         predictor_api = getattr(self.session, "predictor", None)
         assert isinstance(predictor_api, PredictorAPI)
 
-        model_id = self.id
         # get assay if str
         assay = data_api.get(assay_id=assay) if isinstance(assay, str) else assay
-        # extract assay_id
-        assay_id = assay.assay_id if isinstance(assay, AssayMetadata) else assay.id
         if (
             self.sequence_length is not None
             and assay.sequence_length != self.sequence_length
@@ -237,30 +242,47 @@ class SVDModel(Future):
                 "Training a multitask GP is not yet supported (i.e. number of properties should only be 1 for now)"
             )
         return predictor_api.fit_gp(
-            assay_id=assay_id,
+            assay=assay,
             properties=properties,
             feature_type=FeatureType.SVD,
-            model_id=model_id,
+            model=self,
             name=name,
             description=description,
             **kwargs,
         )
 
 
-class SVDEmbeddingResultFuture(EmbeddingsResultFuture, Future):
-    """Future for manipulating results for embeddings-related requests."""
+class SVDEmbeddingsResultFuture(EmbeddingsResultFuture, Future):
+    """SVD embeddings results represented as a future."""
 
     job: SVDEmbeddingsJob
 
+    def wait(
+        self,
+        interval: int = config.POLLING_INTERVAL,
+        timeout: int | None = None,
+        verbose: bool = False,
+    ) -> list[np.ndarray]:
+        """Wait for the SVD embeddings job and retrieve the embeddings."""
+        return super().wait(interval, timeout, verbose)
+
+    def get(self, verbose=False) -> list[np.ndarray]:
+        """Get all the SVD reduced embeddings from the job."""
+        return super().get(verbose)
+
     def get_item(self, sequence: bytes) -> np.ndarray:
         """
-        Get embedding results for specified sequence.
+        Get SVD embeddings for specified sequence.
 
-        Args:
-            sequence (bytes): sequence to fetch results for
+        Parameters
+        ----------
+        sequence: bytes
+            Sequence to fetch SVD embeddings for.
 
-        Returns:
-            np.ndarray: embeddings
+        Returns
+        -------
+        np.ndarray
+            SVD embeddings represented a numpy array.
         """
         data = api.embed_get_sequence_result(self.session, self.job.job_id, sequence)
         return api.embed_decode(data)

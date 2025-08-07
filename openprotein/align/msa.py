@@ -22,33 +22,6 @@ from .schemas import (
 class MSAFuture(AlignFuture, Future):
     """
     Represents a future for MSA (Multiple Sequence Alignment) results.
-
-    Parameters
-    ----------
-    session : APISession
-        An instance of APISession for API interactions.
-    job : MSAJob
-        The MSA job.
-    page_size : int, optional
-        The number of results to fetch in a single page. Defaults to config.POET_PAGE_SIZE.
-
-    Attributes
-    ----------
-    session : APISession
-        An instance of APISession for API interactions.
-    job : MSAJob | MafftJob | ClustalOJob | AbNumberJob
-        The MSA job.
-    page_size : int
-        The number of results to fetch in a single page.
-    msa_id : str
-        The job ID for the MSA.
-
-    Methods
-    -------
-    get(verbose=False)
-        Retrieve the MSA of the job as an iterator over CSV rows.
-    sample_prompt(...)
-        Create a protein sequence prompt from the linked MSA for PoET Jobs.
     """
 
     job: MSAJob | MafftJob | ClustalOJob | AbNumberJob

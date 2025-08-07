@@ -1,11 +1,11 @@
 """OpenProtein-proprietary models."""
 
-from .models import EmbeddingModel
+from .models import AttnModel, EmbeddingModel
 
 
-class OpenProteinModel(EmbeddingModel):
+class OpenProteinModel(AttnModel, EmbeddingModel):
     """
-    Class providing inference endpoints for proprietary protein embedding models served by OpenProtein.
+    Proprietary protein embedding models served by OpenProtein.
 
     Examples
     --------
@@ -13,9 +13,9 @@ class OpenProteinModel(EmbeddingModel):
 
     .. code-block:: python
 
-    >>> import openprotein
-    >>> session = openprotein.connect(username="user", password="password")
-    >>> session.embedding.prot_seq?
+        >>> import openprotein
+        >>> session = openprotein.connect(username="user", password="password")
+        >>> session.embedding.prot_seq?
     """
 
     model_id = ["prot-seq", "rotaprot-large-uniref50w", "rotaprot_large_uniref90_ft"]

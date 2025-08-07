@@ -131,18 +131,23 @@ class PredictorAPI:
 
         Parameters
         ----------
-        assay : AssayMetadata | str
+        assay : AssayMetadata or AssayDataset or str
             Assay to fit GP on.
         properties: list[str]
             Properties in the assay to fit the gp on.
-        feature_type: str
+        feature_type: str | FeatureType | None
             Type of features to use for encoding sequences. "SVD" or "PLM".
-        model : str
-            Protembed/SVD model to use depending on feature type.
+            None would require model to be EmbeddingModel or SVDMode.
+        model : EmbeddingModel | SVDModel | str
+            Instance of either EmbeddingModel or SVDModel to use depending
+            on feature type. Can also be a str specifying the model id,
+            but then feature_type would have to be specified.
         reduction : str | None
-            Type of embedding reduction to use for computing features. default = None
+            Type of embedding reduction to use for computing features.
+            E.g. "MEAN" or "SUM". Used only if using EmbeddingModel, and
+            must be non-nil if using an EmbeddingModel. Defaults to None.
         kwargs:
-            Additional keyword arguments to be passed to foundational models, e.g. prompt for PoET models.
+            Additional keyword arguments to be passed to foundational models, e.g. prompt_id for PoET models.
 
         Returns
         -------
@@ -170,27 +175,34 @@ class PredictorAPI:
                 assert isinstance(embeddings_api, EmbeddingsAPI)
                 model = embeddings_api.get_model(model)
             assert isinstance(model, EmbeddingModel), "Expected EmbeddingModel"
-            return model.fit_gp(
-                assay=assay,
-                properties=properties,
-                reduction=reduction,
-                name=name,
-                description=description,
-                **kwargs,
-            )
+            model_id = model.id
         elif feature_type == FeatureType.SVD:
             if isinstance(model, str):
                 svd_api = getattr(self.session, "svd", None)
                 assert isinstance(svd_api, SVDAPI)
                 model = svd_api.get_svd(model)
             assert isinstance(model, SVDModel), "Expected SVDModel"
-            return model.fit_gp(
-                assay=assay,
+            model_id = model.id
+        # get assay_id
+        assay_id = (
+            assay.assay_id
+            if isinstance(assay, AssayMetadata)
+            else assay.id if isinstance(assay, AssayDataset) else assay
+        )
+        return PredictorModel(
+            session=self.session,
+            job=api.predictor_fit_gp_post(
+                session=self.session,
+                assay_id=assay_id,
                 properties=properties,
+                feature_type=feature_type,
+                model_id=model_id,
+                reduction=reduction,
                 name=name,
                 description=description,
                 **kwargs,
-            )
+            ),
+        )
 
     def delete_predictor(self, predictor_id: str) -> bool:
         """

@@ -17,6 +17,7 @@ from openprotein.align import AlignAPI
 from openprotein.prompt import PromptAPI
 from openprotein.embeddings import EmbeddingsAPI
 from openprotein.fold import FoldAPI
+from openprotein.models import ModelsAPI
 from openprotein.svd import SVDAPI
 from openprotein.umap import UMAPAPI
 from openprotein.predictor import PredictorAPI
@@ -40,6 +41,7 @@ class OpenProtein(APISession):
     _fold = None
     _predictor = None
     _design = None
+    _models = None
 
     def wait(self, future: Future, *args, **kwargs):
         return future.wait(*args, **kwargs)
@@ -148,6 +150,15 @@ class OpenProtein(APISession):
         if self._fold is None:
             self._fold = FoldAPI(self)
         return self._fold
+
+    @property
+    def models(self) -> "ModelsAPI":
+        """
+        The models submodule provides a unified entry point to all protein models.
+        """
+        if self._models is None:
+            self._models = ModelsAPI(self)
+        return self._models
 
 
 connect = OpenProtein

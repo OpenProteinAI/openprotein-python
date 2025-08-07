@@ -17,15 +17,20 @@ class FoldAPI:
     Fold API provides a high level interface for making protein structure predictions.
     """
 
-    esmfold: ESMFoldModel
-    alphafold2: AlphaFold2Model
-    af2: AlphaFold2Model
-    boltz_1: Boltz1Model
-    boltz1: Boltz1Model
-    boltz_1x: Boltz1xModel
-    boltz1x: Boltz1xModel
-    boltz_2: Boltz2Model
+    #: Boltz-2 model
     boltz2: Boltz2Model
+    boltz_2: Boltz2Model
+    #: Boltz-1x model
+    boltz1x: Boltz1xModel
+    boltz_1x: Boltz1xModel
+    #: Boltz-1 model
+    boltz1: Boltz1Model
+    boltz_1: Boltz1Model
+    af2: AlphaFold2Model
+    #: AlphaFold-2 model
+    alphafold2: AlphaFold2Model
+    #: ESMFold model
+    esmfold: ESMFoldModel
 
     def __init__(self, session: APISession):
         self.session = session

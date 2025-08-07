@@ -107,11 +107,10 @@ def predictor_fit_gp_post(
     feature_type: str,
     model_id: str,
     reduction: str | None = None,
-    prompt_id: str | None = None,
     name: str | None = None,
     description: str | None = None,
     **kwargs,
-) -> Job:
+) -> PredictorTrainJob:
     """
     Create SVD fit job.
 
@@ -129,16 +128,17 @@ def predictor_fit_gp_post(
         Protembed/SVD model to use depending on feature type.
     reduction : str | None
         Type of embedding reduction to use for computing features. default = None
-    prompt_id: str | None
-        Prompt ID if using PoET-based models.
     name: str | None
         Optional name of predictor model. Randomly generated if not provided.
     description: str | None
         Optional description to attach to the model.
+    kwargs:
+        Additional keyword arguments to be passed to foundational models, e.g. prompt_id for PoET models.
 
     Returns
     -------
     PredictorTrainJob
+        Train job that can be tracked for progress.
     """
     endpoint = PATH_PREFIX + "/gp"
 
@@ -158,20 +158,20 @@ def predictor_fit_gp_post(
     }
     if reduction is not None:
         body["features"]["reduction"] = reduction
-    if prompt_id is not None:
-        body["features"]["prompt_id"] = prompt_id
     if name is not None:
         body["name"] = name
     if description is not None:
         body["description"] = description
-    # add kwargs
+    # add kwargs for embeddings kwargs
     body.update(kwargs)
 
     response = session.post(endpoint, json=body)
     return PredictorTrainJob.model_validate(response.json())
 
 
-def predictor_ensemble(session: APISession, predictor_ids: list[str]):
+def predictor_ensemble(
+    session: APISession, predictor_ids: list[str]
+) -> PredictorMetadata:
     endpoint = PATH_PREFIX + f"/ensemble"
 
     body = {
@@ -179,7 +179,7 @@ def predictor_ensemble(session: APISession, predictor_ids: list[str]):
     }
 
     response = session.post(endpoint, json=body)
-    return TypeAdapter(PredictorMetadata).validate_python(response.json())
+    return PredictorMetadata.model_validate(response.json())
 
 
 def predictor_delete(session: APISession, predictor_id: str):

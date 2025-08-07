@@ -38,9 +38,11 @@ class PoET2Model(PoETModel, EmbeddingModel):
 
     Examples
     --------
-    >>> import openprotein
-    >>> session = openprotein.connect(username="user", password="password")
-    >>> session.embedding.poet2.<embeddings_method>
+    .. code-block:: python
+
+        >>> import openprotein
+        >>> session = openprotein.connect(username="user", password="password")
+        >>> session.embedding.poet2?
     """
 
     model_id = "poet-2"

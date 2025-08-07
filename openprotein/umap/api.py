@@ -25,7 +25,7 @@ def umap_get(session: APISession, umap_id: str) -> UMAPMetadata:
     """Get UMAP job metadata. Including UMAP dimension and sequence lengths."""
     endpoint = PATH_PREFIX + f"/{umap_id}"
     response = session.get(endpoint)
-    return UMAPMetadata(**response.json())
+    return UMAPMetadata.model_validate(response.json())
 
 
 def umap_get_sequences(session: APISession, umap_id: str) -> list[bytes]:
@@ -96,7 +96,7 @@ def embed_get_batch_result(session: APISession, job_id: str) -> bytes:
 
 def embed_decode(data: bytes) -> np.ndarray:
     """
-    Decode embedding.
+    Decode embedding as numpy array.
 
     Parameters
     ----------
@@ -177,9 +177,12 @@ def umap_fit_post(
     feature_type: FeatureType
         Type of feature to use for fitting UMAP. Either PLM or SVD.
     sequences : list[bytes] | None, optional
-        Optional sequences to fit UMAP with. Either use sequences or assay_id. sequences is preferred.
+        Optional sequences to fit UMAP with. Either use sequences or
+        assay_id. sequences is preferred.
     assay_id: str | None, optional
-        Optional ID of assay containing sequences to fit UMAP with. Either use sequences or assay_id. Ignored if sequences are provided.
+        Optional ID of assay containing sequences to fit UMAP with.
+        Either use sequences or assay_id. Ignored if sequences are
+        provided.
     n_components: int
         Number of UMAP components to fit. Defaults to 2.
     n_neighbors: int
@@ -188,6 +191,8 @@ def umap_fit_post(
         Minimum distance in UMAP fitting. Defaults to 0.1.
     reduction : str | None
         Embedding reduction to use for fitting the UMAP. Defaults to None.
+    kwargs:
+        Additional keyword arguments to be passed to foundational models, e.g. prompt_id for PoET models.
 
     Returns
     -------
@@ -205,14 +210,6 @@ def umap_fit_post(
     }
     if reduction is not None:
         body["reduction"] = reduction
-    if kwargs.get("prompt_id"):
-        body["prompt_id"] = kwargs["prompt_id"]
-    if kwargs.get("query_id"):
-        body["query_id"] = kwargs["query_id"]
-        if "use_query_structure_in_decoder" in kwargs:
-            body["use_query_structure_in_decoder"] = kwargs[
-                "use_query_structure_in_decoder"
-            ]
     if sequences is not None:
         # both provided
         if assay_id is not None:
@@ -224,6 +221,8 @@ def umap_fit_post(
         if assay_id is None:
             raise InvalidParameterError("Expected either sequences or assay_id")
         body["assay_id"] = assay_id
+    # add kwargs for embeddings kwargs
+    body.update(**kwargs)
 
     response = session.post(endpoint, json=body)
     # return job for metadata

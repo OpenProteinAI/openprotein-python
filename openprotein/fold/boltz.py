@@ -102,11 +102,10 @@ class BoltzModel(FoldModel):
         step_scale: float = 1.638,
         use_potentials: bool = False,
         constraints: list[dict] | None = None,
-        force_single_sequence_mode: bool = False,
         **kwargs,
     ) -> FoldComplexResultFuture:
         """
-        Post sequences to boltz model.
+        Request structure prediction with boltz model.
 
         Parameters
         ----------
@@ -287,7 +286,7 @@ class Boltz2Model(BoltzModel, FoldModel):
         method: str | None = None,
     ) -> FoldComplexResultFuture:
         """
-        Post sequences to Boltz-2 model.
+        Request structure prediction with Boltz-2 model.
 
         Parameters
         ----------
@@ -392,7 +391,7 @@ class Boltz1xModel(BoltzModel, FoldModel):
         constraints: list[dict] | None = None,
     ) -> FoldComplexResultFuture:
         """
-        Post sequences to Boltz-1x model. Uses potentials with Boltz-1 model.
+        Request structure prediction with Boltz-1x model. Uses potentials with Boltz-1 model.
 
         Parameters
         ----------
@@ -456,7 +455,7 @@ class Boltz1Model(BoltzModel, FoldModel):
         constraints: list[dict] | None = None,
     ) -> FoldComplexResultFuture:
         """
-        Post sequences to Boltz-1 model.
+        Request structure prediction with Boltz-1 model.
 
         Parameters
         ----------

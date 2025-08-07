@@ -9,9 +9,7 @@ from .schemas import Job, JobStatus, JobType
 
 
 class JobsAPI:
-    """API wrapper to get jobs."""
-
-    # This will continue to get jobs, not futures.
+    """API interface to get jobs."""
 
     def __init__(self, session: APISession):
         self.session = session
@@ -46,7 +44,13 @@ class JobsAPI:
         return api.job_get(session=self.session, job_id=job_id)
 
     def get(self, job_id: str, verbose: bool = False) -> Future:  # Job:
-        """Get job by ID"""
+        """
+        Get job by ID.
+
+        Notes
+        -----
+        This retrieves the job and loads it as a future so you can do `wait` and `get`.
+        """
         return self.__load(job_id=job_id)
         # return Job.create(job.job_get(session=self.session, job_id=job_id))
 

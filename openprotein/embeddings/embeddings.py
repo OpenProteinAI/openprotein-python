@@ -43,16 +43,24 @@ class EmbeddingsAPI:
 
     # added for static typing, eg pylance, for autocomplete
     # at init these are all overwritten.
-    prot_seq: OpenProteinModel
-    rotaprot_large_uniref50w: OpenProteinModel
-    rotaprot_large_uniref90_ft: OpenProteinModel
-    poet: PoETModel
-    poet_2: PoET2Model
-    poet2: PoET2Model
 
+    #: PoET-2 model
+    poet2: PoET2Model
+    #: PoET model
+    poet: PoETModel
+    #: Prot-seq model
+    prot_seq: OpenProteinModel
+    #: Rotaprot model trained on UniRef50
+    rotaprot_large_uniref50w: OpenProteinModel
+    #: Rotaprot model trained on UniRef90
+    rotaprot_large_uniref90_ft: OpenProteinModel
+    poet_2: PoET2Model
+
+    #: ESM1b model
     esm1b: ESMModel  # alias
     esm1b_t33_650M_UR50S: ESMModel
 
+    #: ESM1v model
     esm1v: ESMModel  # alias
     esm1v_t33_650M_UR90S_1: ESMModel
     esm1v_t33_650M_UR90S_2: ESMModel
@@ -60,6 +68,7 @@ class EmbeddingsAPI:
     esm1v_t33_650M_UR90S_4: ESMModel
     esm1v_t33_650M_UR90S_5: ESMModel
 
+    #: ESM2 model
     esm2: ESMModel  # alias
     esm2_t12_35M_UR50D: ESMModel
     esm2_t30_150M_UR50D: ESMModel
