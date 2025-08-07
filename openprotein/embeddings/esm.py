@@ -1,9 +1,9 @@
 """Community-based ESM models."""
 
-from .models import EmbeddingModel
+from .models import AttnModel, EmbeddingModel
 
 
-class ESMModel(EmbeddingModel):
+class ESMModel(AttnModel, EmbeddingModel):
     """
     Class providing inference endpoints for Facebook's ESM protein language models.
 
@@ -13,9 +13,9 @@ class ESMModel(EmbeddingModel):
 
     .. code-block:: python
 
-    >>> import openprotein
-    >>> session = openprotein.connect(username="user", password="password")
-    >>> session.embedding.esm2_t12_35M_UR50D?
+        >>> import openprotein
+        >>> session = openprotein.connect(username="user", password="password")
+        >>> session.embedding.esm2_t12_35M_UR50D?
     """
 
     model_id = [

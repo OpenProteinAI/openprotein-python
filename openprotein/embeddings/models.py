@@ -17,9 +17,10 @@ if TYPE_CHECKING:
 
 
 class EmbeddingModel:
+    """Base embeddings model used to understand and provide embeddings from sequences."""
 
     # overridden by subclasses
-    # used to get correct emb model
+    # used to get correct emb model during factory create
     model_id: list[str] | str = "protembed"
 
     def __init__(
@@ -78,9 +79,9 @@ class EmbeddingModel:
             The API session to use.
         model_id : str
             The model identifier.
-        default : type[EmbeddingModel] or None, optional
+        default : type variable of EmbeddingModel or None, optional
             Default EmbeddingModel subclass to use if no match is found.
-        **kwargs : dict, optional
+        kwargs :
             Additional keyword arguments to pass to the model constructor.
 
         Returns
@@ -149,8 +150,8 @@ class EmbeddingModel:
             Sequences to embed.
         reduction : ReductionType or None, optional
             Reduction to use (e.g. mean). Defaults to mean embedding.
-        **kwargs : dict, optional
-            Additional keyword arguments to pass to the embedding request.
+        kwargs:
+            Additional keyword arguments to be used from foundational models, e.g. prompt_id for PoET models.
 
         Returns
         -------
@@ -179,8 +180,8 @@ class EmbeddingModel:
         ----------
         sequences : list of bytes or list of str
             Sequences to compute logits for.
-        **kwargs : dict, optional
-            Additional keyword arguments to pass to the logits request.
+        kwargs :
+            Additional keyword arguments to be used from foundational models, e.g. prompt_id for PoET models.
 
         Returns
         -------
@@ -190,32 +191,6 @@ class EmbeddingModel:
         return EmbeddingsResultFuture.create(
             session=self.session,
             job=api.request_logits_post(
-                session=self.session, model_id=self.id, sequences=sequences, **kwargs
-            ),
-            sequences=sequences,
-        )
-
-    def attn(
-        self, sequences: list[bytes] | list[str], **kwargs
-    ) -> EmbeddingsResultFuture:
-        """
-        Compute attention embeddings for sequences using this model.
-
-        Parameters
-        ----------
-        sequences : list of bytes or list of str
-            Sequences to compute attention embeddings for.
-        **kwargs : dict, optional
-            Additional keyword arguments to pass to the attention request.
-
-        Returns
-        -------
-        EmbeddingsResultFuture
-            Future object representing the attention result.
-        """
-        return EmbeddingsResultFuture.create(
-            session=self.session,
-            job=api.request_attn_post(
                 session=self.session, model_id=self.id, sequences=sequences, **kwargs
             ),
             sequences=sequences,
@@ -245,8 +220,8 @@ class EmbeddingModel:
             Number of components in SVD. Determines output shapes. Default is 1024.
         reduction : ReductionType or None, optional
             Embeddings reduction to use (e.g. mean).
-        **kwargs : dict, optional
-            Additional keyword arguments to pass to the SVD fitting.
+        kwargs :
+            Additional keyword arguments to be used from foundational models, e.g. prompt_id for PoET models.
 
         Returns
         -------
@@ -261,7 +236,7 @@ class EmbeddingModel:
         # local import for cyclic dep
         from openprotein.svd import SVDAPI
 
-        svd_api = getattr(self.session, "data", None)
+        svd_api = getattr(self.session, "svd", None)
         assert isinstance(svd_api, SVDAPI)
 
         # Ensure either or
@@ -273,10 +248,9 @@ class EmbeddingModel:
             )
         model_id = self.id
         return svd_api.fit_svd(
-            session=self.session,
             model_id=model_id,
             sequences=sequences,
-            assay_id=assay.id if assay is not None else None,
+            assay=assay,
             n_components=n_components,
             reduction=reduction,
             **kwargs,
@@ -306,8 +280,8 @@ class EmbeddingModel:
             Number of components in UMAP fit. Determines output shapes. Default is 2.
         reduction : ReductionType or None, optional
             Embeddings reduction to use (e.g. mean). Defaults to MEAN.
-        **kwargs : dict, optional
-            Additional keyword arguments to pass to the UMAP fitting.
+        kwargs :
+            Additional keyword arguments to be used from foundational models, e.g. prompt_id for PoET models.
 
         Returns
         -------
@@ -322,9 +296,8 @@ class EmbeddingModel:
         # local import for cyclic dep
         from openprotein.umap import UMAPAPI
 
-        umap_api = UMAPAPI(
-            session=self.session,
-        )
+        umap_api = getattr(self.session, "umap", None)
+        assert isinstance(umap_api, UMAPAPI)
 
         # Ensure either or
         if (assay is None and sequences is None) or (
@@ -335,7 +308,6 @@ class EmbeddingModel:
             )
         model_id = self.id
         return umap_api.fit_umap(
-            session=self.session,
             model_id=model_id,
             feature_type=FeatureType.PLM,
             sequences=sequences,
@@ -369,8 +341,8 @@ class EmbeddingModel:
             Optional name for the predictor model.
         description : str or None, optional
             Optional description for the predictor model.
-        **kwargs : dict, optional
-            Additional keyword arguments to pass to the GP fitting.
+        kwargs :
+            Additional keyword arguments to be used from foundational models, e.g. prompt_id for PoET models.
 
         Returns
         -------
@@ -391,11 +363,9 @@ class EmbeddingModel:
         predictor_api = getattr(self.session, "predictor", None)
         assert isinstance(predictor_api, PredictorAPI)
 
-        model_id = self.id
         # get assay if str
         assay = data_api.get(assay_id=assay) if isinstance(assay, str) else assay
         # extract assay_id
-        assay_id = assay.assay_id if isinstance(assay, AssayMetadata) else assay.id
         if len(properties) == 0:
             raise InvalidParameterError("Expected (at-least) 1 property to train")
         if not set(properties) <= set(assay.measurement_names):
@@ -410,12 +380,42 @@ class EmbeddingModel:
 
         # inject into predictor api
         return predictor_api.fit_gp(
-            assay_id=assay_id,
+            assay=assay,
             properties=properties,
             feature_type=FeatureType.PLM,
-            model_id=model_id,
+            model=self,
             reduction=reduction,
             name=name,
             description=description,
             **kwargs,
+        )
+
+
+class AttnModel(EmbeddingModel):
+    """Embeddings model that provides attention computation."""
+
+    def attn(
+        self, sequences: list[bytes] | list[str], **kwargs
+    ) -> EmbeddingsResultFuture:
+        """
+        Compute attention embeddings for sequences using this model.
+
+        Parameters
+        ----------
+        sequences : list of bytes or list of str
+            Sequences to compute attention embeddings for.
+        kwargs :
+            Additional keyword arguments to be used from foundational models.
+
+        Returns
+        -------
+        EmbeddingsResultFuture
+            Future object representing the attention result.
+        """
+        return EmbeddingsResultFuture.create(
+            session=self.session,
+            job=api.request_attn_post(
+                session=self.session, model_id=self.id, sequences=sequences, **kwargs
+            ),
+            sequences=sequences,
         )

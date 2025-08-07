@@ -1,6 +1,6 @@
 package:
   name: openprotein-python
-  version: "0.8.0"
+  version: "0.8.2"
 
 source:
   path: ../
@@ -14,10 +14,12 @@ requirements:
   build:
     - python >=3.10,<3.13
     - hatchling >=1.25.0,<2
+    - hatch-vcs >=0.5.0,<1
   host:
     - python >=3.10,<3.13
     - pip
     - hatchling >=1.25.0,<2
+    - hatch-vcs >=0.5.0,<1
   run:
     - python >=3.10,<3.13
     - requests >=2.32.3,<3

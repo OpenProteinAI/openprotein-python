@@ -25,10 +25,9 @@ logger = logging.getLogger(__name__)
 class Future(ABC):
     """
     Base class for all Futures returning results from a job.
-
-    This base class should be directly inherited for class discovery for factory create.
     """
 
+    # NOTE: This base class should be directly inherited for class discovery by the factory `create` method.
     session: APISession
     job: Job
 
@@ -45,22 +44,35 @@ class Future(ABC):
         response: Response | dict | None = None,
         **kwargs,
     ) -> Self:
-        """
-        Create and return an instance of the appropriate Future class based on the job type.
+        """Create an instance of the appropriate Future class based on the job type.
 
-        Args:
-            session: Session for API interactions.
-            job_id: The optional job_id of the Job to initialize this future with.
-            job: The optional Job to initialize this future with.
-            response: The optional response from a job request returning a job-like object.
-            **kwargs: Additional keyword arguments to pass to the Future class constructor.
+        Parameters
+        ----------
+        session : APISession
+            Session for API interactions.
+        job_id : str | None, optional
+            The ID of the Job to initialize this future with.
+        job : Job | None, optional
+            The Job object to initialize this future with.
+        response : Response | dict | None, optional
+            The response from a job request returning a job-like object.
+        **kwargs
+            Additional keyword arguments to pass to the Future class constructor.
 
-        Returns:
+        Returns
+        -------
+        Self
             An instance of the appropriate Future class.
+
+        Raises
+        ------
+        ValueError
+            If `job_id`, `job`, and `response` are all None.
+        ValueError
+            If an appropriate Future subclass cannot be found for the job type.
 
         :meta private:
         """
-
         # parse job
         # default to use job_id first
         if job_id is not None:
@@ -100,44 +112,77 @@ class Future(ABC):
 
     @property
     def id(self) -> str:
+        """The unique identifier of the job."""
         return self.job.job_id
 
     job_id = id
 
     @property
     def job_type(self) -> str:
+        """The type of the job."""
         return self.job.job_type
 
     @property
     def status(self) -> JobStatus:
+        """The current status of the job."""
         return self.job.status
 
     @property
     def created_date(self) -> datetime:
+        """The creation timestamp of the job."""
         return self.job.created_date
 
     @property
     def start_date(self) -> datetime | None:
+        """The start timestamp of the job."""
         return self.job.start_date
 
     @property
     def end_date(self) -> datetime | None:
+        """The end timestamp of the job."""
         return self.job.end_date
 
     @property
     def progress_counter(self) -> int:
+        """The progress counter of the job."""
         return self.job.progress_counter or 0
 
     def done(self) -> bool:
-        """Check if job is complete"""
+        """Check if the job has completed.
+
+        Returns
+        -------
+        bool
+            True if the job is done, False otherwise.
+
+        """
         return self.status.done()
 
     def cancelled(self) -> bool:
-        """check if job is cancelled"""
+        """Check if the job has been cancelled.
+
+        Returns
+        -------
+        bool
+            True if the job is cancelled, False otherwise.
+
+        """
         return self.status.cancelled()
 
     def _update_progress(self, job: Job) -> int:
-        """update rules for jobs without counters"""
+        """Update progress for jobs that may not have explicit counters.
+
+        Parameters
+        ----------
+        job : Job
+            The job object to update progress from.
+
+        Returns
+        -------
+        int
+            The calculated progress value (0-100).
+
+        """
         progress = job.progress_counter
         # if progress is not None:  # Check None before comparison
         if progress is None:
@@ -150,7 +195,14 @@ class Future(ABC):
         return progress or 0  # never None
 
     def _refresh_job(self) -> Job:
-        """Refresh and return internal specific job."""
+        """Refresh and return the internal job object.
+
+        Returns
+        -------
+        Job
+            The refreshed job object.
+
+        """
         # dump extra kwargs to keep on refresh
         kwargs = {
             k: v for k, v in self.job.model_dump().items() if k not in Job.model_fields
@@ -161,12 +213,21 @@ class Future(ABC):
         return job
 
     def refresh(self):
-        """Refresh job status."""
+        """Refresh the job status and internal job object."""
         self.job = self._refresh_job()
 
     @abstractmethod
     def get(self, verbose: bool = False, **kwargs):
-        """Return the results from this job."""
+        """
+        Return the results from this job.
+
+        Parameters
+        ----------
+        verbose : bool, optional
+            Flag to enable verbose output, by default False.
+        **kwargs
+            Additional keyword arguments.
+        """
         raise NotImplementedError()
 
     def _wait_job(
@@ -175,20 +236,29 @@ class Future(ABC):
         timeout: int | None = None,
         verbose: bool = False,
     ) -> Job:
-        """
-        Wait for a job to finish, and then get the results.
+        """Wait for a job to finish and return the final job object.
 
-        Args:
-            session (APISession): Auth'd APIsession
-            interval (int): Wait between polls (secs). Defaults to POLLING_INTERVAL
-            timeout (int): Max. time to wait before raising error. Defaults to unlimited.
-            verbose (bool, optional): print status updates. Defaults to False.
+        Parameters
+        ----------
+        interval : float, optional
+            Time in seconds to wait between polls.
+            Defaults to `config.POLLING_INTERVAL`.
+        timeout : int | None, optional
+            Maximum time in seconds to wait before raising an error.
+            Defaults to None (unlimited).
+        verbose : bool, optional
+            If True, print status updates. Defaults to False.
 
-        Raises:
-            TimeoutException: _description_
+        Returns
+        -------
+        Job
+            The completed job object.
 
-        Returns:
-            _type_: _description_
+        Raises
+        ------
+        TimeoutException
+            If the wait time exceeds the specified timeout.
+
         """
         start_time = time.time()
 
@@ -230,18 +300,31 @@ class Future(ABC):
         return job
 
     def wait_until_done(
-        self, interval: float = config.POLLING_INTERVAL, timeout=None, verbose=False
+        self,
+        interval: float = config.POLLING_INTERVAL,
+        timeout: int | None = None,
+        verbose: bool = False,
     ):
-        """
-        Wait for job to complete. Do not fetch results (unlike wait())
+        """Wait for the job to complete.
 
-        Args:
-            interval (int, optional): time between polling. Defaults to config.POLLING_INTERVAL.
-            timeout (int, optional): max time to wait. Defaults to None.
-            verbose (bool, optional): verbosity flag. Defaults to False.
+        Parameters
+        ----------
+        interval : float, optional
+            Time in seconds between polling. Defaults to `config.POLLING_INTERVAL`.
+        timeout : int, optional
+            Maximum time in seconds to wait. Defaults to None.
+        verbose : bool, optional
+            Verbosity flag. Defaults to False.
 
-        Returns:
-            results: results of job
+        Returns
+        -------
+        bool
+            True if the job completed successfully.
+
+        Notes
+        -----
+        This method does not fetch the job results, unlike `wait()`.
+
         """
         job = self._wait_job(interval=interval, timeout=timeout, verbose=verbose)
         self.job = job
@@ -253,16 +336,22 @@ class Future(ABC):
         timeout: int | None = None,
         verbose: bool = False,
     ):
-        """
-        Wait for job to complete, then fetch results.
+        """Wait for the job to complete, then fetch results.
 
-        Args:
-            interval (int, optional): time between polling. Defaults to config.POLLING_INTERVAL.
-            timeout (int, optional): max time to wait. Defaults to None.
-            verbose (bool, optional): verbosity flag. Defaults to False.
+        Parameters
+        ----------
+        interval : int, optional
+            Time in seconds between polling. Defaults to `config.POLLING_INTERVAL`.
+        timeout : int | None, optional
+            Maximum time in seconds to wait. Defaults to None.
+        verbose : bool, optional
+            Verbosity flag. Defaults to False.
 
-        Returns:
-            results: results of job
+        Returns
+        -------
+        Any
+            The results of the job.
+
         """
         time.sleep(1)  # buffer for BE to register job
         job = self._wait_job(interval=interval, timeout=timeout, verbose=verbose)
@@ -271,13 +360,46 @@ class Future(ABC):
 
 
 class StreamingFuture(ABC):
+    """Abstract base class for Futures that support streaming results."""
+
     @abstractmethod
     def stream(self, **kwargs) -> Generator:
-        """Return the results from this job as a generator."""
+        """Return the results from this job as a generator.
+
+        Parameters
+        ----------
+        **kwargs
+            Keyword arguments passed to the streaming implementation.
+
+        Returns
+        -------
+        Generator
+            A generator that yields job results.
+
+        Raises
+        ------
+        NotImplementedError
+            This is an abstract method and must be implemented by a subclass.
+
+        """
         raise NotImplementedError()
 
     def get(self, verbose: bool = False, **kwargs) -> list:
-        """Return the results from this job."""
+        """Return all results from the job by consuming the stream.
+
+        Parameters
+        ----------
+        verbose : bool, optional
+            If True, display a progress bar. Defaults to False.
+        **kwargs
+            Keyword arguments passed to the `stream` method.
+
+        Returns
+        -------
+        list
+            A list containing all results from the job.
+
+        """
         generator = self.stream(**kwargs)
         if verbose:
             total = None
@@ -290,7 +412,12 @@ class StreamingFuture(ABC):
 
 
 class MappedFuture(StreamingFuture, ABC):
-    """Base future class for returning results from jobs with a mapping for keys (e.g. sequence) to results (e.g. embeddings)."""
+    """Base future for jobs with a key-to-result mapping.
+
+    This class provides methods to retrieve results from jobs where each result
+    is associated with a unique key (e.g., sequence to embedding).
+
+    """
 
     def __init__(
         self,
@@ -298,10 +425,22 @@ class MappedFuture(StreamingFuture, ABC):
         job: Job,
         max_workers: int = config.MAX_CONCURRENT_WORKERS,
     ):
-        """
-        Retrieve results from asynchronous, mapped endpoints.
+        """Initialize the MappedFuture.
 
-        Use `max_workers` > 0 to enable concurrent retrieval of multiple pages.
+        Parameters
+        ----------
+        session : APISession
+            The session for API interactions.
+        job : Job
+            The job to retrieve results from.
+        max_workers : int, optional
+            The number of workers for concurrent result retrieval.
+            Defaults to `config.MAX_CONCURRENT_WORKERS`.
+
+        Notes
+        -----
+        Use `max_workers` > 0 to enable concurrent retrieval.
+
         """
         self.session = session
         self.job = job
@@ -309,26 +448,55 @@ class MappedFuture(StreamingFuture, ABC):
         self._cache = {}
 
     @abstractmethod
-    def keys(self):
+    def __keys__(self):
+        """Return the keys for the mapped results.
+
+        Raises
+        ------
+        NotImplementedError
+            This is an abstract method and must be implemented by a subclass.
+
+        """
         raise NotImplementedError()
 
     @abstractmethod
     def get_item(self, k):
+        """Retrieve a single item by its key.
+
+        Parameters
+        ----------
+        k
+            The key of the item to retrieve.
+
+        Raises
+        ------
+        NotImplementedError
+            This is an abstract method and must be implemented by a subclass.
+
+        """
         raise NotImplementedError()
 
     def stream_sync(self):
-        """
-        Stream the results back in-sync.
+        """Stream the results synchronously.
+
+        Yields
+        ------
+        tuple
+            A tuple of (key, value) for each result.
 
         :meta private:
         """
-        for k in self.keys():
+        for k in self.__keys__():
             v = self[k]
             yield k, v
 
     def stream_parallel(self):
-        """
-        Stream the results back in parallel.
+        """Stream the results in parallel using a thread pool.
+
+        Yields
+        ------
+        tuple
+            A tuple of (key, value) for each result.
 
         :meta private:
         """
@@ -340,7 +508,7 @@ class MappedFuture(StreamingFuture, ABC):
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
             futures = []
-            for k in self.keys():
+            for k in self.__keys__():
                 if k in self._cache:
                     yield k, self._cache[k]
                 else:
@@ -351,12 +519,32 @@ class MappedFuture(StreamingFuture, ABC):
                 yield f.result()
 
     def stream(self):
-        """Retrieve results for this job as a stream."""
+        """Retrieve results for this job as a stream.
+
+        Returns
+        -------
+        Generator
+            A generator that yields (key, value) tuples.
+
+        """
         if self.max_workers > 0:
             return self.stream_parallel()
         return self.stream_sync()
 
     def __getitem__(self, k):
+        """Get an item by key, using the cache if available.
+
+        Parameters
+        ----------
+        k
+            The key of the item to retrieve.
+
+        Returns
+        -------
+        Any
+            The value associated with the key.
+
+        """
         if k in self._cache:
             return self._cache[k]
         v = self.get_item(k)
@@ -364,14 +552,16 @@ class MappedFuture(StreamingFuture, ABC):
         return v
 
     def __len__(self):
-        return len(self.keys())
+        """Return the total number of items."""
+        return len(self.__keys__())
 
     def __iter__(self):
+        """Return an iterator over the results."""
         return self.stream()
 
 
 class PagedFuture(StreamingFuture, ABC):
-    """Base future class for returning results from jobs which have paged results."""
+    """Base future class for jobs which have paged results."""
 
     DEFAULT_PAGE_SIZE = 1024
 
@@ -383,10 +573,26 @@ class PagedFuture(StreamingFuture, ABC):
         num_records: int | None = None,
         max_workers: int = config.MAX_CONCURRENT_WORKERS,
     ):
-        """
-        Retrieve results from asynchronous, paged endpoints.
+        """Initialize the PagedFuture.
 
+        Parameters
+        ----------
+        session : APISession
+            The session for API interactions.
+        job : Job
+            The job to retrieve results from.
+        page_size : int | None, optional
+            The number of records per page. Defaults to `DEFAULT_PAGE_SIZE`.
+        num_records : int | None, optional
+            The total number of records expected.
+        max_workers : int, optional
+            Number of workers for concurrent page retrieval.
+            Defaults to `config.MAX_CONCURRENT_WORKERS`.
+
+        Notes
+        -----
         Use `max_workers` > 0 to enable concurrent retrieval of multiple pages.
+
         """
         if page_size is None:
             page_size = self.DEFAULT_PAGE_SIZE
@@ -398,9 +604,40 @@ class PagedFuture(StreamingFuture, ABC):
 
     @abstractmethod
     def get_slice(self, start: int, end: int, **kwargs) -> Collection:
+        """Retrieve a slice of results.
+
+        Parameters
+        ----------
+        start : int
+            The starting index of the slice.
+        end : int
+            The ending index of the slice.
+        **kwargs
+            Additional keyword arguments.
+
+        Returns
+        -------
+        Collection
+            A collection of results for the specified slice.
+
+        Raises
+        ------
+        NotImplementedError
+            This is an abstract method and must be implemented by a subclass.
+
+        """
         raise NotImplementedError()
 
     def stream_sync(self):
+        """Stream results by fetching pages synchronously.
+
+        Yields
+        ------
+        Any
+            Individual results from the paged endpoint.
+
+        :meta private:
+        """
         step = self.page_size
         num_returned = step
         offset = 0
@@ -411,9 +648,22 @@ class PagedFuture(StreamingFuture, ABC):
             num_returned = len(result_page)
             offset += num_returned
 
-    # TODO - check the number of results, or store it somehow, so that we don't need
-    # to check the number of returned entries to see if we're finished (very awkward when using concurrency)
     def stream_parallel(self):
+        """Stream results by fetching pages in parallel.
+
+        Yields
+        ------
+        Any
+            Individual results from the paged endpoint.
+
+        Notes
+        -----
+        The number of results should be checked, or stored somehow, so that
+        we don't need to check the number of returned entries to see if we're
+        finished (very awkward when using concurrency).
+
+        :meta private:
+        """
         step = self.page_size
         offset = 0
 
@@ -463,15 +713,33 @@ class PagedFuture(StreamingFuture, ABC):
                 futures = futures_next
 
     def stream(self):
+        """Retrieve results for this job as a stream.
+
+        Returns
+        -------
+        Generator
+            A generator that yields job results.
+
+        """
         if self.max_workers > 0:
             return self.stream_parallel()
         return self.stream_sync()
 
 
 class InvalidFutureError(Exception):
-    """Error thrown if unexpected future is created from job."""
+    """Error for when an unexpected future is created from a job."""
 
     def __init__(self, future: Future, expected: type[Future]):
+        """Initialize the InvalidFutureError.
+
+        Parameters
+        ----------
+        future : Future
+            The future instance that was created.
+        expected : type[Future]
+            The type of future that was expected.
+
+        """
         self.future = future
         self.expected = future
         self.message = f"Expected future of type {expected}, got {type(future)}"

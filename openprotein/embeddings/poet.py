@@ -33,9 +33,9 @@ class PoETModel(EmbeddingModel):
     --------
     View specific model details (including supported tokens) with the `?` operator.
 
-    >>> import openprotein
-    >>> session = openprotein.connect(username="user", password="password")
-    >>> session.embedding.poet.<embeddings_method>
+        >>> import openprotein
+        >>> session = openprotein.connect(username="user", password="password")
+        >>> session.embedding.poet.<embeddings_method>
     """
 
     model_id = "poet"
@@ -113,7 +113,7 @@ class PoETModel(EmbeddingModel):
             prompt_id = None
         else:
             prompt_id = prompt if isinstance(prompt, str) else prompt.id
-        return super().logits(sequences=sequences, prompt_id=prompt_id)
+        return super().logits(sequences=sequences, prompt_id=prompt_id, **kwargs)
 
     def attn(self):
         """
@@ -123,6 +123,8 @@ class PoETModel(EmbeddingModel):
         ------
         ValueError
             Always raised, as attention is not supported for PoET.
+
+        :meta private:
         """
         raise ValueError("Attn not yet supported for poet")
 

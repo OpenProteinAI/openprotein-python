@@ -45,7 +45,7 @@ class PredictionResultFuture(Future):
     def id(self):
         return self.job.job_id
 
-    def keys(self):
+    def __keys__(self):
         return self.sequences
 
     def get_item(self, sequence: bytes) -> tuple[np.ndarray, np.ndarray]:

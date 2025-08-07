@@ -2,8 +2,8 @@
 
 from openprotein.base import APISession
 from openprotein.common import ReductionType
-from openprotein.data import AssayDataset
-from openprotein.embeddings import EmbeddingsAPI
+from openprotein.data import AssayDataset, AssayMetadata
+from openprotein.embeddings import EmbeddingModel, EmbeddingsAPI
 
 from . import api
 from .models import SVDModel
@@ -22,7 +22,7 @@ class SVDAPI:
         self,
         model_id: str,
         sequences: list[bytes] | list[str] | None = None,
-        assay: AssayDataset | None = None,
+        assay: AssayMetadata | AssayDataset | str | None = None,
         n_components: int = 1024,
         reduction: ReductionType | None = None,
         **kwargs,
@@ -33,28 +33,49 @@ class SVDAPI:
         Parameters
         ----------
         model_id : str
-            The ID of the model to fit the SVD on.
-        sequences : list[bytes]
-            The list of sequences to use for the SVD fitting.
+            ID of embeddings model to use.
+        sequences : list of bytes or None, optional
+            Optional sequences to fit SVD with. Either use sequences or
+            assay_id. sequences is preferred.
+        assay : AssayMetadata or AssayDataset or str or None, optional
+            Optional assay containing sequences to fit SVD with.
+            Or its assay_id. Either use sequences or assay.
+            Ignored if sequences are provided.
         n_components : int, optional
-            The number of components for the SVD, by default 1024.
-        reduction : str, optional
-            The reduction method to apply to the embeddings, by default None.
+            The number of components for the SVD. Defaults to 1024.
+        reduction : str or None, optional
+            Type of embedding reduction to use for computing features.
+            E.g. "MEAN" or "SUM". Useful when dealing with variable length
+            sequence. Defaults to None.
+        kwargs :
+            Additional keyword arguments to be passed to foundational models, e.g. prompt_id for PoET models.
 
         Returns
         -------
         SVDModel
-            The model with the SVD fit.
+            The SVD model being fit.
         """
         embeddings_api = getattr(self.session, "embedding", None)
         assert isinstance(embeddings_api, EmbeddingsAPI)
         model = embeddings_api.get_model(model_id)
-        return model.fit_svd(
-            sequences=sequences,
-            assay=assay,
-            n_components=n_components,
-            reduction=reduction,
-            **kwargs,
+        assert isinstance(model, EmbeddingModel), "Expected EmbeddingModel"
+        # get assay_id
+        assay_id = (
+            assay.assay_id
+            if isinstance(assay, AssayMetadata)
+            else assay.id if isinstance(assay, AssayDataset) else assay
+        )
+        return SVDModel(
+            session=self.session,
+            job=api.svd_fit_post(
+                session=self.session,
+                model_id=model.id,
+                sequences=sequences,
+                assay_id=assay_id,
+                n_components=n_components,
+                reduction=reduction,
+                **kwargs,
+            ),
         )
 
     def get_svd(self, svd_id: str) -> SVDModel:
@@ -85,11 +106,11 @@ class SVDAPI:
         Parameters
         ----------
         svd_id : str
-            The ID of the SVD  job.
+            The ID of the SVD job.
         Returns
         -------
         bool
-            True: successful deletion
+            Whether or not the SVD was successfully deleted.
 
         """
         return api.svd_delete(self.session, svd_id)
@@ -98,12 +119,10 @@ class SVDAPI:
         """
         List SVD models made by user.
 
-        Takes no args.
-
         Returns
         -------
-        list[SVDModel]
-            SVDModels
+        list of SVDModel
+            List of SVDs that the user has access to.
 
         """
         return [

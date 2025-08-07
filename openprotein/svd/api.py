@@ -24,7 +24,7 @@ def svd_get(session: APISession, svd_id: str) -> SVDMetadata:
     """Get SVD job metadata. Including SVD dimension and sequence lengths."""
     endpoint = PATH_PREFIX + f"/{svd_id}"
     response = session.get(endpoint)
-    return SVDMetadata(**response.json())
+    return SVDMetadata.model_validate(response.json())
 
 
 def svd_get_sequences(session: APISession, svd_id: str) -> list[bytes]:
@@ -75,7 +75,7 @@ def embed_get_sequence_result(
 
 def embed_decode(data: bytes) -> np.ndarray:
     """
-    Decode embedding.
+    Decode embedding as numpy array.
 
     Args:
         data (bytes): raw bytes encoding the array received over the API
@@ -125,18 +125,24 @@ def svd_fit_post(
 
     Parameters
     ----------
-    session : APISession
+    session: APISession
         Session object for API communication.
-    model_id : str
-        model to use
-    sequences : list[bytes] | None, optional
-        Optional sequences to fit SVD with. Either use sequences or assay_id. sequences is preferred.
+    model_id: str
+        ID of embeddings model to use.
+    sequences: list of bytes or None, optional
+        Optional sequences to fit SVD with. Either use sequences or
+        assay_id. sequences is preferred.
     assay_id: str | None, optional
-        Optional ID of assay containing sequences to fit SVD with. Either use sequences or assay_id. Ignored if sequences are provided.
-    n_components : int
-        number of SVD components to fit. default = 1024
-    reduction : str | None
-        embedding reduction to use for fitting the SVD. default = None
+        Optional ID of assay containing sequences to fit SVD with. Either
+        use sequences or assay_id. Ignored if sequences are provided.
+    n_components: int
+        Number of SVD components to fit. Defaults to 1024
+    reduction: str | None
+        Type of embedding reduction to use for computing features.
+        E.g. "MEAN" or "SUM". Useful when dealing with variable length
+        sequence. Defaults to None.
+    kwargs:
+        Additional keyword arguments to be passed to foundational models, e.g. prompt_id for PoET models.
 
     Returns
     -------
@@ -151,14 +157,6 @@ def svd_fit_post(
     }
     if reduction is not None:
         body["reduction"] = reduction
-    if kwargs.get("prompt_id"):
-        body["prompt_id"] = kwargs["prompt_id"]
-    if kwargs.get("query_id"):
-        body["query_id"] = kwargs["query_id"]
-        if "use_query_structure_in_decoder" in kwargs:
-            body["use_query_structure_in_decoder"] = kwargs[
-                "use_query_structure_in_decoder"
-            ]
     if sequences is not None:
         # both provided
         if assay_id is not None:
@@ -170,6 +168,8 @@ def svd_fit_post(
         if assay_id is None:
             raise InvalidParameterError("Expected either sequences or assay_id")
         body["assay_id"] = assay_id
+    # add kwargs for embeddings kwargs
+    body.update(**kwargs)
 
     response = session.post(endpoint, json=body)
     # return job for metadata

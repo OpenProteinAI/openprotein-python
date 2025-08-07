@@ -129,13 +129,13 @@ class FoldResultFuture(MappedFuture, Future):
         """
         return self.job.job_id
 
-    def keys(self):
+    def __keys__(self):
         """
         Get the list of sequences submitted for the fold request.
 
         Returns
         -------
-        list[bytes]
+        list of bytes
             List of sequences.
         """
         return self.sequences

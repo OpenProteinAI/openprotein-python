@@ -63,7 +63,15 @@ class EmbeddingsResultFuture(MappedFuture, Future):
     def id(self):
         return self.job.job_id
 
-    def keys(self):
+    def __keys__(self):
+        """
+        Get the list of sequences submitted for the embed request.
+
+        Returns
+        -------
+        list of bytes
+            List of sequences.
+        """
         return self.sequences
 
     def get_item(self, sequence: bytes) -> np.ndarray:

@@ -5,5 +5,5 @@ isort:skip_file
 """
 
 from .schemas import UMAPMetadata, UMAPEmbeddingsJob, UMAPFitJob
-from .models import UMAPModel, UMAPEmbeddingResultFuture
+from .models import UMAPModel, UMAPEmbeddingsResultFuture
 from .umap import UMAPAPI
