@@ -41,7 +41,7 @@ def _get_importlib_metadata_version():
     """
     from importlib.metadata import version
 
-    __version__ = version(__package__)  # type: ignore
+    __version__ = version("openprotein-python")
     return __version__
 
 
