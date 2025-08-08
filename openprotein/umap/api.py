@@ -156,7 +156,7 @@ def umap_delete(session: APISession, umap_id: str) -> bool:
 def umap_fit_post(
     session: APISession,
     model_id: str,
-    feature_type: FeatureType,
+    feature_type: str,
     sequences: list[bytes] | list[str] | None = None,
     assay_id: str | None = None,
     n_components: int = 2,
@@ -174,7 +174,7 @@ def umap_fit_post(
         Session object for API communication.
     model_id : str
         Model to use. Can be either svd_id or id of a foundational model.
-    feature_type: FeatureType
+    feature_type: str
         Type of feature to use for fitting UMAP. Either PLM or SVD.
     sequences : list[bytes] | None, optional
         Optional sequences to fit UMAP with. Either use sequences or
@@ -203,7 +203,7 @@ def umap_fit_post(
 
     body = {
         "model_id": model_id,
-        "feature_type": feature_type.value,
+        "feature_type": feature_type,
         "n_components": n_components,
         "n_neighbors": n_neighbors,
         "min_dist": min_dist,

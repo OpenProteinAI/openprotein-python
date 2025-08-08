@@ -3,10 +3,10 @@
 from openprotein.base import APISession
 from openprotein.common import FeatureType, ReductionType
 from openprotein.data import AssayDataset, AssayMetadata
-from openprotein.embeddings import EmbeddingModel
+from openprotein.embeddings import EmbeddingModel, EmbeddingsAPI
 from openprotein.errors import InvalidParameterError
 from openprotein.jobs import JobsAPI
-from openprotein.svd import SVDModel
+from openprotein.svd import SVDAPI, SVDModel
 
 from . import api
 from .models import UMAPModel
@@ -38,8 +38,6 @@ class UMAPAPI:
 
         Parameters
         ----------
-        model_id : str
-            The ID of the model to fit the UMAP on.
         sequences: list of bytes or None, optional
             Optional sequences to fit UMAP with. Either use sequences or
             assay_id. sequences is preferred.
@@ -47,17 +45,24 @@ class UMAPAPI:
             Optional assay containing sequences to fit SVD with.
             Or its assay_id. Either use sequences or assay.
             Ignored if sequences are provided.
-        n_components: int
+        model : EmbeddingModel or SVDModel or str
+            Instance of either EmbeddingModel or SVDModel to use depending
+            on feature type. Can also be a str specifying the model id,
+            but then feature_type would have to be specified.
+        feature_type : FeatureType or None, optional
+            Type of features to use for encoding sequences. "SVD" or "PLM".
+            None would require model to be EmbeddingModel or SVDModel.
+        n_components : int, optional
             Number of UMAP components to fit. Defaults to 2.
-        n_neighbors: int
+        n_neighbors : int, optional
             Number of neighbors to use for fitting. Defaults to 15.
-        min_dist: float
+        min_dist : float, optional
             Minimum distance in UMAP fitting. Defaults to 0.1.
-        reduction: str or None, optional
+        reduction : str or None, optional
             Type of embedding reduction to use for computing features.
             E.g. "MEAN" or "SUM". Useful when dealing with variable length
             sequence. Defaults to None.
-        kwargs:
+        kwargs :
             Additional keyword arguments to be passed to foundational models, e.g. prompt_id for PoET models.
 
         Returns
@@ -65,14 +70,35 @@ class UMAPAPI:
         UMAPModel
             The UMAP model being fit.
         """
-        if isinstance(model, str):
-            if feature_type is None:
+        # extract feature type
+        feature_type = (
+            FeatureType.PLM
+            if isinstance(model, EmbeddingModel)
+            else FeatureType.SVD if isinstance(model, SVDModel) else feature_type
+        )
+        if feature_type is None:
+            raise InvalidParameterError(
+                "Expected feature_type to be provided if passing str model_id as model"
+            )
+        # get model if model_id
+        if feature_type == FeatureType.PLM:
+            if reduction is None:
                 raise InvalidParameterError(
-                    "Expected feature_type to be specified if using a string identifier as model"
+                    "Expected reduction if using EmbeddingModel"
                 )
-            model_id = model
-        else:
-            model_id = model.id  # for embeddings / svd model
+            if isinstance(model, str):
+                embeddings_api = getattr(self.session, "embedding", None)
+                assert isinstance(embeddings_api, EmbeddingsAPI)
+                model = embeddings_api.get_model(model)
+            assert isinstance(model, EmbeddingModel), "Expected EmbeddingModel"
+            model_id = model.id
+        elif feature_type == FeatureType.SVD:
+            if isinstance(model, str):
+                svd_api = getattr(self.session, "svd", None)
+                assert isinstance(svd_api, SVDAPI)
+                model = svd_api.get_svd(model)
+            assert isinstance(model, SVDModel), "Expected SVDModel"
+            model_id = model.id
         # get assay_id
         assay_id = (
             assay.assay_id
@@ -84,6 +110,7 @@ class UMAPAPI:
             job=api.umap_fit_post(
                 session=self.session,
                 model_id=model_id,
+                feature_type=feature_type,
                 sequences=sequences,
                 assay_id=assay_id,
                 n_components=n_components,
