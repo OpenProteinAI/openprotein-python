@@ -133,20 +133,20 @@ class PredictorAPI:
         ----------
         assay : AssayMetadata or AssayDataset or str
             Assay to fit GP on.
-        properties: list[str]
+        properties : list of str
             Properties in the assay to fit the gp on.
-        feature_type: str | FeatureType | None
-            Type of features to use for encoding sequences. "SVD" or "PLM".
-            None would require model to be EmbeddingModel or SVDMode.
-        model : EmbeddingModel | SVDModel | str
+        model : EmbeddingModel or SVDModel or str
             Instance of either EmbeddingModel or SVDModel to use depending
             on feature type. Can also be a str specifying the model id,
             but then feature_type would have to be specified.
-        reduction : str | None
+        feature_type : FeatureType or None
+            Type of features to use for encoding sequences. "SVD" or "PLM".
+            None would require model to be EmbeddingModel or SVDModel.
+        reduction  : str or None, optional
             Type of embedding reduction to use for computing features.
             E.g. "MEAN" or "SUM". Used only if using EmbeddingModel, and
             must be non-nil if using an EmbeddingModel. Defaults to None.
-        kwargs:
+        kwargs :
             Additional keyword arguments to be passed to foundational models, e.g. prompt_id for PoET models.
 
         Returns
