@@ -29,6 +29,8 @@ class Features(BaseModel):
     model_id: str | None = None
     reduction: str | None = None
 
+    # TODO: model extra kwargs
+
     model_config = ConfigDict(protected_namespaces=())
 
 

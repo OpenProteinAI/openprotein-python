@@ -464,6 +464,8 @@ class FoldComplexResultFuture(Future):
         AttributeError
             If affinity is not supported for the model.
         """
+        from .boltz import BoltzAffinity
+
         if self.model_id not in {"boltz-1", "boltz-1x", "boltz-2"}:
             raise AttributeError("affinity not supported for non-Boltz model")
         if self._affinity is None:

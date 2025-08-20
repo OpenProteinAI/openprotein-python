@@ -64,7 +64,9 @@ def assaydata_post(
         raise APIError(f"Unable to post assay data: {response.text}")
 
 
-def assaydata_list(session: APISession) -> list[AssayMetadata]:
+def assaydata_list(
+    session: APISession, limit: int | None = None, offset: int | None = None
+) -> list[AssayMetadata]:
     """
     Get a list of all assay metadata.
 
@@ -72,6 +74,10 @@ def assaydata_list(session: APISession) -> list[AssayMetadata]:
     ----------
     session : APISession
         Session object for API communication.
+    limit : int, optional
+        Limit the number of assays to return.
+    offset : int, optional
+        Offset of assays to retrieve. Useful with limit.
 
     Returns
     -------
@@ -84,7 +90,12 @@ def assaydata_list(session: APISession) -> list[AssayMetadata]:
         If an error occurs during the API request.
     """
     endpoint = "v1/assaydata"
-    response = session.get(endpoint)
+    params = {}
+    if limit is not None:
+        params["limit"] = limit
+    if offset is not None:
+        params["offset"] = offset
+    response = session.get(endpoint, params=params)
     if response.status_code == 200:
         return TypeAdapter(list[AssayMetadata]).validate_python(response.json())
     else:
