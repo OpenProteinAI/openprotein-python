@@ -1,7 +1,10 @@
 """UMAP API providing the interface to fit and run UMAP visualizations."""
 
+import typing
+from typing import Literal
+
 from openprotein.base import APISession
-from openprotein.common import FeatureType, ReductionType
+from openprotein.common import Feature, FeatureType, Reduction, ReductionType
 from openprotein.data import AssayDataset, AssayMetadata
 from openprotein.embeddings import EmbeddingModel, EmbeddingsAPI
 from openprotein.errors import InvalidParameterError
@@ -21,16 +24,35 @@ class UMAPAPI:
     ):
         self.session = session
 
+    @typing.overload
     def fit_umap(
         self,
-        model: EmbeddingModel | SVDModel | str,
-        feature_type: FeatureType | None = None,
+        model: EmbeddingModel,
+        reduction: Reduction | ReductionType,
+        feature_type: Literal["PLM"] = "PLM",
         sequences: list[bytes] | list[str] | None = None,
-        assay: AssayMetadata | AssayDataset | str | None = None,
+        assay: AssayDataset | AssayMetadata | str | None = None,
         n_components: int = 2,
         n_neighbors: int = 15,
         min_dist: float = 0.1,
-        reduction: ReductionType | None = None,
+    ) -> UMAPModel: ...
+
+    @typing.overload
+    def fit_umap(
+        self,
+        model: EmbeddingModel,
+    ) -> UMAPModel: ...
+
+    def fit_umap(
+        self,
+        model: EmbeddingModel | SVDModel | str,
+        reduction: Reduction | ReductionType | None = None,
+        feature_type: Feature | FeatureType | None = None,
+        sequences: list[bytes] | list[str] | None = None,
+        assay: AssayDataset | AssayMetadata | str | None = None,
+        n_components: int = 2,
+        n_neighbors: int = 15,
+        min_dist: float = 0.1,
         **kwargs,
     ) -> UMAPModel:
         """
@@ -42,14 +64,14 @@ class UMAPAPI:
             Optional sequences to fit UMAP with. Either use sequences or
             assay_id. sequences is preferred.
         assay : AssayMetadata or AssayDataset or str or None, optional
-            Optional assay containing sequences to fit SVD with.
+            Optional assay containing sequences to fit UMAP with.
             Or its assay_id. Either use sequences or assay.
             Ignored if sequences are provided.
         model : EmbeddingModel or SVDModel or str
             Instance of either EmbeddingModel or SVDModel to use depending
             on feature type. Can also be a str specifying the model id,
             but then feature_type would have to be specified.
-        feature_type : FeatureType or None, optional
+        feature_type : str or FeatureType or None, optional
             Type of features to use for encoding sequences. "SVD" or "PLM".
             None would require model to be EmbeddingModel or SVDModel.
         n_components : int, optional
@@ -58,7 +80,7 @@ class UMAPAPI:
             Number of neighbors to use for fitting. Defaults to 15.
         min_dist : float, optional
             Minimum distance in UMAP fitting. Defaults to 0.1.
-        reduction : str or None, optional
+        reduction : str or ReductionType or None, optional
             Type of embedding reduction to use for computing features.
             E.g. "MEAN" or "SUM". Useful when dealing with variable length
             sequence. Defaults to None.
@@ -70,6 +92,13 @@ class UMAPAPI:
         UMAPModel
             The UMAP model being fit.
         """
+        # 1. Check assay data input - just need the id
+        # get assay_id
+        assay_id = (
+            assay.assay_id
+            if isinstance(assay, AssayMetadata)
+            else assay.id if isinstance(assay, AssayDataset) else assay
+        )
         # extract feature type
         feature_type = (
             FeatureType.PLM
@@ -80,11 +109,15 @@ class UMAPAPI:
             raise InvalidParameterError(
                 "Expected feature_type to be provided if passing str model_id as model"
             )
+        if isinstance(feature_type, str):
+            feature_type = FeatureType(feature_type)
+        if isinstance(reduction, str):
+            reduction = ReductionType(reduction)
         # get model if model_id
         if feature_type == FeatureType.PLM:
             if reduction is None:
                 raise InvalidParameterError(
-                    "Expected reduction if using EmbeddingModel"
+                    "Expected reduction if using embedding model"
                 )
             if isinstance(model, str):
                 embeddings_api = getattr(self.session, "embedding", None)
@@ -93,18 +126,14 @@ class UMAPAPI:
             assert isinstance(model, EmbeddingModel), "Expected EmbeddingModel"
             model_id = model.id
         elif feature_type == FeatureType.SVD:
+            if reduction is not None:
+                raise InvalidParameterError("Unexpected reduction when using SVD model")
             if isinstance(model, str):
                 svd_api = getattr(self.session, "svd", None)
                 assert isinstance(svd_api, SVDAPI)
                 model = svd_api.get_svd(model)
             assert isinstance(model, SVDModel), "Expected SVDModel"
             model_id = model.id
-        # get assay_id
-        assay_id = (
-            assay.assay_id
-            if isinstance(assay, AssayMetadata)
-            else assay.id if isinstance(assay, AssayDataset) else assay
-        )
         return UMAPModel(
             session=self.session,
             job=api.umap_fit_post(

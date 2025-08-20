@@ -1,10 +1,11 @@
 """Predictor API providing the interface to train and predict predictors."""
 
 from openprotein.base import APISession
-from openprotein.common import FeatureType, ReductionType
+from openprotein.common import Feature, FeatureType, Reduction, ReductionType
 from openprotein.data import (
     AssayDataset,
     AssayMetadata,
+    DataAPI,
 )
 from openprotein.embeddings import EmbeddingModel, EmbeddingsAPI
 from openprotein.errors import InvalidParameterError
@@ -120,8 +121,8 @@ class PredictorAPI:
         assay: AssayDataset | AssayMetadata | str,
         properties: list[str],
         model: EmbeddingModel | SVDModel | str,
-        feature_type: FeatureType | None = None,
-        reduction: ReductionType | None = None,
+        feature_type: Feature | FeatureType | None = None,
+        reduction: Reduction | ReductionType | None = None,
         name: str | None = None,
         description: str | None = None,
         **kwargs,
@@ -139,10 +140,10 @@ class PredictorAPI:
             Instance of either EmbeddingModel or SVDModel to use depending
             on feature type. Can also be a str specifying the model id,
             but then feature_type would have to be specified.
-        feature_type : FeatureType or None
+        feature_type : Feature or FeatureType or None
             Type of features to use for encoding sequences. "SVD" or "PLM".
             None would require model to be EmbeddingModel or SVDModel.
-        reduction  : str or None, optional
+        reduction  : Reduction or ReductionType or None, optional
             Type of embedding reduction to use for computing features.
             E.g. "MEAN" or "SUM". Used only if using EmbeddingModel, and
             must be non-nil if using an EmbeddingModel. Defaults to None.
@@ -154,6 +155,29 @@ class PredictorAPI:
         PredictorModel
             The GP model being fit.
         """
+        data_api = getattr(self.session, "data", None)
+        assert isinstance(data_api, DataAPI)
+        # 1. Check assay data input
+        # get assay if str
+        assay = data_api.get(assay_id=assay) if isinstance(assay, str) else assay
+        # extract assay_id
+        assay_id = (
+            assay.assay_id
+            if isinstance(assay, AssayMetadata)
+            else assay.id if isinstance(assay, AssayDataset) else assay
+        )
+        if len(properties) == 0:
+            raise InvalidParameterError("Expected (at-least) 1 property to train")
+        if not set(properties) <= set(assay.measurement_names):
+            raise InvalidParameterError(
+                f"Expected all provided properties to be a subset of assay's measurements: {assay.measurement_names}"
+            )
+        # TODO - support multitask
+        if len(properties) > 1:
+            raise InvalidParameterError(
+                "Training a multitask GP is not yet supported (i.e. number of properties should only be 1 for now)"
+            )
+        # 2. Check features input
         # extract feature type
         feature_type = (
             FeatureType.PLM
@@ -164,6 +188,15 @@ class PredictorAPI:
             raise InvalidParameterError(
                 "Expected feature_type to be provided if passing str model_id as model"
             )
+        # runtime check on value
+        if isinstance(feature_type, str):
+            feature_type = FeatureType(feature_type)
+
+        # 3. Check reduction
+        if isinstance(reduction, str):
+            reduction = ReductionType(reduction)
+            reduction = reduction.value
+
         # get model if model_id
         if feature_type == FeatureType.PLM:
             if reduction is None:
@@ -183,19 +216,14 @@ class PredictorAPI:
                 model = svd_api.get_svd(model)
             assert isinstance(model, SVDModel), "Expected SVDModel"
             model_id = model.id
-        # get assay_id
-        assay_id = (
-            assay.assay_id
-            if isinstance(assay, AssayMetadata)
-            else assay.id if isinstance(assay, AssayDataset) else assay
-        )
+
         return PredictorModel(
             session=self.session,
             job=api.predictor_fit_gp_post(
                 session=self.session,
                 assay_id=assay_id,
                 properties=properties,
-                feature_type=feature_type,
+                feature_type=feature_type.value,
                 model_id=model_id,
                 reduction=reduction,
                 name=name,

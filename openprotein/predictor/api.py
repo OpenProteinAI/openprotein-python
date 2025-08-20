@@ -162,8 +162,8 @@ def predictor_fit_gp_post(
         body["name"] = name
     if description is not None:
         body["description"] = description
-    # add kwargs for embeddings kwargs
-    body.update(kwargs)
+    # add kwargs for embeddings kwargs to features
+    body["features"].update(kwargs)
 
     response = session.post(endpoint, json=body)
     return PredictorTrainJob.model_validate(response.json())

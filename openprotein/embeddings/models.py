@@ -3,7 +3,13 @@
 from typing import TYPE_CHECKING
 
 from openprotein.base import APISession
-from openprotein.common import FeatureType, ModelMetadata, ReductionType
+from openprotein.common import (
+    Feature,
+    FeatureType,
+    ModelMetadata,
+    Reduction,
+    ReductionType,
+)
 from openprotein.data import AssayDataset, AssayMetadata, DataAPI
 from openprotein.errors import InvalidParameterError
 
@@ -199,9 +205,9 @@ class EmbeddingModel:
     def fit_svd(
         self,
         sequences: list[bytes] | list[str] | None = None,
-        assay: AssayDataset | None = None,
+        assay: AssayDataset | AssayMetadata | None = None,
         n_components: int = 1024,
-        reduction: ReductionType | None = None,
+        reduction: Reduction | ReductionType | None = None,
         **kwargs,
     ) -> "SVDModel":
         """
@@ -236,6 +242,11 @@ class EmbeddingModel:
         # local import for cyclic dep
         from openprotein.svd import SVDAPI
 
+        # runtime check on value
+        if isinstance(reduction, str):
+            reduction = ReductionType(reduction)
+            reduction = reduction.value
+
         svd_api = getattr(self.session, "svd", None)
         assert isinstance(svd_api, SVDAPI)
 
@@ -246,9 +257,8 @@ class EmbeddingModel:
             raise InvalidParameterError(
                 "Expected either assay or sequences to fit SVD on!"
             )
-        model_id = self.id
         return svd_api.fit_svd(
-            model_id=model_id,
+            model=self,
             sequences=sequences,
             assay=assay,
             n_components=n_components,
@@ -259,9 +269,9 @@ class EmbeddingModel:
     def fit_umap(
         self,
         sequences: list[bytes] | list[str] | None = None,
-        assay: AssayDataset | None = None,
+        assay: AssayDataset | AssayMetadata | None = None,
         n_components: int = 2,
-        reduction: ReductionType | None = ReductionType.MEAN,
+        reduction: Reduction | ReductionType = "MEAN",
         **kwargs,
     ) -> "UMAPModel":
         """
@@ -274,11 +284,11 @@ class EmbeddingModel:
         ----------
         sequences : list of bytes or list of str or None, optional
             Optional sequences to fit UMAP with. Either use sequences or assay. Sequences is preferred.
-        assay : AssayDataset or None, optional
+        assay : AssayDataset or AssayMetadata or None, optional
             Optional assay containing sequences to fit UMAP with. Either use sequences or assay. Ignored if sequences are provided.
         n_components : int, optional
             Number of components in UMAP fit. Determines output shapes. Default is 2.
-        reduction : ReductionType or None, optional
+        reduction : Reduction or ReductionType or None, optional
             Embeddings reduction to use (e.g. mean). Defaults to MEAN.
         kwargs :
             Additional keyword arguments to be used from foundational models, e.g. prompt_id for PoET models.
@@ -296,6 +306,16 @@ class EmbeddingModel:
         # local import for cyclic dep
         from openprotein.umap import UMAPAPI
 
+        if reduction is None:
+            raise InvalidParameterError(
+                "Expected reduction if using EmbeddingModel to fit UMAP"
+            )
+
+        # runtime check on value
+        if isinstance(reduction, str):
+            reduction = ReductionType(reduction)
+            reduction = reduction.value
+
         umap_api = getattr(self.session, "umap", None)
         assert isinstance(umap_api, UMAPAPI)
 
@@ -306,12 +326,18 @@ class EmbeddingModel:
             raise InvalidParameterError(
                 "Expected either assay or sequences to fit UMAP on!"
             )
+        # get assay_id
+        assay_id = (
+            assay.assay_id
+            if isinstance(assay, AssayMetadata)
+            else assay.id if isinstance(assay, AssayDataset) else assay
+        )
         model_id = self.id
         return umap_api.fit_umap(
             model_id=model_id,
             feature_type=FeatureType.PLM,
             sequences=sequences,
-            assay_id=assay.id if assay is not None else None,
+            assay_id=assay_id,
             n_components=n_components,
             reduction=reduction,
             **kwargs,
@@ -319,7 +345,7 @@ class EmbeddingModel:
 
     def fit_gp(
         self,
-        assay: AssayMetadata | AssayDataset | str,
+        assay: AssayDataset | AssayMetadata | str,
         properties: list[str],
         reduction: ReductionType,
         name: str | None = None,
@@ -358,25 +384,8 @@ class EmbeddingModel:
         # local import to resolve cyclic
         from openprotein.predictor import PredictorAPI
 
-        data_api = getattr(self.session, "data", None)
-        assert isinstance(data_api, DataAPI)
         predictor_api = getattr(self.session, "predictor", None)
         assert isinstance(predictor_api, PredictorAPI)
-
-        # get assay if str
-        assay = data_api.get(assay_id=assay) if isinstance(assay, str) else assay
-        # extract assay_id
-        if len(properties) == 0:
-            raise InvalidParameterError("Expected (at-least) 1 property to train")
-        if not set(properties) <= set(assay.measurement_names):
-            raise InvalidParameterError(
-                f"Expected all provided properties to be a subset of assay's measurements: {assay.measurement_names}"
-            )
-        # TODO - support multitask
-        if len(properties) > 1:
-            raise InvalidParameterError(
-                "Training a multitask GP is not yet supported (i.e. number of properties should only be 1 for now)"
-            )
 
         # inject into predictor api
         return predictor_api.fit_gp(

@@ -29,38 +29,6 @@ _BACKBONE_ATOM_TYPES = ("N", "CA", "C")
 _NAN_BFACTOR_VALUE = 9999.75  # can't/hard to use 9999.99 due to precision issues
 
 
-def calc_rmsd(
-    xyz1: npt.NDArray[np.floating], xyz2: npt.NDArray[np.floating], eps: float = 1e-6
-) -> tuple[float, npt.NDArray[np.floating]]:
-    """
-    Calculates RMSD between two sets of atoms (L, 3)
-    Adapted from https://github.com/RosettaCommons/RFdiffusion/blob/b44206a2a79f219bb1a649ea50603a284c225050/rfdiffusion/util.py#L719
-    """
-    # center to CA centroid
-    xyz1 = xyz1 - xyz1.mean(0)
-    xyz2 = xyz2 - xyz2.mean(0)
-
-    # Computation of the covariance matrix
-    C = xyz2.T @ xyz1
-
-    # Compute otimal rotation matrix using SVD
-    V, S, W = np.linalg.svd(C)
-
-    # get sign to ensure right-handedness
-    d = np.ones([3, 3])
-    d[:, -1] = np.sign(np.linalg.det(V) * np.linalg.det(W))
-
-    # Rotation matrix U
-    U = (d * V) @ W
-
-    # Rotate xyz2
-    xyz2_ = xyz2 @ U
-    L = xyz2_.shape[0]
-    rmsd = np.sqrt(np.sum((xyz2_ - xyz1) * (xyz2_ - xyz1), axis=(0, 1)) / L + eps)
-
-    return rmsd, U
-
-
 class Protein:
     """
     Represents a protein with optional sequence, atomic coordinates, per-residue
@@ -416,10 +384,12 @@ class Protein:
                 else:
                     atom.b_iso = _NAN_BFACTOR_VALUE
                 atom = residue.add_atom(atom)
-        block = structure.make_mmcif_block()
         # NB: gemmi doesn't seem to write the _chem_comp category properly... it says
         #     the type is `.`, but is should be something like `L-PEPTIDE LINKING`...
-        block.find_mmcif_category("_chem_comp").erase()  # ...so we remove it
+        #     see also: https://github.com/project-gemmi/gemmi/discussions/362
+        block = structure.make_mmcif_block(
+            groups=gemmi.MmcifOutputGroups(True, chem_comp=False)
+        )
         return block.as_string()
 
     def make_fasta_bytes(self) -> bytes:
@@ -479,7 +449,6 @@ class Protein:
         model_idx: int = 0,
         verbose: bool = True,
     ) -> "Protein":
-        filestring = filestring if isinstance(filestring, str) else filestring.decode()
         if format == "pdb":
             structure = gemmi.read_pdb_string(filestring)
         elif format == "cif":
@@ -507,7 +476,7 @@ class Protein:
         structure.setup_entities()
         structure.assign_label_seq_id()
         if use_bfactor_as_plddt is None:
-            use_bfactor_as_plddt = structure.resolution == 0.0
+            use_bfactor_as_plddt = _use_bfactor_as_plddt(structure=structure)
         model = structure[model_idx]
         chain = model.find_chain(chain_id)
         assert chain is not None
@@ -585,3 +554,51 @@ def parse_fasta_as_proteins(path: str | Path) -> list[Protein]:
         for name, sequence in fasta.parse_stream(fp):
             proteins.append(Protein(name=name, sequence=sequence))
     return proteins
+
+
+def _use_bfactor_as_plddt(structure: gemmi.Structure) -> bool:
+    """
+    This heuristic decides whether to use B-factor as pLDDT.
+    It uses B-factor as pLDDT when all of the following fields are *not* set:
+        - structure resolution
+        - _pdbx_database_status.recvd_initial_deposition_date
+    This heuristic may be changed in the future.
+    """
+    return (structure.resolution == 0.0) and (
+        structure.make_mmcif_block(
+            groups=gemmi.MmcifOutputGroups(False, database_status=True)
+        ).find_value("_pdbx_database_status.recvd_initial_deposition_date")
+        is None
+    )
+
+
+def calc_rmsd(
+    xyz1: npt.NDArray[np.floating], xyz2: npt.NDArray[np.floating], eps: float = 1e-6
+) -> tuple[float, npt.NDArray[np.floating]]:
+    """
+    Calculates RMSD between two sets of atoms (L, 3)
+    Adapted from https://github.com/RosettaCommons/RFdiffusion/blob/b44206a2a79f219bb1a649ea50603a284c225050/rfdiffusion/util.py#L719
+    """
+    # center to CA centroid
+    xyz1 = xyz1 - xyz1.mean(0)
+    xyz2 = xyz2 - xyz2.mean(0)
+
+    # Computation of the covariance matrix
+    C = xyz2.T @ xyz1
+
+    # Compute otimal rotation matrix using SVD
+    V, S, W = np.linalg.svd(C)
+
+    # get sign to ensure right-handedness
+    d = np.ones([3, 3])
+    d[:, -1] = np.sign(np.linalg.det(V) * np.linalg.det(W))
+
+    # Rotation matrix U
+    U = (d * V) @ W
+
+    # Rotate xyz2
+    xyz2_ = xyz2 @ U
+    L = xyz2_.shape[0]
+    rmsd = np.sqrt(np.sum((xyz2_ - xyz1) * (xyz2_ - xyz1), axis=(0, 1)) / L + eps)
+
+    return rmsd, U

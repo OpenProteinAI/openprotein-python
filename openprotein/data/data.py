@@ -14,16 +14,23 @@ class DataAPI:
     def __init__(self, session: APISession):
         self.session = session
 
-    def list(self) -> list[AssayDataset]:
+    def list(
+        self, limit: int | None = None, offset: int | None = None
+    ) -> list[AssayDataset]:
         """
         List all assay datasets.
+
+        limit : int, optional
+            Limit the number of assays to return.
+        offset : int, optional
+            Offset of assays to retrieve. Useful with limit.
 
         Returns
         -------
         List[AssayDataset]
             List of all assay datasets.
         """
-        metadata = api.assaydata_list(self.session)
+        metadata = api.assaydata_list(session=self.session, limit=limit, offset=offset)
         return [AssayDataset(self.session, x) for x in metadata]
 
     def create(

@@ -1,5 +1,7 @@
 """SVD API providing the interface for creating and using SVD models."""
 
+from typing import Literal
+
 from openprotein.base import APISession
 from openprotein.common import ReductionType
 from openprotein.data import AssayDataset, AssayMetadata
@@ -20,11 +22,11 @@ class SVDAPI:
 
     def fit_svd(
         self,
-        model_id: str,
+        model_id: str | EmbeddingModel,
         sequences: list[bytes] | list[str] | None = None,
         assay: AssayMetadata | AssayDataset | str | None = None,
         n_components: int = 1024,
-        reduction: ReductionType | None = None,
+        reduction: Literal["MEAN", "SUM"] | None = None,
         **kwargs,
     ) -> SVDModel:
         """
@@ -32,7 +34,7 @@ class SVDAPI:
 
         Parameters
         ----------
-        model_id : str
+        model_id : str or EmbeddingModel
             ID of embeddings model to use.
         sequences : list of bytes or None, optional
             Optional sequences to fit SVD with. Either use sequences or
@@ -43,7 +45,7 @@ class SVDAPI:
             Ignored if sequences are provided.
         n_components : int, optional
             The number of components for the SVD. Defaults to 1024.
-        reduction : str or None, optional
+        reduction : str or ReductionType or None, optional
             Type of embedding reduction to use for computing features.
             E.g. "MEAN" or "SUM". Useful when dealing with variable length
             sequence. Defaults to None.
