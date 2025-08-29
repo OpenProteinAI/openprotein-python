@@ -28,6 +28,6 @@ class ModelMetadata(BaseModel):
     max_sequence_length: int | None = None
     dimension: int
     output_types: list[str]
-    input_tokens: list[str]
+    input_tokens: list[str] | None
     output_tokens: list[str] | None = None
     token_descriptions: list[list[TokenInfo]]
