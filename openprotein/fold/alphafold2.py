@@ -47,10 +47,8 @@ class AlphaFold2Model(FoldModel):
             number of times to recycle models
         num_models : int
             number of models to train - best model will be used
-        max_msa : Union[str, int]
-            maximum number of sequences in the msa to use.
-        relax_max_iterations : int
-            maximum number of iterations
+        num_relax : int
+            maximum number of iterations for relax
 
         Returns
         -------
@@ -61,6 +59,7 @@ class AlphaFold2Model(FoldModel):
                 "Inputs to AlphaFold 2 have been updated. 'msa' should be supplied as 'proteins' argument. Support will be dropped in the future."
             )
             proteins = kwargs["msa"]
+            assert isinstance(proteins, MSAFuture), "Expected msa to be an MSAFuture"
         if "ligands" in kwargs or "dnas" in kwargs or "rnas" in kwargs:
             with warnings.catch_warnings():
                 warnings.simplefilter("always")  # Force warning to always show
@@ -73,6 +72,10 @@ class AlphaFold2Model(FoldModel):
             msa_to_seed: dict[str, Counter] = dict()
             for protein in proteins:
                 if (msa := protein.msa) is not None:
+                    if isinstance(msa, Protein.NullMSA):
+                        raise ValueError(
+                            "AlphaFold 2 expects MSA and does not support single sequence mode"
+                        )
                     msa_id = msa.id if isinstance(msa, MSAFuture) else msa
                     if msa_id in msa_to_seed:
                         seeds = msa_to_seed[msa_id]

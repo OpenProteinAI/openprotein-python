@@ -9,11 +9,11 @@ from typing_extensions import Self
 from openprotein import config
 from openprotein.base import APISession
 from openprotein.chains import DNA, RNA, Ligand
-from openprotein.jobs import Future, MappedFuture
+from openprotein.jobs import Future, JobsAPI, MappedFuture
 from openprotein.protein import Protein
 
 from . import api
-from .schemas import FoldJob
+from .schemas import FoldJob, FoldMetadata
 
 if TYPE_CHECKING:
     from .boltz import BoltzAffinity, BoltzConfidence
@@ -34,34 +34,39 @@ class FoldResultFuture(MappedFuture, Future):
     def __init__(
         self,
         session: APISession,
-        job: FoldJob,
+        job: FoldJob | None = None,
+        metadata: FoldMetadata | None = None,
         sequences: list[bytes] | None = None,
         max_workers: int = config.MAX_CONCURRENT_WORKERS,
     ):
         """
         Initialize a FoldResultFuture instance.
 
-        Parameters
-        ----------
-        session : APISession
-            The API session to use for requests.
-        job : FoldJob
-            The fold job associated with this future.
-        sequences : list[bytes], optional
-            List of sequences submitted for the fold request. If None, sequences will be fetched.
-        max_workers : int, optional
-            Maximum number of concurrent workers. Default is config.MAX_CONCURRENT_WORKERS.
+        Takes in either a fold job, or the fold job metadata.
+
+        :meta private:
         """
-        super().__init__(session, job, max_workers)
+        # initialize the fold job metadata
+        if metadata is None:
+            if job is None or job.job_id is None:
+                raise ValueError("Expected fold metadata or job")
+            metadata = api.fold_get(session, job.job_id)
+        self._metadata = metadata
+        if job is None:
+            jobs_api = getattr(session, "jobs", None)
+            assert isinstance(jobs_api, JobsAPI)
+            job = FoldJob.create(jobs_api.get_job(job_id=metadata.job_id))
         if sequences is None:
             sequences = api.fold_get_sequences(self.session, job_id=job.job_id)
         self._sequences = sequences
+        super().__init__(session, job, max_workers)
 
     @classmethod
     def create(
         cls: type[Self],
         session: APISession,
-        job: FoldJob,
+        job: FoldJob | None = None,
+        metadata: FoldMetadata | None = None,
         **kwargs,
     ) -> "Self | FoldComplexResultFuture":
         """
@@ -81,7 +86,13 @@ class FoldResultFuture(MappedFuture, Future):
         FoldResultFuture or FoldComplexResultFuture
             An instance of FoldResultFuture or FoldComplexResultFuture depending on the model.
         """
-        model_id = api.fold_get(session=session, job_id=job.job_id).model_id
+        if job is not None:
+            job_id = job.job_id
+        elif metadata is not None:
+            job_id = metadata.job_id
+        else:
+            raise ValueError("Expected fold metadata or job")
+        model_id = api.fold_get(session=session, job_id=job_id).model_id
         if model_id.startswith("boltz") or model_id.startswith("alphafold"):
             return FoldComplexResultFuture(session=session, job=job, **kwargs)
         else:
@@ -102,22 +113,6 @@ class FoldResultFuture(MappedFuture, Future):
         return self._sequences
 
     @property
-    def model_id(self) -> str:
-        """
-        Get the model ID used for the fold request.
-
-        Returns
-        -------
-        str
-            Model ID.
-        """
-        if self._model_id is None:
-            self._model_id = api.fold_get(
-                session=self.session, job_id=self.job.job_id
-            ).model_id
-        return self._model_id
-
-    @property
     def id(self):
         """
         Get the ID of the fold request.
@@ -128,6 +123,17 @@ class FoldResultFuture(MappedFuture, Future):
             Fold job ID.
         """
         return self.job.job_id
+
+
+    @property
+    def metadata(self) -> FoldMetadata:
+        """The fold metadata."""
+        return self._metadata
+
+    @property
+    def model_id(self) -> str:
+        """The fold model used."""
+        return self._metadata.model_id
 
     def __keys__(self):
         """
@@ -189,7 +195,8 @@ class FoldComplexResultFuture(Future):
     def __init__(
         self,
         session: APISession,
-        job: FoldJob,
+        job: FoldJob | None = None,
+        metadata: FoldMetadata | None = None,
         model_id: str | None = None,
         proteins: list[Protein] | None = None,
         ligands: list[Ligand] | None = None,
@@ -216,6 +223,16 @@ class FoldComplexResultFuture(Future):
         rnas : list[RNA], optional
             List of RNAs submitted for fold request.
         """
+        # initialize the fold job metadata
+        if metadata is None:
+            if job is None or job.job_id is None:
+                raise ValueError("Expected fold metadata or job")
+            metadata = api.fold_get(session, job.job_id)
+        self._metadata = metadata
+        if job is None:
+            jobs_api = getattr(session, "jobs", None)
+            assert isinstance(jobs_api, JobsAPI)
+            job = FoldJob.create(jobs_api.get_job(job_id=metadata.job_id))
         super().__init__(session, job)
         self._model_id = model_id
         self._proteins = proteins
@@ -228,6 +245,11 @@ class FoldComplexResultFuture(Future):
         self._plddt: np.ndarray | None = None
         self._confidence: list["BoltzConfidence"] | None = None
         self._affinity: "BoltzAffinity | None" = None
+
+    @property
+    def metadata(self) -> FoldMetadata:
+        """The fold metadata."""
+        return self._metadata
 
     @property
     def model_id(self) -> str:
@@ -433,6 +455,8 @@ class FoldComplexResultFuture(Future):
         AttributeError
             If confidence is not supported for the model.
         """
+        from .boltz import BoltzConfidence
+
         if self.model_id not in {"boltz-1", "boltz-1x", "boltz-2"}:
             raise AttributeError("confidence not supported for non-Boltz model")
         if self._confidence is None:
