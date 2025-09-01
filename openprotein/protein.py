@@ -561,15 +561,9 @@ def _use_bfactor_as_plddt(structure: gemmi.Structure) -> bool:
     This heuristic decides whether to use B-factor as pLDDT.
     It uses B-factor as pLDDT when all of the following fields are *not* set:
         - structure resolution
-        - _pdbx_database_status.recvd_initial_deposition_date
     This heuristic may be changed in the future.
     """
-    return (structure.resolution == 0.0) and (
-        structure.make_mmcif_block(
-            groups=gemmi.MmcifOutputGroups(False, database_status=True)
-        ).find_value("_pdbx_database_status.recvd_initial_deposition_date")
-        is None
-    )
+    return structure.resolution == 0.0
 
 
 def calc_rmsd(
