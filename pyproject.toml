@@ -24,7 +24,7 @@ dependencies = [
   "numpy>=1.9,<3",
   "gemmi>=0.7.0,<0.8",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.13"
 
 [dependency-groups]
 dev = [
@@ -52,12 +52,17 @@ python = ">=3.10,<3.13"
 [tool.pixi.feature.dev.tasks]
 postinstall = "pip install --no-build-isolation --no-deps --disable-pip-version-check -e ."
 jupyterinstall = "python -m ipykernel install --user --name=openprotein-python"
+build = """
+pixi global install -q --no-progress -e conda-build --expose conda --expose conda-verify --expose conda-build --expose anaconda anaconda-client conda-build conda-verify > /dev/null;
+pixi global install -q --no-progress --expose hatch hatch > /dev/null;
+hatch build; hatch publish; hatch build -t conda
+"""
 
 [tool.pixi.environments]
 dev = ["dev"]
 
 [build-system]
-requires = ["hatchling>=1.26.1", "hatch-vcs>=0.5.0"]
+requires = ["hatchling>=1.26.1", "hatch-vcs>=0.5.0", "hatch-conda-build>=0.1.2"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
