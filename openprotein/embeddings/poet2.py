@@ -287,7 +287,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
 
     def generate(
         self,
-        prompt: str | Prompt,
+        prompt: str | Prompt | None,
         query: str | bytes | Protein | Query | None = None,
         use_query_structure_in_decoder: bool = True,
         num_samples: int = 100,
@@ -304,7 +304,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
 
         Parameters
         ----------
-        prompt : str or Prompt
+        prompt : str or Prompt or None, optional
             Prompt from an align workflow to condition PoET model.
         query : str or bytes or Protein or Query or None, optional
             Query to use with prompt.
@@ -351,7 +351,8 @@ class PoET2Model(PoETModel, EmbeddingModel):
                     f"equal to the number of prompts ({prompt.num_replicates})"
                 )
         return super().generate(
-            prompt=prompt,
+            # NB: poet(-1) cannot use null prompt, so we don't change its .generate's type signature
+            prompt=prompt,  # type: ignore
             num_samples=num_samples,
             temperature=temperature,
             topk=topk,

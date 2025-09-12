@@ -295,7 +295,11 @@ class PoETModel(EmbeddingModel):
         EmbeddingsGenerateFuture
             Future object representing the status and information about the generation job.
         """
-        prompt_id = prompt if isinstance(prompt, str) else prompt.id
+        if prompt is not None:
+            kwargs["prompt_id"] = prompt if isinstance(prompt, str) else prompt.id
+        else:
+            # NB: this is for handling PoET-2
+            assert self.model_id != "poet"
         return EmbeddingsGenerateFuture.create(
             session=self.session,
             job=api.request_generate_post(
@@ -307,7 +311,6 @@ class PoETModel(EmbeddingModel):
                 topp=topp,
                 max_length=max_length,
                 random_seed=seed,
-                prompt_id=prompt_id,
                 **kwargs,
             ),
         )

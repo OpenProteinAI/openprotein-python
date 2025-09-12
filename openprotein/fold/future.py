@@ -50,14 +50,14 @@ class FoldResultFuture(MappedFuture, Future):
         if metadata is None:
             if job is None or job.job_id is None:
                 raise ValueError("Expected fold metadata or job")
-            metadata = api.fold_get(session, job.job_id)
+            metadata = api.fold_get(session=session, job_id=job.job_id)
         self._metadata = metadata
         if job is None:
             jobs_api = getattr(session, "jobs", None)
             assert isinstance(jobs_api, JobsAPI)
             job = FoldJob.create(jobs_api.get_job(job_id=metadata.job_id))
         if sequences is None:
-            sequences = api.fold_get_sequences(self.session, job_id=job.job_id)
+            sequences = api.fold_get_sequences(session=session, job_id=job.job_id)
         self._sequences = sequences
         super().__init__(session, job, max_workers)
 
@@ -93,7 +93,11 @@ class FoldResultFuture(MappedFuture, Future):
         else:
             raise ValueError("Expected fold metadata or job")
         model_id = api.fold_get(session=session, job_id=job_id).model_id
-        if model_id.startswith("boltz") or model_id.startswith("alphafold"):
+        if (
+            model_id.startswith("boltz")
+            or model_id.startswith("alphafold")
+            or model_id.startswith("rosettafold")
+        ):
             return FoldComplexResultFuture(session=session, job=job, **kwargs)
         else:
             return cls(session=session, job=job, **kwargs)
@@ -123,7 +127,6 @@ class FoldResultFuture(MappedFuture, Future):
             Fold job ID.
         """
         return self.job.job_id
-
 
     @property
     def metadata(self) -> FoldMetadata:
