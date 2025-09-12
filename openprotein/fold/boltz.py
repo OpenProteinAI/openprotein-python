@@ -1,7 +1,7 @@
 """Community-based Boltz models for complex structure prediction with ligands/dna/rna."""
 
-import re
-import string
+import warnings
+from logging import warning
 from typing import Any
 
 from pydantic import BaseModel, Field, TypeAdapter, model_validator
@@ -13,66 +13,9 @@ from openprotein.common import ModelMetadata
 from openprotein.protein import Protein
 
 from . import api
+from .complex import id_generator
 from .future import FoldComplexResultFuture
 from .models import FoldModel
-
-valid_id_pattern = re.compile(r"^[A-Z]{1,5}$|^\d{1,5}$")
-
-
-def is_valid_id(id_str: str) -> bool:
-    """
-    Check if the id_str matches the valid pattern for IDs (1-5 uppercase or 1-5 digits).
-    """
-    if not id_str or len(id_str) > 5:
-        return False
-    return bool(valid_id_pattern.fullmatch(id_str))
-
-
-def id_generator(used_ids: list[str] | None = None, max_alpha_len=5, max_numeric=99999):
-    """
-    Yields new chain IDs, skipping any in 'used_ids'.
-    First A..Z, AA..ZZ, … up to max_alpha_len, then '1','2',… up to max_numeric.
-    """
-    used = set(tuple(used_ids or []))
-    letters = list(string.ascii_uppercase)
-
-    # --- Alphabetic IDs ---
-    curr_len = 1
-    curr_indices = [0] * curr_len  # start at 'A'
-
-    def bump_indices():
-        # lexicographically increment curr_indices; return False on overflow
-        for i in reversed(range(len(curr_indices))):
-            if curr_indices[i] < len(letters) - 1:
-                curr_indices[i] += 1
-                for j in range(i + 1, len(curr_indices)):
-                    curr_indices[j] = 0
-                return True
-        return False
-
-    while curr_len <= max_alpha_len:
-        candidate = "".join(letters[i] for i in curr_indices)
-        if candidate not in used:
-            used.add(candidate)
-            yield candidate
-        # bump
-        if not bump_indices():
-            curr_len += 1
-            if curr_len > max_alpha_len:
-                break
-            curr_indices = [0] * curr_len
-
-    # --- Numeric IDs ---
-    num = 1
-    while num <= max_numeric:
-        candidate = str(num)
-        num += 1
-        if candidate not in used:
-            used.add(candidate)
-            yield candidate
-
-    # exhausted
-    raise RuntimeError("exhausted all possible IDs")
 
 
 class BoltzModel(FoldModel):
@@ -97,8 +40,8 @@ class BoltzModel(FoldModel):
         rnas: list[RNA] | None = None,
         ligands: list[Ligand] | None = None,
         diffusion_samples: int = 1,
-        recycling_steps: int = 3,
-        sampling_steps: int = 200,
+        num_recycles: int = 3,
+        num_steps: int = 200,
         step_scale: float = 1.638,
         use_potentials: bool = False,
         constraints: list[dict] | None = None,
@@ -119,9 +62,9 @@ class BoltzModel(FoldModel):
             List of ligands to include in folded output.
         diffusion_samples: int
             Number of diffusion samples to use
-        recycling_steps : int
+        num_recycles : int
             Number of recycling steps to use
-        sampling_steps : int
+        num_steps : int
             Number of sampling steps to use
         step_scale : float
             Scaling factor for diffusion steps.
@@ -133,6 +76,17 @@ class BoltzModel(FoldModel):
         FoldComplexResultFuture
             Future for the folding complex result.
         """
+        # migrate old parameter
+        if (recycling_steps := kwargs.get("recycling_steps")) is not None:
+            num_recycles = recycling_steps
+            warnings.warn(
+                "`recycling_steps` has been updated to `num_recycles`. The parameter will be auto-corrected for now but raise an exception in the future."
+            )
+        if (sampling_steps := kwargs.get("sampling_steps")) is not None:
+            num_steps = sampling_steps
+            warnings.warn(
+                "`sampling_steps` has been updated to `num_steps`. The parameter will be auto-corrected for now but raise an exception in the future."
+            )
         # validate constraints
         if constraints is not None:
             TypeAdapter(list[BoltzConstraint]).validate_python(constraints)
@@ -247,8 +201,8 @@ class BoltzModel(FoldModel):
                 model_id=self.model_id,
                 sequences=sequences,
                 diffusion_samples=diffusion_samples,
-                recycling_steps=recycling_steps,
-                sampling_steps=sampling_steps,
+                num_recycles=num_recycles,
+                num_steps=num_steps,
                 step_scale=step_scale,
                 constraints=constraints,
                 use_potentials=use_potentials,
@@ -276,8 +230,8 @@ class Boltz2Model(BoltzModel, FoldModel):
         rnas: list[RNA] | None = None,
         ligands: list[Ligand] | None = None,
         diffusion_samples: int = 1,
-        recycling_steps: int = 3,
-        sampling_steps: int = 200,
+        num_recycles: int = 3,
+        num_steps: int = 200,
         step_scale: float = 1.638,
         use_potentials: bool = False,
         constraints: list[dict] | None = None,
@@ -300,9 +254,9 @@ class Boltz2Model(BoltzModel, FoldModel):
             List of ligands to include in folded output.
         diffusion_samples: int
             Number of diffusion samples to use
-        recycling_steps : int
+        num_recycles : int
             Number of recycling steps to use
-        sampling_steps : int
+        num_steps : int
             Number of sampling steps to use
         step_scale : float
             Scaling factor for diffusion steps.
@@ -360,8 +314,8 @@ class Boltz2Model(BoltzModel, FoldModel):
             rnas=rnas,
             ligands=ligands,
             diffusion_samples=diffusion_samples,
-            recycling_steps=recycling_steps,
-            sampling_steps=sampling_steps,
+            num_recycles=num_recycles,
+            num_steps=num_steps,
             step_scale=step_scale,
             use_potentials=use_potentials,
             constraints=constraints,
@@ -385,8 +339,8 @@ class Boltz1xModel(BoltzModel, FoldModel):
         rnas: list[RNA] | None = None,
         ligands: list[Ligand] | None = None,
         diffusion_samples: int = 1,
-        recycling_steps: int = 3,
-        sampling_steps: int = 200,
+        num_recycles: int = 3,
+        num_steps: int = 200,
         step_scale: float = 1.638,
         constraints: list[dict] | None = None,
     ) -> FoldComplexResultFuture:
@@ -405,9 +359,9 @@ class Boltz1xModel(BoltzModel, FoldModel):
             List of ligands to include in folded output.
         diffusion_samples: int
             Number of diffusion samples to use
-        recycling_steps : int
+        num_recycles : int
             Number of recycling steps to use
-        sampling_steps : int
+        num_steps : int
             Number of sampling steps to use
         step_scale : float
             Scaling factor for diffusion steps.
@@ -426,8 +380,8 @@ class Boltz1xModel(BoltzModel, FoldModel):
             rnas=rnas,
             ligands=ligands,
             diffusion_samples=diffusion_samples,
-            recycling_steps=recycling_steps,
-            sampling_steps=sampling_steps,
+            num_recycles=num_recycles,
+            num_steps=num_steps,
             step_scale=step_scale,
             use_potentials=True,
             constraints=constraints,
@@ -448,8 +402,8 @@ class Boltz1Model(BoltzModel, FoldModel):
         rnas: list[RNA] | None = None,
         ligands: list[Ligand] | None = None,
         diffusion_samples: int = 1,
-        recycling_steps: int = 3,
-        sampling_steps: int = 200,
+        num_recycles: int = 3,
+        num_steps: int = 200,
         step_scale: float = 1.638,
         use_potentials: bool = False,
         constraints: list[dict] | None = None,
@@ -469,9 +423,9 @@ class Boltz1Model(BoltzModel, FoldModel):
             List of ligands to include in folded output.
         diffusion_samples: int
             Number of diffusion samples to use
-        recycling_steps : int
+        num_recycles : int
             Number of recycling steps to use
-        sampling_steps : int
+        num_steps : int
             Number of sampling steps to use
         step_scale : float
             Scaling factor for diffusion steps.
@@ -492,8 +446,8 @@ class Boltz1Model(BoltzModel, FoldModel):
             rnas=rnas,
             ligands=ligands,
             diffusion_samples=diffusion_samples,
-            recycling_steps=recycling_steps,
-            sampling_steps=sampling_steps,
+            num_recycles=num_recycles,
+            num_steps=num_steps,
             step_scale=step_scale,
             use_potentials=use_potentials,
             constraints=constraints,

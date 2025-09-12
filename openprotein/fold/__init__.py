@@ -7,6 +7,7 @@ isort:skip_file
 from .schemas import FoldJob, FoldMetadata
 from .models import FoldModel
 from .esmfold import ESMFoldModel
+from .minifold import MiniFoldModel
 from .alphafold2 import AlphaFold2Model
 from .boltz import (
     Boltz1Model,
@@ -17,5 +18,6 @@ from .boltz import (
     BoltzConstraint,
     BoltzProperty,
 )
+from .rosettafold3 import RosettaFold3Model
 from .future import FoldResultFuture, FoldComplexResultFuture
 from .fold import FoldAPI

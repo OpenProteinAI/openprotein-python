@@ -7,9 +7,11 @@ from .alphafold2 import AlphaFold2Model
 from .boltz import Boltz1Model, Boltz1xModel, Boltz2Model
 from .esmfold import ESMFoldModel
 from .future import FoldComplexResultFuture, FoldResultFuture
+from .minifold import MiniFoldModel
 from .models import (
     FoldModel,
 )
+from .rosettafold3 import RosettaFold3Model
 
 
 class FoldAPI:
@@ -26,11 +28,16 @@ class FoldAPI:
     #: Boltz-1 model
     boltz1: Boltz1Model
     boltz_1: Boltz1Model
-    af2: AlphaFold2Model
     #: AlphaFold-2 model
+    af2: AlphaFold2Model
     alphafold2: AlphaFold2Model
+    #: RosettaFold-3 model
+    rf3: RosettaFold3Model
+    rosettafold_3: RosettaFold3Model
     #: ESMFold model
     esmfold: ESMFoldModel
+    #: MiniFold model
+    minifold: MiniFoldModel
 
     def __init__(self, session: APISession):
         self.session = session
@@ -45,6 +52,8 @@ class FoldAPI:
         # Setup aliases safely
         if getattr(self, "alphafold2", None):
             self.af2 = self.alphafold2
+        if getattr(self, "rosettafold_3", None):
+            self.rf3 = self.rosettafold_3
         if getattr(self, "boltz_1", None):
             self.boltz1 = self.boltz_1
         if getattr(self, "boltz_1x", None):

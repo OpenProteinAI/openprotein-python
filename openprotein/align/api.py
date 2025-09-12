@@ -400,12 +400,6 @@ def prompt_post(
             "Either 'num_sequences' or 'num_residues' must be set, but not both."
         )
 
-    if num_sequences is not None and not (0 <= num_sequences < 100):
-        raise InvalidParameterError("The 'num_sequences' must be between 0 and 100.")
-
-    if num_residues is not None and not (0 <= num_residues < 24577):
-        raise InvalidParameterError("The 'num_residues' must be between 0 and 24577.")
-
     if random_seed is None:
         random_seed = random.randrange(2**32)
 
