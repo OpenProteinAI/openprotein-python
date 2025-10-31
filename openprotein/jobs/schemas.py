@@ -46,6 +46,7 @@ class JobType(str, Enum):
     embeddings_attn = "/embeddings/attn"
     embeddings_logits = "/embeddings/logits"
     embeddings_embed_reduced = "/embeddings/embed_reduced"
+    embeddings_generate = "/embeddings/generate"
 
     svd_fit = "/svd/fit"
     svd_embed = "/svd/embed"

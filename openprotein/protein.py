@@ -26,6 +26,20 @@ _ATOM_TYPE_TO_IDX = {atom_type: i for i, atom_type in enumerate(_ATOM_TYPES)}
 
 _BACKBONE_ATOM_TYPES = ("N", "CA", "C")
 
+_EXPERIMENTAL_METHODS = {
+    "X-RAY DIFFRACTION",
+    "ELECTRON MICROSCOPY",
+    "SOLUTION NMR",
+    "SOLID-STATE NMR",
+    "NEUTRON DIFFRACTION",
+    "ELECTRON CRYSTALLOGRAPHY",
+    "FIBER DIFFRACTION",
+    "POWDER DIFFRACTION",
+    "INFRARED SPECTROSCOPY",
+    "FLUORESCENCE TRANSFER",
+    "EPR",
+    "SOLUTION SCATTERING",
+}
 _NAN_BFACTOR_VALUE = 9999.75  # can't/hard to use 9999.99 due to precision issues
 
 
@@ -328,7 +342,7 @@ class Protein:
         rmsd, _ = calc_rmsd(src_coords, tgt_coords)
         return rmsd
 
-    def make_cif_string(self) -> str:
+    def __make_gemmi(self) -> gemmi.Structure:
         # TODO: add note about _NAN_BFACTOR_VALUE
         assert (
             self.has_structure
@@ -370,6 +384,7 @@ class Protein:
             residue.subchain = "A"
             residue.name = resnames[i]
             residue.label_seq = i + 1
+            residue.seqid = gemmi.SeqId(str(i + 1))
             residue = chain.add_residue(residue, i + 1)
             # For each residue, add the atoms.
             for j, atom_name in enumerate(_ATOM_TYPES):
@@ -384,6 +399,10 @@ class Protein:
                 else:
                     atom.b_iso = _NAN_BFACTOR_VALUE
                 atom = residue.add_atom(atom)
+        return structure
+
+    def make_cif_string(self) -> str:
+        structure = self.__make_gemmi()
         # NB: gemmi doesn't seem to write the _chem_comp category properly... it says
         #     the type is `.`, but is should be something like `L-PEPTIDE LINKING`...
         #     see also: https://github.com/project-gemmi/gemmi/discussions/362
@@ -391,6 +410,10 @@ class Protein:
             groups=gemmi.MmcifOutputGroups(True, chem_comp=False)
         )
         return block.as_string()
+
+    def make_pdb_string(self) -> str:
+        structure = self.__make_gemmi()
+        return structure.make_pdb_string()
 
     def make_fasta_bytes(self) -> bytes:
         assert self.name is not None
@@ -556,14 +579,25 @@ def parse_fasta_as_proteins(path: str | Path) -> list[Protein]:
     return proteins
 
 
+def _is_experimental_structure(structure: gemmi.Structure) -> bool:
+    """
+    This heuristic decides whether the structure is an experimental structure.
+    This heuristic may be changed in the future.
+    """
+    if structure.resolution > 0:
+        return True
+    else:
+        return ("_exptl.method" in structure.info) and (
+            structure.info["_exptl.method"] in _EXPERIMENTAL_METHODS
+        )
+
+
 def _use_bfactor_as_plddt(structure: gemmi.Structure) -> bool:
     """
     This heuristic decides whether to use B-factor as pLDDT.
-    It uses B-factor as pLDDT when all of the following fields are *not* set:
-        - structure resolution
     This heuristic may be changed in the future.
     """
-    return structure.resolution == 0.0
+    return not _is_experimental_structure(structure=structure)
 
 
 def calc_rmsd(

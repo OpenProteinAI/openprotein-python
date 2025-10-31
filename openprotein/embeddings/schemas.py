@@ -37,8 +37,8 @@ class EmbeddedSequence(BaseModel):
 
 class EmbeddingsJob(Job, BatchJob):
 
-    job_type: Literal[JobType.embeddings_embed, JobType.embeddings_embed_reduced] = Field(
-        default=JobType.embeddings_embed
+    job_type: Literal[JobType.embeddings_embed, JobType.embeddings_embed_reduced] = (
+        Field(default=JobType.embeddings_embed)
     )
 
 
@@ -75,4 +75,6 @@ class ScoreSingleSiteJob(Job, BatchJob):
 
 class GenerateJob(Job, BatchJob):
 
-    job_type: Literal[JobType.poet_generate] = Field(default=JobType.poet_generate)
+    job_type: Literal[JobType.poet_generate, JobType.embeddings_generate] = Field(
+        default=JobType.poet_generate
+    )

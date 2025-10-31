@@ -22,7 +22,7 @@ class SVDAPI:
 
     def fit_svd(
         self,
-        model_id: str | EmbeddingModel,
+        model: str | EmbeddingModel,
         sequences: list[bytes] | list[str] | None = None,
         assay: AssayMetadata | AssayDataset | str | None = None,
         n_components: int = 1024,
@@ -34,8 +34,8 @@ class SVDAPI:
 
         Parameters
         ----------
-        model_id : str or EmbeddingModel
-            ID of embeddings model to use.
+        model : str or EmbeddingModel
+            ID of embeddings model to use or the EmbeddingModel.
         sequences : list of bytes or None, optional
             Optional sequences to fit SVD with. Either use sequences or
             assay_id. sequences is preferred.
@@ -59,7 +59,7 @@ class SVDAPI:
         """
         embeddings_api = getattr(self.session, "embedding", None)
         assert isinstance(embeddings_api, EmbeddingsAPI)
-        model = embeddings_api.get_model(model_id)
+        model = embeddings_api.get_model(model) if isinstance(model, str) else model
         assert isinstance(model, EmbeddingModel), "Expected EmbeddingModel"
         # get assay_id
         assay_id = (
