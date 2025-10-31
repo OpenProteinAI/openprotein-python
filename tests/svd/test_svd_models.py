@@ -1,11 +1,12 @@
 """Test the model logic for the svd domain."""
+
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from openprotein.jobs import JobStatus, JobType, JobsAPI
-from openprotein.svd.models import SVDModel, SVDEmbeddingResultFuture
+from openprotein.jobs import JobsAPI, JobStatus, JobType
+from openprotein.svd.models import SVDEmbeddingsResultFuture, SVDModel
 from openprotein.svd.schemas import SVDEmbeddingsJob, SVDFitJob, SVDMetadata
 
 
@@ -46,7 +47,9 @@ def test_svd_model_init_with_job(
     mock_session: MagicMock, mock_svd_fit_job, mock_svd_metadata
 ):
     """Test SVDModel initialization with a job object."""
-    with patch("openprotein.svd.api.svd_get", return_value=mock_svd_metadata) as mock_api_get:
+    with patch(
+        "openprotein.svd.api.svd_get", return_value=mock_svd_metadata
+    ) as mock_api_get:
         model = SVDModel(session=mock_session, job=mock_svd_fit_job)
         mock_api_get.assert_called_once_with(
             session=mock_session, svd_id=mock_svd_fit_job.job_id
@@ -74,7 +77,7 @@ def test_svd_model_embed(mock_session: MagicMock, mock_svd_metadata, mock_svd_fi
         mock_embed_post.assert_called_once_with(
             session=mock_session, svd_id=model.id, sequences=sequences
         )
-        assert isinstance(future, SVDEmbeddingResultFuture)
+        assert isinstance(future, SVDEmbeddingsResultFuture)
         assert future.id == "embed-job-123"
 
 
@@ -82,12 +85,13 @@ def test_svd_embedding_result_future_get_item(mock_session: MagicMock):
     """Test the get_item override in SVDEmbeddingResultFuture."""
     mock_job = MagicMock(spec=SVDEmbeddingsJob)
     mock_job.job_id = "job-456"
-    future = SVDEmbeddingResultFuture(session=mock_session, job=mock_job)
+    future = SVDEmbeddingsResultFuture(session=mock_session, job=mock_job)
     sequence = b"TEST"
 
-    with patch("openprotein.svd.api.embed_get_sequence_result") as mock_get_result, patch(
-        "openprotein.svd.api.embed_decode"
-    ) as mock_decode:
+    with (
+        patch("openprotein.svd.api.embed_get_sequence_result") as mock_get_result,
+        patch("openprotein.svd.api.embed_decode") as mock_decode,
+    ):
         future.get_item(sequence)
         mock_get_result.assert_called_once_with(mock_session, "job-456", sequence)
         mock_decode.assert_called_once()

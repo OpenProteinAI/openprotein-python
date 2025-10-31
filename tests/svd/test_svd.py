@@ -1,14 +1,16 @@
 """L2 integration tests for the svd domain."""
+
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
 
+from openprotein.base import APISession
 from openprotein.embeddings.embeddings import EmbeddingsAPI
 from openprotein.embeddings.models import EmbeddingModel
-from openprotein.jobs import JobStatus, JobType, JobsAPI
+from openprotein.jobs import JobsAPI, JobStatus, JobType
 from openprotein.svd.models import SVDModel
-from openprotein.svd.schemas import SVDFitJob
+from openprotein.svd.schemas import SVDFitJob, SVDMetadata
 from openprotein.svd.svd import SVDAPI
 
 
@@ -57,21 +59,35 @@ def test_get_svd(svd_api: SVDAPI, mock_svd_fit_job):
             mock_get.assert_called_once_with(svd_api.session, svd_id)
 
 
-def test_fit_svd(svd_api: SVDAPI):
+@patch("openprotein.svd.api.svd_get")
+def test_fit_svd(mock_get, svd_api: SVDAPI, mock_session: MagicMock):
     """Test the fit_svd method."""
     model_id = "model-1"
     sequences = [b"ACGT"]
 
+    mock_fit_job = MagicMock(spec=SVDFitJob)
+    mock_fit_job.job_id = "job-123"
+
+    mock_get.return_value.json.return_value = SVDMetadata(
+        id="svd-123",
+        status=JobStatus.PENDING,
+        model_id="model-123",
+        n_components=1024,
+    )
+
     mock_embedding_model = MagicMock(spec=EmbeddingModel)
-    mock_embedding_model.fit_svd.return_value = MagicMock(spec=SVDModel)
+    mock_embedding_model.id = model_id
 
     mock_embeddings_api = MagicMock(spec=EmbeddingsAPI)
     mock_embeddings_api.get_model.return_value = mock_embedding_model
 
-    svd_api.session.embedding = mock_embeddings_api  # type: ignore
+    svd_api.session = MagicMock(spec=APISession)
+    svd_api.session.embedding = mock_embeddings_api
 
-    result = svd_api.fit_svd(model_id=model_id, sequences=sequences)
-
-    mock_embeddings_api.get_model.assert_called_once_with(model_id)
-    mock_embedding_model.fit_svd.assert_called_once()
-    assert isinstance(result, SVDModel)
+    with patch(
+        "openprotein.svd.api.svd_fit_post", return_value=mock_fit_job
+    ) as mock_fit_post:
+        result = svd_api.fit_svd(model_id=model_id, sequences=sequences)
+        mock_embeddings_api.get_model.assert_called_once_with(model_id)
+        mock_fit_post.assert_called_once()
+        assert isinstance(result, SVDModel)

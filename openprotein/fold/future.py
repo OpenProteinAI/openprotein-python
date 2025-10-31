@@ -3,6 +3,7 @@
 from typing import TYPE_CHECKING, Literal
 
 import numpy as np
+import pandas as pd
 from pydantic.type_adapter import TypeAdapter
 from typing_extensions import Self
 
@@ -246,6 +247,8 @@ class FoldComplexResultFuture(Future):
         self._pae: np.ndarray | None = None
         self._pde: np.ndarray | None = None
         self._plddt: np.ndarray | None = None
+        self._score: pd.DataFrame | None = None
+        self._metrics: pd.DataFrame | None = None
         self._confidence: list["BoltzConfidence"] | None = None
         self._affinity: "BoltzAffinity | None" = None
 
@@ -438,6 +441,56 @@ class FoldComplexResultFuture(Future):
             assert isinstance(plddt, np.ndarray)
             self._plddt = plddt
         return self._plddt
+
+    @property
+    def score(self) -> pd.DataFrame:
+        """
+        Get the predicted scores.
+
+        Returns
+        -------
+        pd.DataFrame
+            Structure prediction scores.
+
+        Raises
+        ------
+        AttributeError
+            If score is not supported for the model.
+        """
+        if self.model_id not in {"rosettafold-3"}:
+            raise AttributeError("score not supported for non-RosettaFold model")
+        if self._score is None:
+            score = api.fold_get_complex_extra_result(
+                session=self.session, job_id=self.job.job_id, key="score"
+            )
+            assert isinstance(score, pd.DataFrame)
+            self._score = score
+        return self._score
+
+    @property
+    def metrics(self) -> pd.DataFrame:
+        """
+        Get the predicted metrics.
+
+        Returns
+        -------
+        pd.DataFrame
+            Structure prediction metrics.
+
+        Raises
+        ------
+        AttributeError
+            If metrics is not supported for the model.
+        """
+        if self.model_id not in {"rosettafold-3"}:
+            raise AttributeError("metrics not supported for non-RosettaFold model")
+        if self._metrics is None:
+            metrics = api.fold_get_complex_extra_result(
+                session=self.session, job_id=self.job.job_id, key="metrics"
+            )
+            assert isinstance(metrics, pd.DataFrame)
+            self._metrics = metrics
+        return self._metrics
 
     @property
     def confidence(self) -> list["BoltzConfidence"]:
