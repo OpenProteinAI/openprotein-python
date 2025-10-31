@@ -1,7 +1,7 @@
 """Fold REST API interface for making HTTP calls to our fold backend."""
 
 import io
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 from pydantic import TypeAdapter
@@ -11,6 +11,9 @@ from openprotein.common import ModelMetadata
 from openprotein.errors import HTTPError
 
 from .schemas import FoldJob, FoldMetadata
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 PATH_PREFIX = "v1/fold"
 
@@ -160,8 +163,8 @@ def fold_get_complex_result(
 def fold_get_complex_extra_result(
     session: APISession,
     job_id: str,
-    key: Literal["pae", "pde", "plddt", "confidence", "affinity"],
-) -> np.ndarray | list[dict]:
+    key: Literal["pae", "pde", "plddt", "confidence", "affinity", "score", "metrics"],
+) -> "np.ndarray | list[dict] | pd.DataFrame":
     """
     Get extra result for a complex from the request ID.
 
@@ -183,6 +186,10 @@ def fold_get_complex_extra_result(
         formatter = lambda response: np.load(io.BytesIO(response.content))
     elif key in {"confidence", "affinity"}:
         formatter = lambda response: response.json()
+    elif key in {"score", "metrics"}:
+        import pandas as pd
+
+        formatter = lambda response: pd.read_csv(io.StringIO(response.content.decode()))
     else:
         raise ValueError(f"Unexpected key: {key}")
     endpoint = PATH_PREFIX + f"/{job_id}/complex/{key}"
@@ -194,7 +201,7 @@ def fold_get_complex_extra_result(
         if e.status_code == 400 and key == "affinity":
             raise ValueError("affinity not found for request") from None
         raise e
-    output: np.ndarray | list[dict] = formatter(response)
+    output = formatter(response)
     return output
 
 
@@ -254,34 +261,11 @@ def fold_models_post(
         sequences = kwargs["sequences"]
         # NOTE we are handling the boltz form here too
         sequences = [s.decode() if isinstance(s, bytes) else s for s in sequences]
-        body["sequences"] = sequences
-    if kwargs.get("msa_id"):
-        body["msa_id"] = kwargs["msa_id"]
-    if kwargs.get("num_recycles"):
-        body["num_recycles"] = kwargs["num_recycles"]
-    if kwargs.get("num_models"):
-        body["num_models"] = kwargs["num_models"]
-    if kwargs.get("num_relax"):
-        body["num_relax"] = kwargs["num_relax"]
-    if kwargs.get("use_potentials"):
-        body["use_potentials"] = kwargs["use_potentials"]
-    # boltz
-    if kwargs.get("diffusion_samples"):
-        body["diffusion_samples"] = kwargs["diffusion_samples"]
-    if kwargs.get("recycling_steps"):
-        body["recycling_steps"] = kwargs["recycling_steps"]
-    if kwargs.get("sampling_steps"):
-        body["sampling_steps"] = kwargs["sampling_steps"]
-    if kwargs.get("step_scale"):
-        body["step_scale"] = kwargs["step_scale"]
-    if kwargs.get("constraints"):
-        body["constraints"] = kwargs["constraints"]
-    if kwargs.get("templates"):
-        body["templates"] = kwargs["templates"]
-    if kwargs.get("properties"):
-        body["properties"] = kwargs["properties"]
-    if kwargs.get("method"):
-        body["method"] = kwargs["method"]
+        kwargs["sequences"] = sequences
+    # add non-None args - note this doesnt affect msa_id which is nested
+    for k, v in kwargs.items():
+        if v is not None:
+            body[k] = v
 
     response = session.post(endpoint, json=body)
     return FoldJob.model_validate(response.json())
