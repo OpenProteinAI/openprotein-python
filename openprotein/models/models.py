@@ -2,6 +2,8 @@
 
 from openprotein.base import APISession
 
+from .foundation.boltzgen import BoltzGenModel
+from .foundation.proteinmpnn import ProteinMPNNModel
 from .foundation.rfdiffusion import RFdiffusionModel
 
 # In the future, we would import other models here:
@@ -26,6 +28,8 @@ class ModelsAPI:
             session: The active APISession to be used by the models for API calls.
         """
         self.rfdiffusion = RFdiffusionModel(session)
+        self.proteinmpnn = ProteinMPNNModel(session)
+        self.boltzgen = BoltzGenModel(session)
 
         # To add new models, you would simply instantiate them here:
         # self.esm = ESMModel(session)

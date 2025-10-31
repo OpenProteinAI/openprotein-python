@@ -29,7 +29,7 @@ class UMAPAPI:
         self,
         model: EmbeddingModel,
         reduction: Reduction | ReductionType,
-        feature_type: Literal["PLM"] = "PLM",
+        feature_type: FeatureType = FeatureType.PLM,
         sequences: list[bytes] | list[str] | None = None,
         assay: AssayDataset | AssayMetadata | str | None = None,
         n_components: int = 2,

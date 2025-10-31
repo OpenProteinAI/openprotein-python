@@ -327,19 +327,13 @@ class EmbeddingModel:
                 "Expected either assay or sequences to fit UMAP on!"
             )
         # get assay_id
-        assay_id = (
-            assay.assay_id
-            if isinstance(assay, AssayMetadata)
-            else assay.id if isinstance(assay, AssayDataset) else assay
-        )
-        model_id = self.id
         return umap_api.fit_umap(
-            model_id=model_id,
+            model=self,
+            reduction=reduction,
             feature_type=FeatureType.PLM,
             sequences=sequences,
-            assay_id=assay_id,
+            assay=assay,
             n_components=n_components,
-            reduction=reduction,
             **kwargs,
         )
 

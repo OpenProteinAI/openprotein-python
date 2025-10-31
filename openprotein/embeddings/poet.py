@@ -369,7 +369,7 @@ class PoETModel(EmbeddingModel):
         sequences: list[bytes] | list[str] | None = None,
         assay: AssayDataset | None = None,
         n_components: int = 2,
-        reduction: ReductionType | None = ReductionType.MEAN,
+        reduction: ReductionType = ReductionType.MEAN,
         **kwargs,
     ) -> "UMAPModel":
         """

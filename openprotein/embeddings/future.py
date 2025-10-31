@@ -114,7 +114,10 @@ class EmbeddingsScoreFuture(StreamingFuture, Future):
         return self._sequences
 
     def stream(self) -> Generator:
-        if self.job_type == JobType.poet_generate:
+        if (
+            self.job_type == JobType.poet_generate
+            or self.job_type == JobType.embeddings_generate
+        ):
             stream = api.request_get_generate_result(
                 session=self.session, job_id=self.id
             )

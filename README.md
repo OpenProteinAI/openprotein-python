@@ -1,5 +1,5 @@
 [![PyPI version](https://badge.fury.io/py/openprotein-python.svg)](https://pypi.org/project/openprotein-python/)
-[![Coverage](https://dev.docs.openprotein.ai/api-python/_images/coverage.svg)](https://pypi.org/project/openprotein-python/)
+[![Coverage](https://docs.openprotein.ai/_static/coverage.svg)](https://pypi.org/project/openprotein-python/)
 [![Conda version](https://anaconda.org/openprotein/openprotein-python/badges/version.svg)](https://anaconda.org/openprotein/openprotein-python)
 
 
@@ -10,19 +10,19 @@ The OpenProtein.AI Python Interface provides a user-friendly library to interact
 
 # Table of Contents
 
-|   | Workflow                                           | Description                                          |
-|---|----------------------------------------------------|------------------------------------------------------|
-| 0 | [`Quick start`](#Quick-start)                    | Quick start guide                     |
-| 1 | [`Installation`](https://docs.openprotein.ai/api-python/installation.html)                    | Install guide for pip and conda.                     |
-| 2 | [`Session management`](https://docs.openprotein.ai/api-python/overview.html)        | An overview of the OpenProtein Python Client & the asynchronous jobs system. |
-| 3 | [`Asssay-based Sequence Learning`](https://docs.openprotein.ai/api-python/core_workflow.html) | Covers core tasks such as data upload, model training & prediction, and sequence design. |
-| 4 | [`De Novo prediction & generative models (PoET)`](https://docs.openprotein.ai/api-python/poet_workflow.html) | Covers PoET, a protein LLM for *de novo* scoring, as well as sequence generation. |
-| 5 | [`Protein Language Models & Embeddings`](https://docs.openprotein.ai/api-python/embedding_workflow.html) | Covers methods for creating sequence embeddings with proprietary & open-source models. |
+|   | Workflow                                                                                                     | Description                                                                              |
+|---|--------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|
+| 0 | [`Quick start`](#Quick-start)                                                                                | Quick start guide                                                                        |
+| 1 | [`Installation`](https://docs.openprotein.ai/python-api/installation.html)                                   | Install guide for pip and conda.                                                         |
+| 2 | [`Session management`](https://docs.openprotein.ai/python-api/index.html)                                    | An overview of the OpenProtein Python Client & the asynchronous jobs system.             |
+| 3 | [`Property-Regression-Models`](https://docs.openprotein.ai/python-api/property-regression-models/index.html) | Covers core tasks such as data upload, model training & prediction, and sequence design. |
+| 4 | [`De Novo prediction & generative models (PoET)`](https://docs.openprotein.ai/python-api/poet/index.html)    | Covers PoET, a protein LLM for *de novo* scoring, as well as sequence generation.        |
+| 5 | [`Foundational models`](https://docs.openprotein.ai/python-api/foundation-models/index.html)                 | Covers methods for creating sequence embeddings with proprietary & open-source models.   |
 
 
 # Quick-start
 
-Get started with our quickstart README! You can peruse the [official documentation](https://docs.openprotein.ai/api-python/) for more details!
+Get started with our quickstart README! You can peruse the [official documentation](https://docs.openprotein.ai/python-api/) for more details!
 ## Installation 
 
 To install the python interface using pip, run the following command: 
@@ -37,16 +37,13 @@ conda install -c openprotein openprotein-python
 
 ### Requirements
 
-- Python 3.8 or higher.
-- pydantic version 1.0 or newer.
-- requests version 2.0 or newer.
-- tqdm version 4.0 or newer.
-- pandas version 1.0 or newer.
+- Python 3.10 or higher.
+- Other dependencies as in `pyproject.toml`
 
 # Getting started
 
 
-Read on below for the quick-start guide, or see the [docs](https://docs.openprotein.ai/api-python/) for more information!
+Read on below for the quick-start guide, or see the [docs](https://docs.openprotein.ai/python-api/) for more information!
 
 To begin, create a session using your login credentials.
 ```
@@ -57,10 +54,10 @@ session = openprotein.connect(USERNAME, PASSWORD)
 ```
 ## Job Status
 
-The interface offers `AsyncJobFuture` objects for asynchronous calls, allowing tracking of job status and result retrieval when ready. Given a future, you can check its status and retrieve results.
+The interface offers `Future` objects for asynchronous calls, allowing tracking of job status and result retrieval when ready. Given a future, you can check its status and retrieve results.
 
 ### Checking Job Status
-Check the status of an `AsyncJobFuture` using the following methods:
+Check the status of an `Future` using the following methods:
 ```
 future.refresh()  # call the backend to update the job status
 future.done()     # returns True if the job is done, meaning the status could be SUCCESS, FAILED, or CANCELLED
