@@ -374,6 +374,8 @@ class PoET2Model(PoETModel, EmbeddingModel):
         prompt: str | Prompt | None = None,
         query: str | bytes | Protein | Query | None = None,
         use_query_structure_in_decoder: bool = True,
+        decoder_type: Literal["mlm", "clm"] | None = None,
+        **kwargs,
     ) -> "SVDModel":
         """
         Fit an SVD on the embedding results of PoET.
@@ -397,6 +399,10 @@ class PoET2Model(PoETModel, EmbeddingModel):
             Query to use with prompt.
         use_query_structure_in_decoder : bool, optional
             Whether to use query structure in decoder. Default is True.
+        decoder_type : {'mlm', 'clm'} or None, optional
+            Decoder type. Default is None.
+        **kwargs
+            Additional keyword arguments for the model.
 
         Returns
         -------
@@ -412,6 +418,8 @@ class PoET2Model(PoETModel, EmbeddingModel):
             prompt=prompt,
             query_id=query_id,
             use_query_structure_in_decoder=use_query_structure_in_decoder,
+            decoder_type=decoder_type,
+            **kwargs,
         )
 
     def fit_umap(
@@ -419,10 +427,12 @@ class PoET2Model(PoETModel, EmbeddingModel):
         sequences: list[bytes] | list[str] | None = None,
         assay: AssayDataset | None = None,
         n_components: int = 2,
-        reduction: ReductionType | None = ReductionType.MEAN,
+        reduction: ReductionType = ReductionType.MEAN,
         prompt: str | Prompt | None = None,
         query: str | bytes | Protein | Query | None = None,
         use_query_structure_in_decoder: bool = True,
+        decoder_type: Literal["mlm", "clm"] | None = None,
+        **kwargs,
     ) -> "UMAPModel":
         """
         Fit a UMAP on assay using PoET and hyperparameters.
@@ -446,6 +456,10 @@ class PoET2Model(PoETModel, EmbeddingModel):
             Query to use with prompt.
         use_query_structure_in_decoder : bool, optional
             Whether to use query structure in decoder. Default is True.
+        decoder_type : {'mlm', 'clm'} or None, optional
+            Decoder type. Default is None.
+        **kwargs
+            Additional keyword arguments for the model.
 
         Returns
         -------
@@ -461,6 +475,8 @@ class PoET2Model(PoETModel, EmbeddingModel):
             prompt=prompt,
             query_id=query_id,
             use_query_structure_in_decoder=use_query_structure_in_decoder,
+            decoder_type=decoder_type,
+            **kwargs,
         )
 
     def fit_gp(
@@ -470,6 +486,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
         prompt: str | Prompt | None = None,
         query: str | bytes | Protein | Query | None = None,
         use_query_structure_in_decoder: bool = True,
+        decoder_type: Literal["mlm", "clm"] | None = None,
         **kwargs,
     ) -> "PredictorModel":
         """
@@ -487,8 +504,10 @@ class PoET2Model(PoETModel, EmbeddingModel):
             Query to use with prompt.
         use_query_structure_in_decoder : bool, optional
             Whether to use query structure in decoder. Default is True.
+        decoder_type : {'mlm', 'clm'} or None, optional
+            Decoder type. Default is None.
         **kwargs
-            Additional keyword arguments.
+            Additional keyword arguments for the model.
 
         Returns
         -------
@@ -502,5 +521,6 @@ class PoET2Model(PoETModel, EmbeddingModel):
             prompt=prompt,
             query_id=query_id,
             use_query_structure_in_decoder=use_query_structure_in_decoder,
+            decoder_type=decoder_type,
             **kwargs,
         )
