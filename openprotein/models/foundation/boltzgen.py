@@ -11,6 +11,8 @@ from openprotein.jobs import Future, Job
 from openprotein.models.base import ProteinModel
 from openprotein.protein import Protein
 
+from .boltzgen_schema import BoltzGenDesignSpec
+
 
 class BoltzGenRequest(BaseModel):
     "Specification for an BoltzGen request."
@@ -18,7 +20,7 @@ class BoltzGenRequest(BaseModel):
     n: int = 1
     # protein: Protein
     structure_text: str | None = None
-    design_spec: dict[str, Any]
+    design_spec: BoltzGenDesignSpec | dict[str, Any]
     diffusion_batch_size: int | None = None
     step_scale: float | None = None
     noise_scale: float | None = None
@@ -120,7 +122,7 @@ class BoltzGenModel(ProteinModel):
 
     def generate(
         self,
-        design_spec: dict[str, Any],
+        design_spec: BoltzGenDesignSpec | dict[str, Any],
         structure_file: str | bytes | BinaryIO | None = None,
         n: int = 1,
         diffusion_batch_size: int | None = None,
@@ -133,12 +135,22 @@ class BoltzGenModel(ProteinModel):
 
         Parameters
         ----------
-        design_spec : dict[str, Any]
-            The BoltzGen design specification to run. This is the Python representation
-            of the BoltzGen yaml request specification.
-        structure_file : BinaryIO, optional
-            An input PDB file (as a file-like object) used for inpainting or other
-            guided design tasks where parts of an existing structure are provided.
+        design_spec : BoltzGenDesignSpec | dict[str, Any]
+            The BoltzGen design specification to run. Can be a typed BoltzGenDesignSpec
+            object or a dict representing the BoltzGen yaml request specification.
+            
+            Note: If the design_spec includes FileEntity objects with `path` fields,
+            those paths are placeholders. The actual structure file content must be
+            provided via the `structure_file` parameter below, as the platform backend
+            currently only accepts structure files this way.
+        structure_file : str | bytes | BinaryIO | None, optional
+            An input PDB/CIF file used for inpainting or other guided design tasks
+            where parts of an existing structure are provided. This parameter provides
+            the actual structure content that corresponds to any FileEntity `path`
+            fields in the design_spec. Can be:
+            - A file path (str) to read from
+            - Raw file content (bytes)
+            - A file-like object (BinaryIO)
         n : int, optional
             The number of unique design trajectories to run (default is 1).
         diffusion_batch_size : int, optional
@@ -163,6 +175,10 @@ class BoltzGenModel(ProteinModel):
             A future object that can be used to retrieve the results of the design
             job upon completion.
         """
+        # Validate design_spec if it's a dict
+        if isinstance(design_spec, dict):
+            design_spec = BoltzGenDesignSpec.model_validate(design_spec)
+        
         request = BoltzGenRequest(
             n=n,
             design_spec=design_spec,
