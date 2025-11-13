@@ -1,7 +1,7 @@
 """Future for embeddings-related jobs."""
 
 from collections import namedtuple
-from typing import Generator
+from typing import Any, Generator
 
 import numpy as np
 
@@ -45,10 +45,13 @@ class EmbeddingsResultFuture(MappedFuture, Future):
             else sequences
         )
 
-    def stream(self):
-        return api.request_get_embeddings_stream(session=self.session, job_id=self.id)
+    def stream_sync(self) -> Generator[tuple[str | bytes, np.ndarray], Any, None]:
+        for i, array in enumerate(
+            api.request_get_embeddings_stream(session=self.session, job_id=self.id)
+        ):
+            yield self.sequences[i], array
 
-    def get(self, verbose=False) -> list[np.ndarray]:
+    def get(self, verbose: bool = False) -> list[tuple[str | bytes, np.ndarray]]:
         return super().get(verbose=verbose)
 
     @property
@@ -74,7 +77,7 @@ class EmbeddingsResultFuture(MappedFuture, Future):
         """
         return self.sequences
 
-    def get_item(self, sequence: bytes) -> np.ndarray:
+    def get_item(self, sequence: str | bytes) -> np.ndarray:
         """
         Get embedding results for specified sequence.
 
