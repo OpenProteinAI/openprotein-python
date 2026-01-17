@@ -1,6 +1,6 @@
 """Schema for OpenProtein fold system."""
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel
 
@@ -24,6 +24,7 @@ class FoldMetadata(BaseModel):
     job_id: str
     model_id: str
     args: dict | None = None
+    sequences: list[list[dict[str, Any]]] | None = None
 
 
 class FoldJob(Job, BatchJob):

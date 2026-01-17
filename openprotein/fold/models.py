@@ -4,7 +4,7 @@ from openprotein.base import APISession
 from openprotein.common import ModelMetadata
 
 from . import api
-from .future import FoldComplexResultFuture, FoldResultFuture
+from .future import FoldResultFuture
 
 
 class FoldModel:
@@ -110,7 +110,7 @@ class FoldModel:
         """
         return api.fold_model_get(self.session, self.id)
 
-    def fold(self, **kwargs) -> FoldResultFuture | FoldComplexResultFuture:
+    def fold(self, **kwargs) -> FoldResultFuture:
         """
         Fold a sequence using this model.
 

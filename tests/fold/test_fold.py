@@ -1,4 +1,5 @@
 """L2 integration tests for the fold domain."""
+
 from unittest.mock import MagicMock
 
 from openprotein.fold.alphafold2 import AlphaFold2Model
@@ -36,22 +37,28 @@ def test_get_results(mock_session: MagicMock):
     Test FoldAPI.get_results integration.
     """
     # Configure mock responses for the sequence of API calls
-    mock_session.get.return_value.json.side_effect = [
-        [],  # Initial call in FoldAPI constructor
-        {
-            "job_id": "test_job_id",
-            "model_id": "esmfold",
-        },  # Call within get_results (fold_get)
-        [b"ACGT"],  # Call within FoldResultFuture constructor (fold_get_sequences)
-    ]
-    mock_session.get.return_value.status_code = 200
+    try:
+        mock_session.get.return_value.json.side_effect = [
+            [],  # Initial call in FoldAPI constructor
+            {
+                "job_id": "test_job_id",
+                "model_id": "esmfold",
+            },  # Call within get_results (fold_get)
+            [b"ACGT"],  # Call within FoldResultFuture constructor (fold_get_sequences)
+        ]
+        mock_session.get.return_value.status_code = 200
 
-    fold_api = FoldAPI(mock_session)
-    mock_job = MagicMock(spec=Job)
-    mock_job.job_id = "test_job_id"
+        fold_api = FoldAPI(mock_session)
+        mock_job = MagicMock(spec=Job)
+        mock_job.job_id = "test_job_id"
 
-    future = fold_api.get_results(mock_job)
+        future = fold_api.get_results(mock_job)
 
-    assert isinstance(future, FoldResultFuture)
-    # Check that the underlying api calls were made
-    assert mock_session.get.call_count == 3
+        assert isinstance(future, FoldResultFuture)
+        # Check that the underlying api calls were made
+        assert mock_session.get.call_count == 3
+    except Exception as e:
+        from pprint import pprint
+
+        pprint(mock_session.get.call_args_list)
+        raise e

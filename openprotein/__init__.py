@@ -6,8 +6,8 @@ A pythonic interface for interacting with our cutting-edge protein engineering p
 isort:skip_file
 """
 
-from typing import TYPE_CHECKING
-import warnings
+import os
+from pathlib import Path
 
 from openprotein._version import __version__
 from openprotein.data import DataAPI
@@ -161,4 +161,48 @@ class OpenProtein(APISession):
         return self._models
 
 
-connect = OpenProtein
+def connect(
+    username: str | None = None,
+    password: str | None = None,
+    backend: str | None = None,
+    timeout: int = 180,
+) -> OpenProtein:
+    """
+    Connect and create a :py:class:`OpenProtein` session.
+
+    Parameters
+    ----------
+    username : str, optional
+        The username of the user. If not provided, taken from the
+        environment variable ``OPENPROTEIN_USERNAME`` or a
+        configuration file at ``~/.openprotein/config.toml``.
+    password : str, optional
+        The password of the user. If not provided, taken from the
+        environment variable ``OPENPROTEIN_PASSWORD`` or a
+        configuration file at ``~/.openprotein/config.toml``.
+
+    Examples
+    --------
+    >>> session = openprotein.connect("username", "password")
+    """
+
+    CREDENTIALS_FILE_PATH = Path.home() / ".openprotein/config.toml"
+    if CREDENTIALS_FILE_PATH.exists():
+        import tomli
+
+        with open(CREDENTIALS_FILE_PATH, "rb") as f:
+            file_config = tomli.load(f)
+    else:
+        file_config = {}
+    USERNAME = os.getenv("OPENPROTEIN_USERNAME", str(file_config.get("username")))
+    PASSWORD = os.getenv("OPENPROTEIN_PASSWORD", str(file_config.get("password")))
+    BACKEND = os.getenv(
+        "OPENPROTEIN_API_BACKEND",
+        file_config.get("backend", "https://api.openprotein.ai/api/"),
+    )
+    return OpenProtein(
+        username=username or USERNAME,
+        password=password or PASSWORD,
+        backend=backend or BACKEND,
+        timeout=timeout,
+    )

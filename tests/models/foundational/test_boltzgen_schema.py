@@ -104,12 +104,15 @@ class TestFileEntity:
         file_entity = FileEntity(
             path="7rpz.cif", include=[{"chain": {"id": "A"}}, {"chain": {"id": "B"}}]
         )
+        assert isinstance(file_entity.include, list)
         assert len(file_entity.include) == 2
 
     def test_file_entity_with_fuse(self):
         """Test file entity with fuse parameter."""
         file_entity = FileEntity(
-            path="7rpz.cif", fuse="A", include=[{"chain": {"id": "A", "res_index": "..5"}}]
+            path="7rpz.cif",
+            fuse="A",
+            include=[{"chain": {"id": "A", "res_index": "..5"}}],
         )
         assert file_entity.fuse == "A"
 
@@ -120,7 +123,9 @@ class TestFileEntity:
             include=[{"chain": {"id": "A"}}],
             exclude=[{"chain": {"id": "A", "res_index": "..5"}}],
             binding_types=[{"chain": {"id": "A", "binding": "5..7,13"}}],
-            structure_groups=[{"group": {"visibility": 1, "id": "A", "res_index": "10..16"}}],
+            structure_groups=[
+                {"group": {"visibility": 1, "id": "A", "res_index": "10..16"}}
+            ],
             design=[{"chain": {"id": "A", "res_index": "..4,20..27"}}],
             secondary_structure=[{"chain": {"id": "A", "loop": "1", "helix": "2..3"}}],
             design_insertions=[
@@ -197,7 +202,9 @@ class TestConstraints:
 
     def test_constraint_with_bond(self):
         """Test constraint wrapper with bond."""
-        constraint = Constraint(bond=BondConstraint(atom1=["R", 4, "SG"], atom2=["Q", 1, "CK"]))
+        constraint = Constraint(
+            bond=BondConstraint(atom1=["R", 4, "SG"], atom2=["Q", 1, "CK"])
+        )
         assert constraint.bond is not None
         assert constraint.total_len is None
 
@@ -232,10 +239,13 @@ class TestBoltzGenDesignSpec:
                 Entity(ligand=LigandEntity(id="B", ccd="ATP")),
             ],
             constraints=[
-                Constraint(bond=BondConstraint(atom1=["A", 10, "CA"], atom2=["B", 1, "O"]))
+                Constraint(
+                    bond=BondConstraint(atom1=["A", 10, "CA"], atom2=["B", 1, "O"])
+                )
             ],
         )
         assert len(spec.entities) == 2
+        assert isinstance(spec.constraints, list)
         assert len(spec.constraints) == 1
 
     def test_design_spec_empty_entities(self):
@@ -256,6 +266,7 @@ class TestBoltzGenDesignSpec:
         }
         spec = BoltzGenDesignSpec.model_validate(data)
         assert len(spec.entities) == 2
+        assert isinstance(spec.constraints, list)
         assert len(spec.constraints) == 1
 
     def test_design_spec_round_trip(self):
@@ -273,6 +284,8 @@ class TestBoltzGenDesignSpec:
         spec_dict = spec.model_dump(exclude_none=True)
         spec2 = BoltzGenDesignSpec.model_validate(spec_dict)
         assert len(spec2.entities) == len(spec.entities)
+        assert isinstance(spec2.constraints, list)
+        assert isinstance(spec.constraints, list)
         assert len(spec2.constraints) == len(spec.constraints)
 
     def test_design_spec_complex_example(self):
@@ -295,5 +308,7 @@ class TestBoltzGenDesignSpec:
         }
         spec = BoltzGenDesignSpec.model_validate(data)
         assert len(spec.entities) == 5
+        assert isinstance(spec.constraints, list)
         assert len(spec.constraints) == 5
+        assert spec.entities[4].protein is not None
         assert spec.entities[4].protein.cyclic is True

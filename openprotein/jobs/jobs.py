@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from openprotein import config
 from openprotein.base import APISession
@@ -42,6 +43,9 @@ class JobsAPI:
 
     def get_job(self, job_id: str) -> Job:
         return api.job_get(session=self.session, job_id=job_id)
+
+    def get_job_args(self, job_id: str) -> dict[str, Any]:
+        return api.job_args_get(session=self.session, job_id=job_id)
 
     def get(self, job_id: str, verbose: bool = False) -> Future:  # Job:
         """

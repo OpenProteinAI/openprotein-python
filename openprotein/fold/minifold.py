@@ -1,7 +1,10 @@
+import warnings
 from collections.abc import Sequence
 
 from openprotein.base import APISession
 from openprotein.common import ModelMetadata
+from openprotein.fold.common import normalize_inputs, serialize_input
+from openprotein.molecules import DNA, RNA, Ligand
 
 from . import api
 from .future import FoldResultFuture
@@ -39,16 +42,22 @@ class MiniFoldModel(FoldModel):
         -------
             FoldResultFuture
         """
-        sequences = [s.decode() if isinstance(s, bytes) else s for s in sequences]
-        assert all(":" not in s for s in sequences), "minifold does not support ':'"
-        result = FoldResultFuture.create(
+        normalized_complexes = normalize_inputs(sequences)
+        for complex in normalized_complexes:
+            if len(complex.get_proteins()) > 1:
+                raise ValueError("MiniFold only supports monomers")
+            if len(complex.get_chains()) != len(complex.get_proteins()):
+                raise ValueError("MiniFold only supports proteins")
+
+        _models = serialize_input(self.session, normalized_complexes, needs_msa=False)
+        result = FoldResultFuture(
             session=self.session,
             job=api.fold_models_post(
                 session=self.session,
                 model_id=self.model_id,
-                sequences=sequences,
+                sequences=_models,
                 num_recycles=num_recycles,
             ),
+            complexes=normalized_complexes,
         )
-        assert isinstance(result, FoldResultFuture)
         return result

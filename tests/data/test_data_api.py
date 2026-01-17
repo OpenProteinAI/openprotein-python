@@ -78,7 +78,7 @@ def test_assaydata_list(mock_session: MagicMock, sample_assay_metadata: dict) ->
     mock_session.get.return_value = mock_response
 
     result = assaydata_list(mock_session)
-    mock_session.get.assert_called_once_with("v1/assaydata")
+    mock_session.get.assert_called_once_with("v1/assaydata", params={})
     assert isinstance(result[0], AssayMetadata)
     assert len(result) == 1
 

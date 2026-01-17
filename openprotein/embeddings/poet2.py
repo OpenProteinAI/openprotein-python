@@ -8,9 +8,8 @@ import numpy as np
 from openprotein.base import APISession
 from openprotein.common import ModelMetadata, ReductionType
 from openprotein.data import AssayDataset, AssayMetadata
+from openprotein.molecules import Complex, Protein
 from openprotein.prompt import Prompt, PromptAPI, Query
-from openprotein.protein import Protein
-from openprotein.utils import uuid
 
 from .future import (
     EmbeddingsGenerateFuture,
@@ -56,31 +55,12 @@ class PoET2Model(PoETModel, EmbeddingModel):
     ):
         super().__init__(session=session, model_id=model_id, metadata=metadata)
 
-    def __resolve_query(
-        self,
-        query: str | bytes | Protein | Query | None = None,
-    ) -> str | None:
-        if query is None:
-            query_id = None
-        elif (
-            isinstance(query, Protein)
-            or isinstance(query, bytes)
-            or (isinstance(query, str) and not uuid.is_valid_uuid(query))
-        ):
-            prompt_api = getattr(self.session, "prompt", None)
-            assert isinstance(prompt_api, PromptAPI)
-            query_ = prompt_api.create_query(query=query)
-            query_id = query_.id
-        else:
-            query_id = query if isinstance(query, str) else query.id
-        return query_id
-
     def embed(
         self,
         sequences: list[bytes],
         reduction: ReductionType | None = ReductionType.MEAN,
         prompt: str | Prompt | None = None,
-        query: str | bytes | Protein | Query | None = None,
+        query: str | bytes | Protein | Complex | Query | None = None,
         use_query_structure_in_decoder: bool = True,
         decoder_type: Literal["mlm", "clm"] | None = None,
     ) -> EmbeddingsResultFuture:
@@ -95,7 +75,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
             Embeddings reduction to use (e.g. mean). Default is ReductionType.MEAN.
         prompt : str or Prompt or None, optional
             Prompt or prompt_id or prompt from an align workflow to condition PoET model.
-        query : str or bytes or Protein or Query or None, optional
+        query : str or bytes or Protein or Complex or Query or None, optional
             Query to use with prompt.
         use_query_structure_in_decoder : bool, optional
             Whether to use query structure in decoder. Default is True.
@@ -107,7 +87,9 @@ class PoET2Model(PoETModel, EmbeddingModel):
         EmbeddingsResultFuture
             A future object that returns the embeddings of the submitted sequences.
         """
-        query_id = self.__resolve_query(query=query)
+        prompt_api = getattr(self.session, "prompt", None)
+        assert isinstance(prompt_api, PromptAPI)
+        query_id = prompt_api._resolve_query(query=query)
         return super().embed(
             sequences=sequences,
             reduction=reduction,
@@ -121,7 +103,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
         self,
         sequences: list[bytes],
         prompt: str | Prompt | None = None,
-        query: str | bytes | Protein | Query | None = None,
+        query: str | bytes | Protein | Complex | Query | None = None,
         use_query_structure_in_decoder: bool = True,
         decoder_type: Literal["mlm", "clm"] | None = None,
     ) -> EmbeddingsResultFuture:
@@ -134,7 +116,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
             Sequences to analyze.
         prompt : str or Prompt or None, optional
             Prompt or prompt_id or prompt from an align workflow to condition PoET model.
-        query : str or bytes or Protein or Query or None, optional
+        query : str or bytes or Protein or Complex or Query or None, optional
             Query to use with prompt.
         use_query_structure_in_decoder : bool, optional
             Whether to use query structure in decoder. Default is True.
@@ -146,7 +128,9 @@ class PoET2Model(PoETModel, EmbeddingModel):
         EmbeddingsResultFuture
             A future object that returns the logits of the submitted sequences.
         """
-        query_id = self.__resolve_query(query=query)
+        prompt_api = getattr(self.session, "prompt", None)
+        assert isinstance(prompt_api, PromptAPI)
+        query_id = prompt_api._resolve_query(query=query)
         return super().logits(
             sequences=sequences,
             prompt=prompt,
@@ -159,7 +143,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
         self,
         sequences: list[bytes],
         prompt: str | Prompt | None = None,
-        query: str | bytes | Protein | Query | None = None,
+        query: str | bytes | Protein | Complex | Query | None = None,
         use_query_structure_in_decoder: bool = True,
         decoder_type: Literal["mlm", "clm"] | None = None,
     ) -> EmbeddingsScoreFuture:
@@ -172,7 +156,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
             Sequences to score.
         prompt : str or Prompt or None, optional
             Prompt or prompt_id or prompt from an align workflow to condition PoET model.
-        query : str or bytes or Protein or Query or None, optional
+        query : str or bytes or Protein or Complex or Query or None, optional
             Query to use with prompt.
         use_query_structure_in_decoder : bool, optional
             Whether to use query structure in decoder. Default is True.
@@ -184,7 +168,9 @@ class PoET2Model(PoETModel, EmbeddingModel):
         EmbeddingsScoreFuture
             A future object that returns the scores of the submitted sequences.
         """
-        query_id = self.__resolve_query(query=query)
+        prompt_api = getattr(self.session, "prompt", None)
+        assert isinstance(prompt_api, PromptAPI)
+        query_id = prompt_api._resolve_query(query=query)
         return super().score(
             sequences=sequences,
             prompt=prompt,
@@ -197,7 +183,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
         self,
         sequence: bytes,
         prompt: str | Prompt | None = None,
-        query: str | bytes | Protein | Query | None = None,
+        query: str | bytes | Protein | Complex | Query | None = None,
         use_query_structure_in_decoder: bool = True,
         decoder_type: Literal["mlm", "clm"] | None = None,
         insert: str | None = None,
@@ -213,7 +199,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
             Sequence to analyze.
         prompt : str or Prompt or None, optional
             Prompt from an align workflow to condition the PoET model.
-        query : str or bytes or Protein or Query or None, optional
+        query : str or bytes or Protein or Complex or Query or None, optional
             Query to use with prompt.
         use_query_structure_in_decoder : bool, optional
             Whether to use query structure in decoder. Default is True.
@@ -236,7 +222,9 @@ class PoET2Model(PoETModel, EmbeddingModel):
         ValueError
             If neither insert nor delete is provided.
         """
-        query_id = self.__resolve_query(query=query)
+        prompt_api = getattr(self.session, "prompt", None)
+        assert isinstance(prompt_api, PromptAPI)
+        query_id = prompt_api._resolve_query(query=query)
         return super().indel(
             sequence=sequence,
             prompt=prompt,
@@ -251,7 +239,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
         self,
         sequence: bytes,
         prompt: str | Prompt | None = None,
-        query: str | bytes | Protein | Query | None = None,
+        query: str | bytes | Protein | Complex | Query | None = None,
         use_query_structure_in_decoder: bool = True,
         decoder_type: Literal["mlm", "clm"] | None = None,
     ) -> EmbeddingsScoreFuture:
@@ -264,7 +252,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
             Sequence to analyze.
         prompt : str or Prompt or None, optional
             Prompt or prompt_id or prompt from an align workflow to condition PoET model.
-        query : str or bytes or Protein or Query or None, optional
+        query : str or bytes or Protein or Complex or Query or None, optional
             Query to use with prompt.
         use_query_structure_in_decoder : bool, optional
             Whether to use query structure in decoder. Default is True.
@@ -276,7 +264,9 @@ class PoET2Model(PoETModel, EmbeddingModel):
         EmbeddingsScoreFuture
             A future object that returns the scores of the mutated sequence.
         """
-        query_id = self.__resolve_query(query=query)
+        prompt_api = getattr(self.session, "prompt", None)
+        assert isinstance(prompt_api, PromptAPI)
+        query_id = prompt_api._resolve_query(query=query)
         return super().single_site(
             sequence=sequence,
             prompt=prompt,
@@ -288,7 +278,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
     def generate(
         self,
         prompt: str | Prompt | None,
-        query: str | bytes | Protein | Query | None = None,
+        query: str | bytes | Protein | Complex | Query | None = None,
         use_query_structure_in_decoder: bool = True,
         num_samples: int = 100,
         temperature: float = 1.0,
@@ -306,7 +296,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
         ----------
         prompt : str or Prompt or None, optional
             Prompt from an align workflow to condition PoET model.
-        query : str or bytes or Protein or Query or None, optional
+        query : str or bytes or Protein or Complex or Query or None, optional
             Query to use with prompt.
         use_query_structure_in_decoder : bool, optional
             Whether to use query structure in decoder. Default is True.
@@ -338,7 +328,9 @@ class PoET2Model(PoETModel, EmbeddingModel):
         EmbeddingsGenerateFuture
             A future object representing the status and information about the generation job.
         """
-        query_id = self.__resolve_query(query=query)
+        prompt_api = getattr(self.session, "prompt", None)
+        assert isinstance(prompt_api, PromptAPI)
+        query_id = prompt_api._resolve_query(query=query)
         if ensemble_weights is not None:
             # NB: for now, ensemble_method is None -> ensemble_method == "arithmetic"
             if ensemble_method is None or (ensemble_method == "arithmetic"):
@@ -372,7 +364,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
         n_components: int = 1024,
         reduction: ReductionType | None = None,
         prompt: str | Prompt | None = None,
-        query: str | bytes | Protein | Query | None = None,
+        query: str | bytes | Protein | Complex | Query | None = None,
         use_query_structure_in_decoder: bool = True,
         decoder_type: Literal["mlm", "clm"] | None = None,
         **kwargs,
@@ -395,7 +387,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
             Embeddings reduction to use (e.g. mean).
         prompt : str or Prompt or None, optional
             Prompt from an align workflow to condition PoET model.
-        query : str or bytes or Protein or Query or None, optional
+        query : str or bytes or Protein or Complex or Query or None, optional
             Query to use with prompt.
         use_query_structure_in_decoder : bool, optional
             Whether to use query structure in decoder. Default is True.
@@ -409,7 +401,9 @@ class PoET2Model(PoETModel, EmbeddingModel):
         SVDModel
             A future that represents the fitted SVD model.
         """
-        query_id = self.__resolve_query(query=query)
+        prompt_api = getattr(self.session, "prompt", None)
+        assert isinstance(prompt_api, PromptAPI)
+        query_id = prompt_api._resolve_query(query=query)
         return super().fit_svd(
             sequences=sequences,
             assay=assay,
@@ -429,7 +423,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
         n_components: int = 2,
         reduction: ReductionType = ReductionType.MEAN,
         prompt: str | Prompt | None = None,
-        query: str | bytes | Protein | Query | None = None,
+        query: str | bytes | Protein | Complex | Query | None = None,
         use_query_structure_in_decoder: bool = True,
         decoder_type: Literal["mlm", "clm"] | None = None,
         **kwargs,
@@ -452,7 +446,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
             Embeddings reduction to use (e.g. mean). Default is ReductionType.MEAN.
         prompt : str or Prompt or None, optional
             Prompt from an align workflow to condition PoET model.
-        query : str or bytes or Protein or Query or None, optional
+        query : str or bytes or Protein or Complex or Query or None, optional
             Query to use with prompt.
         use_query_structure_in_decoder : bool, optional
             Whether to use query structure in decoder. Default is True.
@@ -466,7 +460,9 @@ class PoET2Model(PoETModel, EmbeddingModel):
         UMAPModel
             A future that represents the fitted UMAP model.
         """
-        query_id = self.__resolve_query(query=query)
+        prompt_api = getattr(self.session, "prompt", None)
+        assert isinstance(prompt_api, PromptAPI)
+        query_id = prompt_api._resolve_query(query=query)
         return super().fit_umap(
             sequences=sequences,
             assay=assay,
@@ -484,7 +480,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
         assay: AssayMetadata | AssayDataset | str,
         properties: list[str],
         prompt: str | Prompt | None = None,
-        query: str | bytes | Protein | Query | None = None,
+        query: str | bytes | Protein | Complex | Query | None = None,
         use_query_structure_in_decoder: bool = True,
         decoder_type: Literal["mlm", "clm"] | None = None,
         **kwargs,
@@ -500,7 +496,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
             Properties in the assay to fit the GP on.
         prompt : str or Prompt or None, optional
             Prompt from an align workflow to condition PoET model.
-        query : str or bytes or Protein or Query or None, optional
+        query : str or bytes or Protein or Complex or Query or None, optional
             Query to use with prompt.
         use_query_structure_in_decoder : bool, optional
             Whether to use query structure in decoder. Default is True.
@@ -514,7 +510,9 @@ class PoET2Model(PoETModel, EmbeddingModel):
         PredictorModel
             A future that represents the trained predictor model.
         """
-        query_id = self.__resolve_query(query=query)
+        prompt_api = getattr(self.session, "prompt", None)
+        assert isinstance(prompt_api, PromptAPI)
+        query_id = prompt_api._resolve_query(query=query)
         return super().fit_gp(
             assay=assay,
             properties=properties,

@@ -86,12 +86,12 @@ def test_fold_model_fold(mock_fold_get, mock_fold_models_post, mock_session):
     )
 
     model = ESMFoldModel(session=mock_session, model_id="esmfold")
-    future = model.fold(sequences=["SEQ1"])
+    future = model.fold(sequences=["SEQ"])
 
     mock_fold_models_post.assert_called_once_with(
         session=mock_session,
         model_id="esmfold",
-        sequences=["SEQ1"],
+        sequences=[[{"protein": {"id": "A", "sequence": "SEQ"}}]],
         num_recycles=None,
     )
     assert isinstance(future, FoldResultFuture)

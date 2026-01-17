@@ -12,7 +12,7 @@ from openprotein.design import ModelCriterion
 
 @pytest.mark.e2e
 @pytest.mark.skip(reason="Long-running test, requires a trained predictor")
-def test_design_workflow_e2e(api_session: OpenProtein):
+def test_design_workflow_e2e(session: OpenProtein):
     """
     Tests a basic design E2E workflow:
     1. Get a pre-trained predictor model.
@@ -24,7 +24,7 @@ def test_design_workflow_e2e(api_session: OpenProtein):
     # 1. Get a pre-trained predictor
     # This ID is for a predictor known to be in the test environment
     predictor_id = "your_predictor_id_here"
-    predictor = api_session.predictor.get_predictor(predictor_id)
+    predictor = session.predictor.get_predictor(predictor_id)
     assert predictor is not None, "Failed to get predictor"
 
     # 2. Create a design criterion
@@ -33,7 +33,7 @@ def test_design_workflow_e2e(api_session: OpenProtein):
 
     # 3. Start a design job
     assay = predictor.training_assay
-    design_future = api_session.design.create_genetic_algorithm_design(
+    design_future = session.design.create_genetic_algorithm_design(
         assay=assay, criteria=criterion, num_steps=5, pop_size=10
     )
 

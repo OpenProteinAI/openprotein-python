@@ -1,12 +1,23 @@
 """Application futures for waiting for results from jobs."""
 
 import concurrent.futures
+import inspect
 import logging
 import time
 from abc import ABC, abstractmethod
 from datetime import datetime
 from types import UnionType
-from typing import Collection, Generator
+from typing import (
+    Any,
+    Collection,
+    Generator,
+    Generic,
+    Iterator,
+    KeysView,
+    Set,
+    Type,
+    TypeVar,
+)
 
 import tqdm
 from requests import Response
@@ -21,8 +32,12 @@ from . import api
 
 logger = logging.getLogger(__name__)
 
+F = TypeVar("F")  # Future type
+V = TypeVar("V")  # Concrete unit value returned by the future
+K = TypeVar("K")  # Key that is connected to the value
 
-class Future(ABC):
+
+class Future(ABC, Generic[V]):
     """
     Base class for all Futures returning results from a job.
     """
@@ -87,7 +102,14 @@ class Future(ABC):
         job = Job.create(obj, **kwargs)
 
         # Dynamically discover all subclasses of FutureBase
-        future_classes = Future.__subclasses__()
+        def all_subclasses(cls: Type[F]) -> Set[Type[F]]:
+            result = set()
+            for sub in cls.__subclasses__():
+                result.add(sub)
+                result.update(all_subclasses(sub))
+            return result
+
+        future_classes = all_subclasses(Future)
 
         # Find the Future class that matches the job
         for future_class in future_classes:
@@ -96,10 +118,16 @@ class Future(ABC):
                 or isinstance(future_type, UnionType)
                 and type(job) in future_type.__args__
             ):
+                assert not inspect.isabstract(
+                    future_class
+                ), "Expected concrete class implementation!"
+                # instantiate the matched concrete future
                 if isinstance(future_class.__dict__.get("create"), classmethod):
+                    # use the concrete factory create method if available
                     future = future_class.create(session=session, job=job, **kwargs)
                 else:
-                    future = future_class(session=session, job=job, **kwargs)
+                    # else just init
+                    future = future_class(session=session, job=job, **kwargs)  # type: ignore - type checker thinks it is abstract
                 return future  # type: ignore - needed since type checker doesnt know subclass
 
         raise ValueError(f"Unsupported job type: {job.job_type}")
@@ -146,6 +174,11 @@ class Future(ABC):
     def progress_counter(self) -> int:
         """The progress counter of the job."""
         return self.job.progress_counter or 0
+
+    @property
+    def args(self) -> dict[str, Any]:
+        """The registered job arguments."""
+        return api.job_args_get(self.session, job_id=self.job_id)
 
     def done(self) -> bool:
         """Check if the job has completed.
@@ -217,7 +250,7 @@ class Future(ABC):
         self.job = self._refresh_job()
 
     @abstractmethod
-    def get(self, verbose: bool = False, **kwargs):
+    def get(self, verbose: bool = False, **kwargs) -> V:
         """
         Return the results from this job.
 
@@ -304,7 +337,7 @@ class Future(ABC):
         interval: float = config.POLLING_INTERVAL,
         timeout: int | None = None,
         verbose: bool = False,
-    ):
+    ) -> bool:
         """Wait for the job to complete.
 
         Parameters
@@ -335,7 +368,7 @@ class Future(ABC):
         interval: int = config.POLLING_INTERVAL,
         timeout: int | None = None,
         verbose: bool = False,
-    ):
+    ) -> V:
         """Wait for the job to complete, then fetch results.
 
         Parameters
@@ -359,11 +392,11 @@ class Future(ABC):
         return self.get()
 
 
-class StreamingFuture(ABC):
+class StreamingFuture(Future[V], ABC):
     """Abstract base class for Futures that support streaming results."""
 
     @abstractmethod
-    def stream(self, **kwargs) -> Generator:
+    def stream(self, **kwargs) -> Iterator[V]:
         """Return the results from this job as a generator.
 
         Parameters
@@ -384,7 +417,7 @@ class StreamingFuture(ABC):
         """
         raise NotImplementedError()
 
-    def get(self, verbose: bool = False, **kwargs) -> list:
+    def get(self, verbose: bool = False, **kwargs) -> list[V]:
         """Return all results from the job by consuming the stream.
 
         Parameters
@@ -410,8 +443,16 @@ class StreamingFuture(ABC):
             )
         return [entry for entry in generator]
 
+    def wait(
+        self,
+        interval: int = config.POLLING_INTERVAL,
+        timeout: int | None = None,
+        verbose: bool = False,
+    ) -> list[V]:
+        return super().wait(interval, timeout, verbose)  # type: ignore
 
-class MappedFuture(StreamingFuture, ABC):
+
+class MappedFuture(StreamingFuture[tuple[K, V]], ABC, Generic[K, V]):
     """Base future for jobs with a key-to-result mapping.
 
     This class provides methods to retrieve results from jobs where each result
@@ -448,7 +489,7 @@ class MappedFuture(StreamingFuture, ABC):
         self._cache = {}
 
     @abstractmethod
-    def __keys__(self):
+    def __keys__(self) -> KeysView[K]:
         """Return the keys for the mapped results.
 
         Raises
@@ -460,7 +501,7 @@ class MappedFuture(StreamingFuture, ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def get_item(self, k):
+    def get_item(self, k: K, *args) -> V:
         """Retrieve a single item by its key.
 
         Parameters
@@ -476,7 +517,7 @@ class MappedFuture(StreamingFuture, ABC):
         """
         raise NotImplementedError()
 
-    def stream_sync(self):
+    def stream_sync(self, **kwargs) -> Iterator[tuple[K, V]]:
         """Stream the results synchronously.
 
         Yields
@@ -487,10 +528,10 @@ class MappedFuture(StreamingFuture, ABC):
         :meta private:
         """
         for k in self.__keys__():
-            v = self[k]
+            v = self.__getitem__(k, **kwargs)
             yield k, v
 
-    def stream_parallel(self):
+    def stream_parallel(self, **kwargs) -> Iterator[tuple[K, V]]:
         """Stream the results in parallel using a thread pool.
 
         Yields
@@ -502,23 +543,20 @@ class MappedFuture(StreamingFuture, ABC):
         """
         num_workers = self.max_workers
 
-        def process(k):
-            v = self[k]
+        def process(k, **kwargs):
+            v = self.__getitem__(k, **kwargs)
             return k, v
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
             futures = []
             for k in self.__keys__():
-                if k in self._cache:
-                    yield k, self._cache[k]
-                else:
-                    f = executor.submit(process, k)
-                    futures.append(f)
+                f = executor.submit(process, k, **kwargs)
+                futures.append(f)
 
             for f in futures:
                 yield f.result()
 
-    def stream(self):
+    def stream(self, **kwargs) -> Iterator[tuple[K, V]]:
         """Retrieve results for this job as a stream.
 
         Returns
@@ -528,10 +566,18 @@ class MappedFuture(StreamingFuture, ABC):
 
         """
         if self.max_workers > 0:
-            return self.stream_parallel()
-        return self.stream_sync()
+            return self.stream_parallel(**kwargs)
+        return self.stream_sync(**kwargs)
 
-    def __getitem__(self, k):
+    def wait(
+        self,
+        interval: int = config.POLLING_INTERVAL,
+        timeout: int | None = None,
+        verbose: bool = False,
+    ) -> list[tuple[K, V]]:
+        return super().wait(interval, timeout, verbose)  # type: ignore
+
+    def __getitem__(self, k: K, **kwargs) -> V:
         """Get an item by key, using the cache if available.
 
         Parameters
@@ -545,10 +591,14 @@ class MappedFuture(StreamingFuture, ABC):
             The value associated with the key.
 
         """
-        if k in self._cache:
-            return self._cache[k]
-        v = self.get_item(k)
-        self._cache[k] = v
+        if len(kwargs) > 0:
+            _k = tuple([k] + [f"{k}={v}" for k, v in kwargs.items()])
+        else:
+            _k = k
+        if _k in self._cache:
+            return self._cache[_k]
+        v = self.get_item(k, **kwargs)
+        self._cache[_k] = v
         return v
 
     def __len__(self):
@@ -560,7 +610,7 @@ class MappedFuture(StreamingFuture, ABC):
         return self.stream()
 
 
-class PagedFuture(StreamingFuture, ABC):
+class PagedFuture(StreamingFuture[V], ABC):
     """Base future class for jobs which have paged results."""
 
     DEFAULT_PAGE_SIZE = 1024
@@ -603,7 +653,7 @@ class PagedFuture(StreamingFuture, ABC):
         self._num_records = num_records
 
     @abstractmethod
-    def get_slice(self, start: int, end: int, **kwargs) -> Collection:
+    def get_slice(self, start: int, end: int, **kwargs) -> Collection[V]:
         """Retrieve a slice of results.
 
         Parameters
@@ -628,7 +678,7 @@ class PagedFuture(StreamingFuture, ABC):
         """
         raise NotImplementedError()
 
-    def stream_sync(self):
+    def stream_sync(self) -> Generator[V, None, None]:
         """Stream results by fetching pages synchronously.
 
         Yields
@@ -648,7 +698,7 @@ class PagedFuture(StreamingFuture, ABC):
             num_returned = len(result_page)
             offset += num_returned
 
-    def stream_parallel(self):
+    def stream_parallel(self) -> Generator[V, None, None]:
         """Stream results by fetching pages in parallel.
 
         Yields
@@ -712,7 +762,7 @@ class PagedFuture(StreamingFuture, ABC):
                 # update the list of futures and wait on them again
                 futures = futures_next
 
-    def stream(self):
+    def stream(self) -> Generator[V, None, None]:
         """Retrieve results for this job as a stream.
 
         Returns

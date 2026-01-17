@@ -1,8 +1,6 @@
-import os
 import sys
 import warnings
-from collections.abc import Container, Mapping
-from typing import Union
+from typing import Mapping, Sequence
 from urllib.parse import urljoin
 
 import requests
@@ -12,10 +10,6 @@ from requests.packages.urllib3.util.retry import Retry  # type: ignore
 
 import openprotein.config as config
 from openprotein.errors import APIError, AuthError, HTTPError
-
-USERNAME = os.getenv("OPENPROTEIN_USERNAME")
-PASSWORD = os.getenv("OPENPROTEIN_PASSWORD")
-BACKEND = os.getenv("OPENPROTEIN_API_BACKEND", "https://api.openprotein.ai/api/")
 
 
 class BearerAuth(requests.auth.AuthBase):
@@ -34,29 +28,18 @@ class BearerAuth(requests.auth.AuthBase):
 class APISession(requests.Session):
     """
     A class to handle API sessions. This class provides a connection session to the OpenProtein API.
-
-    Parameters
-    ----------
-    username : str
-        The username of the user.
-    password : str
-        The password of the user.
-
-    Examples
-    --------
-    >>> session = APISession("username", "password")
     """
 
     def __init__(
         self,
-        username: str | None = USERNAME,
-        password: str | None = PASSWORD,
-        backend: str = BACKEND,
+        username: str,
+        password: str,
+        backend: str,
         timeout: int = 180,
     ):
         if not username or not password:
             raise AuthError(
-                "Expected username and password. Or use environment variables `OPENPROTEIN_USERNAME` and `OPENPROTEIN_PASSWORD`"
+                "Expected username and password. Or use environment variables `OPENPROTEIN_USERNAME` and `OPENPROTEIN_PASSWORD`. Or provide these variables (`username` and `password`) in ~/.openprotein/config.toml."
             )
         super().__init__()
         self.backend = backend
@@ -132,7 +115,7 @@ class APISession(requests.Session):
         response = super().request(method, full_url, *args, **kwargs)
 
         if (js := kwargs.get("json")) and js is not None:
-            if total_size(js) > 1e6:
+            if _total_size(js) > 1e6:
                 warnings.warn(
                     "The requested payload is >1MB. There might be some delays or issues in processing. If the request fails, please try again with smaller sizes."
                 )
@@ -153,7 +136,7 @@ class APISession(requests.Session):
         return response
 
 
-def total_size(o, seen=None):
+def _total_size(o: Sequence | Mapping, seen=None):
     """Recursively finds size of objects including contents."""
     if seen is None:
         seen = set()
@@ -163,19 +146,27 @@ def total_size(o, seen=None):
     seen.add(obj_id)
     size = sys.getsizeof(o)
     if isinstance(o, dict):
-        size += sum((total_size(k, seen) + total_size(v, seen)) for k, v in o.items())
+        size += sum((_total_size(k, seen) + _total_size(v, seen)) for k, v in o.items())
     elif isinstance(o, (list, tuple, set, frozenset)):
-        size += sum(total_size(i, seen) for i in o)
+        size += sum(_total_size(i, seen) for i in o)
     return size
 
 
-class RestEndpoint:
-    pass
-
-
 class TimeoutError(requests.exceptions.HTTPError):
-    pass
+    """
+    An Exception raised due to timeout, possibly from overly large
+    requests.
+    """
 
 
 class CloudFrontError(requests.exceptions.HTTPError):
-    pass
+    """
+    An Exception raised due to CloudFront.
+
+    This is usually due to the strict timeout from CloudFront.
+    AWS CloudFront limits responses to return within 2 minutes.
+    This can be a bit prohibitive for our system that tends to
+    deal with large data. It is usually safe to just ignore/retry upon
+    hitting this error. Our system will scale up and still handle
+    the job.
+    """

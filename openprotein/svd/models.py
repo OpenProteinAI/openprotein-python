@@ -1,8 +1,7 @@
 """SVD model representations which can be used for creating reduced embeddings."""
 
-from typing import TYPE_CHECKING
-
 import numpy as np
+from typing_extensions import TYPE_CHECKING, Self
 
 from openprotein import config
 from openprotein.base import APISession
@@ -100,9 +99,12 @@ class SVDModel(Future):
         """
         return api.svd_delete(self.session, self.id)
 
-    def get(self, verbose: bool = False):
+    def get(self, verbose: bool = False) -> Self:
         """Retrieve this SVD model itself."""
         return self
+
+    def wait(self, verbose: bool = False, **kwargs) -> Self:
+        return super().wait(verbose=verbose, **kwargs)
 
     def get_inputs(self) -> list[bytes]:
         """
@@ -179,12 +181,11 @@ class SVDModel(Future):
             raise InvalidParameterError(
                 "Expected either assay or sequences to fit UMAP on!"
             )
-        model_id = self.id
         return umap_api.fit_umap(
-            model=model_id,
+            model=self,
             feature_type=FeatureType.SVD,
             sequences=sequences,
-            assay_id=assay.id if assay is not None else None,
+            assay=assay,
             n_components=n_components,
             **kwargs,
         )
@@ -262,11 +263,11 @@ class SVDEmbeddingsResultFuture(EmbeddingsResultFuture, Future):
         interval: int = config.POLLING_INTERVAL,
         timeout: int | None = None,
         verbose: bool = False,
-    ) -> list[np.ndarray]:
+    ):
         """Wait for the SVD embeddings job and retrieve the embeddings."""
         return super().wait(interval, timeout, verbose)
 
-    def get(self, verbose=False) -> list[np.ndarray]:
+    def get(self, verbose=False):
         """Get all the SVD reduced embeddings from the job."""
         return super().get(verbose)
 

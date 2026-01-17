@@ -1,7 +1,7 @@
 """Future for embeddings-related jobs."""
 
 from collections import namedtuple
-from typing import Generator
+from typing import Any, Generator, Iterator, TypeVar, Union
 
 import numpy as np
 
@@ -25,7 +25,7 @@ from .schemas import (
 )
 
 
-class EmbeddingsResultFuture(MappedFuture, Future):
+class EmbeddingsResultFuture(MappedFuture[bytes, np.ndarray]):
     """Future for manipulating results for embeddings-related requests."""
 
     job: EmbeddingsJob | AttnJob | LogitsJob
@@ -45,14 +45,17 @@ class EmbeddingsResultFuture(MappedFuture, Future):
             else sequences
         )
 
-    def stream(self):
-        return api.request_get_embeddings_stream(session=self.session, job_id=self.id)
-
-    def get(self, verbose=False) -> list[np.ndarray]:
-        return super().get(verbose=verbose)
+    def stream_sync(self):
+        """
+        Stream the embeddings results synchronously using the streaming endpoint.
+        """
+        for i, array in enumerate(
+            api.request_get_embeddings_stream(session=self.session, job_id=self.id)
+        ):
+            yield self.sequences[i], array
 
     @property
-    def sequences(self) -> list[bytes] | list[str]:
+    def sequences(self):
         if self._sequences is None:
             self._sequences = api.get_request_sequences(
                 session=self.session, job_id=self.job.job_id, job_type=self.job.job_type
@@ -74,12 +77,12 @@ class EmbeddingsResultFuture(MappedFuture, Future):
         """
         return self.sequences
 
-    def get_item(self, sequence: bytes) -> np.ndarray:
+    def get_item(self, sequence: str | bytes) -> np.ndarray:
         """
         Get embedding results for specified sequence.
 
         Args:
-            sequence (bytes): sequence to fetch results for
+            sequence (str | bytes): sequence to fetch results for
 
         Returns:
             np.ndarray: embeddings
@@ -93,10 +96,13 @@ class EmbeddingsResultFuture(MappedFuture, Future):
         return api.result_decode(data)
 
 
-class EmbeddingsScoreFuture(StreamingFuture, Future):
-    """Future for manipulating results for embeddings score-related requests."""
+Score = namedtuple("Score", ["name", "sequence", "score"])
+SingleSiteScore = namedtuple("SingleSiteScore", ["mut_code", "score"])
+S = TypeVar("S", bound=Union[Score, SingleSiteScore])
 
-    job: ScoreJob | ScoreIndelJob | ScoreSingleSiteJob
+
+class BaseScoreFuture(StreamingFuture[S]):
+    """Future for manipulating results for embeddings score-related requests."""
 
     def __init__(
         self,
@@ -105,44 +111,66 @@ class EmbeddingsScoreFuture(StreamingFuture, Future):
         sequences: list[bytes] | list[str] | None = None,
     ):
         super().__init__(session=session, job=job)
-        self._sequences = sequences
+        # ensure all list[bytes]
+        self._sequences = (
+            [seq.encode() if isinstance(seq, str) else seq for seq in sequences]
+            if sequences is not None
+            else sequences
+        )
 
     @property
-    def sequences(self) -> list[bytes] | list[str]:
+    def sequences(self) -> list[bytes]:
         if self._sequences is None:
             self._sequences = api.get_request_sequences(self.session, self.job.job_id)
         return self._sequences
 
-    def stream(self) -> Generator:
-        if (
-            self.job_type == JobType.poet_generate
-            or self.job_type == JobType.embeddings_generate
-        ):
-            stream = api.request_get_generate_result(
-                session=self.session, job_id=self.id
-            )
-        else:
-            stream = api.request_get_score_result(session=self.session, job_id=self.id)
-        # mut_code, ... for ssp
-        # name, sequence, ... for score
-        header = next(stream)
-        score_start_index = 0
-        for i, col_name in enumerate(header):
-            if col_name.startswith("score"):
-                score_start_index = i
-                break
-        Score = namedtuple("Score", header[:score_start_index] + ["score"])
+
+class EmbeddingsScoreFuture(BaseScoreFuture[Score]):
+    """Future for manipulating results for embeddings score-related requests."""
+
+    job: ScoreJob | ScoreIndelJob
+
+    def stream(self) -> Iterator[Score]:
+        stream = api.request_get_score_result(session=self.session, job_id=self.id)
+        # name, sequence, ...
+        next(stream)  # ignore header
         for line in stream:
             # combine scores into numpy array
-            scores = np.array([float(s) for s in line[score_start_index:]])
-            output = Score(*line[:score_start_index], scores)
+            scores = np.array([float(s) for s in line[2:]])
+            output = Score(name=line[0], sequence=line[1], score=scores)
             yield output
 
 
-class EmbeddingsGenerateFuture(EmbeddingsScoreFuture, StreamingFuture, Future):
+class EmbeddingsScoreSingleSiteFuture(BaseScoreFuture[SingleSiteScore]):
+    """Future for manipulating results for embeddings score-related requests."""
+
+    job: ScoreSingleSiteJob
+
+    def stream(self) -> Iterator[SingleSiteScore]:
+        stream = api.request_get_score_result(session=self.session, job_id=self.id)
+        # name, sequence, ...
+        next(stream)  # ignore header
+        for line in stream:
+            # combine scores into numpy array
+            scores = np.array([float(s) for s in line[1:]])
+            output = SingleSiteScore(mut_code=line[0], score=scores)
+            yield output
+
+
+class EmbeddingsGenerateFuture(BaseScoreFuture[Score]):
     """Future for manipulating results for embeddings generate-related requests."""
 
     job: GenerateJob
+
+    def stream(self) -> Iterator[Score]:
+        stream = api.request_get_generate_result(session=self.session, job_id=self.id)
+        # name, sequence, ...
+        next(stream)  # ignore header
+        for line in stream:
+            # combine scores into numpy array
+            scores = np.array([float(s) for s in line[2:]])
+            output = Score(name=line[0], sequence=line[1], score=scores)
+            yield output
 
     @property
     def sequences(self):

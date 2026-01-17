@@ -6,7 +6,7 @@ import pytest
 
 from openprotein.errors import APIError, InvalidParameterError
 from openprotein.jobs import JobStatus
-from openprotein.protein import Protein
+from openprotein.molecules import Protein
 from openprotein.prompt.api import (
     create_prompt,
     create_query,

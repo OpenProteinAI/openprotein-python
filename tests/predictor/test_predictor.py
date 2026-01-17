@@ -8,6 +8,7 @@ import pytest
 from openprotein import OpenProtein
 from openprotein.base import APISession
 from openprotein.common import FeatureType
+from openprotein.data.data import DataAPI
 from openprotein.jobs import JobStatus, JobType
 from openprotein.predictor.predictor import PredictorAPI
 from openprotein.svd.models import SVDModel
@@ -53,6 +54,8 @@ def test_fit_gp_with_svd_model(
     predictor_api.session = mock_session
     predictor_api.session.svd = MagicMock(spec=SVDAPI)
     predictor_api.session.svd.get_svd.return_value = mock_svd_model
+    predictor_api.session.data = MagicMock(spec=DataAPI)
+    predictor_api.session.data.get.return_value.measurement_names = ["p1"]
 
     # 2. Execution
     predictor_api.fit_gp(

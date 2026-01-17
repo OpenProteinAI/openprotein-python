@@ -63,7 +63,9 @@ def test_fold_get_sequence_result(mock_session: MagicMock):
     """Test fold_get_sequence_result."""
     mock_session.get.return_value.content = b"pdb_content"
     result = api.fold_get_sequence_result(mock_session, "job1", "seq1")
-    mock_session.get.assert_called_once_with("v1/fold/job1/seq1")
+    mock_session.get.assert_called_once_with(
+        "v1/fold/job1/seq1", params={"format": "mmcif"}
+    )
     assert result == b"pdb_content"
 
 
@@ -96,6 +98,7 @@ def test_fold_get_complex_extra_result_affinity(mock_session: MagicMock):
     mock_session.get.return_value.json.return_value = [{"key": "value"}]
     result = api.fold_get_complex_extra_result(mock_session, "job1", "affinity")
     mock_session.get.assert_called_once_with("v1/fold/job1/complex/affinity")
+    assert isinstance(result, list)
     assert result == [{"key": "value"}]
 
 
@@ -123,9 +126,12 @@ def test_fold_models_post(mock_session: MagicMock):
         "job_type": JobType.embeddings_fold.value,
         "created_date": "2024-01-01T00:00:00",
     }
-    result = api.fold_models_post(mock_session, "model1", sequences=["seq1"])
+    result = api.fold_models_post(
+        mock_session, "model1", sequences=[[{"protein": {"sequence": "AAA"}}]]
+    )
     mock_session.post.assert_called_once_with(
-        "v1/fold/models/model1", json={"sequences": ["seq1"]}
+        "v1/fold/models/model1",
+        json={"sequences": [[{"protein": {"sequence": "AAA"}}]]},
     )
     assert isinstance(result, FoldJob)
     assert result.job_id == "job1"

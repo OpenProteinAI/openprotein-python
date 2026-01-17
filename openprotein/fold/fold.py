@@ -6,7 +6,7 @@ from . import api
 from .alphafold2 import AlphaFold2Model
 from .boltz import Boltz1Model, Boltz1xModel, Boltz2Model
 from .esmfold import ESMFoldModel
-from .future import FoldComplexResultFuture, FoldResultFuture
+from .future import FoldResultFuture
 from .minifold import MiniFoldModel
 from .models import (
     FoldModel,
@@ -99,7 +99,7 @@ class FoldAPI:
             session=self.session, model_id=model_id, default=FoldModel
         )
 
-    def get_results(self, job) -> FoldResultFuture | FoldComplexResultFuture:
+    def get_results(self, job) -> FoldResultFuture:
         """
         Retrieves the results of a fold job.
 

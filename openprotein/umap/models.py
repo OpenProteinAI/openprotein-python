@@ -11,7 +11,7 @@ from . import api
 from .schemas import UMAPEmbeddingsJob, UMAPFitJob, UMAPMetadata
 
 
-class UMAPModel(Future):
+class UMAPModel(Future["UMAPModel"]):
     """
     UMAP model that can be used to create projected embeddings.
 
@@ -121,7 +121,9 @@ class UMAPModel(Future):
             self._metadata = api.umap_get(self.session, self._metadata.id)
 
     def get_model(self) -> EmbeddingModel:
-        model = EmbeddingModel.create(session=self.session, model_id=self._metadata.id)
+        model = EmbeddingModel.create(
+            session=self.session, model_id=self._metadata.model_id
+        )
         return model
 
     @property
@@ -175,7 +177,7 @@ class UMAPModel(Future):
         )
 
 
-class UMAPEmbeddingsResultFuture(EmbeddingsResultFuture, Future):
+class UMAPEmbeddingsResultFuture(EmbeddingsResultFuture):
     """UMAP embeddings results represented as a future."""
 
     job: UMAPEmbeddingsJob
@@ -185,11 +187,11 @@ class UMAPEmbeddingsResultFuture(EmbeddingsResultFuture, Future):
         interval: int = config.POLLING_INTERVAL,
         timeout: int | None = None,
         verbose: bool = False,
-    ) -> list[np.ndarray]:
+    ):
         """Wait for the UMAP embeddings job and retrieve the embeddings."""
         return super().wait(interval, timeout, verbose)
 
-    def get(self, verbose=False) -> list[np.ndarray]:
+    def get(self, verbose=False):
         """Get all the UMAP projected embeddings from the job."""
         return super().get(verbose)
 

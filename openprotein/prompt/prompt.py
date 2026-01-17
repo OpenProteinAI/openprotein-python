@@ -3,7 +3,8 @@
 from typing import List, Sequence
 
 from openprotein.base import APISession
-from openprotein.protein import Protein
+from openprotein.molecules import Protein, Complex
+from openprotein.utils import uuid
 
 from . import api
 from .models import Prompt, Query
@@ -87,15 +88,20 @@ class PromptAPI:
 
     def create_query(
         self,
-        query: str | bytes | Protein,
+        query: str | bytes | Protein | Complex,
+        force_structure: bool = False,
     ) -> Query:
         """
         Create a query.
 
         Parameters
         ----------
-        query : Optional[bytes | str | Protein]
-            Optional query provided as sequence/structure
+        query : bytes or str or Protein or Complex
+            A query representing a protein/complex to be used with a query.
+        force_structure : bool, optional
+            Optionally force a query to be interpreted with a structure.
+            Useful for creating structure prediction queries which can have
+            no structure.
 
         Returns
         -------
@@ -107,6 +113,7 @@ class PromptAPI:
             metadata=api.create_query(
                 session=self.session,
                 query=query,
+                force_structure=force_structure,
             ),
         )
 
@@ -128,3 +135,22 @@ class PromptAPI:
             session=self.session,
             metadata=api.get_query_metadata(session=self.session, query_id=query_id),
         )
+
+    def _resolve_query(
+        self,
+        query: str | bytes | Protein | Complex | Query | None = None,
+        force_structure: bool = False,
+    ) -> str | None:
+        if query is None:
+            query_id = None
+        elif (
+            isinstance(query, Protein)
+            or isinstance(query, Complex)
+            or isinstance(query, bytes)
+            or (isinstance(query, str) and not uuid.is_valid_uuid(query))
+        ):
+            query_ = self.create_query(query=query, force_structure=force_structure)
+            query_id = query_.id
+        else:
+            query_id = query if isinstance(query, str) else query.id
+        return query_id

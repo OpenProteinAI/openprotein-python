@@ -8,8 +8,12 @@ from openprotein.base import APISession
 from openprotein.common import ModelMetadata
 from openprotein.common.model_metadata import ModelDescription
 from openprotein.jobs import Future, Job
+from openprotein.jobs.futures import MappedFuture
+from openprotein.jobs.jobs import JobsAPI
 from openprotein.models.base import ProteinModel
-from openprotein.protein import Protein
+from openprotein.models.structure_generation import StructureGenerationFuture
+from openprotein.molecules import Protein, Complex
+from openprotein.prompt import PromptAPI, Query
 
 
 class Contig(BaseModel):
@@ -30,8 +34,8 @@ class Hotspot(BaseModel):
 class RFdiffusionRequest(BaseModel):
     "Specification for an RFdiffusion request."
 
-    n: int = 1
-    # protein: Protein
+    N: int = 1
+    query_id: str | None = None
     structure_text: str | None = None
     # contigs: list[Contig]
     contigs: str | None = None
@@ -60,29 +64,26 @@ class RFdiffusionJob(Job):
     job_type: Literal["/models/rfdiffusion"]
 
 
-class RFdiffusionFuture(Future):
+class RFdiffusionFuture(StructureGenerationFuture):
     """Future for handling the results of an RFdiffusion job."""
 
     job: RFdiffusionJob
 
-    def get_pdb(self, replicate: int = 0) -> str:
+    def get_item(self, replicate: int = 0) -> Complex:
         """
-        Retrieve the PDB file for a specific design.
+        Retrieve the output Complex for a specific design.
 
         Args:
-            design_index (int): The 0-based index of the design to retrieve.
+            replicate (int): The 0-based index of the design to retrieve.
 
         Returns:
-            str: The content of the PDB file as a string.
+            Complex: The designed Complex.
         """
-        return _rfdiffusion_api_result_get(
+        pdb = _rfdiffusion_api_result_get(
             session=self.session, job_id=self.id, replicate=replicate
         )
-
-    def get(self, replicate: int = 0):
-        """Default result accessor, returns the first PDB."""
-        # TODO handle different design index
-        return self.get_pdb(replicate=replicate)
+        m = Complex.from_string(pdb, format="pdb")
+        return m
 
 
 def _rfdiffusion_api_post(
@@ -150,14 +151,18 @@ class RFdiffusionModel(ProteinModel):
 
     def generate(
         self,
-        n: int = 1,
-        structure_file: str | bytes | BinaryIO | None = None,
+        query: str | bytes | Protein | Complex | Query | None = None,
         contigs: int | str | None = None,
+        structure_file: str | bytes | BinaryIO | None = None,
+        N: int = 1,
         inpaint_seq: str | None = None,
         provide_seq: str | None = None,
+        # binding sites
         hotspot: str | None = None,
+        # diffusion timesteps
         T: int | None = None,
         partial_T: int | None = None,
+        # model options
         use_active_site_model: bool | None = None,
         use_beta_model: bool | None = None,
         # Symmetry options
@@ -165,6 +170,7 @@ class RFdiffusionModel(ProteinModel):
         order: int | None = None,
         add_potential: bool | None = None,
         # Fold conditioning
+        # TODO: provide query as a way to do fold conditioning
         scaffold_target_structure_file: str | bytes | BinaryIO | None = None,
         scaffold_target_use_struct: bool = False,
         **kwargs,
@@ -174,16 +180,24 @@ class RFdiffusionModel(ProteinModel):
 
         Parameters
         ----------
-        n : int, optional
-            The number of unique design trajectories to run (default is 1).
-        structure_file : BinaryIO, optional
-            An input PDB file (as a file-like object) used for inpainting or other
-            guided design tasks where parts of an existing structure are provided.
+        query : str or bytes or Protein or Complex or Query, optional
+            A query representing the design specification. Use either `query` or `contigs`
+            for default design. Or provide `scaffold_target_structure_file`
+            for scaffold guided design.
+            `query` provides a unified way to represent design specifications on the
+            OpenProtein platform. In this case, the structure mask of the containing Complex
+            proteins are specified to be designed. Other parameters like binding are passed
+            as hotspots to RFdiffusion.
         contigs : int, str, optional
             Defines the lengths and connectivity of chain segments for the desired
             structure, specified in RFdiffusion's contig string format.
             Required for most design tasks. Example: 150, '10-20/A100-110/10-20' for a
             binder design.
+        structure_file : BinaryIO, optional
+            An input PDB file (as a file-like object) used for inpainting or other
+            guided design tasks where parts of an existing structure are provided.
+        n : int, optional
+            The number of unique design trajectories to run (default is 1).
         inpaint_seq : str, optional
             A string specifying the regions in the input structure to mask for
             in-painting. Example: 'A1-A10/A30-40'.
@@ -234,10 +248,24 @@ class RFdiffusionModel(ProteinModel):
             A future object that can be used to retrieve the results of the design
             job upon completion.
         """
+        if query is None and contigs is None and scaffold_target_structure_file is None:
+            raise ValueError(
+                "Expected either `query`, `contigs` or `scaffold_target_structure_file`"
+            )
+        if query is not None:
+            prompt_api = getattr(self.session, "prompt", None)
+            assert isinstance(prompt_api, PromptAPI)
+            query_id = prompt_api._resolve_query(
+                query=query, force_structure=True
+            )  # ensure we have a structure query
+        else:
+            query_id = None
+
         if isinstance(contigs, int):
             contigs = f"{contigs}-{contigs}"
         request = RFdiffusionRequest(
-            n=n,
+            N=N,
+            query_id=query_id,
             contigs=contigs,
             inpaint_seq=inpaint_seq,
             provide_seq=provide_seq,
@@ -278,6 +306,6 @@ class RFdiffusionModel(ProteinModel):
         )
 
         # Return the future object
-        return RFdiffusionFuture(session=self.session, job=job)
+        return RFdiffusionFuture(session=self.session, job=job, N=request.N)
 
     predict = generate

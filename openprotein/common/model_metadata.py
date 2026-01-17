@@ -26,8 +26,8 @@ class ModelMetadata(BaseModel):
     id: str = Field(..., alias="model_id")
     description: ModelDescription
     max_sequence_length: int | None = None
-    dimension: int
-    output_types: list[str]
-    input_tokens: list[str] | None
+    dimension: int | None = None
+    output_types: list[str] | None = None
+    input_tokens: list[str] | None = None
     output_tokens: list[str] | None = None
-    token_descriptions: list[list[TokenInfo]]
+    token_descriptions: list[list[TokenInfo]] | None = None

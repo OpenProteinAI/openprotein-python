@@ -3,11 +3,11 @@
 import copy
 import io
 import zipfile
-from typing import BinaryIO, Sequence, cast
+from typing import BinaryIO, Literal, Sequence, cast
 
 from openprotein.base import APISession
 from openprotein.errors import APIError, InvalidParameterError, RawAPIError
-from openprotein.protein import Protein
+from openprotein.molecules import Complex, Protein
 
 from .schemas import Context, PromptMetadata, QueryMetadata
 
@@ -220,7 +220,7 @@ def zip_prompt(
                 context_files.append(
                     (
                         f"{index:06}.{protein.name}.cif",
-                        io.BytesIO(protein.make_cif_string().encode()),
+                        io.BytesIO(protein.to_string().encode()),
                     )
                 )
             else:
@@ -346,7 +346,8 @@ def __parse_prompt(
 
 def create_query(
     session: APISession,
-    query: bytes | str | Protein,
+    query: bytes | str | Protein | Complex,
+    force_structure: bool = False,
 ) -> QueryMetadata:
     """
     Create a query.
@@ -355,8 +356,12 @@ def create_query(
     ----------
     session : APISession
         The API session.
-    query : bytes or str or Protein
-        A query representing a protein to be used with a query.
+    query : bytes or str or Protein or Complex
+        A query representing a protein/model to be used with a query.
+    force_structure : bool, optional
+        Optionally force a query to be interpreted with a structure.
+        Useful for creating structure prediction queries which can have
+        no structure.
 
     Returns
     -------
@@ -372,16 +377,26 @@ def create_query(
     """
     endpoint = "v1/prompt/query"
 
-    if not isinstance(query, Protein):
+    if isinstance(query, str) or isinstance(query, bytes):
         query = Protein(name="query", sequence=query)
-    if query.has_structure:
+    if isinstance(query, Protein):
+        has_structure = query.has_structure
+        if has_structure or force_structure:
+            qf, filename, typ = (
+                query.to_string(format="cif").encode(),
+                "query.cif",
+                "chemical/x-mmcif",
+            )
+        else:
+            qf, filename, typ = query.make_fasta_bytes(), "query.fasta", "text/x-fasta"
+    elif isinstance(query, Complex):
         qf, filename, typ = (
-            query.make_cif_string().encode(),
+            query.to_string().encode(),
             "query.cif",
             "chemical/x-mmcif",
         )
     else:
-        qf, filename, typ = query.make_fasta_bytes(), "query.fasta", "text/x-fasta"
+        raise ValueError(f"unexpected type query {type(query)}")
 
     response = session.post(endpoint, files={"query": (filename, io.BytesIO(qf), typ)})
 
@@ -433,7 +448,7 @@ def get_query_metadata(session: APISession, query_id: str) -> QueryMetadata:
         raise APIError(f"Unexpected response status code: {response.status_code}")
 
 
-def get_query(session: APISession, query_id: str) -> Protein:
+def get_query(session: APISession, query_id: str) -> Protein | Complex:
     """
     Get the query content for a given query ID.
 
@@ -461,7 +476,7 @@ def get_query(session: APISession, query_id: str) -> Protein:
     is_mmcif = filename.endswith(".cif") or media_type == "chemical/x-mmcif"
     is_fasta = filename.endswith(".fasta") or media_type == "text/x-fasta"
 
-    query_protein = None
+    query = None
     if is_mmcif:
         # for cif files, create a temporary file for gemmi to read
         import tempfile
@@ -469,11 +484,9 @@ def get_query(session: APISession, query_id: str) -> Protein:
         with tempfile.NamedTemporaryFile(suffix=".cif", delete=True) as tmp:
             tmp.write(response.content)
             tmp.flush()
-            # extract chain id (using 'A' as default)
-            chain_id = "A"
-            query_protein = Protein.from_filepath(
-                path=tmp.name, chain_id=chain_id, verbose=False
-            )
+            query = Complex.from_filepath(path=tmp.name, verbose=False)
+            if len(query.get_proteins()) == 1:
+                query = list(query.get_proteins().values())[0]
 
     elif is_fasta:
         # Process FASTA file - take only the first sequence
@@ -483,18 +496,19 @@ def get_query(session: APISession, query_id: str) -> Protein:
 
         fasta_stream = io.BytesIO(response.content)
         for name, sequence in fasta.parse_stream(fasta_stream):
-            query_protein = Protein(name=name, sequence=sequence)
+            # can only be protein
+            query = Protein(name=name, sequence=sequence)
             break  # Only take the first sequence
     else:
         raise APIError(
             f"Unexpected file returned with filename {filename} and type {media_type}"
         )
 
-    if query_protein is None:
+    if query is None:
         raise APIError(f"Invalid query file returned from API {response.content[:10]}")
 
     if response.status_code == 200:
-        return query_protein
+        return query
     elif response.status_code == 401:
         error = RawAPIError.model_validate(response.json())
         raise APIError(error.detail)

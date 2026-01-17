@@ -40,7 +40,14 @@ class UMAPAPI:
     @typing.overload
     def fit_umap(
         self,
-        model: EmbeddingModel,
+        model: SVDModel,
+        reduction: None = None,
+        feature_type: FeatureType = FeatureType.SVD,
+        sequences: list[bytes] | list[str] | None = None,
+        assay: AssayDataset | AssayMetadata | str | None = None,
+        n_components: int = 2,
+        n_neighbors: int = 15,
+        min_dist: float = 0.1,
     ) -> UMAPModel: ...
 
     def fit_umap(

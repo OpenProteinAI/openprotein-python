@@ -12,8 +12,8 @@ from openprotein.embeddings.future import (
     EmbeddingsScoreFuture,
 )
 from openprotein.models.base import ProteinModel
+from openprotein.molecules import Protein, Complex
 from openprotein.prompt import PromptAPI, Query
-from openprotein.protein import Protein
 from openprotein.utils import uuid
 
 
@@ -47,25 +47,6 @@ class ProteinMPNNModel(ProteinModel):
 
     def get_metadata(self) -> ModelMetadata:
         return embeddings_api.get_model(session=self.session, model_id=self.model_id)
-
-    def __resolve_query(
-        self,
-        query: str | bytes | Protein | Query | None = None,
-    ) -> str | None:
-        if query is None:
-            query_id = None
-        elif (
-            isinstance(query, Protein)
-            or isinstance(query, bytes)
-            or (isinstance(query, str) and not uuid.is_valid_uuid(query))
-        ):
-            prompt_api = getattr(self.session, "prompt", None)
-            assert isinstance(prompt_api, PromptAPI)
-            query_ = prompt_api.create_query(query=query)
-            query_id = query_.id
-        else:
-            query_id = query if isinstance(query, str) else query.id
-        return query_id
 
     def score(
         self,
@@ -149,32 +130,34 @@ class ProteinMPNNModel(ProteinModel):
 
     def generate(
         self,
-        query: str | bytes | Protein | Query,
+        query: str | bytes | Protein | Complex | Query,
         num_samples: int = 100,
-        temperature: float = 1.0,
+        temperature: float = 0.1,
         # topk: float | None = None,
         # topp: float | None = None,
         # max_length: int = 1000,
-        # seed: int | None = None,
+        seed: int | None = None,
     ) -> EmbeddingsGenerateFuture:
         """
         Generate protein sequences based on a masked input query.
 
         Parameters
         ----------
-        query : str or bytes or Protein or Query
+        query : str or bytes or Protein or Complex or Query
             Query specifying the structure to generate sequences for.
         num_samples : int, optional
             The number of samples to generate. Default is 100.
         temperature : float, optional
-            The temperature for sampling. Higher values produce more random outputs. Default is 1.0.
+            The temperature for sampling. Higher values produce more random outputs. Default is 0.1.
 
         Returns
         -------
         EmbeddingsGenerateFuture
             A future object representing the status and information about the generation job.
         """
-        query_id = self.__resolve_query(query=query)
+        prompt_api = getattr(self.session, "prompt", None)
+        assert isinstance(prompt_api, PromptAPI)
+        query_id = prompt_api._resolve_query(query=query)
         return EmbeddingsGenerateFuture.create(
             session=self.session,
             job=embeddings_api.request_generate_post(
@@ -183,5 +166,6 @@ class ProteinMPNNModel(ProteinModel):
                 query_id=query_id,
                 num_samples=num_samples,
                 temperature=temperature,
+                random_seed=seed,
             ),
         )

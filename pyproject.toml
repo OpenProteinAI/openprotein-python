@@ -22,7 +22,8 @@ dependencies = [
   "tqdm>=4.66.5,<5",
   "pandas>=2.2.2,<3",
   "numpy>=1.9,<3",
-  "gemmi>=0.7.0,<0.8",
+  "gemmi>=0.6.0,<0.8",
+  "tomli>=2.3.0,<3",
 ]
 requires-python = ">=3.10,<3.13"
 
@@ -31,6 +32,7 @@ dev = [
   "pip>=24.2,<25",
   "ipykernel>=6.29.5,<7",
   "pytest>=8.3.3,<9",
+  "pytest-xdist>=3.6.1,<4",
   "pandas-stubs>=2.1.4.240909,<3",
   "matplotlib>=3.9.2,<4",
   "scipy>=1.14.1,<2",
@@ -58,6 +60,7 @@ pixi global install -q --no-progress -e conda-build --expose conda --expose cond
 pixi global install -q --no-progress --expose hatch hatch > /dev/null;
 hatch build; hatch publish; hatch build -t conda
 """
+test = "pytest"
 
 [tool.pixi.environments]
 dev = ["dev"]
@@ -68,6 +71,9 @@ build-backend = "hatchling.build"
 
 [tool.hatch.version]
 source = "vcs"
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.hatch.build.targets.sdist]
 packages = ["openprotein"]

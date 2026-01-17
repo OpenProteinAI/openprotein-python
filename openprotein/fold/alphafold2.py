@@ -1,15 +1,18 @@
 """Community-based AlphaFold 2 model running using ColabFold."""
 
+import io
 import warnings
-from collections import Counter
+from typing import Any, Sequence
 
-from openprotein.align import MSAFuture
+from openprotein.align import AlignAPI, MSAFuture
 from openprotein.base import APISession
 from openprotein.common import ModelMetadata
-from openprotein.protein import Protein
+from openprotein.fold.common import normalize_inputs, serialize_input
+from openprotein.fold.complex import id_generator
+from openprotein.molecules import Protein, DNA, RNA, Ligand, Complex
 
 from . import api
-from .future import FoldComplexResultFuture
+from .future import FoldResultFuture
 from .models import FoldModel
 
 
@@ -30,19 +33,19 @@ class AlphaFold2Model(FoldModel):
 
     def fold(
         self,
-        proteins: list[Protein] | MSAFuture | None = None,
+        sequences: Sequence[Complex | Protein | str] | MSAFuture | None = None,
         num_recycles: int | None = None,
         num_models: int = 1,
         num_relax: int = 0,
         **kwargs,
-    ) -> FoldComplexResultFuture:
+    ) -> FoldResultFuture:
         """
         Post sequences to alphafold model.
 
         Parameters
         ----------
-        proteins : List[Protein] | MSAFuture
-            List of protein sequences to fold. `Protein` objects must be tagged with an `msa`. Alternatively, supply an `MSAFuture` to use all query sequences as a multimer.
+        sequences : List[Complex | Protein | str] | MSAFuture
+            List of protein sequences to include in folded output. `Protein` objects must be tagged with an `msa`, which can be a `Protein.single_sequence_mode` for single sequence mode. Alternatively, supply an `MSAFuture` to use all query sequences as a multimer.
         num_recycles : int
             number of times to recycle models
         num_models : int
@@ -54,81 +57,67 @@ class AlphaFold2Model(FoldModel):
         -------
         job : Job
         """
+        from openprotein.align import AlignAPI
+
         if "msa" in kwargs:
             warnings.warn(
                 "Inputs to AlphaFold 2 have been updated. 'msa' should be supplied as 'proteins' argument. Support will be dropped in the future."
             )
-            proteins = kwargs["msa"]
-            assert isinstance(proteins, MSAFuture), "Expected msa to be an MSAFuture"
-        if "ligands" in kwargs or "dnas" in kwargs or "rnas" in kwargs:
-            with warnings.catch_warnings():
-                warnings.simplefilter("always")  # Force warning to always show
-                warnings.warn(
-                    "Alphafold 2 only supports proteins. All other chains will be ignored"
-                )
-        if proteins is None:
+            sequences = kwargs["msa"]
+            assert isinstance(sequences, MSAFuture), "Expected msa to be an MSAFuture"
+
+        if sequences is None:
             raise TypeError("Expected 'proteins' argument")
-        if isinstance(proteins, list):
-            msa_to_seed: dict[str, Counter] = dict()
-            for protein in proteins:
-                if (msa := protein.msa) is not None:
-                    if isinstance(msa, Protein.NullMSA):
-                        raise ValueError(
-                            "AlphaFold 2 expects MSA and does not support single sequence mode"
-                        )
-                    msa_id = msa.id if isinstance(msa, MSAFuture) else msa
-                    if msa_id in msa_to_seed:
-                        seeds = msa_to_seed[msa_id]
-                    else:
-                        from openprotein.align import AlignAPI
 
-                        align_api = getattr(self.session, "align", None)
-                        assert isinstance(align_api, AlignAPI)
-                        seed = align_api.get_seed(job_id=msa_id)
-                        # need a counter so we can make sure later that the proteins make up the msa completely
-                        seeds = Counter(seed.split(":"))
-                        msa_to_seed[msa_id] = seeds
-                    # check that this protein is in the seed
-                    if protein.sequence.decode() not in seeds:
-                        raise ValueError(
-                            f"Expected specified msa_id {msa_id} for protein {protein.sequence} to contain the sequence as part of its seed/query"
-                        )
-                else:
-                    raise ValueError("Expected msa for protein when using AlphaFold 2")
-            # now make sure we only have one msa
-            if len(msa_to_seed) > 1:
-                raise ValueError("Expected only 1 unique msa when using AlphaFold 2")
-            # now check that the list of proteins completely make up the msa
-            seeds = list(msa_to_seed.values())[0]  # should have just 1
-            for protein in proteins:
-                # make sure to account for multimers
-                seeds[protein.sequence.decode()] -= (
-                    len(protein.chain_id) if isinstance(protein.chain_id, list) else 1
-                )
-                # handle when too many of a sequence in the list of proteins
-                if seeds[protein.sequence.decode()] < 0:
-                    raise ValueError(
-                        "List of proteins does not completely make up the MSA seed"
-                    )
-            if seeds.total() != 0:
-                # handle when overall mismatch - 1 and -1 case is handled above
-                raise ValueError(
-                    "List of proteins does not completely make up the MSA seed"
-                )
-            msa_id = list(msa_to_seed.keys())[0]
-        elif isinstance(proteins, MSAFuture):
-            msa_id = proteins.id
+        # build the normalized_models from msa
+        if isinstance(sequences, MSAFuture):
+            id_gen = id_generator()
+            align_api = getattr(self.session, "align", None)
+            assert isinstance(align_api, AlignAPI)
+            msa = sequences  # rename
+            seed = align_api.get_seed(job_id=msa.job.job_id)
+            _proteins: dict[str, Protein] = {}
+            for seq in seed.split(":"):
+                protein = Protein(sequence=seq)
+                id = next(id_gen)
+                protein.msa = msa.id
+                _proteins[id] = protein
+            normalized_complexes = [Complex(chains=_proteins)]
+
         else:
-            raise TypeError("Expected either list of Proteins or MSAFuture")
+            normalized_complexes = normalize_inputs(sequences)
 
-        return FoldComplexResultFuture.create(
+        for complex in normalized_complexes:
+            for id, chain in complex.get_chains().items():
+                if (
+                    isinstance(chain, DNA)
+                    or isinstance(chain, RNA)
+                    or isinstance(chain, Ligand)
+                ):
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("always")  # Force warning to always show
+                        warnings.warn(
+                            "AlphaFold-2 does not support ligand/DNA/RNA input. These extra chains will be ignored in the output."
+                        )
+                    del complex._chains[id]
+
+        _complexes = serialize_input(self.session, normalized_complexes, needs_msa=True)
+
+        if len(_complexes) == 0:
+            raise TypeError(
+                "Expected either non-empty list of proteins/models/sequences or MSAFuture"
+            )
+
+        result = FoldResultFuture(
             session=self.session,
             job=api.fold_models_post(
-                self.session,
+                session=self.session,
                 model_id=self.model_id,
-                msa_id=msa_id,
+                sequences=_complexes,
                 num_recycles=num_recycles,
                 num_models=num_models,
                 num_relax=num_relax,
             ),
+            complexes=normalized_complexes,
         )
+        return result

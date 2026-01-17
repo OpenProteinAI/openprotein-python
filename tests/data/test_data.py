@@ -44,7 +44,7 @@ def test_data_api_list(mock_session: MagicMock, sample_assay_metadata_dict: dict
 
     result = data_api.list()
 
-    mock_session.get.assert_called_once_with("v1/assaydata")
+    mock_session.get.assert_called_once_with("v1/assaydata", params={})
     assert len(result) == 1
     assert isinstance(result[0], AssayDataset)
     assert result[0].id == "assay123"

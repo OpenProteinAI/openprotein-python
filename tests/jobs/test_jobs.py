@@ -116,4 +116,4 @@ def test_future_wait_until_done_timeout(
     future = ConcreteFuture(mock_session, pending_job_obj)
 
     with pytest.raises(TimeoutException):
-        future.wait_until_done(interval=0.01, timeout=0.05)
+        future.wait_until_done(interval=0.01, timeout=1)

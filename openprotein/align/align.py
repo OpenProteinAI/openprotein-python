@@ -7,7 +7,7 @@ from typing import BinaryIO, Iterator
 from openprotein.base import APISession
 from openprotein.errors import DeprecationError
 from openprotein.jobs import Job
-from openprotein.protein import Protein
+from openprotein.molecules import Protein
 
 from . import api
 from .msa import MSAFuture
@@ -285,7 +285,7 @@ class AlignAPI:
             session=self.session, job=api.msa_post(self.session, msa_file=msa_file)
         )
 
-    def create_msa(self, seed: bytes) -> MSAFuture:
+    def create_msa(self, seed: bytes | str) -> MSAFuture:
         """
         Construct an MSA via homology search with the seed sequence.
 

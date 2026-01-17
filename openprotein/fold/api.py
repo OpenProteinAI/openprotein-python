@@ -1,9 +1,11 @@
 """Fold REST API interface for making HTTP calls to our fold backend."""
 
 import io
-from typing import TYPE_CHECKING, Literal
+import typing
+from typing import TYPE_CHECKING, Any, Literal, Mapping, Sequence
 
 import numpy as np
+import pandas as pd
 from pydantic import TypeAdapter
 
 from openprotein.base import APISession
@@ -84,7 +86,7 @@ def fold_get(session: APISession, job_id: str) -> FoldMetadata:
 
 def fold_get_sequences(session: APISession, job_id: str) -> list[bytes]:
     """
-    Get results associated with the given request ID.
+    Get sequences associated with the given request ID.
 
     Parameters
     ----------
@@ -104,7 +106,10 @@ def fold_get_sequences(session: APISession, job_id: str) -> list[bytes]:
 
 
 def fold_get_sequence_result(
-    session: APISession, job_id: str, sequence: bytes | str
+    session: APISession,
+    job_id: str,
+    sequence_or_index: bytes | str | int,
+    format: str = "mmcif",
 ) -> bytes:
     """
     Get encoded result for a sequence from the request ID.
@@ -115,19 +120,105 @@ def fold_get_sequence_result(
         Session object for API communication.
     job_id : str
         Job ID to retrieve results from.
-    sequence : bytes or str
-        Sequence to retrieve results for.
+    sequence_or_index : bytes or str or int
+        Sequence to retrieve results for or its index in the job.
 
     Returns
     -------
     bytes
         Encoded result for the sequence.
     """
-    if isinstance(sequence, bytes):
-        sequence = sequence.decode()
-    endpoint = PATH_PREFIX + f"/{job_id}/{sequence}"
-    response = session.get(endpoint)
+    if isinstance(sequence_or_index, bytes):
+        sequence_or_index = sequence_or_index.decode()
+    endpoint = PATH_PREFIX + f"/{job_id}/{sequence_or_index}"
+    response = session.get(endpoint, params={"format": format})
     return response.content
+
+
+@typing.overload
+def fold_get_extra_result(
+    session: APISession,
+    job_id: str,
+    sequence_or_index: bytes | str | int,
+    key: Literal["pae", "pde", "plddt", "ptm"],
+) -> np.ndarray: ...
+
+
+@typing.overload
+def fold_get_extra_result(
+    session: APISession,
+    job_id: str,
+    sequence_or_index: bytes | str | int,
+    key: Literal["confidence"],
+) -> list[dict]: ...
+
+
+@typing.overload
+def fold_get_extra_result(
+    session: APISession,
+    job_id: str,
+    sequence_or_index: bytes | str | int,
+    key: Literal["affinity"],
+) -> dict: ...
+
+
+@typing.overload
+def fold_get_extra_result(
+    session: APISession,
+    job_id: str,
+    sequence_or_index: bytes | str | int,
+    key: Literal["score", "metrics"],
+) -> pd.DataFrame: ...
+
+
+def fold_get_extra_result(
+    session: APISession,
+    job_id: str,
+    sequence_or_index: bytes | str | int,
+    key: Literal[
+        "pae", "pde", "plddt", "ptm", "confidence", "affinity", "score", "metrics"
+    ],
+) -> "np.ndarray | list[dict] | dict | pd.DataFrame":
+    """
+    Get extra result for a sequence from the request ID.
+
+    Parameters
+    ----------
+    session : APISession
+        Session object for API communication.
+    job_id : str
+        Job ID to retrieve results from.
+    sequence_or_index : bytes or str or int
+        Sequence to retrieve results for or its index in the job.
+    key : {'pae', 'pde', 'plddt', 'ptm', 'confidence', 'affinity', 'score', 'metrics'}
+        The type of result to retrieve.
+
+    Returns
+    -------
+    numpy.ndarray or list of dict
+        The result as a numpy array (for "pae", "pde", "plddt") or a list of dictionaries (for "confidence", "affinity").
+    """
+    if key in {"pae", "pde", "plddt", "ptm"}:
+        formatter = lambda response: np.load(io.BytesIO(response.content))
+    elif key in {"confidence", "affinity"}:
+        formatter = lambda response: response.json()
+    elif key in {"score", "metrics"}:
+        import pandas as pd
+
+        formatter = lambda response: pd.read_csv(io.StringIO(response.content.decode()))
+    else:
+        raise ValueError(f"Unexpected key: {key}")
+    endpoint = PATH_PREFIX + f"/{job_id}/{sequence_or_index}/{key}"
+    try:
+        response = session.get(
+            endpoint,
+        )
+    except HTTPError as e:
+        if e.status_code == 400 and key == "affinity":
+            raise ValueError("affinity not found for request") from None
+        raise e
+    output = formatter(response)
+    return output
 
 
 def fold_get_complex_result(
@@ -163,7 +254,9 @@ def fold_get_complex_result(
 def fold_get_complex_extra_result(
     session: APISession,
     job_id: str,
-    key: Literal["pae", "pde", "plddt", "confidence", "affinity", "score", "metrics"],
+    key: Literal[
+        "pae", "pde", "plddt", "ptm", "confidence", "affinity", "score", "metrics"
+    ],
 ) -> "np.ndarray | list[dict] | pd.DataFrame":
     """
     Get extra result for a complex from the request ID.
@@ -174,7 +267,7 @@ def fold_get_complex_extra_result(
         Session object for API communication.
     job_id : str
         Job ID to retrieve results from.
-    key : {'pae', 'pde', 'plddt', 'confidence', 'affinity'}
+    key : {'pae', 'pde', 'plddt', 'ptm', 'confidence', 'affinity', 'score', 'metrics'}
         The type of result to retrieve.
 
     Returns
@@ -182,7 +275,7 @@ def fold_get_complex_extra_result(
     numpy.ndarray or list of dict
         The result as a numpy array (for "pae", "pde", "plddt") or a list of dictionaries (for "confidence", "affinity").
     """
-    if key in {"pae", "pde", "plddt"}:
+    if key in {"pae", "pde", "plddt", "ptm"}:
         formatter = lambda response: np.load(io.BytesIO(response.content))
     elif key in {"confidence", "affinity"}:
         formatter = lambda response: response.json()
@@ -208,6 +301,7 @@ def fold_get_complex_extra_result(
 def fold_models_post(
     session: APISession,
     model_id: str,
+    sequences: Sequence[Sequence[Mapping[str, Any]]],
     **kwargs,
 ) -> FoldJob:
     """
@@ -222,10 +316,11 @@ def fold_models_post(
         Session object for API communication.
     model_id : str
         Model ID to use for prediction.
-    sequences : sequence of bytes or str, optional
-        Sequences to request results for.
-    msa_id : str, optional
-        MSA ID to use.
+    sequences : sequence of sequence of dict
+        Sequences/complexes to request results for.
+        The outer list represents the batch of requests, and the inner
+        list represents the complex, with each item in the list being
+        an entity in that complex. A monomer would thus be a single item.
     num_recycles : int, optional
         Number of recycles for structure prediction.
     num_models : int, optional
@@ -256,13 +351,10 @@ def fold_models_post(
     """
     endpoint = PATH_PREFIX + f"/models/{model_id}"
 
-    body: dict = {}
-    if kwargs.get("sequences"):
-        sequences = kwargs["sequences"]
-        # NOTE we are handling the boltz form here too
-        sequences = [s.decode() if isinstance(s, bytes) else s for s in sequences]
-        kwargs["sequences"] = sequences
-    # add non-None args - note this doesnt affect msa_id which is nested
+    body: dict = {
+        "sequences": sequences,
+    }
+    # add non-None args
     for k, v in kwargs.items():
         if v is not None:
             body[k] = v

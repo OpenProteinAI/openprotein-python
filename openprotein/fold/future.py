@@ -1,6 +1,8 @@
 """Fold prediction results represented as futures."""
 
-from typing import TYPE_CHECKING, Literal
+import copy
+import typing
+from typing import TYPE_CHECKING, Iterator, Literal
 
 import numpy as np
 import pandas as pd
@@ -9,9 +11,10 @@ from typing_extensions import Self
 
 from openprotein import config
 from openprotein.base import APISession
-from openprotein.chains import DNA, RNA, Ligand
-from openprotein.jobs import Future, JobsAPI, MappedFuture
-from openprotein.protein import Protein
+from openprotein.fold.complex import id_generator
+from openprotein.jobs import JobsAPI, MappedFuture
+from openprotein.molecules import DNA, RNA, Complex, Ligand, Protein, Structure
+from openprotein.utils.numpy import readonly_view
 
 from . import api
 from .schemas import FoldJob, FoldMetadata
@@ -19,8 +22,17 @@ from .schemas import FoldJob, FoldMetadata
 if TYPE_CHECKING:
     from .boltz import BoltzAffinity, BoltzConfidence
 
+FoldResult: typing.TypeAlias = (
+    "Structure | np.ndarray | pd.DataFrame | BoltzAffinity | list[BoltzConfidence]"
+)
 
-class FoldResultFuture(MappedFuture, Future):
+
+class FoldResultFuture(
+    MappedFuture[
+        bytes,
+        FoldResult,
+    ]
+):
     """
     Fold results represented as a future.
 
@@ -38,6 +50,7 @@ class FoldResultFuture(MappedFuture, Future):
         job: FoldJob | None = None,
         metadata: FoldMetadata | None = None,
         sequences: list[bytes] | None = None,
+        complexes: list[Complex] | None = None,
         max_workers: int = config.MAX_CONCURRENT_WORKERS,
     ):
         """
@@ -60,6 +73,8 @@ class FoldResultFuture(MappedFuture, Future):
         if sequences is None:
             sequences = api.fold_get_sequences(session=session, job_id=job.job_id)
         self._sequences = sequences
+        self._complexes = complexes
+        self.reverse_map = {s: i for i, s in enumerate(self._sequences)}
         super().__init__(session, job, max_workers)
 
     @classmethod
@@ -69,9 +84,9 @@ class FoldResultFuture(MappedFuture, Future):
         job: FoldJob | None = None,
         metadata: FoldMetadata | None = None,
         **kwargs,
-    ) -> "Self | FoldComplexResultFuture":
+    ) -> "Self":
         """
-        Factory method to create a FoldResultFuture or FoldComplexResultFuture.
+        Factory method to create a FoldResultFuture.
 
         Parameters
         ----------
@@ -79,13 +94,13 @@ class FoldResultFuture(MappedFuture, Future):
             The API session to use for requests.
         job : FoldJob
             The fold job associated with this future.
-        **kwargs
+
             Additional keyword arguments.
 
         Returns
         -------
-        FoldResultFuture or FoldComplexResultFuture
-            An instance of FoldResultFuture or FoldComplexResultFuture depending on the model.
+        FoldResultFuture
+            An instance of FoldResultFuture.
         """
         if job is not None:
             job_id = job.job_id
@@ -93,15 +108,9 @@ class FoldResultFuture(MappedFuture, Future):
             job_id = metadata.job_id
         else:
             raise ValueError("Expected fold metadata or job")
-        model_id = api.fold_get(session=session, job_id=job_id).model_id
-        if (
-            model_id.startswith("boltz")
-            or model_id.startswith("alphafold")
-            or model_id.startswith("rosettafold")
-        ):
-            return FoldComplexResultFuture(session=session, job=job, **kwargs)
-        else:
-            return cls(session=session, job=job, **kwargs)
+        # model_id = api.fold_get(session=session, job_id=job_id).model_id
+        # create different future - not used now
+        return cls(session=session, job=job, **kwargs)
 
     @property
     def sequences(self) -> list[bytes]:
@@ -113,9 +122,102 @@ class FoldResultFuture(MappedFuture, Future):
         list[bytes]
             List of sequences.
         """
+        import warnings
+
+        warnings.warn(
+            "`sequences` for fold jobs of complexes will show ':'-delimited protein sequences but omit the ligands and other chain entities"
+        )
         if self._sequences is None:
             self._sequences = api.fold_get_sequences(self.session, self.job.job_id)
         return self._sequences
+
+    @property
+    def complexes(self) -> list[Complex]:
+        """
+        Get the molecular complexes submitted for the fold request.
+
+        Returns
+        -------
+        list[Complex]
+            List of complexes.
+        """
+        if self._complexes is not None:
+            return copy.deepcopy(self._complexes)
+        complexes: list[Complex] = []
+        if self.metadata.sequences is None:
+            # make from self.sequences instead
+            # all proteins
+            id_gen = id_generator()
+            for seq in self.sequences:
+                proteins = {}
+                for monomer in seq.split(b":"):
+                    chain_id = next(id_gen)
+                    protein = Protein(sequence=monomer)
+                    proteins[chain_id] = protein
+                model = Complex(chains=proteins)
+                complexes.append(model)
+        else:
+            # collate used ids
+            used_ids = []
+            for complex_dicts in self.metadata.sequences:
+                for complex_dict in complex_dicts:
+                    for entity_dict in complex_dict.values():
+                        if (id := entity_dict.get("id")) is not None:
+                            if isinstance(id, str):
+                                used_ids.append(id)
+                            elif isinstance(id, list):
+                                used_ids.extend(id)
+            id_gen = id_generator(used_ids)
+            for complex_dicts in self.metadata.sequences:
+                chains: dict = {}
+                for complex_dict in complex_dicts:
+                    for entity_type, entity_dict in complex_dict.items():
+                        if entity_type == "protein":
+                            chain_id = entity_dict.get("id") or next(id_gen)
+                            protein = Protein(sequence=entity_dict["sequence"])
+                            if (msa_id := entity_dict.get("msa_id")) is not None:
+                                protein.msa = msa_id
+                            if isinstance(chain_id, list):
+                                for id in chain_id:
+                                    chains[id] = protein
+                            else:
+                                chains[chain_id] = protein
+                        elif entity_type == "dna":
+                            chain_id = entity_dict.get("id") or next(id_gen)
+                            dna = DNA(
+                                sequence=entity_dict["sequence"],
+                                cyclic=entity_dict.get("cyclic"),
+                            )
+                            if isinstance(chain_id, list):
+                                for id in chain_id:
+                                    chains[id] = dna
+                            else:
+                                chains[chain_id] = dna
+                        elif entity_type == "rna":
+                            chain_id = entity_dict.get("id") or next(id_gen)
+                            rna = RNA(
+                                sequence=entity_dict["sequence"],
+                                cyclic=entity_dict.get("cyclic"),
+                            )
+                            if isinstance(chain_id, list):
+                                for id in chain_id:
+                                    chains[id] = rna
+                            else:
+                                chains[chain_id] = rna
+                        elif entity_type == "ligand":
+                            chain_id = entity_dict.get("id") or next(id_gen)
+                            ligand = Ligand(
+                                smiles=entity_dict.get("smiles"),
+                                ccd=entity_dict.get("ccd"),
+                            )
+                            if isinstance(chain_id, list):
+                                for id in chain_id:
+                                    chains[id] = ligand
+                            else:
+                                chains[chain_id] = ligand
+                complexes.append(Complex(chains=chains))
+        self._complexes = complexes
+        return copy.deepcopy(self._complexes)
 
     @property
     def id(self):
@@ -148,25 +250,74 @@ class FoldResultFuture(MappedFuture, Future):
         list of bytes
             List of sequences.
         """
-        return self.sequences
+        return list(range(len(self._sequences)))
 
-    def get(self, verbose=False) -> list[tuple[str, bytes]]:
-        """
-        Retrieve the fold results as a list of tuples mapping sequence to PDB-encoded string.
+    @typing.overload
+    def get_item(
+        self,
+        index: int,
+        key: None = None,
+    ) -> Structure: ...
 
-        Parameters
-        ----------
-        verbose : bool, optional
-            If True, print verbose output. Default is False.
+    @typing.overload
+    def get_item(
+        self,
+        index: int,
+        key: (
+            Literal[
+                "pae",
+                "pde",
+                "plddt",
+                "ptm",
+            ]
+            | None
+        ) = None,
+    ) -> np.ndarray: ...
 
-        Returns
-        -------
-        list[tuple[str, str]]
-            List of tuples mapping sequence to PDB-encoded string.
-        """
-        return super().get(verbose=verbose)
+    @typing.overload
+    def get_item(
+        self,
+        index: int,
+        key: Literal["affinity"],
+    ) -> "BoltzAffinity": ...
 
-    def get_item(self, sequence: bytes) -> bytes:
+    @typing.overload
+    def get_item(
+        self,
+        index: int,
+        key: Literal["confidence"],
+    ) -> "list[BoltzConfidence]": ...
+
+    @typing.overload
+    def get_item(
+        self,
+        index: int,
+        key: (
+            Literal[
+                "score",
+                "metrics",
+            ]
+            | None
+        ) = None,
+    ) -> pd.DataFrame: ...
+
+    def get_item(
+        self,
+        index: int,
+        key: (
+            Literal[
+                "pae",
+                "pde",
+                "plddt",
+                "ptm",
+                "confidence",
+                "affinity",
+                "score",
+                "metrics",
+            ]
+            | None
+        ) = None,
+    ) -> FoldResult:
         """
         Get fold results for a specified sequence.
 
@@ -177,204 +328,164 @@ class FoldResultFuture(MappedFuture, Future):
 
         Returns
         -------
-        bytes
-            Fold result for the specified sequence.
+        Complex
+            Complex containing the folded structure.
         """
-        data = api.fold_get_sequence_result(self.session, self.job.job_id, sequence)
-        return data
+        if key is None:
+            data = api.fold_get_sequence_result(self.session, self.job.job_id, index)
+            model = Structure.from_string(data.decode(), format="cif")
+            return model
+        else:
+            data = api.fold_get_extra_result(self.session, self.job.job_id, index, key)
+            if key == "affinity":
+                from .boltz import BoltzAffinity
 
+                data = TypeAdapter(BoltzAffinity).validate_python(data)
+            elif key == "confidence":
+                from .boltz import BoltzConfidence
 
-class FoldComplexResultFuture(Future):
-    """
-    Future for manipulating results of a fold complex request.
+                data = TypeAdapter(list[BoltzConfidence]).validate_python(data)
+            return data  # type: ignore - converted by adapter
 
-    Attributes
-    ----------
-    job : FoldJob
-        The fold job associated with this future.
-    """
-
-    job: FoldJob
-
-    def __init__(
+    @typing.overload
+    def stream(
         self,
-        session: APISession,
-        job: FoldJob | None = None,
-        metadata: FoldMetadata | None = None,
-        model_id: str | None = None,
-        proteins: list[Protein] | None = None,
-        ligands: list[Ligand] | None = None,
-        dnas: list[DNA] | None = None,
-        rnas: list[RNA] | None = None,
-    ):
-        """
-        Initialize a FoldComplexResultFuture instance.
+        key: None = None,
+    ) -> Iterator[Structure]: ...
 
-        Parameters
-        ----------
-        session : APISession
-            The API session to use for requests.
-        job : FoldJob
-            The fold job associated with this future.
-        model_id : str, optional
-            Model ID used for the fold request.
-        proteins : list[Protein], optional
-            List of proteins submitted for fold request.
-        ligands : list[Ligand], optional
-            List of ligands submitted for fold request.
-        dnas : list[DNA], optional
-            List of DNAs submitted for fold request.
-        rnas : list[RNA], optional
-            List of RNAs submitted for fold request.
-        """
-        # initialize the fold job metadata
-        if metadata is None:
-            if job is None or job.job_id is None:
-                raise ValueError("Expected fold metadata or job")
-            metadata = api.fold_get(session, job.job_id)
-        self._metadata = metadata
-        if job is None:
-            jobs_api = getattr(session, "jobs", None)
-            assert isinstance(jobs_api, JobsAPI)
-            job = FoldJob.create(jobs_api.get_job(job_id=metadata.job_id))
-        super().__init__(session, job)
-        self._model_id = model_id
-        self._proteins = proteins
-        self._ligands = ligands
-        self._dnas = dnas
-        self._rnas = rnas
-        self._initialized = not (proteins == ligands == dnas == rnas == None)
-        self._pae: np.ndarray | None = None
-        self._pde: np.ndarray | None = None
-        self._plddt: np.ndarray | None = None
-        self._score: pd.DataFrame | None = None
-        self._metrics: pd.DataFrame | None = None
-        self._confidence: list["BoltzConfidence"] | None = None
-        self._affinity: "BoltzAffinity | None" = None
+    @typing.overload
+    def stream(
+        self,
+        key: (
+            Literal[
+                "pae",
+                "pde",
+                "plddt",
+                "ptm",
+            ]
+            | None
+        ) = None,
+    ) -> Iterator[np.ndarray]: ...
 
-    @property
-    def metadata(self) -> FoldMetadata:
-        """The fold metadata."""
-        return self._metadata
+    @typing.overload
+    def stream(
+        self,
+        key: Literal["affinity"],
+    ) -> "Iterator[BoltzAffinity]": ...
 
-    @property
-    def model_id(self) -> str:
-        """
-        Get the model ID used for the fold request.
+    @typing.overload
+    def stream(
+        self,
+        key: Literal["confidence"],
+    ) -> "Iterator[list[BoltzConfidence]]": ...
 
-        Returns
-        -------
-        str
-            Model ID.
-        """
-        if self._model_id is None:
-            self._model_id = api.fold_get(
-                session=self.session, job_id=self.job.job_id
-            ).model_id
-        return self._model_id
+    @typing.overload
+    def stream(
+        self,
+        key: (
+            Literal[
+                "score",
+                "metrics",
+            ]
+            | None
+        ) = None,
+    ) -> Iterator[pd.DataFrame]: ...
 
-    def __get_chains(self):
-        """
-        Internal method to initialize chain objects (proteins, dnas, rnas, ligands)
-        from the fold job arguments.
-        """
-        args = api.fold_get(session=self.session, job_id=self.job.job_id).args
-        assert args is not None and "sequences" in args
-        for chain in args["sequences"]:
-            assert isinstance(chain, dict)
-            for chain_type, chain_info in chain:
-                if chain_type == "protein":
-                    self._proteins = self._proteins or []
-                    protein = Protein(sequence=chain_info["sequence"])
-                    protein.chain_id = chain_info.get("id")
-                    protein.msa = chain_info.get("msa_id")
-                    self._proteins.append(protein)
-                elif chain_type == "dna":
-                    self._dnas = self._dnas or []
-                    dna = DNA(sequence=chain_info["sequence"])
-                    dna.chain_id = chain_info.get("id")
-                    self._dnas.append(dna)
-                elif chain_type == "rna":
-                    self._rnas = self._rnas or []
-                    rna = RNA(sequence=chain_info["sequence"])
-                    rna.chain_id = chain_info.get("id")
-                    self._rnas.append(rna)
-                elif chain_type == "ligand":
-                    self._ligands = self._ligands or []
-                    ligand = Ligand(
-                        chain_id=chain_info.get("id"),
-                        ccd=chain_info.get("ccd"),
-                        smiles=chain_info.get("smiles"),
-                    )
-                    self._ligands.append(ligand)
-                else:
-                    pass
-        self._initialized = True
+    # NOTE: ensure we only return the complex without the tuple
+    def stream(
+        self,
+        key: (
+            Literal[
+                "pae",
+                "pde",
+                "plddt",
+                "ptm",
+                "confidence",
+                "affinity",
+                "score",
+                "metrics",
+            ]
+            | None
+        ) = None,
+    ) -> "Iterator[Structure] | Iterator[np.ndarray] | Iterator[pd.DataFrame] | Iterator[BoltzAffinity] | Iterator[list[BoltzConfidence]]":
+        for _, v in super().stream(key=key):
+            yield v  # type: ignore - homogenous
 
-    @property
-    def proteins(self) -> list[Protein] | None:
-        """
-        Get the proteins submitted for the fold request.
+    @typing.overload
+    def get(
+        self,
+        verbose: bool = False,
+        key: None = None,
+    ) -> list[Structure]: ...
 
-        Returns
-        -------
-        list[Protein] or None
-            List of Protein objects or None.
-        """
-        if not self._initialized:
-            self.__get_chains()
-        return self._proteins
+    @typing.overload
+    def get(
+        self,
+        verbose: bool = False,
+        key: (
+            Literal[
+                "pae",
+                "pde",
+                "plddt",
+                "ptm",
+            ]
+            | None
+        ) = None,
+    ) -> list[np.ndarray]: ...
 
-    @property
-    def dnas(self) -> list[DNA] | None:
-        """
-        Get the DNAs submitted for the fold request.
+    @typing.overload
+    def get(
+        self,
+        verbose: bool = False,
+        key: Literal["affinity"] | None = None,
+    ) -> "list[BoltzAffinity]": ...
 
-        Returns
-        -------
-        list[DNA] or None
-            List of DNA objects or None.
-        """
-        if not self._initialized:
-            self.__get_chains()
-        return self._dnas
+    @typing.overload
+    def get(
+        self,
+        verbose: bool = False,
+        key: Literal["confidence"] | None = None,
+    ) -> "list[list[BoltzConfidence]]": ...
 
-    @property
-    def rnas(self) -> list[RNA] | None:
+    @typing.overload
+    def get(
+        self,
+        verbose: bool = False,
+        key: (
+            Literal[
+                "score",
+                "metrics",
+            ]
+            | None
+        ) = None,
+    ) -> list[pd.DataFrame]: ...
+
+    def get(
+        self,
+        verbose: bool = False,
+        key: (
+            Literal[
+                "pae",
+                "pde",
+                "plddt",
+                "ptm",
+                "confidence",
+                "affinity",
+                "score",
+                "metrics",
+            ]
+            | None
+        ) = None,
+    ) -> "list[Structure] | list[np.ndarray] | list[pd.DataFrame] | list[list[BoltzConfidence]] | list[BoltzAffinity]":
+        return super().get(verbose, key=key)  # type: ignore - homogenous
+
+    def get_pae(self) -> list[np.ndarray]:
         """
-        Get the RNAs submitted for the fold request.
+        Get the Predicted Aligned Error (PAE) matrix for all outputs.
 
         Returns
         -------
-        list[RNA] or None
-            List of RNA objects or None.
-        """
-        if not self._initialized:
-            self.__get_chains()
-        return self._rnas
-
-    @property
-    def ligands(self) -> list[Ligand] | None:
-        """
-        Get the ligands submitted for the fold request.
-
-        Returns
-        -------
-        list[Ligand] or None
-            List of Ligand objects or None.
-        """
-        if not self._initialized:
-            self.__get_chains()
-        return self._ligands
-
-    @property
-    def pae(self) -> np.ndarray:
-        """
-        Get the Predicted Aligned Error (PAE) matrix.
-
-        Returns
-        -------
-        np.ndarray
+        list[np.ndarray]
             PAE matrix.
 
         Raises
@@ -382,24 +493,28 @@ class FoldComplexResultFuture(Future):
         AttributeError
             If PAE is not supported for the model.
         """
-        if self.model_id not in {"boltz-1", "boltz-1x", "boltz-2"}:
-            raise AttributeError("pae not supported for non-Boltz model")
+        if self.model_id not in {
+            "boltz-1",
+            "boltz-1x",
+            "boltz-2",
+            "alphafold2",
+            "esmfold",
+        }:
+            raise AttributeError("pae not supported for this model")
+        if not hasattr(self, "_pae"):
+            self._pae = None
         if self._pae is None:
-            pae = api.fold_get_complex_extra_result(
-                session=self.session, job_id=self.job.job_id, key="pae"
-            )
-            assert isinstance(pae, np.ndarray)
+            pae = self.get(key="pae")
             self._pae = pae
-        return self._pae
+        return [readonly_view(x) for x in self._pae]
 
-    @property
-    def pde(self) -> np.ndarray:
+    def get_pde(self) -> list[np.ndarray]:
         """
         Get the Predicted Distance Error (PDE) matrix.
 
         Returns
         -------
-        np.ndarray
+        list[np.ndarray]
             PDE matrix.
 
         Raises
@@ -408,23 +523,21 @@ class FoldComplexResultFuture(Future):
             If PDE is not supported for the model.
         """
         if self.model_id not in {"boltz-1", "boltz-1x", "boltz-2"}:
-            raise AttributeError("pde not supported for non-Boltz model")
+            raise AttributeError("pde not supported for this model")
+        if not hasattr(self, "_pde"):
+            self._pde = None
         if self._pde is None:
-            pde = api.fold_get_complex_extra_result(
-                session=self.session, job_id=self.job.job_id, key="pde"
-            )
-            assert isinstance(pde, np.ndarray)
+            pde = self.get(key="pde")
             self._pde = pde
-        return self._pde
+        return [readonly_view(x) for x in self._pde]
 
-    @property
-    def plddt(self) -> np.ndarray:
+    def get_plddt(self) -> list[np.ndarray]:
         """
         Get the Predicted Local Distance Difference Test (pLDDT) scores.
 
         Returns
         -------
-        np.ndarray
+        list[np.ndarray]
             pLDDT scores.
 
         Raises
@@ -432,24 +545,45 @@ class FoldComplexResultFuture(Future):
         AttributeError
             If pLDDT is not supported for the model.
         """
-        if self.model_id not in {"boltz-1", "boltz-1x", "boltz-2"}:
-            raise AttributeError("plddt not supported for non-Boltz model")
+        if self.model_id not in {"boltz-1", "boltz-1x", "boltz-2", "alphafold2"}:
+            raise AttributeError("plddt not supported for this model")
+        if not hasattr(self, "_plddt"):
+            self._plddt = None
         if self._plddt is None:
-            plddt = api.fold_get_complex_extra_result(
-                session=self.session, job_id=self.job.job_id, key="plddt"
-            )
-            assert isinstance(plddt, np.ndarray)
+            plddt = self.get(key="plddt")
             self._plddt = plddt
-        return self._plddt
+        return [readonly_view(x) for x in self._plddt]
 
-    @property
-    def score(self) -> pd.DataFrame:
+    def get_ptm(self) -> list[np.ndarray]:
+        """
+        Get the Predicted TM (pTM) scores.
+
+        Returns
+        -------
+        list[np.ndarray]
+            pTM scores.
+
+        Raises
+        ------
+        AttributeError
+            If pTM is not supported for the model.
+        """
+        if self.model_id not in {"alphafold2"}:
+            raise AttributeError("ptm not supported for this model")
+        if not hasattr(self, "_ptm"):
+            self._ptm = None
+        if self._ptm is None:
+            ptm = self.get(key="ptm")
+            self._ptm = ptm
+        return [readonly_view(x) for x in self._ptm]
+
+    def get_score(self) -> list[pd.DataFrame]:
         """
         Get the predicted scores.
 
         Returns
         -------
-        pd.DataFrame
+        list[pd.DataFrame]
             Structure prediction scores.
 
         Raises
@@ -458,23 +592,21 @@ class FoldComplexResultFuture(Future):
             If score is not supported for the model.
         """
         if self.model_id not in {"rosettafold-3"}:
-            raise AttributeError("score not supported for non-RosettaFold model")
+            raise AttributeError("score not supported for this model")
+        if not hasattr(self, "_score"):
+            self._score = None
         if self._score is None:
-            score = api.fold_get_complex_extra_result(
-                session=self.session, job_id=self.job.job_id, key="score"
-            )
-            assert isinstance(score, pd.DataFrame)
+            score = self.get(key="score")
             self._score = score
-        return self._score
+        return copy.deepcopy(self._score)
 
-    @property
-    def metrics(self) -> pd.DataFrame:
+    def get_metrics(self) -> list[pd.DataFrame]:
         """
         Get the predicted metrics.
 
         Returns
         -------
-        pd.DataFrame
+        list[pd.DataFrame]
             Structure prediction metrics.
 
         Raises
@@ -483,17 +615,15 @@ class FoldComplexResultFuture(Future):
             If metrics is not supported for the model.
         """
         if self.model_id not in {"rosettafold-3"}:
-            raise AttributeError("metrics not supported for non-RosettaFold model")
+            raise AttributeError("metrics not supported for this model")
+        if not hasattr(self, "_metrics"):
+            self._metrics = None
         if self._metrics is None:
-            metrics = api.fold_get_complex_extra_result(
-                session=self.session, job_id=self.job.job_id, key="metrics"
-            )
-            assert isinstance(metrics, pd.DataFrame)
+            metrics = self.get(key="metrics")
             self._metrics = metrics
-        return self._metrics
+        return copy.deepcopy(self._metrics)
 
-    @property
-    def confidence(self) -> list["BoltzConfidence"]:
+    def get_confidence(self) -> list[list["BoltzConfidence"]]:
         """
         Retrieve the confidences of the structure prediction.
 
@@ -503,30 +633,24 @@ class FoldComplexResultFuture(Future):
 
         Returns
         -------
-        list[BoltzConfidence]
-            List of BoltzConfidence objects.
+        list[list[BoltzConfidence]]
+            List of list of BoltzConfidence objects.
 
         Raises
         ------
         AttributeError
             If confidence is not supported for the model.
         """
-        from .boltz import BoltzConfidence
-
         if self.model_id not in {"boltz-1", "boltz-1x", "boltz-2"}:
             raise AttributeError("confidence not supported for non-Boltz model")
+        if not hasattr(self, "_confidence"):
+            self._confidence = None
         if self._confidence is None:
-            confidence = api.fold_get_complex_extra_result(
-                session=self.session, job_id=self.job.job_id, key="confidence"
-            )
-            assert isinstance(confidence, list)
-            self._confidence = TypeAdapter(list[BoltzConfidence]).validate_python(
-                confidence
-            )
-        return self._confidence
+            confidence = self.get(key="confidence")
+            self._confidence = confidence
+        return copy.deepcopy(self._confidence)
 
-    @property
-    def affinity(self) -> "BoltzAffinity":
+    def get_affinity(self) -> list["BoltzAffinity"]:
         """
         Retrieve the predicted binding affinities.
 
@@ -536,7 +660,7 @@ class FoldComplexResultFuture(Future):
 
         Returns
         -------
-        BoltzAffinity
+        list[list[BoltzAffinity]]
             BoltzAffinity object containing the predicted affinities.
 
         Raises
@@ -548,44 +672,9 @@ class FoldComplexResultFuture(Future):
 
         if self.model_id not in {"boltz-1", "boltz-1x", "boltz-2"}:
             raise AttributeError("affinity not supported for non-Boltz model")
+        if not hasattr(self, "_affinity"):
+            self._affinity = None
         if self._affinity is None:
-            affinity = api.fold_get_complex_extra_result(
-                session=self.session, job_id=self.job.job_id, key="affinity"
-            )
-            assert isinstance(affinity, dict)
-            self._affinity = BoltzAffinity.parse_obj_with_models(affinity)
-        return self._affinity
-
-    @property
-    def id(self):
-        """
-        Get the ID of the fold request.
-
-        Returns
-        -------
-        str
-            Fold job ID.
-        """
-        return self.job.job_id
-
-    def get(self, format: Literal["pdb", "mmcif"] = "mmcif", verbose=False) -> bytes:
-        """
-        Retrieve the fold results as a single bytestring.
-
-        Defaults to mmCIF for complexes. Additional predicted properties like plddt and pae should be accessed from their respective properties, i.e. `.plddt` and `.pae`.
-
-        Parameters
-        ----------
-        format : {'pdb', 'mmcif'}, optional
-            Output format. Default is 'mmcif'.
-        verbose : bool, optional
-            If True, print verbose output. Default is False.
-
-        Returns
-        -------
-        bytes
-            Fold result as a bytestring.
-        """
-        return api.fold_get_complex_result(
-            session=self.session, job_id=self.id, format=format
-        )
+            affinity = self.get(key="affinity")
+            self._affinity = affinity
+        return copy.deepcopy(self._affinity)

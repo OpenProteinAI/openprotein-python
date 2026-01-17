@@ -4,7 +4,7 @@ from typing import Literal, Sequence
 from pydantic import BaseModel, Field
 
 from openprotein.jobs import Job, JobStatus, JobType
-from openprotein.protein import Protein
+from openprotein.molecules import Protein
 
 Context = Sequence[bytes | str | Protein]
 

@@ -87,7 +87,7 @@ def test_fit_svd(mock_get, svd_api: SVDAPI, mock_session: MagicMock):
     with patch(
         "openprotein.svd.api.svd_fit_post", return_value=mock_fit_job
     ) as mock_fit_post:
-        result = svd_api.fit_svd(model_id=model_id, sequences=sequences)
+        result = svd_api.fit_svd(model=model_id, sequences=sequences)
         mock_embeddings_api.get_model.assert_called_once_with(model_id)
         mock_fit_post.assert_called_once()
         assert isinstance(result, SVDModel)

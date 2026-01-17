@@ -102,7 +102,7 @@ def test_poet2_model_embed():
     mock_session = MagicMock()
     # Configure the 'prompt' attribute to be a mock of PromptAPI
     mock_session.prompt = MagicMock(spec=PromptAPI)
-    mock_session.prompt.create_query.return_value.id = "query-456"
+    mock_session.prompt._resolve_query.return_value = "query-456"
 
     with patch("openprotein.embeddings.api.get_model", return_value=MagicMock()):
         model = PoET2Model(session=mock_session, model_id="poet-2")

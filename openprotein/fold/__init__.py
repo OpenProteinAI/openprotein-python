@@ -19,5 +19,5 @@ from .boltz import (
     BoltzProperty,
 )
 from .rosettafold3 import RosettaFold3Model
-from .future import FoldResultFuture, FoldComplexResultFuture
+from .future import FoldResultFuture
 from .fold import FoldAPI

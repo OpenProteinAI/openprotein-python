@@ -1,20 +1,19 @@
 """Community-based Boltz models for complex structure prediction with ligands/dna/rna."""
 
 import warnings
-from logging import warning
-from typing import Any
+from typing import Sequence
 
 from pydantic import BaseModel, Field, TypeAdapter, model_validator
 
 from openprotein.align import AlignAPI, MSAFuture
 from openprotein.base import APISession
-from openprotein.chains import DNA, RNA, Ligand
 from openprotein.common import ModelMetadata
-from openprotein.protein import Protein
+from openprotein.fold.common import normalize_inputs, serialize_input
+from openprotein.molecules import Complex, Ligand, Protein
 
 from . import api
 from .complex import id_generator
-from .future import FoldComplexResultFuture
+from .future import FoldResultFuture
 from .models import FoldModel
 
 
@@ -35,10 +34,7 @@ class BoltzModel(FoldModel):
 
     def fold(
         self,
-        proteins: list[Protein] | MSAFuture | None = None,
-        dnas: list[DNA] | None = None,
-        rnas: list[RNA] | None = None,
-        ligands: list[Ligand] | None = None,
+        sequences: Sequence[Complex | Protein | str | bytes] | MSAFuture,
         diffusion_samples: int = 1,
         num_recycles: int = 3,
         num_steps: int = 200,
@@ -46,20 +42,14 @@ class BoltzModel(FoldModel):
         use_potentials: bool = False,
         constraints: list[dict] | None = None,
         **kwargs,
-    ) -> FoldComplexResultFuture:
+    ) -> FoldResultFuture:
         """
         Request structure prediction with boltz model.
 
         Parameters
         ----------
-        proteins : List[Protein] | MSAFuture | None
+        sequences : Sequence[Complex | Protein | str | bytes] | MSAFuture
             List of protein sequences to include in folded output. `Protein` objects must be tagged with an `msa`, which can be a `Protein.single_sequence_mode` for single sequence mode. Alternatively, supply an `MSAFuture` to use all query sequences as a multimer.
-        dna : List[DNA] | None
-            List of DNA sequences to include in folded output.
-        rna : List[RNA] | None
-            List of RNA sequences to include in folded output.
-        ligands : List[Ligand] | None
-            List of ligands to include in folded output.
         diffusion_samples: int
             Number of diffusion samples to use
         num_recycles : int
@@ -73,7 +63,7 @@ class BoltzModel(FoldModel):
 
         Returns
         -------
-        FoldComplexResultFuture
+        FoldResultFuture
             Future for the folding complex result.
         """
         # migrate old parameter
@@ -90,116 +80,38 @@ class BoltzModel(FoldModel):
         # validate constraints
         if constraints is not None:
             TypeAdapter(list[BoltzConstraint]).validate_python(constraints)
-        # collate the id's used
-        used_ids = []
-        if isinstance(proteins, list):
-            for protein in proteins:
-                if isinstance(protein, Protein) and protein.chain_id is not None:
-                    if isinstance(protein.chain_id, str):
-                        used_ids.append(protein.chain_id)
-                    elif isinstance(protein.chain_id, list):
-                        used_ids.extend(protein.chain_id)
-        for dna in dnas or []:
-            if isinstance(dna.chain_id, str):
-                used_ids.append(dna.chain_id)
-            elif isinstance(dna.chain_id, list):
-                used_ids.extend(dna.chain_id)
-        for rna in rnas or []:
-            if isinstance(rna.chain_id, str):
-                used_ids.append(rna.chain_id)
-            elif isinstance(rna.chain_id, list):
-                used_ids.extend(rna.chain_id)
-        for ligand in ligands or []:
-            if isinstance(ligand.chain_id, str):
-                used_ids.append(ligand.chain_id)
-            elif isinstance(ligand.chain_id, list):
-                used_ids.extend(ligand.chain_id)
-        id_gen = id_generator(used_ids)
-        # build the proteins from msa
-        if isinstance(proteins, MSAFuture):
+
+        # build the normalized_models from msa
+        if isinstance(sequences, MSAFuture):
+            id_gen = id_generator()
             align_api = getattr(self.session, "align", None)
             assert isinstance(align_api, AlignAPI)
-            msa = proteins  # rename
-            proteins = []  # convert back to list of proteins
+            msa = sequences  # rename
             seed = align_api.get_seed(job_id=msa.job.job_id)
-            query_seqs_cardinality: dict[str, int] = dict()
+            _proteins: dict[str, Protein] = {}
             for seq in seed.split(":"):
-                query_seqs_cardinality[seq] = query_seqs_cardinality.get(seq, 0) + 1
-            for seq, card in query_seqs_cardinality.items():
                 protein = Protein(sequence=seq)
-                if card == 1:
-                    id = next(id_gen)
-                else:
-                    id = [next(id_gen) for _ in range(card)]
-                protein.chain_id = id
-                protein.msa = msa
-                proteins.append(protein)
+                id = next(id_gen)
+                protein.msa = msa.id
+                _proteins[id] = protein
+            normalized_complexes = [Complex(chains=_proteins)]
 
-        # build the sequences input
-        sequences: list[dict[str, Any]] = []
-        for protein in proteins or []:
-            # check the msa
-            msa = protein.msa
-            if msa is None:
-                raise ValueError(
-                    "Expected all protein sequences to have `.msa` set with an `MSAFuture` or `Protein.single_sequence_mode` for single sequence mode."
-                )
-            # convert to msa id or null for single sequence mode
-            msa_id = (
-                msa
-                if isinstance(msa, str)
-                else msa.id if isinstance(msa, MSAFuture) else None
-            )
-            # add the protein in the expected boltz format
-            p = {
-                "id": protein.chain_id or next(id_gen),
-                "msa_id": msa_id,
-                "sequence": protein.sequence.decode(),
-            }
-            if protein.cyclic:
-                p["cyclic"] = protein.cyclic
-            sequences.append({"protein": p})
-        for dna in dnas or []:
-            d = {
-                "id": dna.chain_id or next(id_gen),
-                "sequence": dna.sequence,
-            }
-            if dna.cyclic:
-                d["cyclic"] = dna.cyclic
-            sequences.append(
-                {
-                    "dna": d,
-                }
-            )
-        for rna in rnas or []:
-            r = {
-                "id": rna.chain_id or next(id_gen),
-                "sequence": rna.sequence,
-            }
-            if rna.cyclic:
-                r["cyclic"] = rna.cyclic
-            sequences.append(
-                {
-                    "rna": r,
-                }
-            )
-        for ligand in ligands or []:
-            ligand_: dict = {"id": ligand.chain_id or next(id_gen)}
-            if ligand.ccd:
-                ligand_["ccd"] = ligand.ccd
-            if ligand.smiles:
-                ligand_["smiles"] = ligand.smiles
-            sequences.append({"ligand": ligand_})
+        else:
+            normalized_complexes = normalize_inputs(sequences)
 
-        if len(sequences) == 0:
-            raise ValueError("Expected proteins, dna, rna or ligands")
+        _complexes = serialize_input(self.session, normalized_complexes, needs_msa=True)
 
-        return FoldComplexResultFuture.create(
+        if len(_complexes) == 0:
+            raise TypeError(
+                "Expected either non-empty list of proteins/models/sequences or MSAFuture"
+            )
+
+        return FoldResultFuture(
             session=self.session,
             job=api.fold_models_post(
                 session=self.session,
                 model_id=self.model_id,
-                sequences=sequences,
+                sequences=_complexes,
                 diffusion_samples=diffusion_samples,
                 num_recycles=num_recycles,
                 num_steps=num_steps,
@@ -208,11 +120,7 @@ class BoltzModel(FoldModel):
                 use_potentials=use_potentials,
                 **kwargs,
             ),
-            model_id=self.model_id,
-            proteins=proteins,
-            dnas=dnas,
-            rnas=rnas,
-            ligands=ligands,
+            complexes=normalized_complexes,
         )
 
 
@@ -225,10 +133,7 @@ class Boltz2Model(BoltzModel, FoldModel):
 
     def fold(
         self,
-        proteins: list[Protein] | MSAFuture | None = None,
-        dnas: list[DNA] | None = None,
-        rnas: list[RNA] | None = None,
-        ligands: list[Ligand] | None = None,
+        sequences: Sequence[Complex | Protein | str | bytes] | MSAFuture,
         diffusion_samples: int = 1,
         num_recycles: int = 3,
         num_steps: int = 200,
@@ -238,20 +143,14 @@ class Boltz2Model(BoltzModel, FoldModel):
         templates: list[dict] | None = None,
         properties: list[dict] | None = None,
         method: str | None = None,
-    ) -> FoldComplexResultFuture:
+    ) -> FoldResultFuture:
         """
         Request structure prediction with Boltz-2 model.
 
         Parameters
         ----------
-        proteins : List[Protein] | MSAFuture | None
+        sequences : Sequence[Complex | Protein | str | bytes] | MSAFuture
             List of protein sequences to include in folded output. `Protein` objects must be tagged with an `msa`, which can be a `Protein.single_sequence_mode` for single sequence mode. Alternatively, supply an `MSAFuture` to use all query sequences as a multimer.
-        dna : List[DNA] | None
-            List of DNA sequences to include in folded output.
-        rna : List[RNA] | None
-            List of RNA sequences to include in folded output.
-        ligands : List[Ligand] | None
-            List of ligands to include in folded output.
         diffusion_samples: int
             Number of diffusion samples to use
         num_recycles : int
@@ -280,7 +179,7 @@ class Boltz2Model(BoltzModel, FoldModel):
 
         Returns
         -------
-        FoldComplexResultFuture
+        FoldResultFuture
             Future for the folding result.
         """
 
@@ -292,14 +191,13 @@ class Boltz2Model(BoltzModel, FoldModel):
             props = TypeAdapter(list[BoltzProperty]).validate_python(properties)
             # Only allow affinity for ligands, and check binder refers to a ligand chain_id (str, not list)
             ligand_chain_ids = set()
-            if ligands:
-                for ligand in ligands:
-                    if isinstance(ligand.chain_id, str):
-                        ligand_chain_ids.add(ligand.chain_id)
-                    elif isinstance(ligand.chain_id, list):
-                        raise ValueError(
-                            f"Ligand {ligand} has multiple chain_ids ({ligand.chain_id}); only single (str) chain_id allowed for affinity."
-                        )
+            if isinstance(sequences, list):
+                for protein in sequences:
+                    if isinstance(protein, Complex):
+                        complex = protein
+                        for id, chain in complex.get_chains().items():
+                            if isinstance(chain, Ligand):
+                                ligand_chain_ids.add(id)
             for prop in props:
                 if hasattr(prop, "affinity") and prop.affinity is not None:
                     binder_id = prop.affinity.binder
@@ -309,10 +207,7 @@ class Boltz2Model(BoltzModel, FoldModel):
                         )
 
         return super().fold(
-            proteins=proteins,
-            dnas=dnas,
-            rnas=rnas,
-            ligands=ligands,
+            sequences=sequences,
             diffusion_samples=diffusion_samples,
             num_recycles=num_recycles,
             num_steps=num_steps,
@@ -325,69 +220,6 @@ class Boltz2Model(BoltzModel, FoldModel):
         )
 
 
-class Boltz1xModel(BoltzModel, FoldModel):
-    """
-    Class providing inference endpoints for Boltz-1x open-source structure prediction model, which adds the use of inference potentials to improve performance.
-    """
-
-    model_id = "boltz-1x"
-
-    def fold(
-        self,
-        proteins: list[Protein] | MSAFuture | None = None,
-        dnas: list[DNA] | None = None,
-        rnas: list[RNA] | None = None,
-        ligands: list[Ligand] | None = None,
-        diffusion_samples: int = 1,
-        num_recycles: int = 3,
-        num_steps: int = 200,
-        step_scale: float = 1.638,
-        constraints: list[dict] | None = None,
-    ) -> FoldComplexResultFuture:
-        """
-        Request structure prediction with Boltz-1x model. Uses potentials with Boltz-1 model.
-
-        Parameters
-        ----------
-        proteins : List[Protein] | MSAFuture | None
-            List of protein sequences to include in folded output. `Protein` objects must be tagged with an `msa`, which can be a `Protein.single_sequence_mode` for single sequence mode. Alternatively, supply an `MSAFuture` to use all query sequences as a multimer.
-        dna : List[DNA] | None
-            List of DNA sequences to include in folded output.
-        rna : List[RNA] | None
-            List of RNA sequences to include in folded output.
-        ligands : List[Ligand] | None
-            List of ligands to include in folded output.
-        diffusion_samples: int
-            Number of diffusion samples to use
-        num_recycles : int
-            Number of recycling steps to use
-        num_steps : int
-            Number of sampling steps to use
-        step_scale : float
-            Scaling factor for diffusion steps.
-        constraints : Optional[List[dict]]
-            List of constraints.
-
-        Returns
-        -------
-        FoldComplexResultFuture
-            Future for the folding complex result.
-        """
-
-        return super().fold(
-            proteins=proteins,
-            dnas=dnas,
-            rnas=rnas,
-            ligands=ligands,
-            diffusion_samples=diffusion_samples,
-            num_recycles=num_recycles,
-            num_steps=num_steps,
-            step_scale=step_scale,
-            use_potentials=True,
-            constraints=constraints,
-        )
-
-
 class Boltz1Model(BoltzModel, FoldModel):
     """
     Class providing inference endpoints for Boltz-1 open-source structure prediction model.
@@ -397,30 +229,21 @@ class Boltz1Model(BoltzModel, FoldModel):
 
     def fold(
         self,
-        proteins: list[Protein] | MSAFuture | None = None,
-        dnas: list[DNA] | None = None,
-        rnas: list[RNA] | None = None,
-        ligands: list[Ligand] | None = None,
+        sequences: Sequence[Complex | Protein | str | bytes] | MSAFuture,
         diffusion_samples: int = 1,
         num_recycles: int = 3,
         num_steps: int = 200,
         step_scale: float = 1.638,
         use_potentials: bool = False,
         constraints: list[dict] | None = None,
-    ) -> FoldComplexResultFuture:
+    ) -> FoldResultFuture:
         """
         Request structure prediction with Boltz-1 model.
 
         Parameters
         ----------
-        proteins : List[Protein] | MSAFuture | None
+        sequences : Sequence[Complex | Protein | str | bytes] | MSAFuture
             List of protein sequences to include in folded output. `Protein` objects must be tagged with an `msa`, which can be a `Protein.single_sequence_mode` for single sequence mode. Alternatively, supply an `MSAFuture` to use all query sequences as a multimer.
-        dna : List[DNA] | None
-            List of DNA sequences to include in folded output.
-        rna : List[RNA] | None
-            List of RNA sequences to include in folded output.
-        ligands : List[Ligand] | None
-            List of ligands to include in folded output.
         diffusion_samples: int
             Number of diffusion samples to use
         num_recycles : int
@@ -436,20 +259,85 @@ class Boltz1Model(BoltzModel, FoldModel):
 
         Returns
         -------
-        FoldComplexResultFuture
+        FoldResultFuture
             Future for the folding complex result.
         """
+        if constraints is not None:
+            pocket_constraints = []
+            for constraint in constraints:
+                if "contact" in constraint:
+                    raise ValueError("Boltz-1(x) doesn't support contact constraints")
+
+                if "pocket" in constraint:
+                    pocket_constraint = constraint["pocket"]
+                    if len(pocket_constraints) > 0:
+                        msg = f"Only one pocket binders is supported in Boltz-1!"
+                        raise ValueError(msg)
+
+                    max_distance = constraint["pocket"].get("max_distance", 6.0)
+                    if max_distance != 6.0:
+                        msg = f"Max distance != 6.0 is not supported in Boltz-1!"
+                        raise ValueError(msg)
+                    pocket_constraints.append(pocket_constraint)
 
         return super().fold(
-            proteins=proteins,
-            dnas=dnas,
-            rnas=rnas,
-            ligands=ligands,
+            sequences=sequences,
             diffusion_samples=diffusion_samples,
             num_recycles=num_recycles,
             num_steps=num_steps,
             step_scale=step_scale,
             use_potentials=use_potentials,
+            constraints=constraints,
+        )
+
+
+class Boltz1xModel(Boltz1Model, BoltzModel, FoldModel):
+    """
+    Class providing inference endpoints for Boltz-1x open-source structure prediction model, which adds the use of inference potentials to improve performance.
+    """
+
+    model_id = "boltz-1x"
+
+    def fold(
+        self,
+        sequences: Sequence[Complex | Protein | str | bytes] | MSAFuture,
+        diffusion_samples: int = 1,
+        num_recycles: int = 3,
+        num_steps: int = 200,
+        step_scale: float = 1.638,
+        constraints: list[dict] | None = None,
+    ) -> FoldResultFuture:
+        """
+        Request structure prediction with Boltz-1x model. Uses potentials with Boltz-1 model.
+
+        Parameters
+        ----------
+        sequences : Sequence[Complex | Protein | str | bytes] | MSAFuture
+            List of protein sequences to include in folded output. `Protein` objects must be tagged with an `msa`, which can be a `Protein.single_sequence_mode` for single sequence mode. Alternatively, supply an `MSAFuture` to use all query sequences as a multimer.
+        diffusion_samples: int
+            Number of diffusion samples to use
+        num_recycles : int
+            Number of recycling steps to use
+        num_steps : int
+            Number of sampling steps to use
+        step_scale : float
+            Scaling factor for diffusion steps.
+        constraints : Optional[List[dict]]
+            List of constraints.
+
+        Returns
+        -------
+        FoldResultFuture
+            Future for the folding complex result.
+        """
+
+        return super().fold(
+            sequences=sequences,
+            diffusion_samples=diffusion_samples,
+            num_recycles=num_recycles,
+            num_steps=num_steps,
+            step_scale=step_scale,
+            use_potentials=True,
             constraints=constraints,
         )
 
@@ -618,28 +506,13 @@ class BoltzAffinity(BaseModel):
         Predicted binding affinity from the ensemble model.
     affinity_probability_binary : float
         Predicted binding likelihood from the ensemble model.
-    per_model : dict of str to float
-        Dictionary containing predictions from each individual model in the ensemble.
-        Keys are of the form 'affinity_pred_valueN' and 'affinity_probability_binaryN',
+    **kwargs:
+        Extra keys of the form 'affinity_pred_valueN' and 'affinity_probability_binaryN',
         where N is the model index (e.g., 1, 2, 3, ...).
-
-    Notes
-    -----
-    Use the `parse_obj_with_models` class method to construct this object from a raw output
-    dictionary, which will automatically separate ensemble-level and per-model predictions.
     """
 
     affinity_pred_value: float
     affinity_probability_binary: float
-    # Catch all other per-model fields
-    per_model: dict[str, float] = Field(default_factory=dict)
 
-    @classmethod
-    def parse_obj_with_models(cls, obj: dict):
-        # Extract fixed fields
-        fixed = {
-            "affinity_pred_value": obj.pop("affinity_pred_value"),
-            "affinity_probability_binary": obj.pop("affinity_probability_binary"),
-        }
-        # Everything else goes into per_model
-        return cls(**fixed, per_model=obj)
+    class Config:
+        extra = "allow"  # Allow extra fields
