@@ -15,7 +15,13 @@
         pkgs = nixpkgs.legacyPackages.${system};
       in
       {
-        devShells.default = pkgs.mkShell { packages = [ pkgs.bashInteractive ]; };
+        devShells.default = pkgs.mkShell {
+          packages = [ pkgs.bashInteractive ];
+          shellHook = ''
+            pixi i -e dev
+            eval $(pixi shell-hook -e dev)
+          '';
+        };
       }
     );
 }

@@ -156,7 +156,7 @@ class Protein:
         if isinstance(idx, int):
             idx = np.array([idx], dtype=int)
         elif isinstance(idx, slice):
-            idx = np.arange(idx.start or 0, idx.stop or len(self), idx.step or 1)
+            pass
         elif not isinstance(idx, np.ndarray):
             idx = np.fromiter(idx, dtype=int)
         new = Protein(
