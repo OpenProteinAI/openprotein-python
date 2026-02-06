@@ -150,6 +150,7 @@ class Protein:
 
     @property
     def templates(self) -> "Sequence[Protein | Complex | Template]":
+        """A list of templates for guiding the structure prediction of this protein."""
         return self._templates
 
     @templates.setter
