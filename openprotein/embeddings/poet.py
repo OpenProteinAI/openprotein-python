@@ -3,7 +3,7 @@
 from typing import TYPE_CHECKING
 
 from openprotein.base import APISession
-from openprotein.common import ModelMetadata, ReductionType
+from openprotein.common import ModelMetadata, Reduction, ReductionType
 from openprotein.data import AssayDataset, AssayMetadata
 from openprotein.prompt import Prompt
 
@@ -51,9 +51,9 @@ class PoETModel(EmbeddingModel):
 
     def embed(
         self,
-        sequences: list[bytes],
-        prompt: str | Prompt | None = None,
+        sequences: list[bytes] | list[str],
         reduction: ReductionType | None = ReductionType.MEAN,
+        prompt: str | Prompt | None = None,
         **kwargs,
     ) -> EmbeddingsResultFuture:
         """
@@ -74,6 +74,12 @@ class PoETModel(EmbeddingModel):
         -------
         EmbeddingsResultFuture
             Future object that returns the embeddings of the submitted sequences.
+
+            Note: The embeddings for PoET can have an extra first dimension if using ensemble
+            prompts, where the first dimension is the number of replicates in the ensemble
+            prompt. i.e. the shape is ``(N, L, D)`` if ``N`` > 1 else ``(L, D)`` where ``N`` is
+            the number of replicates in the prompt, ``L`` is the length of the sequence, ``D`` is
+            the dimensions of the ensemble.
         """
         if prompt is None:
             prompt_id = None
@@ -88,7 +94,7 @@ class PoETModel(EmbeddingModel):
 
     def logits(
         self,
-        sequences: list[bytes],
+        sequences: list[bytes] | list[str],
         prompt: str | Prompt | None = None,
         **kwargs,
     ) -> EmbeddingsResultFuture:
@@ -108,6 +114,12 @@ class PoETModel(EmbeddingModel):
         -------
         EmbeddingsResultFuture
             Future object that returns the logits of the submitted sequences.
+
+            Note: The logits for PoET can have an extra first dimension if using ensemble
+            prompts, where the first dimension is the number of replicates in the ensemble
+            prompt. i.e. the shape is ``(N, L, D)`` if ``N`` > 1 else ``(L, D)`` where ``N`` is
+            the number of replicates in the prompt, ``L`` is the length of the sequence, ``D`` is
+            the size of the vocabulary.
         """
         if prompt is None:
             prompt_id = None
@@ -317,11 +329,11 @@ class PoETModel(EmbeddingModel):
 
     def fit_svd(
         self,
-        prompt: str | Prompt | None = None,
         sequences: list[bytes] | list[str] | None = None,
-        assay: AssayDataset | None = None,
+        assay: AssayDataset | AssayMetadata | None = None,
         n_components: int = 1024,
-        reduction: ReductionType | None = None,
+        reduction: Reduction | ReductionType | None = None,
+        prompt: str | Prompt | None = None,
         **kwargs,
     ) -> "SVDModel":
         """
@@ -365,11 +377,11 @@ class PoETModel(EmbeddingModel):
 
     def fit_umap(
         self,
-        prompt: str | Prompt | None = None,
         sequences: list[bytes] | list[str] | None = None,
-        assay: AssayDataset | None = None,
+        assay: AssayDataset | AssayMetadata | None = None,
         n_components: int = 2,
-        reduction: ReductionType = ReductionType.MEAN,
+        reduction: Reduction | ReductionType = ReductionType.MEAN,
+        prompt: str | Prompt | None = None,
         **kwargs,
     ) -> "UMAPModel":
         """
@@ -413,8 +425,11 @@ class PoETModel(EmbeddingModel):
 
     def fit_gp(
         self,
-        assay: AssayMetadata | AssayDataset | str,
+        assay: AssayDataset | AssayMetadata | str,
         properties: list[str],
+        reduction: ReductionType,
+        name: str | None = None,
+        description: str | None = None,
         prompt: str | Prompt | None = None,
         **kwargs,
     ) -> "PredictorModel":
@@ -444,6 +459,9 @@ class PoETModel(EmbeddingModel):
         return super().fit_gp(
             assay=assay,
             properties=properties,
+            reduction=reduction,
+            name=name,
+            description=description,
             prompt_id=prompt_id,
             **kwargs,
         )

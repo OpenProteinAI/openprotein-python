@@ -1,7 +1,7 @@
 """Community-based Boltz models for complex structure prediction with ligands/dna/rna."""
 
 import warnings
-from typing import Sequence
+from typing import Mapping, Sequence, cast
 
 from pydantic import BaseModel, Field, TypeAdapter, model_validator
 
@@ -10,6 +10,8 @@ from openprotein.base import APISession
 from openprotein.common import ModelMetadata
 from openprotein.fold.common import normalize_inputs, serialize_input
 from openprotein.molecules import Complex, Ligand, Protein
+from openprotein.molecules.template import Template
+from openprotein.prompt import PromptAPI
 
 from . import api
 from .complex import id_generator
@@ -40,7 +42,7 @@ class BoltzModel(FoldModel):
         num_steps: int = 200,
         step_scale: float = 1.638,
         use_potentials: bool = False,
-        constraints: list[dict] | None = None,
+        constraints: Sequence[Mapping] | None = None,
         **kwargs,
     ) -> FoldResultFuture:
         """
@@ -83,19 +85,9 @@ class BoltzModel(FoldModel):
 
         # build the normalized_models from msa
         if isinstance(sequences, MSAFuture):
-            id_gen = id_generator()
-            align_api = getattr(self.session, "align", None)
-            assert isinstance(align_api, AlignAPI)
-            msa = sequences  # rename
-            seed = align_api.get_seed(job_id=msa.job.job_id)
-            _proteins: dict[str, Protein] = {}
-            for seq in seed.split(":"):
-                protein = Protein(sequence=seq)
-                id = next(id_gen)
-                protein.msa = msa.id
-                _proteins[id] = protein
-            normalized_complexes = [Complex(chains=_proteins)]
-
+            normalized_complexes = [
+                _msa_future_to_complex(session=self.session, msa=sequences)
+            ]
         else:
             normalized_complexes = normalize_inputs(sequences)
 
@@ -139,9 +131,9 @@ class Boltz2Model(BoltzModel, FoldModel):
         num_steps: int = 200,
         step_scale: float = 1.638,
         use_potentials: bool = False,
-        constraints: list[dict] | None = None,
-        templates: list[dict] | None = None,
-        properties: list[dict] | None = None,
+        constraints: Sequence[Mapping] | None = None,
+        templates: Sequence[Protein | Complex | Template] | None = None,
+        properties: Sequence[Mapping] | None = None,
         method: str | None = None,
     ) -> FoldResultFuture:
         """
@@ -163,7 +155,7 @@ class Boltz2Model(BoltzModel, FoldModel):
             Whether or not to use potentials.
         constraints : list[dict] | None = None
             List of constraints.
-        templates: list[dict] | None = None
+        templates: list[Protein | Complex | Template] | None = None
             List of templates to use for structure prediction.
         properties: list[dict] | None = None
             List of additional properties to predict. Should match the `BoltzProperties`
@@ -180,24 +172,98 @@ class Boltz2Model(BoltzModel, FoldModel):
         Returns
         -------
         FoldResultFuture
-            Future for the folding result.
+             Future for the folding result.
         """
+        prompt_api = getattr(self.session, "prompt", None)
+        assert isinstance(prompt_api, PromptAPI)
 
+        # validate templates
+        # mapping chain_id (to predict) to template
+        # needs to be consistent
+        templates_: list[Template] = []
+        if not isinstance(sequences, MSAFuture):
+            first_chain_id_to_template = {}
+            for batch_idx, seq in enumerate(sequences):
+                # validate templates and normalize to complex
+                if isinstance(seq, str) or isinstance(seq, bytes):
+                    seq = Protein(seq)
+                seq._assert_valid_templates()
+                if isinstance(seq, Protein):
+                    complex = Complex({"A": seq})
+                else:
+                    complex = seq
+                # resolve chain-level templates
+                for chain_id, protein in complex.get_proteins().items():
+                    # Verify same chain_id should have same templates
+                    if batch_idx == 0:
+                        first_chain_id_to_template[chain_id] = protein.templates
+                        for template in protein.templates:
+                            templates_.append(_to_template(template, chain_id=chain_id))
+                    elif first_chain_id_to_template[chain_id] != protein.templates:
+                        raise ValueError(
+                            "Expected same chain across batches to have the same templates"
+                        )
+                # resolve complex-level templates
+                if batch_idx == 0:
+                    first_templates = complex.templates
+                    for template in complex.templates:
+                        templates_.append(_to_template(template))
+                elif first_templates != complex.templates:
+                    raise ValueError(
+                        "Expected templates across complexes in batch to be the same"
+                    )
+        # method level argument
         if templates is not None:
-            raise ValueError("`templates` not yet supported!")
+            if isinstance(sequences, MSAFuture):
+                # need to convert to complex for template validation
+                sequences = [
+                    _msa_future_to_complex(session=self.session, msa=sequences)
+                ]
+            for template in templates:
+                template = _to_template(template)
+                # validate the template for all sequences before accepting it
+                for seq in sequences:
+                    if isinstance(seq, str) or isinstance(seq, bytes):
+                        seq = Protein(seq)
+                    template.validate_for_target(seq)
+                templates_.append(template)
+
+        # resolve list of Templates into expected dict arg
+        template_dicts: list[dict] = []
+        # track resolved queries to reduce network calls - use id() for identity-based caching
+        struct_id_to_query_id = {}
+
+        for template in templates_:
+            # Use id() for caching - only resolve each unique structure once
+            struct_id = id(template.template)
+            if struct_id not in struct_id_to_query_id:
+                struct_id_to_query_id[struct_id] = prompt_api._resolve_query(
+                    query=template.template
+                )
+
+            template_dict = {"query_id": struct_id_to_query_id[struct_id]}
+
+            if template.mapping is not None:
+                if isinstance(template.mapping, str):
+                    template_dict["chain_id"] = template.mapping
+                else:
+                    template_dict["chain_id"] = list(template.mapping.values())
+                    template_dict["template_id"] = list(template.mapping.keys())
+
+            template_dicts.append(template_dict)
 
         # validate properties
         if properties is not None:
             props = TypeAdapter(list[BoltzProperty]).validate_python(properties)
             # Only allow affinity for ligands, and check binder refers to a ligand chain_id (str, not list)
             ligand_chain_ids = set()
-            if isinstance(sequences, list):
+            if not isinstance(sequences, MSAFuture):
                 for protein in sequences:
                     if isinstance(protein, Complex):
                         complex = protein
-                        for id, chain in complex.get_chains().items():
+                        for chain_id, chain in complex.get_chains().items():
                             if isinstance(chain, Ligand):
-                                ligand_chain_ids.add(id)
+                                ligand_chain_ids.add(chain_id)
             for prop in props:
                 if hasattr(prop, "affinity") and prop.affinity is not None:
                     binder_id = prop.affinity.binder
@@ -214,7 +280,7 @@ class Boltz2Model(BoltzModel, FoldModel):
             step_scale=step_scale,
             use_potentials=use_potentials,
             constraints=constraints,
-            templates=templates,
+            templates=template_dicts or None,
             properties=properties,
             method=method,
         )
@@ -235,7 +301,7 @@ class Boltz1Model(BoltzModel, FoldModel):
         num_steps: int = 200,
         step_scale: float = 1.638,
         use_potentials: bool = False,
-        constraints: list[dict] | None = None,
+        constraints: Sequence[Mapping] | None = None,
     ) -> FoldResultFuture:
         """
         Request structure prediction with Boltz-1 model.
@@ -305,7 +371,7 @@ class Boltz1xModel(Boltz1Model, BoltzModel, FoldModel):
         num_recycles: int = 3,
         num_steps: int = 200,
         step_scale: float = 1.638,
-        constraints: list[dict] | None = None,
+        constraints: Sequence[Mapping] | None = None,
     ) -> FoldResultFuture:
         """
         Request structure prediction with Boltz-1x model. Uses potentials with Boltz-1 model.
@@ -516,3 +582,21 @@ class BoltzAffinity(BaseModel):
 
     class Config:
         extra = "allow"  # Allow extra fields
+
+
+def _msa_future_to_complex(session: APISession, msa: MSAFuture) -> Complex:
+    align_api = getattr(session, "align", None)
+    assert isinstance(align_api, AlignAPI)
+    seed = align_api.get_seed(job_id=msa.job.job_id)
+    proteins: dict[str, Protein] = {}
+    for chain_id, seq in zip(id_generator(), seed.split(":")):
+        protein = Protein(sequence=seq)
+        protein.msa = msa.id
+        proteins[chain_id] = protein
+    return Complex(chains=proteins)
+
+
+def _to_template(obj, chain_id: str | None = None):
+    if not isinstance(obj, Template):
+        obj = Template(template=obj, mapping=chain_id)
+    return obj

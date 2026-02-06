@@ -86,6 +86,12 @@ class PoET2Model(PoETModel, EmbeddingModel):
         -------
         EmbeddingsResultFuture
             A future object that returns the embeddings of the submitted sequences.
+
+            Note: The embeddings for PoET can have an extra first dimension if using ensemble
+            prompts, where the first dimension is the number of replicates in the ensemble
+            prompt. i.e. the shape is ``(N, L, D)`` if ``N`` > 1 else ``(L, D)`` where ``N`` is
+            the number of replicates in the prompt, ``L`` is the length of the sequence, ``D`` is
+            the dimensions of the ensemble.
         """
         prompt_api = getattr(self.session, "prompt", None)
         assert isinstance(prompt_api, PromptAPI)
@@ -127,6 +133,12 @@ class PoET2Model(PoETModel, EmbeddingModel):
         -------
         EmbeddingsResultFuture
             A future object that returns the logits of the submitted sequences.
+
+            Note: The logits for PoET can have an extra first dimension if using ensemble
+            prompts, where the first dimension is the number of replicates in the ensemble
+            prompt. i.e. the shape is ``(N, L, D)`` if ``N`` > 1 else ``(L, D)`` where ``N`` is
+            the number of replicates in the prompt, ``L`` is the length of the sequence, ``D`` is
+            the size of the vocabulary.
         """
         prompt_api = getattr(self.session, "prompt", None)
         assert isinstance(prompt_api, PromptAPI)

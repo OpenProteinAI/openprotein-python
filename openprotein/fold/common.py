@@ -16,21 +16,20 @@ def normalize_inputs(
     normalized_complexes: list[Complex] = []
     remaining_proteins: list[Protein] = []
     remaining_protein_strings: list[str] = []
-    if isinstance(proteins, list):
-        for protein in proteins:
-            if isinstance(protein, Protein):
+    for protein in proteins:
+        if isinstance(protein, Protein):
+            # collate these to init with id_gen
+            remaining_proteins.append(protein)
+        elif isinstance(protein, Complex):
+            used_ids.extend(list(protein.get_chains().keys()))
+            normalized_complexes.append(protein)
+        else:
+            if isinstance(protein, bytes):
+                protein = protein.decode()
+            # handle ':'-delimited
+            for seq in protein.split(":"):
                 # collate these to init with id_gen
-                remaining_proteins.append(protein)
-            elif isinstance(protein, Complex):
-                used_ids.extend(list(protein.get_chains().keys()))
-                normalized_complexes.append(protein)
-            else:
-                if isinstance(protein, bytes):
-                    protein = protein.decode()
-                # handle ':'-delimited
-                for seq in protein.split(":"):
-                    # collate these to init with id_gen
-                    remaining_protein_strings.append(seq)
+                remaining_protein_strings.append(seq)
 
     # auto generate the chain ids
     id_gen = id_generator(used_ids)

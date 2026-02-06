@@ -4,18 +4,20 @@ from collections.abc import Mapping, Sequence
 from functools import reduce
 from pathlib import Path
 from types import MappingProxyType
-from typing import Literal, overload
-
-import numpy as np
-import numpy.typing as npt
+from typing import TYPE_CHECKING, Literal, overload
 
 import gemmi
+import numpy as np
+import numpy.typing as npt
 
 import openprotein.utils.chain_id as _chain_id_utils
 import openprotein.utils.cif as _cif_utils
 
 from .chains import DNA, RNA, Ligand
 from .protein import Protein
+
+if TYPE_CHECKING:
+    from .template import Template
 
 
 # TODO: deserialization note about plddt parsed per residue
@@ -26,6 +28,7 @@ class Complex:
         name: bytes | str | None = None,
     ):
         self._chains = dict(sorted(chains.items())) if chains is not None else {}
+        self._templates: "Sequence[Protein | Complex | Template]" = ()
         self.name = name
 
     @property
@@ -41,6 +44,23 @@ class Complex:
 
     def set_name(self, x: bytes | str | None) -> "Complex":
         self.name = x
+        return self
+
+    @property
+    def templates(self) -> "Sequence[Protein | Complex | Template]":
+        return self._templates
+
+    @templates.setter
+    def templates(self, templates: "Sequence[Protein | Complex | Template]") -> None:
+        self._templates = tuple(templates)
+
+    def get_templates(self) -> "Sequence[Protein | Complex | Template]":
+        return self.templates
+
+    def set_templates(
+        self, templates: "Sequence[Protein | Complex | Template]"
+    ) -> "Complex":
+        self.templates = templates
         return self
 
     def get_chains(self) -> Mapping[str, Protein | DNA | RNA | Ligand]:
@@ -245,6 +265,21 @@ class Complex:
         return Complex(
             chains={k: v.copy() for k, v in self._chains.items()}, name=self._name
         )
+
+    def _assert_valid_templates(self):
+        from .template import Template
+
+        for template in self.templates:
+            (
+                template if isinstance(template, Template) else Template(template)
+            ).validate_for_target(self)
+        for chain_id, protein in self.get_proteins().items():
+            for template in protein.templates:
+                (
+                    template
+                    if isinstance(template, Template)
+                    else Template(template, mapping=chain_id)
+                ).validate_for_target(Complex({chain_id: protein}))
 
     @staticmethod
     def _from_structure_block(

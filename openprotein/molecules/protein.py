@@ -20,6 +20,7 @@ from .. import fasta
 if TYPE_CHECKING:
     from ..align.msa import MSAFuture
     from .complex import Complex
+    from .template import Template
 
 V = TypeVar("V")
 
@@ -70,6 +71,7 @@ class Protein:
         # sequence-level properties
         self._cyclic: bool = False
         self._msa: "str | MSAFuture | None | Type[Protein.NullMSA]" = None
+        self._templates: "Sequence[Protein | Complex | Template]" = ()
         # per-residue arrays
         self._data: dict[str, npt.NDArray] = {}
 
@@ -144,6 +146,23 @@ class Protein:
 
     def set_msa(self, x: "str | MSAFuture | None | Type[NullMSA]") -> "Protein":
         self._msa = x
+        return self
+
+    @property
+    def templates(self) -> "Sequence[Protein | Complex | Template]":
+        return self._templates
+
+    @templates.setter
+    def templates(self, templates: "Sequence[Protein | Complex | Template]") -> None:
+        self._templates = tuple(templates)
+
+    def get_templates(self) -> "Sequence[Protein | Complex | Template]":
+        return self.templates
+
+    def set_templates(
+        self, templates: "Sequence[Protein | Complex | Template]"
+    ) -> "Protein":
+        self.templates = templates
         return self
 
     def __len__(self):
@@ -640,6 +659,14 @@ class Protein:
 
     def copy(self) -> "Protein":
         return self[:]
+
+    def _assert_valid_templates(self):
+        from .template import Template
+
+        for template in self.templates:
+            (
+                template if isinstance(template, Template) else Template(template)
+            ).validate_for_target(self)
 
     @staticmethod
     def _from_structure_block(

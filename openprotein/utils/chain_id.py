@@ -20,7 +20,10 @@ def id_generator(
     Yields new chain IDs, skipping any in 'used_ids'.
     First A..Z, AA..ZZ, … up to max_alpha_len, then '1','2',… up to max_numeric.
     """
-    used = set(tuple(used_ids or []))
+    used_list = used_ids or []
+    if isinstance(used_list, str):
+        used_list = [used_list]
+    used = set(used_list)
     letters = list(string.ascii_uppercase)
 
     # --- Alphabetic IDs ---
