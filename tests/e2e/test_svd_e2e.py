@@ -6,7 +6,9 @@ import pytest
 from openprotein import OpenProtein
 from openprotein.common.reduction import ReductionType
 from openprotein.data import AssayDataset
+from openprotein.errors import HTTPError
 from openprotein.svd.models import SVDModel
+from tests.e2e.config import scaled_timeout
 
 # Model configurations for SVD fitting
 SVD_MODELS = [
@@ -16,7 +18,7 @@ SVD_MODELS = [
     ("poet-2", 1024),
 ]
 
-TIMEOUT = 10 * 60  # 10 minutes for SVD fitting
+TIMEOUT = scaled_timeout(1.0)
 
 
 @pytest.mark.e2e
@@ -42,15 +44,16 @@ def test_svd_single_model(
     )
 
     # Wait for the model to be ready
-    svd_model = svd_future.wait()
+    svd_model = svd_future.wait(timeout=TIMEOUT)
     assert isinstance(
         svd_model, SVDModel
     ), f"SVD model fitting failed for {model_id} with {n_components} components"
     assert svd_model.n_components == n_components
+    assert svd_model.n_components <= expected_base_dim
 
     # Use the SVD model to embed a sequence
     embedding_future = svd_model.embed(sequences=[test_sequences_same_length[0]])
-    assert embedding_future.wait_until_done(), f"SVD embed failed for {model_id}"
+    assert embedding_future.wait_until_done(timeout=TIMEOUT), f"SVD embed failed for {model_id}"
     results = embedding_future.get()
 
     # Validate the output
@@ -62,6 +65,7 @@ def test_svd_single_model(
     assert embedding.shape == (
         n_components,
     ), f"Expected SVD embedding shape of ({n_components},), but got {embedding.shape} for {model_id}"
+    assert np.isfinite(embedding).all()
 
 
 @pytest.mark.e2e
@@ -96,7 +100,7 @@ def test_svd_parallel_models(
     test_sequence = test_sequences_same_length[0]
     for model_id, svd_model in svd_models:
         embedding_future = svd_model.embed(sequences=[test_sequence])
-        results = embedding_future.wait()
+        results = embedding_future.wait(timeout=TIMEOUT)
         assert len(results) == 1
         seq, embedding = results[0]
         assert seq == test_sequences_same_length[0]
@@ -125,7 +129,7 @@ def test_svd_reduction_types(
 
     # Embed sequences with the SVD model
     embedding_future = svd_model.embed(sequences=[test_sequences_varied[0]])
-    results = embedding_future.wait()
+    results = embedding_future.wait(timeout=TIMEOUT)
     assert len(results) == 1
     seq, embedding = results[0]
     assert seq == test_sequences_varied[0]
@@ -157,13 +161,15 @@ def test_svd_batch_embedding_same_length(
 
     # Embed batch
     embedding_future = svd_model.embed(sequences=test_sequences)
-    results = embedding_future.wait()
+    results = embedding_future.wait(timeout=TIMEOUT)
 
     # Validate batch output
     assert len(results) == num_sequences
-    for seq, embedding in results:
+    for i, (seq, embedding) in enumerate(results):
+        assert seq == test_sequences[i]
         assert isinstance(embedding, np.ndarray)
         assert embedding.shape == (n_components,)
+        assert np.isfinite(embedding).all()
 
 
 @pytest.mark.e2e
@@ -197,11 +203,12 @@ def test_svd_from_assay(session: OpenProtein, assay_fixture: str, request):
 
     # Embed one sequence
     embedding_future = svd_model.embed(sequences=[sequences[0]])
-    results = embedding_future.wait()
+    results = embedding_future.wait(timeout=TIMEOUT)
     assert len(results) == 1
     seq, embedding = results[0]
     assert seq == sequences[0]
     assert embedding.shape == (n_components,)
+    assert np.isfinite(embedding).all()
 
 
 @pytest.mark.e2e
@@ -228,11 +235,12 @@ def test_svd_retrieval_by_id(
 
     # Validate embedding works with retrieved model
     embedding_future = retrieved_svd.embed(sequences=[test_sequences_same_length[0]])
-    results = embedding_future.wait()
+    results = embedding_future.wait(timeout=TIMEOUT)
     assert len(results) == 1
     seq, embedding = results[0]
     assert seq == test_sequences_same_length[0]
     assert embedding.shape == (n_components,)
+    assert np.isfinite(embedding).all()
 
 
 @pytest.mark.e2e
@@ -266,11 +274,12 @@ def test_svd_edge_case_n_components_large(
     
     # Verify embedding works with the reduced components
     embedding_future = svd_model.embed(sequences=[test_sequences_same_length[0]])
-    results = embedding_future.wait()
+    results = embedding_future.wait(timeout=TIMEOUT)
     assert len(results) == 1
     seq, embedding = results[0]
     assert seq == test_sequences_same_length[0]
     assert embedding.shape == (num_sequences,)
+    assert np.isfinite(embedding).all()
 
 
 @pytest.mark.e2e
@@ -295,11 +304,12 @@ def test_svd_edge_case_small_n_components(
 
     # Embed and validate
     embedding_future = svd_model.embed(sequences=[test_sequences_same_length[0]])
-    results = embedding_future.wait()
+    results = embedding_future.wait(timeout=TIMEOUT)
     assert len(results) == 1
     seq, embedding = results[0]
     assert seq == test_sequences_same_length[0]
     assert embedding.shape == (n_components,)
+    assert np.isfinite(embedding).all()
 
 
 
@@ -335,11 +345,12 @@ def test_svd_edge_case_n_components_exceeds_embedding_dim(
     
     # Verify embedding works with the reduced components
     embedding_future = svd_model.embed(sequences=[test_sequences_same_length[0]])
-    results = embedding_future.wait()
+    results = embedding_future.wait(timeout=TIMEOUT)
     assert len(results) == 1
     seq, embedding = results[0]
     assert seq == test_sequences_same_length[0]
     assert embedding.shape == (expected_components,)
+    assert np.isfinite(embedding).all()
 
 @pytest.mark.e2e
 def test_svd_error_different_length_sequences_no_reduction(
@@ -354,7 +365,7 @@ def test_svd_error_different_length_sequences_no_reduction(
     n_components = 32
 
     # Try to fit SVD with different-length sequences and no reduction
-    with pytest.raises(Exception):  # Adjust exception type based on actual API behavior
+    with pytest.raises(HTTPError, match="Status code"):
         svd_future = embedding_model.fit_svd(
             sequences=test_sequences_varied, n_components=n_components
         )
@@ -386,8 +397,9 @@ def test_svd_different_length_sequences_with_reduction(
 
     # Embed a sequence and validate
     embedding_future = svd_model.embed(sequences=[test_sequences_varied[0]])
-    results = embedding_future.wait()
+    results = embedding_future.wait(timeout=TIMEOUT)
     assert len(results) == 1
     seq, embedding = results[0]
     assert seq == test_sequences_varied[0]
     assert embedding.shape == (n_components,)
+    assert np.isfinite(embedding).all()

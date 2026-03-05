@@ -1,5 +1,6 @@
 """RFdiffusion model for protein structure and sequence design."""
 
+import warnings
 from typing import BinaryIO, Literal
 
 from pydantic import BaseModel, Field
@@ -7,12 +8,12 @@ from pydantic import BaseModel, Field
 from openprotein.base import APISession
 from openprotein.common import ModelMetadata
 from openprotein.common.model_metadata import ModelDescription
-from openprotein.jobs import Future, Job
-from openprotein.jobs.futures import MappedFuture
-from openprotein.jobs.jobs import JobsAPI
 from openprotein.models.base import ProteinModel
-from openprotein.models.structure_generation import StructureGenerationFuture
-from openprotein.molecules import Protein, Complex
+from openprotein.models.structure_generation import (
+    StructureGenerationFuture,
+    StructureGenerationJob,
+)
+from openprotein.molecules import Complex, Protein
 from openprotein.prompt import PromptAPI, Query
 
 
@@ -58,37 +59,21 @@ class RFdiffusionRequest(BaseModel):
     scaffold_target_use_struct: bool = False
 
 
-class RFdiffusionJob(Job):
-    """Job schema for an RFdiffusion request."""
-
-    job_type: Literal["/models/rfdiffusion"]
-
-
 class RFdiffusionFuture(StructureGenerationFuture):
-    """Future for handling the results of an RFdiffusion job."""
+    """Deprecated alias for :class:`StructureGenerationFuture`."""
 
-    job: RFdiffusionJob
-
-    def get_item(self, replicate: int = 0) -> Complex:
-        """
-        Retrieve the output Complex for a specific design.
-
-        Args:
-            replicate (int): The 0-based index of the design to retrieve.
-
-        Returns:
-            Complex: The designed Complex.
-        """
-        pdb = _rfdiffusion_api_result_get(
-            session=self.session, job_id=self.id, replicate=replicate
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "RFdiffusionFuture is deprecated; use StructureGenerationFuture instead.",
+            DeprecationWarning,
+            stacklevel=2,
         )
-        m = Complex.from_string(pdb, format="pdb")
-        return m
+        super().__init__(*args, **kwargs)
 
 
 def _rfdiffusion_api_post(
     session: APISession, request: RFdiffusionRequest, **kwargs
-) -> RFdiffusionJob:
+) -> StructureGenerationJob:
     """
     POST a request for RFdiffusion design.
 
@@ -98,7 +83,7 @@ def _rfdiffusion_api_post(
     body = request.model_dump(exclude_none=True)
     body.update(kwargs)
     response = session.post(endpoint, json=body)
-    return RFdiffusionJob.model_validate(response.json())
+    return StructureGenerationJob.model_validate(response.json())
 
 
 def _rfdiffusion_api_get_metadata(session: APISession) -> ModelMetadata:
@@ -110,19 +95,6 @@ def _rfdiffusion_api_get_metadata(session: APISession) -> ModelMetadata:
     endpoint = f"v1/design/models/rfdiffusion"
     response = session.get(endpoint)
     return ModelMetadata.model_validate(response.json())
-
-
-def _rfdiffusion_api_result_get(
-    session: APISession, job_id: str, replicate: int = 0
-) -> str:
-    """
-    POST a request for RFdiffusion design.
-
-    # Returns a Job object that can be used to retrieve results later.
-    """
-    endpoint = f"v1/design/{job_id}/results"
-    response = session.get(endpoint, params={"replicate": replicate})
-    return response.text
 
 
 class RFdiffusionModel(ProteinModel):
@@ -174,7 +146,7 @@ class RFdiffusionModel(ProteinModel):
         scaffold_target_structure_file: str | bytes | BinaryIO | None = None,
         scaffold_target_use_struct: bool = False,
         **kwargs,
-    ) -> RFdiffusionFuture:
+    ) -> StructureGenerationFuture:
         """
         Run a protein structure generate job using RFdiffusion.
 
@@ -244,7 +216,7 @@ class RFdiffusionModel(ProteinModel):
 
         Returns
         -------
-        RFdiffusionFuture
+        StructureGenerationFuture
             A future object that can be used to retrieve the results of the design
             job upon completion.
         """
@@ -306,6 +278,11 @@ class RFdiffusionModel(ProteinModel):
         )
 
         # Return the future object
-        return RFdiffusionFuture(session=self.session, job=job, N=request.N)
+        return StructureGenerationFuture(
+            session=self.session,
+            job=job,
+            N=request.N,
+            result_format="pdb",
+        )
 
     predict = generate

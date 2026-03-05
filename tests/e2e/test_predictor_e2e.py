@@ -7,6 +7,8 @@ from openprotein import OpenProtein
 from openprotein.common import FeatureType
 from openprotein.common.reduction import ReductionType
 from openprotein.data import AssayDataset
+from openprotein.errors import HTTPError, InvalidParameterError
+from tests.e2e.config import scaled_timeout
 from tests.utils.sequences import random_sequence_fake
 
 # Model configurations for predictor training
@@ -17,14 +19,26 @@ PREDICTOR_MODELS = [
     ("poet-2", ReductionType.MEAN),
 ]
 
-TIMEOUT = 20 * 60  # 20 minutes for training
-SVD_TIMEOUT = 30 * 60  # 30 minutes for SVD + training
+TIMEOUT = scaled_timeout(2.0)
+SVD_TIMEOUT = scaled_timeout(3.0)
 
 # SVD configurations for predictor training
 SVD_CONFIGS = [
     ("esm2_t33_650M_UR50D", 32),
     ("prot-seq", 64),
 ]
+
+
+def _assert_prediction_arrays(
+    mus: np.ndarray, vs: np.ndarray, rows: int, cols: int
+) -> None:
+    assert isinstance(mus, np.ndarray)
+    assert isinstance(vs, np.ndarray)
+    assert mus.shape == (rows, cols)
+    assert vs.shape == (rows, cols)
+    assert np.isfinite(mus).all()
+    assert np.isfinite(vs).all()
+    assert np.all(vs >= 0.0)
 
 
 @pytest.mark.e2e
@@ -63,13 +77,10 @@ def test_predictor_training_single_model(
     # Make a prediction
     test_sequence = b"MSKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLV"
     prediction_future = predictor_model.predict(sequences=[test_sequence])
-    mus, vs = prediction_future.wait()
+    mus, vs = prediction_future.wait(timeout=TIMEOUT)
 
     # Validate prediction output
-    assert isinstance(mus, np.ndarray)
-    assert isinstance(vs, np.ndarray)
-    assert mus.shape == (1, 1)  # 1 sequence, 1 property
-    assert vs.shape == (1, 1)
+    _assert_prediction_arrays(mus=mus, vs=vs, rows=1, cols=1)
 
 
 @pytest.mark.e2e
@@ -97,8 +108,8 @@ def test_predictor_parallel_training(session: OpenProtein, assay_small: AssayDat
     test_sequence = b"MSKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLV"
     for model_id, predictor in futures:
         prediction_future = predictor.predict(sequences=[test_sequence])
-        mus, vs = prediction_future.wait()
-        assert mus.shape == (1, 1), f"Model {model_id}: unexpected prediction shape"
+        mus, vs = prediction_future.wait(timeout=TIMEOUT)
+        _assert_prediction_arrays(mus=mus, vs=vs, rows=1, cols=1)
 
 
 @pytest.mark.e2e
@@ -125,11 +136,10 @@ def test_predictor_multitask(
     # Make predictions
     test_sequence = b"MSKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLV"
     prediction_future = predictor_model.predict(sequences=[test_sequence])
-    mus, vs = prediction_future.wait()
+    mus, vs = prediction_future.wait(timeout=TIMEOUT)
 
     # Validate output shape matches number of properties
-    assert mus.shape == (1, num_properties)
-    assert vs.shape == (1, num_properties)
+    _assert_prediction_arrays(mus=mus, vs=vs, rows=1, cols=num_properties)
 
 
 @pytest.mark.e2e
@@ -156,11 +166,10 @@ def test_predictor_batch_prediction(
 
     # Make batch predictions
     prediction_future = predictor_model.predict(sequences=test_sequences)
-    mus, vs = prediction_future.wait()
+    mus, vs = prediction_future.wait(timeout=TIMEOUT)
 
     # Validate batch output
-    assert mus.shape == (num_sequences, 1)
-    assert vs.shape == (num_sequences, 1)
+    _assert_prediction_arrays(mus=mus, vs=vs, rows=num_sequences, cols=1)
 
 
 @pytest.mark.e2e
@@ -198,8 +207,8 @@ def test_predictor_different_dataset_sizes(
     # Validate prediction works
     test_sequence = b"MSKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLV"
     prediction_future = predictor_future.predict(sequences=[test_sequence])
-    mus, vs = prediction_future.wait()
-    assert mus.shape == (1, 1)
+    mus, vs = prediction_future.wait(timeout=TIMEOUT)
+    _assert_prediction_arrays(mus=mus, vs=vs, rows=1, cols=1)
 
 
 @pytest.mark.e2e
@@ -226,8 +235,8 @@ def test_predictor_retrieval_by_id(session: OpenProtein, assay_small: AssayDatas
     # Validate prediction works with retrieved predictor
     test_sequence = b"MSKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLV"
     prediction_future = retrieved_predictor.predict(sequences=[test_sequence])
-    mus, vs = prediction_future.wait()
-    assert mus.shape == (1, 1)
+    mus, vs = prediction_future.wait(timeout=TIMEOUT)
+    _assert_prediction_arrays(mus=mus, vs=vs, rows=1, cols=1)
 
 
 @pytest.mark.e2e
@@ -248,11 +257,17 @@ def test_predictor_error_handling_invalid_sequence(
     predictor_model = predictor_future
 
     # Try to predict with invalid sequence
-    invalid_sequence = b"INVALID123XYZ"
+    seq_len = predictor_model.sequence_length or assay_small.sequence_length or 64
+    invalid_tokens = b"0123456789!*"
+    invalid_sequence = (invalid_tokens * ((seq_len // len(invalid_tokens)) + 1))[
+        :seq_len
+    ]
 
-    with pytest.raises(Exception):  # Adjust exception type based on actual API behavior
+    with pytest.raises(
+        HTTPError, match="Status code 400"  # TODO: surface the HTTP error
+    ):  # Adjust exception type based on actual API behavior
         prediction_future = predictor_model.predict(sequences=[invalid_sequence])
-        prediction_future.wait()
+        prediction_future.wait(timeout=TIMEOUT)
 
 
 @pytest.mark.e2e
@@ -272,10 +287,33 @@ def test_predictor_error_handling_empty_sequence(
     assert predictor_future.wait(timeout=TIMEOUT)
     predictor_model = predictor_future
 
-    # Try to predict with empty sequence
-    with pytest.raises(Exception):  # Adjust exception type based on actual API behavior
+    expected_len = predictor_model.sequence_length
+    if expected_len is None:
+        with pytest.raises(HTTPError, match="Status code"):
+            prediction_future = predictor_model.predict(sequences=[b""])
+            prediction_future.wait(timeout=TIMEOUT)
+        return
+
+    with pytest.raises(
+        InvalidParameterError,
+        match=f"Expected sequences to predict to be of length {expected_len}",
+    ):
         prediction_future = predictor_model.predict(sequences=[b""])
-        prediction_future.wait()
+        prediction_future.wait(timeout=TIMEOUT)
+
+
+@pytest.mark.e2e
+def test_predictor_list_and_pagination(session: OpenProtein):
+    """
+    Test listing predictors and basic offset pagination behavior.
+    """
+    page_0 = session.predictor.list_predictors(limit=2, offset=0)
+    page_1 = session.predictor.list_predictors(limit=2, offset=2)
+
+    assert len(page_0) <= 2
+    assert len(page_1) <= 2
+    assert all(model.id for model in page_0)
+    assert all(model.id for model in page_1)
 
 
 @pytest.mark.e2e
@@ -316,7 +354,7 @@ def test_predictor_train_on_svd_embeddings(
     seq_len = assay_small.sequence_length or 346
     test_sequence = random_sequence_fake(seq_len)
     prediction_future = predictor_model.predict(sequences=[test_sequence])
-    mus, vs = prediction_future.wait()
+    mus, vs = prediction_future.wait(timeout=TIMEOUT)
 
     # Validate prediction output
     assert isinstance(mus, np.ndarray)
@@ -369,7 +407,7 @@ def test_predictor_parallel_svd_training(
     test_sequence = random_sequence_fake(seq_len)
     for model_id, predictor in predictor_futures:
         prediction_future = predictor.predict(sequences=[test_sequence])
-        mus, vs = prediction_future.wait()
+        mus, vs = prediction_future.wait(timeout=TIMEOUT)
         assert mus.shape == (
             1,
             1,
@@ -402,7 +440,7 @@ def test_predictor_svd_different_n_components(
     seq_len = assay_small.sequence_length or 346
     test_sequence = random_sequence_fake(seq_len)
     prediction_future = predictor_model.predict(sequences=[test_sequence])
-    mus, vs = prediction_future.wait()
+    mus, vs = prediction_future.wait(timeout=TIMEOUT)
 
     assert mus.shape == (1, 1)
     assert vs.shape == (1, 1)
@@ -431,7 +469,7 @@ def test_predictor_svd_batch_prediction(
     test_sequences = [random_sequence_fake(seq_len) for _ in range(num_sequences)]
 
     prediction_future = predictor_model.predict(sequences=test_sequences)
-    mus, vs = prediction_future.wait()
+    mus, vs = prediction_future.wait(timeout=TIMEOUT)
 
     # Validate batch output
     assert mus.shape == (10, 1)

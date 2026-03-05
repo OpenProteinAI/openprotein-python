@@ -1,14 +1,16 @@
 """Fold model representations which can be used directly for creating structure predictions."""
 
+from typing import Sequence
+
 from openprotein.base import APISession
 from openprotein.common import ModelMetadata
+from openprotein.molecules import Complex, Protein
 
 from . import api
 from .future import FoldResultFuture
 
 
 class FoldModel:
-
     # overridden by subclasses
     # used to get correct fold model
     model_id: list[str] | str
@@ -42,6 +44,10 @@ class FoldModel:
         if isinstance(cls.model_id, str):
             return [cls.model_id]
         return cls.model_id
+
+    @property
+    def model_id(self) -> str:
+        return model_id if isinstance(model_id := self.model_id, str) else model_id[0]
 
     @classmethod
     def create(
@@ -86,7 +92,7 @@ class FoldModel:
         if default is not None:
             try:
                 return default(session=session, model_id=model_id, **kwargs)
-            except:
+            except Exception:
                 pass
         raise ValueError(f"Unsupported model_id type: {model_id}")
 
@@ -110,30 +116,32 @@ class FoldModel:
         """
         return api.fold_model_get(self.session, self.id)
 
-    def fold(self, **kwargs) -> FoldResultFuture:
+    def fold(
+        self,
+        sequences: Sequence[Complex | Protein | str | bytes],
+        **kwargs,
+    ) -> FoldResultFuture:
         """
         Fold a sequence using this model.
 
         Parameters
         ----------
+        sequences : Sequence[Complex | Protein | str | bytes]
+            sequences to fold
         **kwargs : dict, optional
             Additional keyword arguments to pass to the underlying
             `fold` request.
 
         Returns
         -------
-        FoldResultFuture or FoldComplexResultFuture
+        FoldResultFuture
             Future object representing the fold result.
         """
         return FoldResultFuture.create(
             session=self.session,
             job=api.fold_models_post(
                 session=self.session,
-                model_id=(
-                    model_id
-                    if isinstance(model_id := self.model_id, str)
-                    else model_id[0]
-                ),
+                model_id=self.model_id,
                 **kwargs,
             ),
         )

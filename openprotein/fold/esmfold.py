@@ -1,13 +1,12 @@
 """Community-based ESMFold model."""
 
 import warnings
-from collections.abc import Sequence
 from typing import Sequence
 
 from openprotein.base import APISession
 from openprotein.common import ModelMetadata
 from openprotein.fold.common import normalize_inputs, serialize_input
-from openprotein.molecules import DNA, RNA, Ligand, Protein, Complex
+from openprotein.molecules import DNA, RNA, Complex, Ligand, Protein
 
 from . import api
 from .future import FoldResultFuture
@@ -33,13 +32,14 @@ class ESMFoldModel(FoldModel):
         self,
         sequences: Sequence[Complex | Protein | str | bytes],
         num_recycles: int | None = None,
+        **_,
     ) -> FoldResultFuture:
         """
         Fold sequences using this model.
 
         Parameters
         ----------
-        sequences : Sequence[bytes | str]
+        sequences : Sequence[Complex | Protein | str | bytes]
             sequences to fold
         num_recycles : int | None
             number of times to recycle models

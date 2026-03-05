@@ -126,3 +126,30 @@ def test_poet2_model_embed():
         call_args, call_kwargs = mock_request_post.call_args
         assert call_kwargs["prompt_id"] == prompt_id
         assert call_kwargs["query_id"] == "query-456"
+
+
+def test_poet2_model_generate_with_query_list():
+    """Test that PoET2Model.generate forwards list-valued query via query_id."""
+    from openprotein.prompt import PromptAPI
+
+    mock_session = MagicMock()
+    mock_session.prompt = MagicMock(spec=PromptAPI)
+    mock_session.prompt._resolve_query.return_value = ["query-1", "query-2"]
+
+    with patch("openprotein.embeddings.api.get_model", return_value=MagicMock()):
+        model = PoET2Model(session=mock_session, model_id="poet-2")
+
+    with patch(
+        "openprotein.embeddings.poet.api.request_generate_post",
+        return_value=MagicMock(),
+    ) as mock_request_post, patch(
+        "openprotein.embeddings.poet.EmbeddingsGenerateFuture.create",
+        return_value=MagicMock(),
+    ):
+        model.generate(prompt=None, query=["query-1", "query-2"], num_samples=2)
+
+    mock_session.prompt._resolve_query.assert_called_once_with(
+        query=["query-1", "query-2"]
+    )
+    _, kwargs = mock_request_post.call_args
+    assert kwargs["query_id"] == ["query-1", "query-2"]

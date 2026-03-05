@@ -138,11 +138,24 @@ class PromptAPI:
 
     def _resolve_query(
         self,
-        query: str | bytes | Protein | Complex | Query | None = None,
+        query: (
+            str
+            | bytes
+            | Protein
+            | Complex
+            | Query
+            | list[str | bytes | Protein | Complex | Query]
+            | None
+        ) = None,
         force_structure: bool = False,
-    ) -> str | None:
+    ) -> str | list[str] | None:
         if query is None:
             query_id = None
+        elif isinstance(query, list):
+            query_id = [
+                self._resolve_query(query=q, force_structure=force_structure)
+                for q in query
+            ]
         elif (
             isinstance(query, Protein)
             or isinstance(query, Complex)

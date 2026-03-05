@@ -10,6 +10,7 @@ from .openprotein import OpenProteinModel
 from .esm import ESMModel
 from .poet import PoETModel
 from .poet2 import PoET2Model
+from .ablang import AbLang2Model
 from .schemas import (
     EmbeddedSequence,
     EmbeddingsJob,

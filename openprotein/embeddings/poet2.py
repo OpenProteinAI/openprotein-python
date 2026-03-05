@@ -20,6 +20,7 @@ from .models import EmbeddingModel
 from .poet import PoETModel
 
 if TYPE_CHECKING:
+    from openprotein.models.structure_generation import StructureGenerationFuture
     from openprotein.predictor import PredictorModel
     from openprotein.svd import SVDModel
     from openprotein.umap import UMAPModel
@@ -290,7 +291,16 @@ class PoET2Model(PoETModel, EmbeddingModel):
     def generate(
         self,
         prompt: str | Prompt | None,
-        query: str | bytes | Protein | Complex | Query | None = None,
+        query: (
+            str
+            | bytes
+            | Protein
+            | Complex
+            | Query
+            | list[str | bytes | Protein | Complex | Query]
+            | None
+        ) = None,
+        design: "str | StructureGenerationFuture | None" = None,
         use_query_structure_in_decoder: bool = True,
         num_samples: int = 100,
         temperature: float = 1.0,
@@ -308,7 +318,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
         ----------
         prompt : str or Prompt or None, optional
             Prompt from an align workflow to condition PoET model.
-        query : str or bytes or Protein or Complex or Query or None, optional
+        query : str or bytes or Protein or Complex or Query or list of these or None, optional
             Query to use with prompt.
         use_query_structure_in_decoder : bool, optional
             Whether to use query structure in decoder. Default is True.
@@ -340,9 +350,14 @@ class PoET2Model(PoETModel, EmbeddingModel):
         EmbeddingsGenerateFuture
             A future object representing the status and information about the generation job.
         """
+        from openprotein.models.structure_generation import StructureGenerationFuture
+
         prompt_api = getattr(self.session, "prompt", None)
         assert isinstance(prompt_api, PromptAPI)
-        query_id = prompt_api._resolve_query(query=query)
+        query_id = prompt_api._resolve_query(query=query) if query is not None else None
+        design_id = (
+            design.job_id if isinstance(design, StructureGenerationFuture) else design
+        )
         if ensemble_weights is not None:
             # NB: for now, ensemble_method is None -> ensemble_method == "arithmetic"
             if ensemble_method is None or (ensemble_method == "arithmetic"):
@@ -364,6 +379,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
             max_length=max_length,
             seed=seed,
             query_id=query_id,
+            design_id=design_id,
             use_query_structure_in_decoder=use_query_structure_in_decoder,
             ensemble_weights=ensemble_weights,
             ensemble_method=ensemble_method,

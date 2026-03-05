@@ -1,10 +1,11 @@
-import warnings
-from collections.abc import Sequence
+"""Community-based MiniFold model."""
+
+from typing import Sequence
 
 from openprotein.base import APISession
 from openprotein.common import ModelMetadata
 from openprotein.fold.common import normalize_inputs, serialize_input
-from openprotein.molecules import DNA, RNA, Ligand
+from openprotein.molecules import Complex, Protein
 
 from . import api
 from .future import FoldResultFuture
@@ -27,7 +28,10 @@ class MiniFoldModel(FoldModel):
         super().__init__(session=session, model_id=model_id, metadata=metadata)
 
     def fold(
-        self, sequences: Sequence[bytes | str], num_recycles: int | None = None
+        self,
+        sequences: Sequence[Complex | Protein | str | bytes],
+        num_recycles: int | None = None,
+        **_,
     ) -> FoldResultFuture:
         """
         Fold sequences using this model.

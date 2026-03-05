@@ -4,16 +4,19 @@ import base64
 import gzip
 import io
 import tarfile
-from typing import Any, BinaryIO, Literal
+import warnings
+from typing import Any, BinaryIO
 
 from pydantic import BaseModel
 
 from openprotein.base import APISession
 from openprotein.common import ModelMetadata
-from openprotein.jobs import Future, Job
 from openprotein.models.base import ProteinModel
-from openprotein.models.structure_generation import StructureGenerationFuture
-from openprotein.molecules import Protein, Complex
+from openprotein.models.structure_generation import (
+    StructureGenerationFuture,
+    StructureGenerationJob,
+)
+from openprotein.molecules import Complex, Protein
 from openprotein.prompt import PromptAPI, Query
 from openprotein.scaffolds import Scaffolds
 
@@ -92,37 +95,21 @@ class BoltzGenRequest(BaseModel):
     scaffold_set: str | None = None
 
 
-class BoltzGenJob(Job):
-    """Job schema for an BoltzGen request."""
-
-    job_type: Literal["/models/boltzgen"]
-
-
 class BoltzGenFuture(StructureGenerationFuture):
-    """Future for handling the results of an RFdiffusion job."""
+    """Deprecated alias for :class:`StructureGenerationFuture`."""
 
-    job: BoltzGenJob
-
-    def get_item(self, replicate: int = 0) -> Complex:
-        """
-        Retrieve the output Complex for a specific design.
-
-        Args:
-            replicate (int): The 0-based index of the design to retrieve.
-
-        Returns:
-            Complex: The designed Complex.
-        """
-        pdb = _boltzgen_api_result_get(
-            session=self.session, job_id=self.id, replicate=replicate
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "BoltzGenFuture is deprecated; use StructureGenerationFuture instead.",
+            DeprecationWarning,
+            stacklevel=2,
         )
-        m = Complex.from_string(pdb, format="cif")
-        return m
+        super().__init__(*args, **kwargs)
 
 
 def _boltzgen_api_post(
     session: APISession, request: BoltzGenRequest, **kwargs
-) -> BoltzGenJob:
+) -> StructureGenerationJob:
     """
     POST a request for BoltzGen design.
 
@@ -132,7 +119,7 @@ def _boltzgen_api_post(
     body = request.model_dump(exclude_none=True)
     body.update(kwargs)
     response = session.post(endpoint, json=body)
-    return BoltzGenJob.model_validate(response.json())
+    return StructureGenerationJob.model_validate(response.json())
 
 
 def _boltzgen_api_get_metadata(session: APISession) -> ModelMetadata:
@@ -141,22 +128,9 @@ def _boltzgen_api_get_metadata(session: APISession) -> ModelMetadata:
 
     Returns a Job object that can be used to retrieve results later.
     """
-    endpoint = f"v1/design/models/boltzgen"
+    endpoint = "v1/design/models/boltzgen"
     response = session.get(endpoint)
     return ModelMetadata.model_validate(response.json())
-
-
-def _boltzgen_api_result_get(
-    session: APISession, job_id: str, replicate: int = 0
-) -> str:
-    """
-    POST a request for BoltzGen design.
-
-    # Returns a Job object that can be used to retrieve results later.
-    """
-    endpoint = f"v1/design/{job_id}/results"
-    response = session.get(endpoint, params={"replicate": replicate})
-    return response.text
 
 
 class BoltzGenModel(ProteinModel):
@@ -191,7 +165,7 @@ class BoltzGenModel(ProteinModel):
         # extra structures that can be bundled together as assets
         extra_structure_files: dict[str, str | bytes | BinaryIO] | None = None,
         **kwargs,
-    ) -> BoltzGenFuture:
+    ) -> StructureGenerationFuture:
         """
         Run a protein structure generate job using BoltzGen.
 
@@ -257,7 +231,7 @@ class BoltzGenModel(ProteinModel):
 
         Returns
         -------
-        BoltzGenFuture
+        StructureGenerationFuture
             A future object that can be used to retrieve the results of the design
             job upon completion.
         """
@@ -314,6 +288,11 @@ class BoltzGenModel(ProteinModel):
             **kwargs,
         )
 
-        return BoltzGenFuture(session=self.session, job=job, N=request.N)
+        return StructureGenerationFuture(
+            session=self.session,
+            job=job,
+            N=request.N,
+            result_format="cif",
+        )
 
     predict = generate

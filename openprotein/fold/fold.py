@@ -11,6 +11,7 @@ from .minifold import MiniFoldModel
 from .models import (
     FoldModel,
 )
+from .protenix import ProtenixModel
 from .rosettafold3 import RosettaFold3Model
 
 
@@ -38,6 +39,8 @@ class FoldAPI:
     esmfold: ESMFoldModel
     #: MiniFold model
     minifold: MiniFoldModel
+    #: Protenix model
+    protenix: ProtenixModel
 
     def __init__(self, session: APISession):
         self.session = session

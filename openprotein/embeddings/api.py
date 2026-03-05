@@ -598,9 +598,16 @@ def request_generate_post(
         body["seed"] = random_seed
     if kwargs.get("prompt_id"):
         body["prompt_id"] = kwargs["prompt_id"]
-    if kwargs.get("query_id"):
+    if kwargs.get("design_id"):
+        body["design_id"] = kwargs["design_id"]
+    query_id = kwargs.get("query_id")
+    if query_id is not None:
         assert model_id != "poet", f"Model with id {model_id} does not support query"
-        body["query_id"] = kwargs["query_id"]
+        body["query_id"] = (
+            list(query_id)
+            if isinstance(query_id, list)
+            else query_id
+        )
         if "use_query_structure_in_decoder" in kwargs:
             body["use_query_structure_in_decoder"] = kwargs[
                 "use_query_structure_in_decoder"

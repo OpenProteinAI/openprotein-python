@@ -165,10 +165,14 @@ class EmbeddingsGenerateFuture(BaseScoreFuture[Score]):
     def stream(self) -> Iterator[Score]:
         stream = api.request_get_generate_result(session=self.session, job_id=self.id)
         # name, sequence, ...
-        next(stream)  # ignore header
+        header = next(stream)
+        has_query_id = (
+            len(header) > 2 and header[-1].strip().lower() == "query_id"
+        )
         for line in stream:
             # combine scores into numpy array
-            scores = np.array([float(s) for s in line[2:]])
+            score_values = line[2:-1] if has_query_id else line[2:]
+            scores = np.array([float(s) for s in score_values])
             output = Score(name=line[0], sequence=line[1], score=scores)
             yield output
 

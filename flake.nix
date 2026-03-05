@@ -18,8 +18,8 @@
         devShells.default = pkgs.mkShell {
           packages = [ pkgs.bashInteractive ];
           shellHook = ''
-            pixi i -e dev
-            eval $(pixi shell-hook -e dev)
+            uv sync --group dev
+            source .venv/bin/activate
           '';
         };
       }

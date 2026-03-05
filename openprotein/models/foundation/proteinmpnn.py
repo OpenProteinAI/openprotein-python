@@ -2,19 +2,19 @@
 
 from typing import TYPE_CHECKING
 
-from openprotein import embeddings
 from openprotein.base import APISession
 from openprotein.common import ModelMetadata
 from openprotein.embeddings import api as embeddings_api
 from openprotein.embeddings.future import (
     EmbeddingsGenerateFuture,
-    EmbeddingsResultFuture,
     EmbeddingsScoreFuture,
 )
 from openprotein.models.base import ProteinModel
 from openprotein.molecules import Protein, Complex
 from openprotein.prompt import PromptAPI, Query
-from openprotein.utils import uuid
+
+if TYPE_CHECKING:
+    from openprotein.models.structure_generation import StructureGenerationFuture
 
 
 class ProteinMPNNModel(ProteinModel):
@@ -130,7 +130,16 @@ class ProteinMPNNModel(ProteinModel):
 
     def generate(
         self,
-        query: str | bytes | Protein | Complex | Query,
+        query: (
+            str
+            | bytes
+            | Protein
+            | Complex
+            | Query
+            | list[str | bytes | Protein | Complex | Query]
+            | None
+        ) = None,
+        design: "str | StructureGenerationFuture | None" = None,
         num_samples: int = 100,
         temperature: float = 0.1,
         # topk: float | None = None,
@@ -143,8 +152,11 @@ class ProteinMPNNModel(ProteinModel):
 
         Parameters
         ----------
-        query : str or bytes or Protein or Complex or Query
+        query : str or bytes or Protein or Complex or Query or list of these or None, optional
             Query specifying the structure to generate sequences for.
+        design : str or StructureGenerationFuture or None, optional
+            Structure-generation design ID or future to condition generation from
+            design outputs.
         num_samples : int, optional
             The number of samples to generate. Default is 100.
         temperature : float, optional
@@ -155,15 +167,26 @@ class ProteinMPNNModel(ProteinModel):
         EmbeddingsGenerateFuture
             A future object representing the status and information about the generation job.
         """
+        if query is None and design is None:
+            raise ValueError(
+                "Expected either `query` or `design` to be provided"
+            )
+
+        from openprotein.models.structure_generation import StructureGenerationFuture
+
         prompt_api = getattr(self.session, "prompt", None)
         assert isinstance(prompt_api, PromptAPI)
-        query_id = prompt_api._resolve_query(query=query)
+        query_id = prompt_api._resolve_query(query=query) if query is not None else None
+        design_id = (
+            design.job_id if isinstance(design, StructureGenerationFuture) else design
+        )
         return EmbeddingsGenerateFuture.create(
             session=self.session,
             job=embeddings_api.request_generate_post(
                 session=self.session,
                 model_id=self.id,
                 query_id=query_id,
+                design_id=design_id,
                 num_samples=num_samples,
                 temperature=temperature,
                 random_seed=seed,

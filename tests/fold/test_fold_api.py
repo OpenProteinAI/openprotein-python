@@ -69,55 +69,6 @@ def test_fold_get_sequence_result(mock_session: MagicMock):
     assert result == b"pdb_content"
 
 
-def test_fold_get_complex_result(mock_session: MagicMock):
-    """Test fold_get_complex_result."""
-    mock_session.get.return_value.content = b"pdb_content"
-    result = api.fold_get_complex_result(mock_session, "job1", "pdb")
-    mock_session.get.assert_called_once_with(
-        "v1/fold/job1/complex", params={"format": "pdb"}
-    )
-    assert result == b"pdb_content"
-
-
-def test_fold_get_complex_extra_result_pae(mock_session: MagicMock):
-    """Test fold_get_complex_extra_result for pae."""
-    arr = np.array([1, 2, 3])
-    with io.BytesIO() as f:
-        np.save(f, arr)
-        f.seek(0)
-        mock_session.get.return_value.content = f.read()
-
-    result = api.fold_get_complex_extra_result(mock_session, "job1", "pae")
-    mock_session.get.assert_called_once_with("v1/fold/job1/complex/pae")
-    assert isinstance(result, np.ndarray)
-    np.testing.assert_array_equal(result, arr)
-
-
-def test_fold_get_complex_extra_result_affinity(mock_session: MagicMock):
-    """Test fold_get_complex_extra_result for affinity."""
-    mock_session.get.return_value.json.return_value = [{"key": "value"}]
-    result = api.fold_get_complex_extra_result(mock_session, "job1", "affinity")
-    mock_session.get.assert_called_once_with("v1/fold/job1/complex/affinity")
-    assert isinstance(result, list)
-    assert result == [{"key": "value"}]
-
-
-def test_fold_get_complex_extra_result_invalid_key(mock_session: MagicMock):
-    """Test fold_get_complex_extra_result for invalid key."""
-    with pytest.raises(ValueError):
-        api.fold_get_complex_extra_result(mock_session, "job1", "invalid_key")  # type: ignore - testing runtime error
-
-
-def test_fold_get_complex_extra_result_affinity_not_found(mock_session: MagicMock):
-    """Test fold_get_complex_extra_result for affinity not found."""
-    mock_response = Mock(spec=Response)
-    mock_response.status_code = 400
-    mock_response.url = "http://test.url"
-    mock_session.get.side_effect = HTTPError(mock_response)
-    with pytest.raises(ValueError, match="affinity not found for request"):
-        api.fold_get_complex_extra_result(mock_session, "job1", "affinity")
-
-
 def test_fold_models_post(mock_session: MagicMock):
     """Test fold_models_post."""
     mock_session.post.return_value.json.return_value = {

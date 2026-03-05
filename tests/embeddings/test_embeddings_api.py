@@ -102,3 +102,37 @@ def test_embedding_request_posts(
     assert job.job_id == job_id
     mock_session.post.assert_called_once()
     # Further checks on the endpoint and body could be added here
+
+
+def test_request_generate_post_with_query_id_list(mock_session: MagicMock):
+    """Test generation POST body when query_id is provided as a list."""
+    mock_session.post.return_value.json.return_value = {
+        "job_id": "job-123",
+        "status": JobStatus.SUCCESS,
+        "job_type": JobType.embeddings_generate,
+        "created_date": "2023-01-01T00:00:00",
+    }
+
+    api.request_generate_post(
+        session=mock_session,
+        model_id="proteinmpnn",
+        num_samples=4,
+        query_id=["q-1", "q-2"],
+        use_query_structure_in_decoder=False,
+        random_seed=123,
+    )
+
+    mock_session.post.assert_called_once()
+    _, kwargs = mock_session.post.call_args
+    assert kwargs["json"]["query_id"] == ["q-1", "q-2"]
+    assert kwargs["json"]["use_query_structure_in_decoder"] is False
+
+
+def test_request_generate_post_rejects_query_id_list_for_poet(mock_session: MagicMock):
+    """poet v1 does not support query_id in generation (including list form)."""
+    with pytest.raises(AssertionError, match="Model with id poet does not support query"):
+        api.request_generate_post(
+            session=mock_session,
+            model_id="poet",
+            query_id=["q-1"],
+        )

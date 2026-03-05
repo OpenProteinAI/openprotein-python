@@ -1,7 +1,7 @@
 import os
 import pickle
 from pathlib import Path
-from typing import List, Tuple
+from typing import Any, Callable, List, Tuple
 
 import pandas as pd
 import pytest
@@ -12,6 +12,7 @@ from openprotein.align.msa import MSAFuture
 from openprotein.data import AssayDataset
 from openprotein.molecules import Protein, Complex
 from openprotein.utils.chain_id import id_generator
+from tests.e2e.config import scaled_timeout
 from tests.utils.sequences import (
     random_mutated_sequences,
     random_sequence_fake,
@@ -19,13 +20,18 @@ from tests.utils.sequences import (
 )
 from tests.utils.strings import random_string
 
-E2E_TIMEOUT = 600
+E2E_TIMEOUT = scaled_timeout(1.0)
 
 # Test data paths
 TEST_ASSAY_DATA_DIR = "tests/data"
 TEST_ASSAY_SMALL_FILE = "AMIE_PSEAE_Whitehead.wide.15.csv"
 TEST_ASSAY_MEDIUM_FILE = "AMIE_PSEAE_Whitehead.wide.1000.csv"
 TEST_ASSAY_LARGE_FILE = "AMIE_PSEAE_Whitehead.wide.csv"  # ~6000 sequences
+
+# Shared sequence constants for E2E tests
+BASE_SEQUENCE = "MQYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE"
+TEST_ANTIBODY_SEQUENCE = "EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAKYYYYGMDVWGQGTTVTVSS"
+MSA_SEED_SEQUENCE_LENGTH = 1000
 
 
 @pytest.fixture(scope="session")
@@ -36,8 +42,59 @@ def session() -> OpenProtein:
     """
     try:
         return connect()
-    except:
-        pytest.fail("E2E tests require credentials to be setup.")
+    except Exception as exc:
+        pytest.fail(f"E2E tests require credentials to be setup: {exc}")
+
+
+@pytest.fixture(scope="session")
+def base_sequence() -> str:
+    """Shared base sequence for mutation-based alignment/folding tests."""
+    return BASE_SEQUENCE
+
+
+@pytest.fixture(scope="session")
+def test_antibody_sequence() -> str:
+    """Shared antibody sequence for AbNumber alignment tests."""
+    return TEST_ANTIBODY_SEQUENCE
+
+
+@pytest.fixture(scope="session")
+def msa_seed_sequence_length() -> int:
+    """Length used for random MSA seed sequence generation in align E2E tests."""
+    return MSA_SEED_SEQUENCE_LENGTH
+
+
+@pytest.fixture
+def mutated_sequences(base_sequence: str) -> Callable[..., list[str]]:
+    """Factory to generate mutated sequence sets from a shared base sequence."""
+
+    def _build(
+        *,
+        num_sequences: int,
+        mutation_rate: float = 0.05,
+        sequence: str | None = None,
+    ) -> list[str]:
+        source_sequence = sequence if sequence is not None else base_sequence
+        return random_mutated_sequences(
+            source_sequence,
+            num_sequences=num_sequences,
+            mutation_rate=mutation_rate,
+        )
+
+    return _build
+
+
+@pytest.fixture
+def fixture_lookup(request: pytest.FixtureRequest) -> Callable[[str], Any]:
+    """Safely resolve dynamic fixtures, skipping the test if unavailable."""
+
+    def _lookup(fixture_name: str) -> Any:
+        try:
+            return request.getfixturevalue(fixture_name)
+        except pytest.FixtureLookupError:
+            pytest.skip(f"Fixture {fixture_name} not available")
+
+    return _lookup
 
 
 def _protein_complex_with_msa(

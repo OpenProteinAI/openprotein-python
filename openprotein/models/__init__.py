@@ -11,7 +11,11 @@ from ..fold import (
     MiniFoldModel,
     RosettaFold3Model,
 )
-from .foundation.boltzgen import BoltzGenFuture, BoltzGenJob, BoltzGenModel
+from .foundation.boltzgen import BoltzGenFuture, BoltzGenModel
 from .foundation.proteinmpnn import ProteinMPNNModel
-from .foundation.rfdiffusion import RFdiffusionFuture, RFdiffusionJob, RFdiffusionModel
+from .foundation.rfdiffusion import RFdiffusionFuture, RFdiffusionModel
 from .models import ModelsAPI
+from .structure_generation import (
+    StructureGenerationFuture,
+    StructureGenerationJob,
+)

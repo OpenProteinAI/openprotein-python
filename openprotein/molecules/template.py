@@ -120,3 +120,9 @@ class Template:
                     )
         else:
             raise TypeError(f"Target must be Protein or Complex, got {type(target)}")
+
+    @classmethod
+    def from_obj(cls, obj, chain_id: str | None = None):
+        if not isinstance(obj, Template):
+            obj = cls(template=obj, mapping=chain_id)
+        return obj

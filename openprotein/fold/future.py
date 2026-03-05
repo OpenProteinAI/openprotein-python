@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Iterator, Literal
 import numpy as np
 import pandas as pd
 from pydantic.type_adapter import TypeAdapter
-from typing_extensions import Self
 
 from openprotein import config
 from openprotein.base import APISession
@@ -29,7 +28,7 @@ FoldResult: typing.TypeAlias = (
 
 class FoldResultFuture(
     MappedFuture[
-        bytes,
+        int,
         FoldResult,
     ]
 ):
@@ -76,41 +75,6 @@ class FoldResultFuture(
         self._complexes = complexes
         self.reverse_map = {s: i for i, s in enumerate(self._sequences)}
         super().__init__(session, job, max_workers)
-
-    @classmethod
-    def create(
-        cls: type[Self],
-        session: APISession,
-        job: FoldJob | None = None,
-        metadata: FoldMetadata | None = None,
-        **kwargs,
-    ) -> "Self":
-        """
-        Factory method to create a FoldResultFuture.
-
-        Parameters
-        ----------
-        session : APISession
-            The API session to use for requests.
-        job : FoldJob
-            The fold job associated with this future.
-
-            Additional keyword arguments.
-
-        Returns
-        -------
-        FoldResultFuture
-            An instance of FoldResultFuture.
-        """
-        if job is not None:
-            job_id = job.job_id
-        elif metadata is not None:
-            job_id = metadata.job_id
-        else:
-            raise ValueError("Expected fold metadata or job")
-        # model_id = api.fold_get(session=session, job_id=job_id).model_id
-        # create different future - not used now
-        return cls(session=session, job=job, **kwargs)
 
     @property
     def sequences(self) -> list[bytes]:
@@ -255,14 +219,14 @@ class FoldResultFuture(
     @typing.overload
     def get_item(
         self,
-        index: int,
+        k: int,
         key: None = None,
     ) -> Structure: ...
 
     @typing.overload
     def get_item(
         self,
-        index: int,
+        k: int,
         key: (
             Literal[
                 "pae",
@@ -277,21 +241,21 @@ class FoldResultFuture(
     @typing.overload
     def get_item(
         self,
-        index: int,
+        k: int,
         key: Literal["affinity"],
     ) -> "BoltzAffinity": ...
 
     @typing.overload
     def get_item(
         self,
-        index: int,
+        k: int,
         key: Literal["confidence"],
     ) -> "list[BoltzConfidence]": ...
 
     @typing.overload
     def get_item(
         self,
-        index: int,
+        k: int,
         key: (
             Literal[
                 "score",
@@ -303,7 +267,7 @@ class FoldResultFuture(
 
     def get_item(
         self,
-        index: int,
+        k: int,
         key: (
             Literal[
                 "pae",
@@ -317,7 +281,8 @@ class FoldResultFuture(
             ]
             | None
         ) = None,
-    ) -> FoldResult:
+        **kwargs,
+    ) -> FoldResult:  # ty: ignore[invalid-method-override]
         """
         Get fold results for a specified sequence.
 
@@ -332,11 +297,11 @@ class FoldResultFuture(
             Complex containing the folded structure.
         """
         if key is None:
-            data = api.fold_get_sequence_result(self.session, self.job.job_id, index)
+            data = api.fold_get_sequence_result(self.session, self.job.job_id, k)
             model = Structure.from_string(data.decode(), format="cif")
             return model
         else:
-            data = api.fold_get_extra_result(self.session, self.job.job_id, index, key)
+            data = api.fold_get_extra_result(self.session, self.job.job_id, k, key)
             if key == "affinity":
                 from .boltz import BoltzAffinity
 
@@ -345,7 +310,7 @@ class FoldResultFuture(
                 from .boltz import BoltzConfidence
 
                 data = TypeAdapter(list[BoltzConfidence]).validate_python(data)
-            return data  # type: ignore - converted by adapter
+            return data  # ty: ignore[invalid-return-type]
 
     @typing.overload
     def stream(
@@ -407,9 +372,9 @@ class FoldResultFuture(
             ]
             | None
         ) = None,
-    ) -> "Iterator[Structure] | Iterator[np.ndarray] | Iterator[pd.DataFrame] | Iterator[BoltzAffinity] | Iterator[list[BoltzConfidence]]":
+    ) -> "Iterator[Structure] | Iterator[np.ndarray] | Iterator[pd.DataFrame] | Iterator[BoltzAffinity] | Iterator[list[BoltzConfidence]]":  # ty: ignore[invalid-method-override]
         for _, v in super().stream(key=key):
-            yield v  # type: ignore - homogenous
+            yield v
 
     @typing.overload
     def get(
@@ -476,8 +441,8 @@ class FoldResultFuture(
             ]
             | None
         ) = None,
-    ) -> "list[Structure] | list[np.ndarray] | list[pd.DataFrame] | list[list[BoltzConfidence]] | list[BoltzAffinity]":
-        return super().get(verbose, key=key)  # type: ignore - homogenous
+    ) -> "list[Structure] | list[np.ndarray] | list[pd.DataFrame] | list[list[BoltzConfidence]] | list[BoltzAffinity]":  # ty: ignore[invalid-method-override]
+        return super().get(verbose, key=key)  # ty: ignore[invalid-return-type]
 
     def get_pae(self) -> list[np.ndarray]:
         """
@@ -629,7 +594,7 @@ class FoldResultFuture(
 
         Note
         ----
-        This is only currently supported for Boltz models.
+        This is currently supported for Boltz models and Protenix.
 
         Returns
         -------
@@ -641,8 +606,8 @@ class FoldResultFuture(
         AttributeError
             If confidence is not supported for the model.
         """
-        if self.model_id not in {"boltz-1", "boltz-1x", "boltz-2"}:
-            raise AttributeError("confidence not supported for non-Boltz model")
+        if self.model_id not in {"boltz-1", "boltz-1x", "boltz-2", "protenix"}:
+            raise AttributeError("confidence not supported for this model")
         if not hasattr(self, "_confidence"):
             self._confidence = None
         if self._confidence is None:
@@ -668,7 +633,6 @@ class FoldResultFuture(
         AttributeError
             If affinity is not supported for the model.
         """
-        from .boltz import BoltzAffinity
 
         if self.model_id not in {"boltz-1", "boltz-1x", "boltz-2"}:
             raise AttributeError("affinity not supported for non-Boltz model")

@@ -199,93 +199,21 @@ def fold_get_extra_result(
         The result as a numpy array (for "pae", "pde", "plddt") or a list of dictionaries (for "confidence", "affinity").
     """
     if key in {"pae", "pde", "plddt", "ptm"}:
-        formatter = lambda response: np.load(io.BytesIO(response.content))
+
+        def formatter(response):
+            return np.load(io.BytesIO(response.content))
     elif key in {"confidence", "affinity"}:
-        formatter = lambda response: response.json()
+
+        def formatter(response):
+            return response.json()
     elif key in {"score", "metrics"}:
         import pandas as pd
 
-        formatter = lambda response: pd.read_csv(io.StringIO(response.content.decode()))
+        def formatter(response):
+            return pd.read_csv(io.StringIO(response.content.decode()))
     else:
         raise ValueError(f"Unexpected key: {key}")
     endpoint = PATH_PREFIX + f"/{job_id}/{sequence_or_index}/{key}"
-    try:
-        response = session.get(
-            endpoint,
-        )
-    except HTTPError as e:
-        if e.status_code == 400 and key == "affinity":
-            raise ValueError("affinity not found for request") from None
-        raise e
-    output = formatter(response)
-    return output
-
-
-def fold_get_complex_result(
-    session: APISession, job_id: str, format: Literal["pdb", "mmcif"]
-) -> bytes:
-    """
-    Get encoded result for a complex from the request ID.
-
-    Parameters
-    ----------
-    session : APISession
-        Session object for API communication.
-    job_id : str
-        Job ID to retrieve results from.
-    format : {'pdb', 'mmcif'}
-        Format of the result.
-
-    Returns
-    -------
-    bytes
-        Encoded result for the complex.
-    """
-    endpoint = PATH_PREFIX + f"/{job_id}/complex"
-    response = session.get(
-        endpoint,
-        params={
-            "format": format,
-        },
-    )
-    return response.content
-
-
-def fold_get_complex_extra_result(
-    session: APISession,
-    job_id: str,
-    key: Literal[
-        "pae", "pde", "plddt", "ptm", "confidence", "affinity", "score", "metrics"
-    ],
-) -> "np.ndarray | list[dict] | pd.DataFrame":
-    """
-    Get extra result for a complex from the request ID.
-
-    Parameters
-    ----------
-    session : APISession
-        Session object for API communication.
-    job_id : str
-        Job ID to retrieve results from.
-    key : {'pae', 'pde', 'plddt', 'ptm', 'confidence', 'affinity', 'score', 'metrics'}
-        The type of result to retrieve.
-
-    Returns
-    -------
-    numpy.ndarray or list of dict
-        The result as a numpy array (for "pae", "pde", "plddt") or a list of dictionaries (for "confidence", "affinity").
-    """
-    if key in {"pae", "pde", "plddt", "ptm"}:
-        formatter = lambda response: np.load(io.BytesIO(response.content))
-    elif key in {"confidence", "affinity"}:
-        formatter = lambda response: response.json()
-    elif key in {"score", "metrics"}:
-        import pandas as pd
-
-        formatter = lambda response: pd.read_csv(io.StringIO(response.content.decode()))
-    else:
-        raise ValueError(f"Unexpected key: {key}")
-    endpoint = PATH_PREFIX + f"/{job_id}/complex/{key}"
     try:
         response = session.get(
             endpoint,
@@ -321,28 +249,8 @@ def fold_models_post(
         The outer list represents the batch of requests, and the inner
         list represents the complex, with each item in the list being
         an entity in that complex. A monomer would thus be a single item.
-    num_recycles : int, optional
-        Number of recycles for structure prediction.
-    num_models : int, optional
-        Number of models to generate.
-    num_relax : int, optional
-        Number of relaxation steps.
-    use_potentials : bool, optional
-        Whether to use potentials.
-    diffusion_samples : int, optional
-        Number of diffusion samples (boltz).
-    recycling_steps : int, optional
-        Number of recycling steps (boltz).
-    sampling_steps : int, optional
-        Number of sampling steps (boltz).
-    step_scale : float, optional
-        Step scale (boltz).
-    constraints : dict, optional
-        Constraints to apply.
-    templates : list, optional
-        Templates to use.
-    properties : dict, optional
-        Additional properties.
+    **kwargs
+        Additional keyword arguments to be sent with POST body.
 
     Returns
     -------

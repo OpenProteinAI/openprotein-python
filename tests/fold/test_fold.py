@@ -7,6 +7,7 @@ from openprotein.fold.boltz import Boltz1Model
 from openprotein.fold.esmfold import ESMFoldModel
 from openprotein.fold.fold import FoldAPI
 from openprotein.fold.future import FoldResultFuture
+from openprotein.fold.protenix import ProtenixModel
 from openprotein.jobs.schemas import Job
 
 
@@ -14,7 +15,7 @@ def test_fold_api_init(mock_session: MagicMock):
     """Test FoldAPI initialization by mocking the underlying session call."""
     # Configure the mock to return a list of models first, then model metadata
     mock_session.get.return_value.json.side_effect = [
-        ["esmfold", "alphafold2", "boltz-1"],  # First call for list_models
+        ["esmfold", "alphafold2", "boltz-1", "protenix"],  # First call for list_models
         {  # Subsequent calls for get_model
             "model_id": "model1",
             "description": {"summary": "A test model"},
@@ -23,13 +24,14 @@ def test_fold_api_init(mock_session: MagicMock):
             "input_tokens": ["protein"],
             "token_descriptions": [],
         },
-    ] * 4  # Repeat the metadata for each get_model call
+    ] * 5  # Repeat the metadata for each get_model call
 
     fold_api = FoldAPI(mock_session)
 
     assert isinstance(fold_api.esmfold, ESMFoldModel)
     assert isinstance(fold_api.alphafold2, AlphaFold2Model)
     assert isinstance(fold_api.boltz_1, Boltz1Model)
+    assert isinstance(fold_api.protenix, ProtenixModel)
 
 
 def test_get_results(mock_session: MagicMock):

@@ -11,6 +11,7 @@ from openprotein.fold.alphafold2 import AlphaFold2Model
 from openprotein.fold.esmfold import ESMFoldModel
 from openprotein.fold.future import FoldResultFuture
 from openprotein.fold.models import FoldModel
+from openprotein.fold.protenix import ProtenixModel
 from openprotein.fold.schemas import FoldJob, FoldMetadata
 from openprotein.jobs.schemas import JobStatus, JobType
 
@@ -35,6 +36,10 @@ def test_fold_model_create(mock_session):
     model = FoldModel.create(mock_session, "some-other-model", default=FoldModel)
     assert isinstance(model, FoldModel)
     assert not isinstance(model, (ESMFoldModel, AlphaFold2Model))
+
+    # Test creating Protenix model
+    model = FoldModel.create(mock_session, "protenix")
+    assert isinstance(model, ProtenixModel)
 
     # Test ValueError for unsupported model
     with pytest.raises(ValueError):
@@ -96,3 +101,44 @@ def test_fold_model_fold(mock_fold_get, mock_fold_models_post, mock_session):
     )
     assert isinstance(future, FoldResultFuture)
     assert future.job.job_id == "job123"
+
+
+@patch("openprotein.fold.api.fold_models_post")
+@patch("openprotein.fold.api.fold_get")
+def test_protenix_model_fold(mock_fold_get, mock_fold_models_post, mock_session):
+    """Test ProtenixModel.fold."""
+    mock_job = FoldJob(
+        job_id="job123",
+        status=JobStatus.PENDING,
+        job_type=JobType.embeddings_fold,
+        created_date=datetime.now(timezone.utc),
+    )
+    mock_fold_models_post.return_value = mock_job
+
+    mock_fold_get.return_value = FoldMetadata(
+        job_id="job123",
+        model_id="protenix",
+    )
+
+    model = ProtenixModel(session=mock_session, model_id="protenix")
+    future = model.fold(sequences=["SEQ"])
+
+    mock_fold_models_post.assert_called_once_with(
+        session=mock_session,
+        model_id="protenix",
+        sequences=[[{"protein": {"id": "A", "sequence": "SEQ"}}]],
+    )
+    assert isinstance(future, FoldResultFuture)
+    assert future.job.job_id == "job123"
+
+
+def test_fold_result_future_get_confidence_supports_protenix():
+    """Test FoldResultFuture.get_confidence for Protenix."""
+    future = object.__new__(FoldResultFuture)
+    future._metadata = FoldMetadata(job_id="job123", model_id="protenix")
+    future.get = MagicMock(return_value=[[{"confidence_score": 0.5}]])
+
+    result = future.get_confidence()
+
+    future.get.assert_called_once_with(key="confidence")
+    assert result == [[{"confidence_score": 0.5}]]

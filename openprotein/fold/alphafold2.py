@@ -1,15 +1,17 @@
 """Community-based AlphaFold 2 model running using ColabFold."""
 
-import io
 import warnings
-from typing import Any, Sequence
+from typing import Sequence
 
-from openprotein.align import AlignAPI, MSAFuture
+from openprotein.align import MSAFuture
 from openprotein.base import APISession
 from openprotein.common import ModelMetadata
-from openprotein.fold.common import normalize_inputs, serialize_input
-from openprotein.fold.complex import id_generator
-from openprotein.molecules import Protein, DNA, RNA, Ligand, Complex
+from openprotein.fold.common import (
+    msa_future_to_complex,
+    normalize_inputs,
+    serialize_input,
+)
+from openprotein.molecules import DNA, RNA, Complex, Ligand, Protein
 
 from . import api
 from .future import FoldResultFuture
@@ -33,7 +35,7 @@ class AlphaFold2Model(FoldModel):
 
     def fold(
         self,
-        sequences: Sequence[Complex | Protein | str] | MSAFuture | None = None,
+        sequences: Sequence[Complex | Protein | str | bytes] | MSAFuture,
         num_recycles: int | None = None,
         num_models: int = 1,
         num_relax: int = 0,
@@ -44,7 +46,7 @@ class AlphaFold2Model(FoldModel):
 
         Parameters
         ----------
-        sequences : List[Complex | Protein | str] | MSAFuture
+        sequences : Sequence[Complex | Protein | str | bytes] | MSAFuture
             List of protein sequences to include in folded output. `Protein` objects must be tagged with an `msa`, which can be a `Protein.single_sequence_mode` for single sequence mode. Alternatively, supply an `MSAFuture` to use all query sequences as a multimer.
         num_recycles : int
             number of times to recycle models
@@ -57,7 +59,6 @@ class AlphaFold2Model(FoldModel):
         -------
         job : Job
         """
-        from openprotein.align import AlignAPI
 
         if "msa" in kwargs:
             warnings.warn(
@@ -71,18 +72,7 @@ class AlphaFold2Model(FoldModel):
 
         # build the normalized_models from msa
         if isinstance(sequences, MSAFuture):
-            id_gen = id_generator()
-            align_api = getattr(self.session, "align", None)
-            assert isinstance(align_api, AlignAPI)
-            msa = sequences  # rename
-            seed = align_api.get_seed(job_id=msa.job.job_id)
-            _proteins: dict[str, Protein] = {}
-            for seq in seed.split(":"):
-                protein = Protein(sequence=seq)
-                id = next(id_gen)
-                protein.msa = msa.id
-                _proteins[id] = protein
-            normalized_complexes = [Complex(chains=_proteins)]
+            normalized_complexes = [msa_future_to_complex(self.session, sequences)]
 
         else:
             normalized_complexes = normalize_inputs(sequences)

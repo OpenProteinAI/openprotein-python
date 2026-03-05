@@ -31,7 +31,7 @@ requires-python = ">=3.10,<3.15"
 dev = [
   "pip>=24.2,<25",
   "ipykernel>=6.29.5,<7",
-  "pytest>=8.3.3,<9",
+  "pytest>=9,<10",
   "pytest-xdist>=3.6.1,<4",
   "pandas-stubs>=2.1.4.240909,<3",
   "matplotlib>=3.9.2,<4",
@@ -65,10 +65,6 @@ test = "pytest"
 [tool.pixi.environments]
 dev = ["dev"]
 
-[build-system]
-requires = ["hatchling>=1.26.1", "hatch-vcs>=0.5.0", "hatch-conda-build>=0.1.2"]
-build-backend = "hatchling.build"
-
 [tool.hatch.version]
 source = "vcs"
 
@@ -85,9 +81,21 @@ packages = ["openprotein"]
 typeCheckingMode = "basic"
 
 [tool.pytest.ini_options]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
 markers = [
-  "e2e: marks tests as end-to-end",
+  "e2e: End-to-end tests that require API credentials",
+  "slow: Slow-running tests",
+  "integration: Integration tests",
 ]
+addopts = "-v --strict-markers --tb=short --disable-warnings"
+timeout = 1200
+testpaths = ["tests"]
+log_cli = false
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 
 [tool.black]
 line-length = 88
@@ -111,19 +119,23 @@ exclude = '''
 [tool.isort]
 profile = "black"
 skip = [
-  '.eggs',
-  '.git',
-  '.hg',
-  '.mypy_cache',
-  '.nox',
-  '.pants.d',
-  '.tox',
-  '.venv',
-  '_build',
-  'buck-out',
-  'build',
-  'dist',
-  'node_modules',
-  'venv',
+  ".eggs",
+  ".git",
+  ".hg",
+  ".mypy_cache",
+  ".nox",
+  ".pants.d",
+  ".tox",
+  ".venv",
+  "_build",
+  "buck-out",
+  "build",
+  "dist",
+  "node_modules",
+  "venv",
 ]
 skip_gitignore = true
+
+[build-system]
+requires = ["hatchling>=1.26.1", "hatch-vcs>=0.5.0", "hatch-conda-build>=0.1.2"]
+build-backend = "hatchling.build"

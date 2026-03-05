@@ -1,12 +1,16 @@
 """E2E tests for the umap domain."""
 
+import time
+
 import numpy as np
 import pytest
 
 from openprotein import OpenProtein
 from openprotein.common.reduction import ReductionType
 from openprotein.data import AssayDataset
+from openprotein.errors import HTTPError, InvalidParameterError
 from openprotein.umap.models import UMAPModel
+from tests.e2e.config import scaled_timeout
 
 # Model configurations for UMAP fitting
 UMAP_MODELS = [
@@ -16,7 +20,7 @@ UMAP_MODELS = [
     ("poet-2", 1024),
 ]
 
-TIMEOUT = 10 * 60  # 10 minutes for UMAP fitting
+E2E_TIMEOUT = scaled_timeout(1.0)
 
 
 @pytest.mark.e2e
@@ -42,14 +46,14 @@ def test_umap_single_model(
     )
 
     # Wait for the model to be ready
-    assert umap_future.wait_until_done(), f"UMAP model fitting failed for {model_id}"
+    assert umap_future.wait_until_done(timeout=E2E_TIMEOUT), f"UMAP model fitting failed for {model_id}"
     umap_model = umap_future
     assert isinstance(umap_model, UMAPModel)
     assert umap_model.n_components == n_components
 
     # Use the UMAP model to embed a sequence
     embedding_future = umap_model.embed(sequences=[test_sequences_same_length[0]])
-    assert embedding_future.wait_until_done(), f"UMAP embed failed for {model_id}"
+    assert embedding_future.wait_until_done(timeout=E2E_TIMEOUT), f"UMAP embed failed for {model_id}"
     results = embedding_future.get()
 
     # Validate the output
@@ -84,7 +88,7 @@ def test_umap_parallel_models(
     # Wait for all UMAP fitting jobs to complete
     umap_models = []
     for model_id, future in futures:
-        assert future.wait_until_done(), f"UMAP fitting failed for {model_id}"
+        assert future.wait_until_done(timeout=E2E_TIMEOUT), f"UMAP fitting failed for {model_id}"
         umap_model = future
         assert isinstance(umap_model, UMAPModel)
         assert umap_model.n_components == n_components
@@ -94,7 +98,7 @@ def test_umap_parallel_models(
     test_sequence = test_sequences_same_length[0]
     for model_id, umap_model in umap_models:
         embedding_future = umap_model.embed(sequences=[test_sequence])
-        results = embedding_future.wait()
+        results = embedding_future.wait(timeout=E2E_TIMEOUT)
         assert len(results) == 1
         seq, embedding = results[0]
         assert embedding.shape == (
@@ -118,14 +122,14 @@ def test_umap_reduction_types(
         sequences=test_sequences_varied, n_components=n_components, reduction=reduction
     )
 
-    assert umap_future.wait_until_done()
+    assert umap_future.wait_until_done(timeout=E2E_TIMEOUT)
     umap_model = umap_future
     assert isinstance(umap_model, UMAPModel)
     assert umap_model.reduction == reduction
 
     # Embed sequences with the UMAP model
     embedding_future = umap_model.embed(sequences=[test_sequences_varied[0]])
-    results = embedding_future.wait()
+    results = embedding_future.wait(timeout=E2E_TIMEOUT)
     assert len(results) == 1
     seq, embedding = results[0]
     assert embedding.shape == (n_components,)
@@ -160,7 +164,7 @@ def test_umap_hyperparameters(
         min_dist=min_dist,
     )
 
-    assert umap_future.wait_until_done()
+    assert umap_future.wait_until_done(timeout=E2E_TIMEOUT)
     umap_model = umap_future
     assert isinstance(umap_model, UMAPModel)
     assert umap_model.n_components == n_components
@@ -169,7 +173,7 @@ def test_umap_hyperparameters(
 
     # Embed and validate
     embedding_future = umap_model.embed(sequences=[test_sequences_same_length[0]])
-    results = embedding_future.wait()
+    results = embedding_future.wait(timeout=E2E_TIMEOUT)
     assert len(results) == 1
     seq, embedding = results[0]
     assert embedding.shape == (n_components,)
@@ -192,7 +196,7 @@ def test_umap_batch_embedding(
     umap_future = embedding_model.fit_umap(
         sequences=test_sequences_same_length, n_components=n_components
     )
-    assert umap_future.wait_until_done()
+    assert umap_future.wait_until_done(timeout=E2E_TIMEOUT)
     umap_model = umap_future
 
     # Generate test sequences
@@ -200,7 +204,7 @@ def test_umap_batch_embedding(
 
     # Embed batch
     embedding_future = umap_model.embed(sequences=test_sequences)
-    results = embedding_future.wait()
+    results = embedding_future.wait(timeout=E2E_TIMEOUT)
 
     # Validate batch output
     assert len(results) == num_sequences
@@ -215,15 +219,16 @@ def test_umap_batch_embedding(
     "assay_fixture",
     ["assay_small", "assay_medium"],
 )
-def test_umap_from_assay(session: OpenProtein, assay_fixture: str, request):
+def test_umap_from_assay(
+    session: OpenProtein,
+    assay_fixture: str,
+    fixture_lookup,
+):
     """
     Test fitting UMAP from assay datasets of different sizes.
     """
     # Get the fixture dynamically
-    try:
-        assay = request.getfixturevalue(assay_fixture)
-    except pytest.FixtureLookupError:
-        pytest.skip(f"Fixture {assay_fixture} not available")
+    assay: AssayDataset = fixture_lookup(assay_fixture)
 
     embedding_model = session.embedding.esm2
     n_components = 3
@@ -231,7 +236,7 @@ def test_umap_from_assay(session: OpenProtein, assay_fixture: str, request):
     # Fit UMAP from assay
     umap_future = embedding_model.fit_umap(assay=assay, n_components=n_components)
 
-    assert umap_future.wait_until_done()
+    assert umap_future.wait_until_done(timeout=E2E_TIMEOUT)
     umap_model = umap_future
     assert isinstance(umap_model, UMAPModel)
     assert umap_model.n_components == n_components
@@ -242,7 +247,7 @@ def test_umap_from_assay(session: OpenProtein, assay_fixture: str, request):
 
     # Embed one sequence
     embedding_future = umap_model.embed(sequences=[sequences[0]])
-    results = embedding_future.wait()
+    results = embedding_future.wait(timeout=E2E_TIMEOUT)
     assert len(results) == 1
     seq, embedding = results[0]
     assert embedding.shape == (n_components,)
@@ -262,7 +267,7 @@ def test_umap_retrieval_by_id(
     umap_future = embedding_model.fit_umap(
         sequences=test_sequences_same_length, n_components=n_components
     )
-    assert umap_future.wait_until_done()
+    assert umap_future.wait_until_done(timeout=E2E_TIMEOUT)
     original_umap = umap_future
 
     # Retrieve by ID
@@ -273,7 +278,7 @@ def test_umap_retrieval_by_id(
 
     # Validate embedding works with retrieved model
     embedding_future = retrieved_umap.embed(sequences=[test_sequences_same_length[0]])
-    results = embedding_future.wait()
+    results = embedding_future.wait(timeout=E2E_TIMEOUT)
     assert len(results) == 1
     seq, embedding = results[0]
     assert embedding.shape == (n_components,)
@@ -305,13 +310,13 @@ def test_umap_edge_case_small_dataset(session: OpenProtein):
         sequences=sequences, n_components=n_components, n_neighbors=n_neighbors
     )
 
-    assert umap_future.wait_until_done()
+    assert umap_future.wait_until_done(timeout=E2E_TIMEOUT)
     umap_model = umap_future
     assert isinstance(umap_model, UMAPModel)
 
     # Embed and validate
     embedding_future = umap_model.embed(sequences=[sequences[0]])
-    results = embedding_future.wait()
+    results = embedding_future.wait(timeout=E2E_TIMEOUT)
     assert len(results) == 1
     seq, embedding = results[0]
     assert embedding.shape == (n_components,)
@@ -333,14 +338,14 @@ def test_umap_edge_case_high_dimensions(
         sequences=test_sequences_same_length, n_components=n_components
     )
 
-    assert umap_future.wait_until_done()
+    assert umap_future.wait_until_done(timeout=E2E_TIMEOUT)
     umap_model = umap_future
     assert isinstance(umap_model, UMAPModel)
     assert umap_model.n_components == n_components
 
     # Embed and validate
     embedding_future = umap_model.embed(sequences=[test_sequences_same_length[0]])
-    results = embedding_future.wait()
+    results = embedding_future.wait(timeout=E2E_TIMEOUT)
     assert len(results) == 1
     seq, embedding = results[0]
     assert embedding.shape == (n_components,)
@@ -359,13 +364,16 @@ def test_umap_error_different_length_sequences_no_reduction(
     n_components = 3
 
     # Try to fit UMAP with different-length sequences and no reduction
-    with pytest.raises(Exception):  # Adjust exception type based on actual API behavior
+    with pytest.raises(
+        InvalidParameterError,
+        match="Expected reduction if using EmbeddingModel to fit UMAP",
+    ):
         umap_future = embedding_model.fit_umap(
             sequences=test_sequences_varied,
             n_components=n_components,
             reduction=None,  # type: ignore
         )
-        umap_future.wait_until_done()
+        umap_future.wait_until_done(timeout=E2E_TIMEOUT)
 
 
 @pytest.mark.e2e
@@ -386,7 +394,7 @@ def test_umap_different_length_sequences_with_reduction(
         reduction=ReductionType.MEAN,
     )
 
-    assert umap_future.wait_until_done()
+    assert umap_future.wait_until_done(timeout=E2E_TIMEOUT)
     umap_model = umap_future
     assert isinstance(umap_model, UMAPModel)
     assert umap_model.n_components == n_components
@@ -394,7 +402,7 @@ def test_umap_different_length_sequences_with_reduction(
 
     # Embed a sequence and validate
     embedding_future = umap_model.embed(sequences=[test_sequences_varied[0]])
-    results = embedding_future.wait()
+    results = embedding_future.wait(timeout=E2E_TIMEOUT)
     assert len(results) == 1
     seq, embedding = results[0]
     assert embedding.shape == (n_components,)
@@ -416,7 +424,7 @@ def test_umap_with_svd_features(
     svd_future = embedding_model.fit_svd(
         sequences=test_sequences_same_length, n_components=svd_n_components
     )
-    svd_model = svd_future.wait(timeout=TIMEOUT)
+    svd_model = svd_future.wait(timeout=E2E_TIMEOUT)
 
     # Now fit UMAP on the SVD features (reduction must be None for SVD)
     umap_future = svd_model.fit_umap(
@@ -425,7 +433,7 @@ def test_umap_with_svd_features(
         reduction=None,  # type: ignore
     )
 
-    assert umap_future.wait_until_done()
+    assert umap_future.wait_until_done(timeout=E2E_TIMEOUT)
     umap_model = umap_future
     assert isinstance(umap_model, UMAPModel)
     assert umap_model.n_components == umap_n_components
@@ -433,7 +441,7 @@ def test_umap_with_svd_features(
 
     # Embed and validate
     embedding_future = umap_model.embed(sequences=[test_sequences_same_length[0]])
-    results = embedding_future.wait()
+    results = embedding_future.wait(timeout=E2E_TIMEOUT)
     assert len(results) == 1
     seq, embedding = results[0]
     assert embedding.shape == (umap_n_components,)
@@ -455,16 +463,19 @@ def test_umap_error_svd_with_reduction(
     svd_future = embedding_model.fit_svd(
         sequences=test_sequences_same_length, n_components=svd_n_components
     )
-    svd_model = svd_future.wait(timeout=TIMEOUT)
+    svd_model = svd_future.wait(timeout=E2E_TIMEOUT)
 
     # Try to fit UMAP with reduction (should fail)
-    with pytest.raises(Exception):  # Adjust exception type based on actual API behavior
+    with pytest.raises(
+        InvalidParameterError,
+        match="Unexpected reduction when using SVD model",
+    ):
         umap_future = svd_model.fit_umap(
             sequences=test_sequences_same_length,
             n_components=umap_n_components,
             reduction=ReductionType.MEAN,
         )
-        umap_future.wait_until_done()
+        umap_future.wait_until_done(timeout=E2E_TIMEOUT)
 
 
 @pytest.mark.e2e
@@ -487,14 +498,14 @@ def test_umap_edge_case_n_neighbors_large(
         n_neighbors=n_neighbors,
     )
 
-    assert umap_future.wait_until_done()
+    assert umap_future.wait_until_done(timeout=E2E_TIMEOUT)
     umap_model = umap_future
     assert isinstance(umap_model, UMAPModel)
     assert umap_model.n_components == n_components
 
     # Embed and validate
     embedding_future = umap_model.embed(sequences=[test_sequences_same_length[0]])
-    results = embedding_future.wait()
+    results = embedding_future.wait(timeout=E2E_TIMEOUT)
     assert len(results) == 1
     seq, embedding = results[0]
     assert embedding.shape == (n_components,)
@@ -520,14 +531,14 @@ def test_umap_extreme_min_dist(
         min_dist=min_dist,
     )
 
-    assert umap_future.wait_until_done()
+    assert umap_future.wait_until_done(timeout=E2E_TIMEOUT)
     umap_model = umap_future
     assert isinstance(umap_model, UMAPModel)
     assert umap_model.min_dist == min_dist
 
     # Embed and validate
     embedding_future = umap_model.embed(sequences=[test_sequences_same_length[0]])
-    results = embedding_future.wait()
+    results = embedding_future.wait(timeout=E2E_TIMEOUT)
     assert len(results) == 1
     seq, embedding = results[0]
     assert embedding.shape == (n_components,)
@@ -555,11 +566,11 @@ def test_umap_sequence_length_property(
         n_components=n_components,
     )
 
-    assert umap_future.wait_until_done()
+    assert umap_future.wait_until_done(timeout=E2E_TIMEOUT)
     umap_model = umap_future
     assert isinstance(umap_model, UMAPModel)
     # Embedding model fit UMAP should have no sequence length since reduction is auto used
-    assert umap_model.sequence_length == None
+    assert umap_model.sequence_length is None
 
 
 @pytest.mark.e2e
@@ -578,7 +589,7 @@ def test_umap_get_embeddings(
     umap_future = embedding_model.fit_umap(
         sequences=sequences, n_components=n_components
     )
-    assert umap_future.wait_until_done()
+    assert umap_future.wait_until_done(timeout=E2E_TIMEOUT)
     umap_model = umap_future
 
     # Get the projected embeddings
@@ -605,7 +616,7 @@ def test_umap_get_model(session: OpenProtein, test_sequences_same_length: list[b
     umap_future = embedding_model.fit_umap(
         sequences=test_sequences_same_length, n_components=n_components
     )
-    assert umap_future.wait_until_done()
+    assert umap_future.wait_until_done(timeout=E2E_TIMEOUT)
     umap_model = umap_future
 
     # Get the base model
@@ -627,7 +638,7 @@ def test_umap_delete(session: OpenProtein, test_sequences_same_length: list[byte
     umap_future = embedding_model.fit_umap(
         sequences=test_sequences_same_length[:10], n_components=n_components
     )
-    assert umap_future.wait_until_done()
+    assert umap_future.wait_until_done(timeout=E2E_TIMEOUT)
     umap_model = umap_future
 
     # Delete the model
@@ -635,8 +646,12 @@ def test_umap_delete(session: OpenProtein, test_sequences_same_length: list[byte
     result = umap_model.delete()
     assert result is True
 
-    # TODO - there seems to be some cache / race condition, get still works immediately
-    # Verify it's deleted (should raise an error when trying to retrieve)
-    # with pytest.raises(Exception):  # Adjust exception type based on actual API behavior
-    # umap = session.umap.get_umap(umap_id)
-    # assert umap is not None
+    # Verify it's deleted (may be asynchronous; poll a few times before failing)
+    for _ in range(10):
+        try:
+            session.umap.get_umap(umap_id)
+        except HTTPError:
+            break
+        time.sleep(0.5)
+    else:
+        pytest.fail(f"Expected deleted UMAP {umap_id} to become unavailable")

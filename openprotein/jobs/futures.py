@@ -26,7 +26,7 @@ from typing_extensions import Self
 from openprotein import config
 from openprotein.base import APISession
 from openprotein.errors import TimeoutException
-from openprotein.jobs.schemas import Job, JobStatus, JobType
+from openprotein.jobs.schemas import Job, JobStatus
 
 from . import api
 
@@ -52,7 +52,7 @@ class Future(ABC, Generic[V]):
 
     @classmethod
     def create(
-        cls: type[Self],
+        cls,
         session: APISession,
         job_id: str | None = None,
         job: Job | None = None,
@@ -114,20 +114,20 @@ class Future(ABC, Generic[V]):
         # Find the Future class that matches the job
         for future_class in future_classes:
             if (
-                type(job) == (future_type := future_class.__annotations__.get("job"))
+                type(job) is (future_type := future_class.__annotations__.get("job"))
                 or isinstance(future_type, UnionType)
                 and type(job) in future_type.__args__
             ):
-                assert not inspect.isabstract(
-                    future_class
-                ), "Expected concrete class implementation!"
+                assert not inspect.isabstract(future_class), (
+                    "Expected concrete class implementation!"
+                )
                 # instantiate the matched concrete future
                 if isinstance(future_class.__dict__.get("create"), classmethod):
                     # use the concrete factory create method if available
                     future = future_class.create(session=session, job=job, **kwargs)
                 else:
                     # else just init
-                    future = future_class(session=session, job=job, **kwargs)  # type: ignore - type checker thinks it is abstract
+                    future = future_class(session=session, job=job, **kwargs)
                 return future  # type: ignore - needed since type checker doesnt know subclass
 
         raise ValueError(f"Unsupported job type: {job.job_type}")
@@ -392,7 +392,7 @@ class Future(ABC, Generic[V]):
         return self.get()
 
 
-class StreamingFuture(Future[V], ABC):
+class StreamingFuture(Future[list[V]], ABC, Generic[V]):
     """Abstract base class for Futures that support streaming results."""
 
     @abstractmethod
@@ -449,7 +449,7 @@ class StreamingFuture(Future[V], ABC):
         timeout: int | None = None,
         verbose: bool = False,
     ) -> list[V]:
-        return super().wait(interval, timeout, verbose)  # type: ignore
+        return super().wait(interval, timeout, verbose)
 
 
 class MappedFuture(StreamingFuture[tuple[K, V]], ABC, Generic[K, V]):
@@ -501,7 +501,7 @@ class MappedFuture(StreamingFuture[tuple[K, V]], ABC, Generic[K, V]):
         raise NotImplementedError()
 
     @abstractmethod
-    def get_item(self, k: K, *args) -> V:
+    def get_item(self, k: K, **kwargs) -> V:
         """Retrieve a single item by its key.
 
         Parameters
@@ -575,7 +575,7 @@ class MappedFuture(StreamingFuture[tuple[K, V]], ABC, Generic[K, V]):
         timeout: int | None = None,
         verbose: bool = False,
     ) -> list[tuple[K, V]]:
-        return super().wait(interval, timeout, verbose)  # type: ignore
+        return super().wait(interval, timeout, verbose)
 
     def __getitem__(self, k: K, **kwargs) -> V:
         """Get an item by key, using the cache if available.
@@ -762,7 +762,7 @@ class PagedFuture(StreamingFuture[V], ABC):
                 # update the list of futures and wait on them again
                 futures = futures_next
 
-    def stream(self) -> Generator[V, None, None]:
+    def stream(self, **kwargs) -> Iterator[V]:
         """Retrieve results for this job as a stream.
 
         Returns
