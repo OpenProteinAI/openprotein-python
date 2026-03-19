@@ -25,7 +25,7 @@ from typing_extensions import Self
 
 from openprotein import config
 from openprotein.base import APISession
-from openprotein.errors import TimeoutException
+from openprotein.errors import APIError, TimeoutException
 from openprotein.jobs.schemas import Job, JobStatus
 
 from . import api
@@ -389,7 +389,12 @@ class Future(ABC, Generic[V]):
         time.sleep(1)  # buffer for BE to register job
         job = self._wait_job(interval=interval, timeout=timeout, verbose=verbose)
         self.job = job
-        return self.get()
+        try:
+            return self.get()
+        except APIError:
+            raise
+        except Exception as e:
+            raise APIError(f"Failed to retrieve results: {e}") from e
 
 
 class StreamingFuture(Future[list[V]], ABC, Generic[V]):
@@ -433,15 +438,20 @@ class StreamingFuture(Future[list[V]], ABC, Generic[V]):
             A list containing all results from the job.
 
         """
-        generator = self.stream(**kwargs)
-        if verbose:
-            total = None
-            if hasattr(self, "__len__"):
-                total = len(self)  # type: ignore - static type checker doesnt know
-            generator = tqdm.tqdm(
-                generator, desc="Retrieving", total=total, position=0, mininterval=1.0
-            )
-        return [entry for entry in generator]
+        try:
+            generator = self.stream(**kwargs)
+            if verbose:
+                total = None
+                if hasattr(self, "__len__"):
+                    total = len(self)  # type: ignore - static type checker doesnt know
+                generator = tqdm.tqdm(
+                    generator, desc="Retrieving", total=total, position=0, mininterval=1.0
+                )
+            return [entry for entry in generator]
+        except APIError:
+            raise
+        except Exception as e:
+            raise APIError(f"Failed to parse results: {e}") from e
 
     def wait(
         self,

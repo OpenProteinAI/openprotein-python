@@ -1,6 +1,10 @@
 from pydantic import BaseModel
 from requests import Response
 
+UPGRADE_MESSAGE = (
+    "If this issue persists, try upgrading the client: pip install --upgrade openprotein-python"
+)
+
 
 # Errors for OpenProtein
 class InvalidParameterError(Exception):
@@ -28,7 +32,7 @@ class APIError(Exception):
     """APIError"""
 
     def __init__(self, message: str):
-        self.message = message
+        self.message = f"{message}\n{UPGRADE_MESSAGE}"
         super().__init__(self.message)
 
 

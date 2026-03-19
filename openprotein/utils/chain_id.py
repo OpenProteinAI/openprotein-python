@@ -1,16 +1,14 @@
 import re
 import string
 
-valid_id_pattern = re.compile(r"^[A-Z]{1,5}$|^\d{1,5}$")
+valid_id_pattern = re.compile(r"^[A-Za-z0-9]{1,5}$")
 
 
 def is_valid_id(id_str: str) -> bool:
     """
-    Check if the id_str matches the valid pattern for IDs (1-5 uppercase or 1-5 digits).
+    Check if the id_str matches the valid pattern for IDs (1-5 uppercase or digits).
     """
-    if not id_str or len(id_str) > 5:
-        return False
-    return bool(valid_id_pattern.fullmatch(id_str))
+    return bool(id_str and valid_id_pattern.fullmatch(id_str))
 
 
 def id_generator(

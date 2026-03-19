@@ -1,3 +1,4 @@
+from openprotein import config
 from openprotein.base import APISession
 from openprotein.jobs import Future, JobsAPI
 from openprotein.molecules import Complex, Protein
@@ -55,11 +56,12 @@ class Prompt(Future):
                 )
         self.metadata = metadata
         self.session = session
+        self.job = None  # default for uploaded
         if self.metadata.job_id is not None:
             jobs_api = getattr(session, "jobs", None)
             assert isinstance(jobs_api, JobsAPI)
             job = PromptJob.create(jobs_api.get_job(job_id=self.metadata.job_id))
-            super().__init__(session, job)
+            self.job = job
 
     def __str__(self) -> str:
         return str(self.metadata)
@@ -77,10 +79,15 @@ class Prompt(Future):
         context = api.get_prompt(session=self.session, prompt_id=str(self.id))
         return context
 
-    def _wait_job(self, **kwargs):
+    def _wait_job(
+        self,
+        interval: float = config.POLLING_INTERVAL,
+        timeout: int | None = None,
+        verbose: bool = False,
+    ):
         if self.job is None:
             return None
-        return super()._wait_job(**kwargs)
+        return super()._wait_job(interval, timeout, verbose)
 
     @property
     def id(self):

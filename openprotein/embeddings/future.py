@@ -96,8 +96,10 @@ class EmbeddingsResultFuture(MappedFuture[bytes, np.ndarray]):
         return api.result_decode(data)
 
 
-Score = namedtuple("Score", ["name", "sequence", "score"])
-SingleSiteScore = namedtuple("SingleSiteScore", ["mut_code", "score"])
+Score = namedtuple("Score", ["name", "sequence", "score", "query_id"])
+Score.__new__.__defaults__ = (None,)
+SingleSiteScore = namedtuple("SingleSiteScore", ["mut_code", "score", "query_id"])
+SingleSiteScore.__new__.__defaults__ = (None,)
 S = TypeVar("S", bound=Union[Score, SingleSiteScore])
 
 
@@ -132,13 +134,18 @@ class EmbeddingsScoreFuture(BaseScoreFuture[Score]):
 
     def stream(self) -> Iterator[Score]:
         stream = api.request_get_score_result(session=self.session, job_id=self.id)
-        # name, sequence, ...
-        next(stream)  # ignore header
+        header = next(stream)
+        has_query_id = len(header) > 0 and header[0].strip().lower() == "query_id"
         for line in stream:
-            # combine scores into numpy array
-            scores = np.array([float(s) for s in line[2:]])
-            output = Score(name=line[0], sequence=line[1], score=scores)
-            yield output
+            if has_query_id:
+                query_id = line[0] if line[0] else None
+                name, sequence = line[1], line[2]
+                scores = np.array([float(s) for s in line[3:]])
+            else:
+                query_id = None
+                name, sequence = line[0], line[1]
+                scores = np.array([float(s) for s in line[2:]])
+            yield Score(name=name, sequence=sequence, score=scores, query_id=query_id)
 
 
 class EmbeddingsScoreSingleSiteFuture(BaseScoreFuture[SingleSiteScore]):
@@ -148,13 +155,18 @@ class EmbeddingsScoreSingleSiteFuture(BaseScoreFuture[SingleSiteScore]):
 
     def stream(self) -> Iterator[SingleSiteScore]:
         stream = api.request_get_score_result(session=self.session, job_id=self.id)
-        # name, sequence, ...
-        next(stream)  # ignore header
+        header = next(stream)
+        has_query_id = len(header) > 0 and header[0].strip().lower() == "query_id"
         for line in stream:
-            # combine scores into numpy array
-            scores = np.array([float(s) for s in line[1:]])
-            output = SingleSiteScore(mut_code=line[0], score=scores)
-            yield output
+            if has_query_id:
+                query_id = line[0] if line[0] else None
+                mut_code = line[1]
+                scores = np.array([float(s) for s in line[2:]])
+            else:
+                query_id = None
+                mut_code = line[0]
+                scores = np.array([float(s) for s in line[1:]])
+            yield SingleSiteScore(mut_code=mut_code, score=scores, query_id=query_id)
 
 
 class EmbeddingsGenerateFuture(BaseScoreFuture[Score]):
@@ -164,17 +176,18 @@ class EmbeddingsGenerateFuture(BaseScoreFuture[Score]):
 
     def stream(self) -> Iterator[Score]:
         stream = api.request_get_generate_result(session=self.session, job_id=self.id)
-        # name, sequence, ...
         header = next(stream)
-        has_query_id = (
-            len(header) > 2 and header[-1].strip().lower() == "query_id"
-        )
+        has_query_id = len(header) > 0 and header[0].strip().lower() == "query_id"
         for line in stream:
-            # combine scores into numpy array
-            score_values = line[2:-1] if has_query_id else line[2:]
-            scores = np.array([float(s) for s in score_values])
-            output = Score(name=line[0], sequence=line[1], score=scores)
-            yield output
+            if has_query_id:
+                query_id = line[0] if line[0] else None
+                name, sequence = line[1], line[2]
+                scores = np.array([float(s) for s in line[3:]])
+            else:
+                query_id = None
+                name, sequence = line[0], line[1]
+                scores = np.array([float(s) for s in line[2:]])
+            yield Score(name=name, sequence=sequence, score=scores, query_id=query_id)
 
     @property
     def sequences(self):

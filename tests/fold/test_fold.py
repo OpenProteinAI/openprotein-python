@@ -8,7 +8,7 @@ from openprotein.fold.esmfold import ESMFoldModel
 from openprotein.fold.fold import FoldAPI
 from openprotein.fold.future import FoldResultFuture
 from openprotein.fold.protenix import ProtenixModel
-from openprotein.jobs.schemas import Job
+from openprotein.jobs.schemas import Job, JobStatus, JobType
 
 
 def test_fold_api_init(mock_session: MagicMock):
@@ -51,8 +51,12 @@ def test_get_results(mock_session: MagicMock):
         mock_session.get.return_value.status_code = 200
 
         fold_api = FoldAPI(mock_session)
-        mock_job = MagicMock(spec=Job)
-        mock_job.job_id = "test_job_id"
+        mock_job = Job(
+            job_id="test_job_id",
+            job_type=JobType.embeddings_fold,
+            status=JobStatus.SUCCESS,
+            created_date="2024-01-01T00:00:00",
+        )
 
         future = fold_api.get_results(mock_job)
 

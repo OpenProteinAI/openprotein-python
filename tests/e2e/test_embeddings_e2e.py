@@ -394,6 +394,24 @@ def test_e2e_poet2_generate_with_query_fanout(session: OpenProtein):
 
 
 @pytest.mark.e2e
+def test_e2e_poet2_generate_with_prompt(session: OpenProtein):
+    """Validate PoET2 generate with a prompt that has already reached SUCCESS."""
+    n_sequences = 2
+    context = ["ACDEFGHIKLMNPQRSTVWY", "MKTAYIAKQRQISFVKSHFSRQLEERLGLIEVQ"]
+    prompt = session.prompt.create_prompt(context)
+    assert prompt.wait_until_done(timeout=TIMEOUT)
+
+    future = session.embedding.poet2.generate(
+        prompt=prompt,
+        num_samples=n_sequences,
+        temperature=1.0,
+    )
+    assert future.wait_until_done(timeout=GENERATE_TIMEOUT)
+    results = future.get()
+    _assert_generated_sequences(results=results, expected_count=n_sequences)
+
+
+@pytest.mark.e2e
 def test_e2e_proteinmpnn_score_not_implemented(session: OpenProtein):
     with pytest.raises(NotImplementedError, match="Score not yet implemented"):
         session.models.proteinmpnn.score(

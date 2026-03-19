@@ -20,9 +20,10 @@ from .schemas import FoldJob, FoldMetadata
 
 if TYPE_CHECKING:
     from .boltz import BoltzAffinity, BoltzConfidence
+    from .protenix import ProtenixConfidence
 
 FoldResult: typing.TypeAlias = (
-    "Structure | np.ndarray | pd.DataFrame | BoltzAffinity | list[BoltzConfidence]"
+    "Structure | np.ndarray | pd.DataFrame | BoltzAffinity | list[BoltzConfidence] | list[ProtenixConfidence]"
 )
 
 
@@ -307,9 +308,14 @@ class FoldResultFuture(
 
                 data = TypeAdapter(BoltzAffinity).validate_python(data)
             elif key == "confidence":
-                from .boltz import BoltzConfidence
+                if self.model_id == "protenix":
+                    from .protenix import ProtenixConfidence
 
-                data = TypeAdapter(list[BoltzConfidence]).validate_python(data)
+                    data = TypeAdapter(list[ProtenixConfidence]).validate_python(data)
+                else:
+                    from .boltz import BoltzConfidence
+
+                    data = TypeAdapter(list[BoltzConfidence]).validate_python(data)
             return data  # ty: ignore[invalid-return-type]
 
     @typing.overload
@@ -588,7 +594,9 @@ class FoldResultFuture(
             self._metrics = metrics
         return copy.deepcopy(self._metrics)
 
-    def get_confidence(self) -> list[list["BoltzConfidence"]]:
+    def get_confidence(
+        self,
+    ) -> "list[list[BoltzConfidence]] | list[list[ProtenixConfidence]]":
         """
         Retrieve the confidences of the structure prediction.
 
@@ -598,8 +606,8 @@ class FoldResultFuture(
 
         Returns
         -------
-        list[list[BoltzConfidence]]
-            List of list of BoltzConfidence objects.
+        list[list[BoltzConfidence]] | list[list[ProtenixConfidence]]
+            List of list of confidence objects (model-specific schema).
 
         Raises
         ------

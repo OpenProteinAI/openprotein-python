@@ -17,7 +17,7 @@ from .fold import FoldAPI
 from .future import FoldResultFuture
 from .minifold import MiniFoldModel
 from .models import FoldModel
-from .protenix import ProtenixModel
+from .protenix import ProtenixConfidence, ProtenixModel
 from .rosettafold3 import RosettaFold3Model
 from .schemas import FoldJob, FoldMetadata
 
@@ -28,6 +28,7 @@ __all__ = [
     "ESMFoldModel",
     "MiniFoldModel",
     "AlphaFold2Model",
+    "ProtenixConfidence",
     "ProtenixModel",
     "Boltz1Model",
     "Boltz1xModel",

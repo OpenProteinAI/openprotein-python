@@ -89,7 +89,7 @@ markers = [
   "slow: Slow-running tests",
   "integration: Integration tests",
 ]
-addopts = "-v --strict-markers --tb=short --disable-warnings"
+addopts = "-v --strict-markers --tb=short --disable-warnings -m 'not e2e'"
 timeout = 1200
 testpaths = ["tests"]
 log_cli = false

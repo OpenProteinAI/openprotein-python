@@ -14,6 +14,7 @@ from openprotein.fold.models import FoldModel
 from openprotein.fold.protenix import ProtenixModel
 from openprotein.fold.schemas import FoldJob, FoldMetadata
 from openprotein.jobs.schemas import JobStatus, JobType
+from openprotein.prompt import PromptAPI
 
 
 @pytest.fixture
@@ -120,13 +121,19 @@ def test_protenix_model_fold(mock_fold_get, mock_fold_models_post, mock_session)
         model_id="protenix",
     )
 
+    mock_session.prompt = MagicMock(spec=PromptAPI)
+
     model = ProtenixModel(session=mock_session, model_id="protenix")
     future = model.fold(sequences=["SEQ"])
 
     mock_fold_models_post.assert_called_once_with(
         session=mock_session,
         model_id="protenix",
-        sequences=[[{"protein": {"id": "A", "sequence": "SEQ"}}]],
+        sequences=[[{"protein": {"id": "A", "sequence": "SEQ", "msa_id": None}}]],
+        diffusion_samples=1,
+        num_recycles=10,
+        num_steps=200,
+        templates=None,
     )
     assert isinstance(future, FoldResultFuture)
     assert future.job.job_id == "job123"
