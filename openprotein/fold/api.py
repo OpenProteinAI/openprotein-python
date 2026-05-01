@@ -140,7 +140,7 @@ def fold_get_extra_result(
     session: APISession,
     job_id: str,
     sequence_or_index: bytes | str | int,
-    key: Literal["pae", "pde", "plddt", "ptm"],
+    key: Literal["pae", "pde", "plddt", "ptm", "ipae"],
 ) -> np.ndarray: ...
 
 
@@ -176,7 +176,15 @@ def fold_get_extra_result(
     job_id: str,
     sequence_or_index: bytes | str | int,
     key: Literal[
-        "pae", "pde", "plddt", "ptm", "confidence", "affinity", "score", "metrics"
+        "pae",
+        "pde",
+        "plddt",
+        "ptm",
+        "ipae",
+        "confidence",
+        "affinity",
+        "score",
+        "metrics",
     ],
 ) -> "np.ndarray | list[dict] | dict | pd.DataFrame":
     """
@@ -190,15 +198,16 @@ def fold_get_extra_result(
         Job ID to retrieve results from.
     sequence_or_index : bytes or str or int
         Sequence to retrieve results for or its index in the job.
-    key : {'pae', 'pde', 'plddt', 'ptm', 'confidence', 'affinity', 'score', 'metrics'}
-        The type of result to retrieve.
+    key : {'pae', 'pde', 'plddt', 'ptm', 'ipae', 'confidence', 'affinity', 'score', 'metrics'}
+        The type of result to retrieve. ``ipae`` is a synthetic scalar per
+        unit (shape ``(1,)``) derived from ``pae`` and the chain layout.
 
     Returns
     -------
     numpy.ndarray or list of dict
-        The result as a numpy array (for "pae", "pde", "plddt") or a list of dictionaries (for "confidence", "affinity").
+        The result as a numpy array (for "pae", "pde", "plddt", "ptm", "ipae") or a list of dictionaries (for "confidence", "affinity").
     """
-    if key in {"pae", "pde", "plddt", "ptm"}:
+    if key in {"pae", "pde", "plddt", "ptm", "ipae"}:
 
         def formatter(response):
             return np.load(io.BytesIO(response.content))
@@ -224,6 +233,82 @@ def fold_get_extra_result(
         raise e
     output = formatter(response)
     return output
+
+
+@typing.overload
+def fold_get_batch_extra_result(
+    session: APISession,
+    job_id: str,
+    key: Literal["pae", "pde", "plddt", "ptm", "ipae"],
+) -> np.ndarray: ...
+
+
+@typing.overload
+def fold_get_batch_extra_result(
+    session: APISession,
+    job_id: str,
+    key: Literal["confidence"],
+) -> list[list[dict] | None]: ...
+
+
+@typing.overload
+def fold_get_batch_extra_result(
+    session: APISession,
+    job_id: str,
+    key: Literal["affinity"],
+) -> list[dict | None]: ...
+
+
+def fold_get_batch_extra_result(
+    session: APISession,
+    job_id: str,
+    key: Literal["pae", "pde", "plddt", "ptm", "ipae", "confidence", "affinity"],
+) -> "np.ndarray | list":
+    """
+    Fetch an extra result key stacked across every unit in a fold job.
+
+    Backed by a single server call to ``/v1/fold/{job_id}/results/{key}``
+    (not N per-unit calls). For ``.npy`` keys the server pads per-unit
+    arrays with NaN to the per-axis max shape and stacks along a new
+    leading dim; for ``.json`` keys it returns a length-``N`` array where
+    element ``i`` is unit ``i``'s parsed JSON (``None`` if that unit's
+    result was missing or failed to fetch).
+
+    Parameters
+    ----------
+    session : APISession
+        Session object for API communication.
+    job_id : str
+        Job ID to retrieve results from.
+    key : {'pae', 'pde', 'plddt', 'ptm', 'ipae', 'confidence', 'affinity'}
+        The type of result to retrieve. ``ipae`` returns shape ``[N]``.
+
+    Returns
+    -------
+    numpy.ndarray or list
+        ``np.ndarray`` of shape ``[N, ...]`` for npy keys; ``list`` of
+        length ``N`` for json keys (``confidence`` / ``affinity``), with
+        ``None`` entries for units whose per-unit result could not be
+        fetched.
+    """
+    if key in {"pae", "pde", "plddt", "ptm", "ipae"}:
+
+        def formatter(response):
+            return np.load(io.BytesIO(response.content))
+    elif key in {"confidence", "affinity"}:
+
+        def formatter(response):
+            return response.json()
+    else:
+        raise ValueError(f"Unexpected key: {key}")
+    endpoint = PATH_PREFIX + f"/{job_id}/results/{key}"
+    try:
+        response = session.get(endpoint)
+    except HTTPError as e:
+        if e.status_code == 400 and key == "affinity":
+            raise ValueError("affinity not found for request") from None
+        raise e
+    return formatter(response)
 
 
 def fold_models_post(

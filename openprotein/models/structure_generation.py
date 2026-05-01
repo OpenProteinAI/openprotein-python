@@ -48,5 +48,5 @@ class StructureGenerationFuture(MappedFuture[int, Complex]):
         for _, v in super().stream(**kwargs):
             yield v
 
-    def get(self, **kwargs) -> list[Complex]:
+    def _get(self, verbose: bool = False, **kwargs) -> list[Complex]:
         return [v for v in self.stream(**kwargs)]

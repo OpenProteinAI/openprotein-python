@@ -139,13 +139,19 @@ def resolve_templates(session: APISession, templates: Sequence[Template]) -> lis
                 query=template.template
             )
 
-        template_dict = {"query_id": struct_id_to_query_id[struct_id]}
+        template_dict: dict = {"query_id": struct_id_to_query_id[struct_id]}
         if template.mapping is not None:
             if isinstance(template.mapping, str):
                 template_dict["chain_id"] = template.mapping
             else:
                 template_dict["chain_id"] = list(template.mapping.values())
                 template_dict["template_id"] = list(template.mapping.keys())
+        if template.index is not None:
+            template_dict["index"] = list(template.index)
+        if template.index_intervals is not None:
+            template_dict["index_intervals"] = [
+                [int(start), int(end)] for start, end in template.index_intervals
+            ]
         template_dicts.append(template_dict)
 
     return template_dicts
@@ -157,11 +163,14 @@ def serialize_input(session: APISession, complexes: list[Complex], needs_msa: bo
     msa_to_seed: dict[str, set[str]] = dict()
     for complex in complexes:
         _complex: list[dict[str, Any]] = []
-        for chain_id, chain in complex.get_chains().items():
+        for chain_ids, chain in complex.get_id_groups():
+            id_field: str | list[str] = (
+                chain_ids[0] if len(chain_ids) == 1 else list(chain_ids)
+            )
             if isinstance(chain, Protein):
                 # add the protein in the unified format
                 p: dict = {
-                    "id": chain_id,
+                    "id": id_field,
                     "sequence": chain.sequence.decode(),
                 }
                 if needs_msa:
@@ -199,19 +208,17 @@ def serialize_input(session: APISession, complexes: list[Complex], needs_msa: bo
                     p["msa_id"] = msa_id
                 _complex.append({"protein": p})
             elif isinstance(chain, Ligand):
-                ligand_payload = {
-                    "id": chain_id,
-                }
+                ligand_payload: dict[str, Any] = {"id": id_field}
                 if chain.smiles is not None:
                     ligand_payload["smiles"] = chain.smiles
                 if chain.ccd is not None:
                     ligand_payload["ccd"] = chain.ccd
                 _complex.append({"ligand": ligand_payload})
             elif isinstance(chain, DNA):
-                d = {"id": chain_id, "sequence": chain.sequence}
+                d: dict[str, Any] = {"id": id_field, "sequence": chain.sequence}
                 _complex.append({"dna": d})
             elif isinstance(chain, RNA):
-                r = {"id": chain_id, "sequence": chain.sequence}
+                r: dict[str, Any] = {"id": id_field, "sequence": chain.sequence}
                 _complex.append({"rna": r})
             else:
                 raise ValueError(f"Unexpected chain type: {chain}")

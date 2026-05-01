@@ -1,9 +1,11 @@
 """L2 integration tests for the embeddings domain."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 
+from openprotein.common import ModelMetadata
+from openprotein.embeddings import api as embeddings_api_module
 from openprotein.embeddings.embeddings import EmbeddingsAPI
 from openprotein.embeddings.poet import PoETModel
 
@@ -61,3 +63,23 @@ def test_embeddings_api_model_call(mock_session: MagicMock):
         mock_poet_instance.embed.assert_called_once_with(
             sequences=[b"ACGT"], prompt="p1"
         )
+
+
+def test_embeddings_list_models_uses_verbose(mock_session: MagicMock):
+    """Test that list_models calls api.list_models with verbose=True."""
+    mock_metadata1 = MagicMock()
+    mock_metadata1.id = "prot-seq"
+    mock_metadata2 = MagicMock()
+    mock_metadata2.id = "poet"
+
+    with patch.object(
+        embeddings_api_module,
+        "list_models",
+        return_value=[mock_metadata1, mock_metadata2],
+    ) as mock_list:
+        emb_api = EmbeddingsAPI(mock_session)
+        mock_list.assert_called_once_with(mock_session, verbose=True)
+
+        # Models should be created with the metadata objects
+        assert hasattr(emb_api, "prot_seq")
+        assert hasattr(emb_api, "poet")

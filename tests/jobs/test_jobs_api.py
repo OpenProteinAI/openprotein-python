@@ -71,3 +71,38 @@ def test_jobs_list_with_all_params(
     }
 
     mock_session.get.assert_called_once_with("v1/jobs", params=expected_params)
+
+
+def test_jobs_list_with_page_params(
+    mock_session: MagicMock, job_response_json: dict[str, Any]
+) -> None:
+    """Tests jobs_list forwards page_size and page_offset to the server."""
+    mock_session.get.return_value.json.return_value = [job_response_json]
+
+    jobs_api.jobs_list(session=mock_session, page_size=25, page_offset=50)
+
+    mock_session.get.assert_called_once_with(
+        "v1/jobs", params={"page_size": 25, "page_offset": 50}
+    )
+
+
+def test_jobs_list_page_offset_only(
+    mock_session: MagicMock, job_response_json: dict[str, Any]
+) -> None:
+    """page_offset can be sent on its own."""
+    mock_session.get.return_value.json.return_value = [job_response_json]
+
+    jobs_api.jobs_list(session=mock_session, page_offset=10)
+
+    mock_session.get.assert_called_once_with("v1/jobs", params={"page_offset": 10})
+
+
+def test_jobs_list_legacy_limit_unchanged(
+    mock_session: MagicMock, job_response_json: dict[str, Any]
+) -> None:
+    """Existing callers using `limit` still send only `limit` (backwards compat)."""
+    mock_session.get.return_value.json.return_value = [job_response_json]
+
+    jobs_api.jobs_list(session=mock_session, limit=10)
+
+    mock_session.get.assert_called_once_with("v1/jobs", params={"limit": 10})

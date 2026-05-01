@@ -14,10 +14,19 @@ from .schemas import FeatureType, UMAPEmbeddingsJob, UMAPFitJob, UMAPMetadata
 PATH_PREFIX = "v1/umap"
 
 
-def umap_list_get(session: APISession) -> list[UMAPMetadata]:
+def umap_list_get(
+    session: APISession,
+    limit: int | None = None,
+    offset: int | None = None,
+) -> list[UMAPMetadata]:
     """Get UMAP job metadata for all UMAPs. Including UMAP dimension and sequence lengths."""
     endpoint = PATH_PREFIX
-    response = session.get(endpoint)
+    params = {}
+    if limit is not None:
+        params["limit"] = limit
+    if offset is not None:
+        params["offset"] = offset
+    response = session.get(endpoint, params=params or None)
     return TypeAdapter(list[UMAPMetadata]).validate_python(response.json())
 
 

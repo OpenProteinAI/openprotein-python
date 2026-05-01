@@ -189,6 +189,7 @@ class AlignAPI:
         sequences: Sequence[bytes | str],
         names: Sequence[str] | None = None,
         scheme: AbNumberScheme = AbNumberScheme.CHOTHIA,
+        drop_minority_chains: bool = False,
     ) -> MSAFuture:
         """
         Align antibody sequences using `AbNumber`.
@@ -205,6 +206,10 @@ class AlignAPI:
             Optional list of sequence names, must be the same length as sequences if provided.
         scheme : AbNumberScheme, default=AbNumberScheme.CHOTHIA
             Antibody numbering scheme.
+        drop_minority_chains : bool, default=False
+            If True, drop sequences belonging to chain types that are in the
+            minority (e.g. heavy vs light) so the resulting alignment contains
+            only the dominant chain type.
 
         Returns
         -------
@@ -235,10 +240,15 @@ class AlignAPI:
                 lines.append(sequence)
         content = b"\n".join(lines)
         stream = BytesIO(content)
-        return self.abnumber_file(stream, scheme=scheme)
+        return self.abnumber_file(
+            stream, scheme=scheme, drop_minority_chains=drop_minority_chains
+        )
 
     def abnumber_file(
-        self, file, scheme: AbNumberScheme = AbNumberScheme.CHOTHIA
+        self,
+        file,
+        scheme: AbNumberScheme = AbNumberScheme.CHOTHIA,
+        drop_minority_chains: bool = False,
     ) -> MSAFuture:
         """
         Align antibody sequences using `AbNumber`.
@@ -253,13 +263,22 @@ class AlignAPI:
             Sequences to align in FASTA or CSV format.
         scheme : AbNumberScheme, default=AbNumberScheme.CHOTHIA
             Antibody numbering scheme.
+        drop_minority_chains : bool, default=False
+            If True, drop sequences belonging to chain types that are in the
+            minority (e.g. heavy vs light) so the resulting alignment contains
+            only the dominant chain type.
 
         Returns
         -------
         MSAFuture
             Future object awaiting the contents of the MSA upload.
         """
-        job = api.abnumber_post(self.session, file, scheme=scheme)
+        job = api.abnumber_post(
+            self.session,
+            file,
+            scheme=scheme,
+            drop_minority_chains=drop_minority_chains,
+        )
         return MSAFuture.create(session=self.session, job=job)
 
     def upload_msa(self, msa_file: BinaryIO) -> MSAFuture:

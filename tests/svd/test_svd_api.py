@@ -22,7 +22,25 @@ def test_svd_list_get(mock_session: MagicMock):
         }
     ]
     result = api.svd_list_get(mock_session)
-    mock_session.get.assert_called_once_with("v1/embeddings/svd")
+    mock_session.get.assert_called_once_with("v1/embeddings/svd", params=None)
+    assert len(result) == 1
+    assert isinstance(result[0], SVDMetadata)
+
+
+def test_svd_list_get_with_pagination(mock_session: MagicMock):
+    """Test svd_list_get with limit and offset."""
+    mock_session.get.return_value.json.return_value = [
+        {
+            "id": "svd-1",
+            "status": "SUCCESS",
+            "model_id": "model-1",
+            "n_components": 10,
+        }
+    ]
+    result = api.svd_list_get(mock_session, limit=10, offset=5)
+    mock_session.get.assert_called_once_with(
+        "v1/embeddings/svd", params={"limit": 10, "offset": 5}
+    )
     assert len(result) == 1
     assert isinstance(result[0], SVDMetadata)
 

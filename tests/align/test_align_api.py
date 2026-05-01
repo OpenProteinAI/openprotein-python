@@ -8,6 +8,7 @@ from openprotein.align.api import (
     clustalo_post,
     get_align_job_inputs,
     get_input,
+    get_msa,
     get_seed,
     mafft_post,
     msa_post,
@@ -15,7 +16,7 @@ from openprotein.align.api import (
 )
 from openprotein.align.schemas import AlignType, MSASamplingMethod
 from openprotein.base import APISession
-from openprotein.errors import InvalidParameterError, MissingParameterError
+from openprotein.errors import HTTPError, InvalidParameterError, MissingParameterError
 from openprotein.jobs import Job, JobStatus, JobType
 
 
@@ -59,6 +60,31 @@ def test_get_input(mock_csv_stream, mock_get_align_job_inputs, mock_session: Mag
         session=mock_session, job_id="job1", input_type=AlignType.MSA, prompt_index=None
     )
     mock_csv_stream.assert_called_once()
+
+
+def test_get_msa_surfaces_incomplete_job_error(mock_session: MagicMock):
+    """Backend returns 409 when results are requested before the align job completes.
+
+    The client should propagate the HTTPError carrying both the status code and
+    the backend's clarifying detail, so the user can tell the job is still
+    pending rather than missing.
+    """
+    response = MagicMock()
+    response.status_code = 409
+    response.url = "https://api.openprotein.ai/api/v1/align/inputs"
+    response.text = (
+        '{"detail":"Job abc has not produced results yet (status: PENDING). '
+        'Results are only available once the job completes successfully."}'
+    )
+    mock_session.get.side_effect = HTTPError(response)
+
+    with pytest.raises(HTTPError) as excinfo:
+        # get_msa -> get_input -> get_align_job_inputs -> session.get
+        list(get_msa(mock_session, "abc"))
+
+    assert excinfo.value.status_code == 409
+    assert "has not produced results yet" in excinfo.value.text
+    assert "PENDING" in excinfo.value.text
 
 
 def test_msa_post_with_seed(mock_session: MagicMock, sample_job_dict: dict):
@@ -112,6 +138,31 @@ def test_abnumber_post_invalid_scheme(mock_session: MagicMock):
         Exception, match="Antibody numbering invalid_scheme not recognized"
     ):
         abnumber_post(mock_session, io.BytesIO(), scheme="invalid_scheme")  # type: ignore - testing runtime error
+
+
+def test_abnumber_post_default_drop_minority_chains(
+    mock_session: MagicMock, sample_job_dict: dict
+):
+    """abnumber_post should default drop_minority_chains to False."""
+    mock_session.post.return_value.json.return_value = sample_job_dict
+    sequence_file = io.BytesIO(b"test")
+    abnumber_post(mock_session, sequence_file)
+
+    args, kwargs = mock_session.post.call_args
+    assert args[0] == "v1/align/abnumber"
+    assert kwargs["params"]["drop_minority_chains"] is False
+
+
+def test_abnumber_post_with_drop_minority_chains(
+    mock_session: MagicMock, sample_job_dict: dict
+):
+    """abnumber_post should forward drop_minority_chains=True."""
+    mock_session.post.return_value.json.return_value = sample_job_dict
+    sequence_file = io.BytesIO(b"test")
+    abnumber_post(mock_session, sequence_file, drop_minority_chains=True)
+
+    args, kwargs = mock_session.post.call_args
+    assert kwargs["params"]["drop_minority_chains"] is True
 
 
 def test_prompt_post_valid(mock_session: MagicMock, sample_job_dict: dict):

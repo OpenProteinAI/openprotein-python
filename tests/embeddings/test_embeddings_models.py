@@ -39,6 +39,26 @@ def test_embedding_model_create(model_id, expected_class):
             mock_get_metadata.assert_called_once()
 
 
+def test_embedding_model_create_with_metadata():
+    """Test that pre-provided metadata skips the get_metadata API call."""
+    mock_session = MagicMock()
+    mock_metadata = MagicMock()
+    mock_metadata.id = "prot-seq"
+
+    with patch.object(
+        OpenProteinModel, "get_metadata", return_value=MagicMock()
+    ) as mock_get_metadata:
+        model = EmbeddingModel.create(
+            session=mock_session,
+            model_id="prot-seq",
+            default=EmbeddingModel,
+            metadata=mock_metadata,
+        )
+        assert isinstance(model, OpenProteinModel)
+        mock_get_metadata.assert_not_called()
+        assert model._metadata is mock_metadata
+
+
 def test_embedding_model_create_unsupported_error():
     """Test that creating an unsupported model without a default raises an error."""
     mock_session = MagicMock()

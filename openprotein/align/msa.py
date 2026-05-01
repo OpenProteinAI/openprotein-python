@@ -45,7 +45,7 @@ class MSAFuture(AlignFuture, Future):
         self.page_size = page_size
         self.msa_id = self.job.job_id
 
-    def get(self, verbose: bool = False) -> Iterator[tuple[str, str]]:
+    def _get(self, verbose: bool = False) -> Iterator[tuple[str, str]]:
         """
         Retrieve the MSA of the job.
 

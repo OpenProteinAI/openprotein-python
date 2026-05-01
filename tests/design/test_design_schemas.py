@@ -43,11 +43,19 @@ def test_criterion_and_operator():
     """Test the AND (&) operator for combining criteria."""
     mc1 = ModelCriterion(model_id="m1", measurement_name="p1") > 1
     mc2 = ModelCriterion(model_id="m2", measurement_name="p2") < 2
+
+    combined = mc1 & mc2
+    assert isinstance(combined, Criterion)
+    assert len(combined.root) == 2
+
+
+def test_criterion_and_rejects_mixed_types():
+    """Test that AND (&) rejects mixing model and n_mutations criteria."""
+    mc = ModelCriterion(model_id="m1", measurement_name="p1") > 1
     nmc = n_mutations()
 
-    combined = mc1 & mc2 & nmc
-    assert isinstance(combined, Criterion)
-    assert len(combined.root) == 3
+    with pytest.raises(ValueError, match="Cannot AND model and n_mutations"):
+        mc & nmc
 
 
 def test_criteria_or_operator():

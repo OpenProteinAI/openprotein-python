@@ -137,7 +137,7 @@ class UMAPModel(Future["UMAPModel"]):
         """
         return api.umap_delete(self.session, self.id)
 
-    def get(self, verbose: bool = False):
+    def _get(self, verbose: bool = False):
         """Retrieve this UMAP model itself."""
         return self
 

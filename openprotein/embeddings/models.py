@@ -74,6 +74,7 @@ class EmbeddingModel:
         session: APISession,
         model_id: str,
         default: type["EmbeddingModel"] | None = None,
+        metadata: ModelMetadata | None = None,
         **kwargs,
     ):
         """
@@ -87,6 +88,8 @@ class EmbeddingModel:
             The model identifier.
         default : type variable of EmbeddingModel or None, optional
             Default EmbeddingModel subclass to use if no match is found.
+        metadata : ModelMetadata or None, optional
+            Pre-fetched metadata to avoid an extra API call.
         kwargs :
             Additional keyword arguments to pass to the model constructor.
 
@@ -106,11 +109,11 @@ class EmbeddingModel:
         # Find the EmbeddingModel class that matches the model_id
         for model_class in model_classes:
             if model_id in model_class.get_model():
-                return model_class(session=session, model_id=model_id, **kwargs)
+                return model_class(session=session, model_id=model_id, metadata=metadata, **kwargs)
         # default to ProtembedModel
         if default is not None:
             try:
-                return default(session=session, model_id=model_id, **kwargs)
+                return default(session=session, model_id=model_id, metadata=metadata, **kwargs)
             except:
                 # continue to throw error as unsupported
                 pass

@@ -69,7 +69,7 @@ class Prompt(Future):
     def __repr__(self) -> str:
         return repr(self.metadata)
 
-    def get(self) -> list[list[Protein]]:
+    def _get(self, verbose: bool = False, **kwargs) -> list[list[Protein]]:
         """
         Retrieve the prompt as a list of :py:class:`~openprotein.molecules.Protein`.
 

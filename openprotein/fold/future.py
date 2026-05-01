@@ -22,9 +22,7 @@ if TYPE_CHECKING:
     from .boltz import BoltzAffinity, BoltzConfidence
     from .protenix import ProtenixConfidence
 
-FoldResult: typing.TypeAlias = (
-    "Structure | np.ndarray | pd.DataFrame | BoltzAffinity | list[BoltzConfidence] | list[ProtenixConfidence]"
-)
+FoldResult: typing.TypeAlias = "Structure | np.ndarray | pd.DataFrame | BoltzAffinity | list[BoltzConfidence] | list[ProtenixConfidence]"
 
 
 class FoldResultFuture(
@@ -234,6 +232,7 @@ class FoldResultFuture(
                 "pde",
                 "plddt",
                 "ptm",
+                "ipae",
             ]
             | None
         ) = None,
@@ -275,6 +274,7 @@ class FoldResultFuture(
                 "pde",
                 "plddt",
                 "ptm",
+                "ipae",
                 "confidence",
                 "affinity",
                 "score",
@@ -333,6 +333,7 @@ class FoldResultFuture(
                 "pde",
                 "plddt",
                 "ptm",
+                "ipae",
             ]
             | None
         ) = None,
@@ -371,6 +372,7 @@ class FoldResultFuture(
                 "pde",
                 "plddt",
                 "ptm",
+                "ipae",
                 "confidence",
                 "affinity",
                 "score",
@@ -399,6 +401,7 @@ class FoldResultFuture(
                 "pde",
                 "plddt",
                 "ptm",
+                "ipae",
             ]
             | None
         ) = None,
@@ -440,6 +443,7 @@ class FoldResultFuture(
                 "pde",
                 "plddt",
                 "ptm",
+                "ipae",
                 "confidence",
                 "affinity",
                 "score",
@@ -548,6 +552,37 @@ class FoldResultFuture(
             self._ptm = ptm
         return [readonly_view(x) for x in self._ptm]
 
+    def get_ipae(self) -> list[np.ndarray]:
+        """
+        Get the interface PAE (iPAE) — a synthetic scalar per unit derived
+        from ``pae`` and the per-unit protein-chain layout. Returns one
+        shape-``(1,)`` array per fold output.
+
+        Returns
+        -------
+        list[np.ndarray]
+            iPAE scalars (one ``(1,)`` array per unit).
+
+        Raises
+        ------
+        AttributeError
+            If iPAE is not supported for the model.
+        """
+        if self.model_id not in {
+            "boltz-1",
+            "boltz-1x",
+            "boltz-2",
+            "alphafold2",
+            "esmfold",
+        }:
+            raise AttributeError("ipae not supported for this model")
+        if not hasattr(self, "_ipae"):
+            self._ipae = None
+        if self._ipae is None:
+            ipae = self.get(key="ipae")
+            self._ipae = ipae
+        return [readonly_view(x) for x in self._ipae]
+
     def get_score(self) -> list[pd.DataFrame]:
         """
         Get the predicted scores.
@@ -650,3 +685,118 @@ class FoldResultFuture(
             affinity = self.get(key="affinity")
             self._affinity = affinity
         return copy.deepcopy(self._affinity)
+
+    # ------------------------------------------------------------------ #
+    # Batch-extras accessors: one HTTP call to the server's
+    # /fold/{id}/results/{key} endpoint rather than per-unit fan-out.
+    # ------------------------------------------------------------------ #
+
+    def get_pae_batch(self) -> np.ndarray:
+        """
+        Get the Predicted Aligned Error (PAE) for every unit as a single
+        stacked ``np.ndarray`` of shape ``[N, ...]``. Per-unit arrays that
+        differ in size are NaN-padded to the per-axis max shape.
+        """
+        if self.model_id not in {
+            "boltz-1",
+            "boltz-1x",
+            "boltz-2",
+            "alphafold2",
+            "esmfold",
+        }:
+            raise AttributeError("pae not supported for this model")
+        return readonly_view(
+            api.fold_get_batch_extra_result(self.session, self.job.job_id, "pae")
+        )
+
+    def get_pde_batch(self) -> np.ndarray:
+        """Like ``get_pae_batch`` but for PDE. Shape ``[N, ...]``, NaN-padded."""
+        if self.model_id not in {"boltz-1", "boltz-1x", "boltz-2"}:
+            raise AttributeError("pde not supported for this model")
+        return readonly_view(
+            api.fold_get_batch_extra_result(self.session, self.job.job_id, "pde")
+        )
+
+    def get_plddt_batch(self) -> np.ndarray:
+        """Like ``get_pae_batch`` but for pLDDT. Shape ``[N, ...]``, NaN-padded."""
+        if self.model_id not in {"boltz-1", "boltz-1x", "boltz-2", "alphafold2"}:
+            raise AttributeError("plddt not supported for this model")
+        return readonly_view(
+            api.fold_get_batch_extra_result(self.session, self.job.job_id, "plddt")
+        )
+
+    def get_ptm_batch(self) -> np.ndarray:
+        """Like ``get_pae_batch`` but for pTM. Shape ``[N, ...]``, NaN-padded."""
+        if self.model_id not in {"alphafold2"}:
+            raise AttributeError("ptm not supported for this model")
+        return readonly_view(
+            api.fold_get_batch_extra_result(self.session, self.job.job_id, "ptm")
+        )
+
+    def get_ipae_batch(self) -> np.ndarray:
+        """
+        Get iPAE for every unit as a single ``np.ndarray`` of shape ``[N]``.
+        Units whose per-unit iPAE could not be computed appear as ``NaN``.
+        """
+        if self.model_id not in {
+            "boltz-1",
+            "boltz-1x",
+            "boltz-2",
+            "alphafold2",
+            "esmfold",
+        }:
+            raise AttributeError("ipae not supported for this model")
+        arr = api.fold_get_batch_extra_result(self.session, self.job.job_id, "ipae")
+        if arr.ndim == 2 and arr.shape[1] == 1:
+            arr = arr.squeeze(axis=1)
+        return readonly_view(arr)
+
+    def get_confidence_batch(
+        self,
+    ) -> "list[list[BoltzConfidence] | None] | list[list[ProtenixConfidence] | None]":
+        """
+        Retrieve per-unit confidence objects in a single HTTP call.
+
+        Returns a length-``N`` list; each entry is that unit's parsed
+        confidence list, or ``None`` if the server could not fetch the
+        result for that unit.
+        """
+        if self.model_id not in {"boltz-1", "boltz-1x", "boltz-2", "protenix"}:
+            raise AttributeError("confidence not supported for this model")
+        raw = api.fold_get_batch_extra_result(
+            self.session, self.job.job_id, "confidence"
+        )
+        if self.model_id == "protenix":
+            from .protenix import ProtenixConfidence
+
+            return [
+                None
+                if entry is None
+                else TypeAdapter(list[ProtenixConfidence]).validate_python(entry)
+                for entry in raw
+            ]
+        from .boltz import BoltzConfidence
+
+        return [
+            None
+            if entry is None
+            else TypeAdapter(list[BoltzConfidence]).validate_python(entry)
+            for entry in raw
+        ]
+
+    def get_affinity_batch(self) -> "list[BoltzAffinity | None]":
+        """
+        Retrieve per-unit affinity objects in a single HTTP call.
+
+        Returns a length-``N`` list; each entry is a ``BoltzAffinity`` or
+        ``None`` if the server could not fetch that unit's result.
+        """
+        if self.model_id not in {"boltz-1", "boltz-1x", "boltz-2"}:
+            raise AttributeError("affinity not supported for non-Boltz model")
+        raw = api.fold_get_batch_extra_result(self.session, self.job.job_id, "affinity")
+        from .boltz import BoltzAffinity
+
+        return [
+            None if entry is None else TypeAdapter(BoltzAffinity).validate_python(entry)
+            for entry in raw
+        ]

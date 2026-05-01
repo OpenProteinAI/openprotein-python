@@ -67,7 +67,14 @@ class Subcriterion(BaseModel):
             raise ValueError(
                 f"Expected to chain only with criterion or subcriterion, got {type(other)}"
             )
-        return Criterion([self] + others)  # type: ignore - doesnt like Self
+        all_subcriteria = [self] + others
+        types = {sc.criterion_type for sc in all_subcriteria}
+        if len(types) > 1:
+            raise ValueError(
+                "Cannot AND model and n_mutations criteria in the same group. "
+                "Use | (OR) to put them in separate groups instead."
+            )
+        return Criterion(all_subcriteria)  # type: ignore - doesnt like Self
 
     def __or__(self, other: "Subcriterion | Criterion | Any") -> "Criteria":
         """
@@ -332,7 +339,14 @@ class Criterion(RootModel):
         elif isinstance(other, Criterion):
             others = other.root
 
-        return Criterion(self.root + others)
+        all_subcriteria = self.root + others
+        types = {sc.criterion_type for sc in all_subcriteria}
+        if len(types) > 1:
+            raise ValueError(
+                "Cannot AND model and n_mutations criteria in the same group. "
+                "Use | (OR) to put them in separate groups instead."
+            )
+        return Criterion(all_subcriteria)
 
     def __or__(self, other: "Criterion | Subcriterion") -> "Criteria":
         """

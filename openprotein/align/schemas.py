@@ -157,7 +157,24 @@ class AbNumberJob(MSAJob, Job):
 
 
 class AbNumberScheme(str, Enum):
-    """Antibody numbering scheme."""
+    """
+    Antibody numbering scheme.
+
+    Attributes
+    ----------
+    IMGT : str
+        IMGT numbering scheme, a standardized system unifying numbering across
+        all immunoglobulin and T-cell receptor variable domains.
+    CHOTHIA : str
+        Chothia numbering scheme, based on the structural location of
+        canonical loops in antibody variable domains.
+    KABAT : str
+        Kabat numbering scheme, based on sequence variability across
+        antibody variable domains.
+    AHO : str
+        AHo numbering scheme, a structure-based unified numbering scheme
+        for antibody variable domains.
+    """
 
     IMGT = "imgt"
     CHOTHIA = "chothia"

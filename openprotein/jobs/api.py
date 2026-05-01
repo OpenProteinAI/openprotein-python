@@ -30,6 +30,8 @@ def jobs_list(
     assay_id: str | None = None,
     more_recent_than: str | None = None,
     limit: int | None = None,
+    page_size: int | None = None,
+    page_offset: int | None = None,
 ) -> List[Job]:
     """
     Retrieve a list of jobs filtered by specific criteria.
@@ -46,6 +48,12 @@ def jobs_list(
         Filter by assay. If None, jobs for all assays are retrieved. Default is None.
     more_recent_than : str, optional
         Retrieve jobs that are more recent than a specified date. If None, no date filtering is applied. Default is None.
+    limit : int, optional
+        Deprecated alias for `page_size`. Forwarded to the server as `limit` for backwards compat.
+    page_size : int, optional
+        Maximum number of jobs to return per page.
+    page_offset : int, optional
+        Number of jobs to skip from the start of the result set.
 
     Returns
     -------
@@ -65,6 +73,10 @@ def jobs_list(
         params["more_recent_than"] = more_recent_than
     if limit is not None:
         params["limit"] = limit
+    if page_size is not None:
+        params["page_size"] = page_size
+    if page_offset is not None:
+        params["page_offset"] = page_offset
 
     response = session.get(endpoint, params=params)
     # return jobs, not futures

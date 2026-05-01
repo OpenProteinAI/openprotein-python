@@ -1,60 +1,56 @@
 """E2E tests for the design domain."""
 
-import os
-
 import numpy as np
 import pytest
 
 from openprotein import OpenProtein
+from openprotein.common.reduction import ReductionType
+from openprotein.data import AssayDataset
 from openprotein.design import ModelCriterion
-from openprotein.errors import HTTPError
 from tests.e2e.config import scaled_timeout
 
 TIMEOUT = scaled_timeout(2.0)
 
 
 @pytest.mark.e2e
-def test_design_workflow_e2e(session: OpenProtein):
+def test_design_workflow_e2e(session: OpenProtein, assay_small: AssayDataset):
     """
-    Tests a basic design E2E workflow:
-    1. Get a pre-trained predictor model.
-    2. Create a design criterion from that model.
-    3. Start a design job.
-    4. Wait for the design job to complete.
-    5. Fetch and validate the results.
+    Self-contained design GA workflow:
+    1. Train an ESM2 GP predictor on `assay_small`.
+    2. Build a ModelCriterion against that predictor's first measurement.
+    3. Run a tiny GA (num_steps=2, pop_size=4).
+    4. Validate the results.
     """
-    # This e2e flow requires a backend-stable, pre-trained predictor.
-    # Keep this test enabled by default, but conditionally skip when the
-    # dedicated predictor ID is not configured in this environment.
-    predictor_id = os.getenv("OPENPROTEIN_E2E_DESIGN_PREDICTOR_ID")
-    if not predictor_id:
-        pytest.skip(
-            "Set OPENPROTEIN_E2E_DESIGN_PREDICTOR_ID to run design workflow e2e"
-        )
-    try:
-        predictor = session.predictor.get_predictor(predictor_id)
-    except HTTPError as exc:
-        pytest.skip(f"Configured design predictor is unavailable: {exc}")
-    assert predictor is not None, "Failed to get predictor"
+    property_name = assay_small.measurement_names[0]
 
-    # 2. Create a design criterion
-    # We want to maximize the "yield" property predicted by our model
-    criterion = ModelCriterion(model_id=predictor.id, measurement_name="yield")
+    embedding_model = session.embedding.esm2
+    predictor_future = embedding_model.fit_gp(
+        assay=assay_small,
+        properties=[property_name],
+        reduction=ReductionType.MEAN,
+    )
+    assert predictor_future.wait(timeout=TIMEOUT), "Predictor training failed"
+    predictor = predictor_future
+    assert predictor.id is not None
 
-    # 3. Start a design job
-    assay = predictor.training_assay
-    try:
-        design_future = session.design.create_genetic_algorithm_design(
-            assay=assay, criteria=criterion, num_steps=5, pop_size=10
-        )
-    except (HTTPError, NotImplementedError) as exc:
-        pytest.skip(f"Design workflow unsupported in current backend: {exc}")
+    # The SDK's ModelCriterion requires direction and target to be set
+    # before serialization (otherwise the inner `criterion` field is dropped
+    # by Pydantic's union resolution and the backend rejects the request
+    # with KeyError 'criterion'). `> 0` is a generic maximize-toward-positive
+    # constraint suitable for a smoke test against any numeric assay.
+    criterion = (
+        ModelCriterion(model_id=predictor.id, measurement_name=property_name) > 0
+    )
 
-    # 4. Wait for the design job to complete
+    design_future = session.design.create_genetic_algorithm_design(
+        assay=assay_small,
+        criteria=criterion,
+        num_steps=2,
+        pop_size=4,
+    )
     assert design_future.wait_until_done(timeout=TIMEOUT), "Design job failed"
     results = design_future.get()
 
-    # 5. Fetch and validate results
     assert len(results) > 0, "Design job produced no results"
     first_result = results[0]
     assert isinstance(first_result.sequence, str)

@@ -13,10 +13,19 @@ from .schemas import SVDEmbeddingsJob, SVDFitJob, SVDMetadata
 PATH_PREFIX = "v1/embeddings/svd"
 
 
-def svd_list_get(session: APISession) -> list[SVDMetadata]:
+def svd_list_get(
+    session: APISession,
+    limit: int | None = None,
+    offset: int | None = None,
+) -> list[SVDMetadata]:
     """Get SVD job metadata for all SVDs. Including SVD dimension and sequence lengths."""
     endpoint = PATH_PREFIX
-    response = session.get(endpoint)
+    params = {}
+    if limit is not None:
+        params["limit"] = limit
+    if offset is not None:
+        params["offset"] = offset
+    response = session.get(endpoint, params=params or None)
     return TypeAdapter(list[SVDMetadata]).validate_python(response.json())
 
 
@@ -151,7 +160,7 @@ def svd_fit_post(
 
     endpoint = PATH_PREFIX
 
-    body = {
+    body: dict = {
         "model_id": model_id,
         "n_components": n_components,
     }

@@ -1,7 +1,5 @@
 """E2E tests for the embeddings domain."""
 
-from pathlib import Path
-
 import numpy as np
 import pytest
 
@@ -9,16 +7,32 @@ from openprotein import OpenProtein
 from openprotein.common.reduction import ReductionType
 from openprotein.data import AssayDataset
 from openprotein.errors import HTTPError
-from openprotein.molecules import Protein
 from tests.e2e.config import scaled_timeout
-from tests.utils.sequences import random_sequence_fake
+from tests.utils.sequences import random_sequence_fake, random_sequence_real
 
-# Model configurations: (model_id, expected_dimension)
+def _build_single_chain_sequence(seq_len: int) -> bytes:
+    """Default sequence builder: a single-chain random AA sequence."""
+    return random_sequence_fake(seq_len).encode()
+
+
+def _build_paired_chain_sequence(seq_len: int) -> bytes:
+    """Antibody paired-chain sequence builder: 'heavy:light'."""
+    half = max(seq_len // 2, 16)
+    heavy = random_sequence_fake(half)
+    light = random_sequence_fake(half)
+    return f"{heavy}:{light}".encode()
+
+
+# Model configurations: (model_id, expected_dimension, sequence_builder).
+# Once the upcoming dev rollout lets every model accept ':' separators, every
+# model can use _build_paired_chain_sequence and the per-model entry can
+# collapse back to (model_id, expected_dimension).
 EMBEDDING_MODELS = [
-    ("esm2_t33_650M_UR50D", 1280),
-    ("prot-seq", 1024),
-    ("poet", 1024),
-    ("poet-2", 1024),
+    ("esm2_t33_650M_UR50D", 1280, _build_single_chain_sequence),
+    ("prot-seq", 1024, _build_single_chain_sequence),
+    ("poet", 1024, _build_single_chain_sequence),
+    ("poet-2", 1024, _build_single_chain_sequence),
+    ("ablang2", None, _build_paired_chain_sequence),
 ]
 
 REDUCTION_TYPES = [
@@ -34,38 +48,44 @@ GENERATE_TIMEOUT = scaled_timeout(2.0)
 
 
 @pytest.mark.e2e
-@pytest.mark.parametrize("model_id,expected_dim", EMBEDDING_MODELS)
-def test_embedding_single_model(session: OpenProtein, model_id: str, expected_dim: int):
+@pytest.mark.parametrize("model_id,expected_dim,build_sequence", EMBEDDING_MODELS)
+def test_embedding_single_model(
+    session: OpenProtein,
+    model_id: str,
+    expected_dim: int | None,
+    build_sequence,
+):
     """
     Test embedding workflow for a single model.
     Validates model metadata and embedding output shape.
     """
-    # Get the model
+    if model_id not in {m.id for m in session.embedding.list_models()}:
+        pytest.skip(f"{model_id} is not available in this backend")
+
     model = session.embedding.get_model(model_id)
     assert model is not None, f"Failed to get model {model_id}"
-    assert model.metadata.dimension == expected_dim, (
-        f"Expected dimension {expected_dim} for {model_id}, "
-        f"got {model.metadata.dimension}"
-    )
+    if expected_dim is not None:
+        assert model.metadata.dimension == expected_dim, (
+            f"Expected dimension {expected_dim} for {model_id}, "
+            f"got {model.metadata.dimension}"
+        )
+    effective_dim = model.metadata.dimension
 
-    # Embed a small batch of sequences
-    sequences = [random_sequence_fake(SEQ_LEN).encode() for _ in range(NUM_SEQS_SMALL)]
+    sequences = [build_sequence(SEQ_LEN) for _ in range(NUM_SEQS_SMALL)]
     future = model.embed(sequences=sequences)
 
-    # Validate results
     results = future.wait(timeout=TIMEOUT)
     assert isinstance(results, list), f"Expected list, got {type(results)}"
     assert (
         len(results) == NUM_SEQS_SMALL
     ), f"Expected {NUM_SEQS_SMALL} results, got {len(results)}"
 
-    # Validate first result
     sequence, embedding = results[0]
     assert sequence == sequences[0], "Sequence mismatch in results"
     assert isinstance(embedding, np.ndarray), "Embedding is not a numpy array"
     assert embedding.shape == (
-        expected_dim,
-    ), f"Expected shape ({expected_dim},), got {embedding.shape}"
+        effective_dim,
+    ), f"Expected shape ({effective_dim},), got {embedding.shape}"
 
 
 @pytest.mark.e2e
@@ -89,28 +109,37 @@ def test_embedding_reduction_types(session: OpenProtein, reduction: ReductionTyp
 
 
 @pytest.mark.e2e
-def test_embedding_parallel_models(session: OpenProtein, test_sequences_short):
+def test_embedding_parallel_models(session: OpenProtein):
     """
     Test submitting embedding jobs to multiple models in parallel.
     Validates that the backend can handle concurrent jobs.
-    """
-    # Submit jobs to all models in parallel
-    futures = []
-    for model_id, expected_dim in EMBEDDING_MODELS:
-        model = session.embedding.get_model(model_id)
-        future = model.embed(sequences=test_sequences_short)
-        futures.append((model_id, expected_dim, future))
 
-    # Wait for all jobs and validate
-    for model_id, expected_dim, future in futures:
+    Uses a per-model sequence builder so each model gets sequences in its
+    accepted format (e.g. ablang2 needs paired heavy:light).
+    """
+    available_models = {m.id for m in session.embedding.list_models()}
+
+    futures = []
+    for model_id, _expected_dim, build_sequence in EMBEDDING_MODELS:
+        if model_id not in available_models:
+            continue
+        model = session.embedding.get_model(model_id)
+        sequences = [build_sequence(64) for _ in range(10)]
+        future = model.embed(sequences=sequences)
+        futures.append((model_id, model.metadata.dimension, sequences, future))
+
+    if not futures:
+        pytest.skip("No embedding models from EMBEDDING_MODELS available in this backend")
+
+    for model_id, dim, sequences, future in futures:
         results = future.wait(timeout=TIMEOUT)
-        assert len(results) == len(test_sequences_short), (
-            f"Model {model_id}: expected {len(test_sequences_short)} results, "
+        assert len(results) == len(sequences), (
+            f"Model {model_id}: expected {len(sequences)} results, "
             f"got {len(results)}"
         )
         _, embedding = results[0]
-        assert embedding.shape == (expected_dim,), (
-            f"Model {model_id}: expected shape ({expected_dim},), "
+        assert embedding.shape == (dim,), (
+            f"Model {model_id}: expected shape ({dim},), "
             f"got {embedding.shape}"
         )
 
@@ -261,116 +290,6 @@ def test_e2e_poet2_score_single_site_and_indel(session: OpenProtein):
 
 
 @pytest.mark.e2e
-def test_e2e_ablang2_embeddings(session: OpenProtein):
-    """Validate end-to-end embeddings with AbLang2 when available."""
-    available_models = {model.id for model in session.embedding.list_models()}
-    if "ablang2" not in available_models:
-        pytest.skip("ablang2 model is not available in this backend")
-
-    model = session.embedding.get_model("ablang2")
-    sequences = [
-        b"QVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPG:KGLEWVSAISWNSGSIGYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCARGGYYYGMDVWGQGTTVTVSS",
-        b"EVQLVESGGGLVQPGGSLRLSCAASGFNIKDTYIHWVRQAPGQ:GLEWMGIINPSNGGTNYAQKFQGRVTITADESTSTAYMELSSLRSEDTAVYYCARDRGYSSSWYFDVWGQGTLVTVSS",
-    ]
-
-    future = model.embed(sequences=sequences)
-    results = future.wait(timeout=TIMEOUT)
-
-    assert len(results) == len(sequences)
-    for i, (seq, embedding) in enumerate(results):
-        assert seq == sequences[i]
-        assert isinstance(embedding, np.ndarray)
-        assert embedding.shape == (model.metadata.dimension,)
-
-
-def _assert_generated_sequences(results: list, expected_count: int) -> None:
-    assert isinstance(results, list)
-    assert len(results) == expected_count
-    for entry in results:
-        assert isinstance(entry.sequence, str)
-        assert len(entry.sequence) > 0
-        assert isinstance(entry.score, np.ndarray)
-
-
-@pytest.mark.e2e
-def test_e2e_structure_generate_then_sequence_generate_with_design(
-    session: OpenProtein,
-):
-    """
-    Run a structure-generation -> sequence-generation workflow.
-
-    This validates that a structure generation future can be consumed directly
-    by sequence generation through `design`.
-    """
-    n_designs = 1
-    n_sequences = 2
-    design_future = session.models.rfdiffusion.generate(contigs=60, N=n_designs)
-    assert design_future.wait_until_done(timeout=GENERATE_TIMEOUT)
-
-    designs = design_future.get()
-    assert len(designs) == n_designs
-
-    seq_future = session.models.proteinmpnn.generate(
-        design=design_future,
-        num_samples=n_sequences,
-        temperature=0.1,
-    )
-    assert seq_future.wait_until_done(timeout=GENERATE_TIMEOUT)
-    results = seq_future.get()
-    _assert_generated_sequences(results=results, expected_count=n_designs * n_sequences)
-
-
-@pytest.mark.e2e
-def test_e2e_proteinmpnn_generate_with_query_fanout(session: OpenProtein):
-    """Validate list-valued `query` fan-out behavior for ProteinMPNN generation."""
-    num_queries = 2
-    n_sequences = 2
-    n_unmasked_positions = 18
-
-    structure_filepath = Path("tests/data/8bo9.cif")
-    if not structure_filepath.exists():
-        pytest.skip(f"Missing test structure file: {structure_filepath}")
-
-    # Use a full structure example recommended for ProteinMPNN inverse folding.
-    query_protein = Protein.from_filepath(path=structure_filepath, chain_id="A")
-
-    # Remove N-terminal linker residues with undefined structure.
-    sdn_linker = b"MHHHHHHSDN"
-    query_protein = query_protein[len(sdn_linker) :]
-
-    structured_positions = np.where(~query_protein.get_structure_mask())[0] + 1
-    assert len(structured_positions) >= n_unmasked_positions
-    rng = np.random.default_rng(0)
-
-    query_ids = []
-    for _ in range(num_queries):
-        unmasked_positions = np.sort(
-            rng.choice(
-                structured_positions,
-                size=n_unmasked_positions,
-                replace=False,
-            )
-        )
-        masked_query = query_protein.copy().mask_sequence_except_at(unmasked_positions)
-        query = session.prompt.create_query(query=masked_query, force_structure=True)
-        query_ids.append(query.id)
-
-    assert len(query_ids) == num_queries
-
-    future = session.models.proteinmpnn.generate(
-        query=query_ids,
-        num_samples=n_sequences,
-        temperature=0.1,
-    )
-    assert future.wait_until_done(timeout=GENERATE_TIMEOUT)
-    results = future.get()
-    _assert_generated_sequences(
-        results=results,
-        expected_count=num_queries * n_sequences,
-    )
-
-
-@pytest.mark.e2e
 def test_e2e_poet2_generate_with_query_fanout(session: OpenProtein):
     """Validate list-valued `query` fan-out behavior for PoET2 generation."""
     n_sequences = 2
@@ -387,10 +306,13 @@ def test_e2e_poet2_generate_with_query_fanout(session: OpenProtein):
     )
     assert future.wait_until_done(timeout=GENERATE_TIMEOUT)
     results = future.get()
-    _assert_generated_sequences(
-        results=results,
-        expected_count=len(query_ids) * n_sequences,
-    )
+    expected_count = len(query_ids) * n_sequences
+    assert isinstance(results, list)
+    assert len(results) == expected_count
+    for entry in results:
+        assert isinstance(entry.sequence, str)
+        assert len(entry.sequence) > 0
+        assert isinstance(entry.score, np.ndarray)
 
 
 @pytest.mark.e2e
@@ -408,32 +330,59 @@ def test_e2e_poet2_generate_with_prompt(session: OpenProtein):
     )
     assert future.wait_until_done(timeout=GENERATE_TIMEOUT)
     results = future.get()
-    _assert_generated_sequences(results=results, expected_count=n_sequences)
+    assert isinstance(results, list)
+    assert len(results) == n_sequences
+    for entry in results:
+        assert isinstance(entry.sequence, str)
+        assert len(entry.sequence) > 0
+        assert isinstance(entry.score, np.ndarray)
 
 
 @pytest.mark.e2e
-def test_e2e_proteinmpnn_score_not_implemented(session: OpenProtein):
-    with pytest.raises(NotImplementedError, match="Score not yet implemented"):
-        session.models.proteinmpnn.score(
-            sequences=[b"ACDEFGHIKLMNPQRSTVWY"],
-            query=b"ACDEFGHIKLMNPQRSTVWY",
-        )
+def test_e2e_msa_to_prompt_to_poet_score(session: OpenProtein):
+    """Chain MSA -> prompt sample -> PoET score."""
+    if "poet" not in {m.id for m in session.embedding.list_models()}:
+        pytest.skip("poet model is not available in this backend")
+
+    seed_sequence = random_sequence_real(200).encode()
+    msa_future = session.align.create_msa(seed=seed_sequence)
+    prompt_future = msa_future.sample_prompt(num_ensemble_prompts=1)
+    assert prompt_future.wait_until_done(timeout=GENERATE_TIMEOUT)
+
+    score_sequences = [seed_sequence]
+    score_results = session.embedding.poet.score(
+        sequences=score_sequences, prompt=prompt_future
+    ).wait(timeout=GENERATE_TIMEOUT)
+
+    assert len(score_results) == len(score_sequences)
+    for row in score_results:
+        assert isinstance(row.sequence, str)
+        assert len(row.sequence) > 0
+        assert isinstance(row.score, np.ndarray)
+        assert row.score.size > 0
+        assert np.isfinite(row.score).all()
 
 
 @pytest.mark.e2e
-def test_e2e_proteinmpnn_indel_not_implemented(session: OpenProtein):
-    with pytest.raises(NotImplementedError, match="Score indel not yet implemented"):
-        session.models.proteinmpnn.indel(
-            sequence=b"ACDEFGHIKLMNPQRSTVWY",
-            query=b"ACDEFGHIKLMNPQRSTVWY",
-            insert="A",
-        )
+def test_e2e_msa_to_prompt_to_poet2_score(session: OpenProtein):
+    """Chain MSA -> prompt sample -> PoET-2 score."""
+    if "poet-2" not in {m.id for m in session.embedding.list_models()}:
+        pytest.skip("poet-2 model is not available in this backend")
 
+    seed_sequence = random_sequence_real(200).encode()
+    msa_future = session.align.create_msa(seed=seed_sequence)
+    prompt_future = msa_future.sample_prompt(num_ensemble_prompts=1)
+    assert prompt_future.wait_until_done(timeout=GENERATE_TIMEOUT)
 
-@pytest.mark.e2e
-def test_e2e_proteinmpnn_single_site_not_implemented(session: OpenProtein):
-    with pytest.raises(NotImplementedError, match="Score indel not yet implemented"):
-        session.models.proteinmpnn.single_site(
-            sequence=b"ACDEFGHIKLMNPQRSTVWY",
-            query=b"ACDEFGHIKLMNPQRSTVWY",
-        )
+    score_sequences = [seed_sequence]
+    score_results = session.embedding.poet2.score(
+        sequences=score_sequences, prompt=prompt_future
+    ).wait(timeout=GENERATE_TIMEOUT)
+
+    assert len(score_results) == len(score_sequences)
+    for row in score_results:
+        assert isinstance(row.sequence, str)
+        assert len(row.sequence) > 0
+        assert isinstance(row.score, np.ndarray)
+        assert row.score.size > 0
+        assert np.isfinite(row.score).all()

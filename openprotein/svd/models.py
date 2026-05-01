@@ -99,7 +99,7 @@ class SVDModel(Future):
         """
         return api.svd_delete(self.session, self.id)
 
-    def get(self, verbose: bool = False) -> Self:
+    def _get(self, verbose: bool = False) -> Self:
         """Retrieve this SVD model itself."""
         return self
 

@@ -44,6 +44,14 @@ dev = [
   "torch>=2.2.0,<3",
 ]
 
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
 [tool.pixi.workspace]
 channels = ["conda-forge"]
 platforms = ["linux-64", "linux-aarch64", "osx-arm64"]

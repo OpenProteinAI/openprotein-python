@@ -100,10 +100,13 @@ class EmbeddingsAPI:
     def list_models(self) -> list[EmbeddingModel]:
         """list models available for creating embeddings of your sequences"""
         models = []
-        for model_id in api.list_models(self.session):
+        for metadata in api.list_models(self.session, verbose=True):
             models.append(
                 EmbeddingModel.create(
-                    session=self.session, model_id=model_id, default=EmbeddingModel
+                    session=self.session,
+                    model_id=metadata.id,
+                    default=EmbeddingModel,
+                    metadata=metadata,
                 )
             )
         return models

@@ -97,6 +97,7 @@ class Job(BaseModel):
     progress_message: str | None = None
     progress_counter: int | None = None
     sequence_length: int | None = None
+    failure_message: str | None = None
 
     @classmethod
     def create(cls, obj: "Job | Response | dict", **kwargs) -> Self:

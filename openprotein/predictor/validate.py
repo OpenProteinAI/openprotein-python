@@ -25,7 +25,7 @@ class CVResultFuture(Future):
     def id(self):
         return self.job.job_id
 
-    def get(self, verbose: bool = False) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def _get(self, verbose: bool = False) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Get embedding results for specified sequence.
 

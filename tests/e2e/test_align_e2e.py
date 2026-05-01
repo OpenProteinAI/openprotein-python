@@ -6,6 +6,8 @@ import pytest
 
 from openprotein import OpenProtein
 from openprotein.align.schemas import AbNumberScheme
+from openprotein.errors import HTTPError
+from openprotein.jobs import JobStatus
 from openprotein.molecules import Protein
 from tests.e2e.config import scaled_timeout
 from tests.utils.sequences import random_sequence_real
@@ -40,6 +42,31 @@ def test_e2e_msa_workflow(session: OpenProtein, msa_seed_sequence_length: int):
     assert (
         msa_data[0][1] == seed_sequence
     ), "Expected seed sequence to be first returned sequence"
+
+
+@pytest.mark.e2e
+def test_e2e_msa_get_before_complete_returns_clear_error(
+    session: OpenProtein, msa_seed_sequence_length: int
+):
+    """
+    Fetching MSA results before the job has completed should return a 409 with a
+    message that says the job hasn't produced results yet, instead of the old
+    misleading 404 "Requested align not found". Regression test for #529.
+    """
+    seed_sequence = random_sequence_real(msa_seed_sequence_length)
+
+    msa_future = session.align.create_msa(seed=seed_sequence)
+    msa_future.refresh()
+    if msa_future.status == JobStatus.SUCCESS:
+        pytest.skip(
+            "MSA completed before we could query it; cannot exercise the incomplete-job path"
+        )
+
+    with pytest.raises(HTTPError) as excinfo:
+        list(msa_future.get())
+
+    assert excinfo.value.status_code == 409
+    assert "has not produced results yet" in excinfo.value.text
 
 
 @pytest.mark.e2e

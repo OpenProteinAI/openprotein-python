@@ -191,11 +191,20 @@ class UMAPAPI:
         """
         return api.umap_delete(self.session, umap_id)
 
-    def list_umap(self) -> list[UMAPModel]:
+    def list_umap(
+        self,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> list[UMAPModel]:
         """
         List UMAP models made by user.
 
-        Takes no args.
+        Parameters
+        ----------
+        limit : int or None, optional
+            Maximum number of results to return. Defaults to None (all).
+        offset : int or None, optional
+            Number of results to skip. Defaults to None.
 
         Returns
         -------
@@ -207,5 +216,5 @@ class UMAPAPI:
         assert isinstance(jobs_api, JobsAPI)
         return [
             UMAPModel(session=self.session, metadata=metadata)
-            for metadata in api.umap_list_get(self.session)
+            for metadata in api.umap_list_get(self.session, limit=limit, offset=offset)
         ]

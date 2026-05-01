@@ -25,7 +25,7 @@ from typing_extensions import Self
 
 from openprotein import config
 from openprotein.base import APISession
-from openprotein.errors import APIError, TimeoutException
+from openprotein.errors import APIError, JobFailedException, TimeoutException
 from openprotein.jobs.schemas import Job, JobStatus
 
 from . import api
@@ -250,7 +250,7 @@ class Future(ABC, Generic[V]):
         self.job = self._refresh_job()
 
     @abstractmethod
-    def get(self, verbose: bool = False, **kwargs) -> V:
+    def _get(self, verbose: bool = False, **kwargs) -> V:
         """
         Return the results from this job.
 
@@ -262,6 +262,18 @@ class Future(ABC, Generic[V]):
             Additional keyword arguments.
         """
         raise NotImplementedError()
+
+    def get(self, verbose: bool = False, **kwargs) -> V:
+        if self.status == JobStatus.FAILURE:
+            raise JobFailedException(
+                job_id=self.job_id, failure_message=self.job.failure_message
+            )
+        try:
+            return self._get(verbose=verbose, **kwargs)
+        except APIError:
+            raise
+        except Exception as e:
+            raise APIError(f"Failed to retrieve results: {e}") from e
 
     def _wait_job(
         self,
@@ -389,12 +401,7 @@ class Future(ABC, Generic[V]):
         time.sleep(1)  # buffer for BE to register job
         job = self._wait_job(interval=interval, timeout=timeout, verbose=verbose)
         self.job = job
-        try:
-            return self.get()
-        except APIError:
-            raise
-        except Exception as e:
-            raise APIError(f"Failed to retrieve results: {e}") from e
+        return self.get()
 
 
 class StreamingFuture(Future[list[V]], ABC, Generic[V]):
@@ -422,7 +429,7 @@ class StreamingFuture(Future[list[V]], ABC, Generic[V]):
         """
         raise NotImplementedError()
 
-    def get(self, verbose: bool = False, **kwargs) -> list[V]:
+    def _get(self, verbose: bool = False, **kwargs) -> list[V]:
         """Return all results from the job by consuming the stream.
 
         Parameters
@@ -438,20 +445,15 @@ class StreamingFuture(Future[list[V]], ABC, Generic[V]):
             A list containing all results from the job.
 
         """
-        try:
-            generator = self.stream(**kwargs)
-            if verbose:
-                total = None
-                if hasattr(self, "__len__"):
-                    total = len(self)  # type: ignore - static type checker doesnt know
-                generator = tqdm.tqdm(
-                    generator, desc="Retrieving", total=total, position=0, mininterval=1.0
-                )
-            return [entry for entry in generator]
-        except APIError:
-            raise
-        except Exception as e:
-            raise APIError(f"Failed to parse results: {e}") from e
+        generator = self.stream(**kwargs)
+        if verbose:
+            total = None
+            if hasattr(self, "__len__"):
+                total = len(self)  # type: ignore - static type checker doesnt know
+            generator = tqdm.tqdm(
+                generator, desc="Retrieving", total=total, position=0, mininterval=1.0
+            )
+        return [entry for entry in generator]
 
     def wait(
         self,

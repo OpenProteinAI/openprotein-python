@@ -69,6 +69,59 @@ def test_fold_get_sequence_result(mock_session: MagicMock):
     assert result == b"pdb_content"
 
 
+def test_fold_get_extra_result_ipae(mock_session: MagicMock):
+    """ipae is a valid single-unit extra-result key backed by a shape-(1,) npy."""
+    buf = io.BytesIO()
+    np.save(buf, np.array([0.42], dtype=np.float32))
+    mock_session.get.return_value.content = buf.getvalue()
+    result = api.fold_get_extra_result(mock_session, "job1", 0, "ipae")
+    mock_session.get.assert_called_once_with("v1/fold/job1/0/ipae")
+    assert isinstance(result, np.ndarray)
+    assert result.shape == (1,)
+
+
+def test_fold_get_batch_extra_result_npy(mock_session: MagicMock):
+    """Batch npy key returns a single stacked np.ndarray via /results/{key}."""
+    buf = io.BytesIO()
+    stacked = np.zeros((3, 10, 10), dtype=np.float32)
+    np.save(buf, stacked)
+    mock_session.get.return_value.content = buf.getvalue()
+    result = api.fold_get_batch_extra_result(mock_session, "job1", "pae")
+    mock_session.get.assert_called_once_with("v1/fold/job1/results/pae")
+    assert isinstance(result, np.ndarray)
+    assert result.shape == (3, 10, 10)
+
+
+def test_fold_get_batch_extra_result_ipae(mock_session: MagicMock):
+    """Batch iPAE returns a shape-(N,) np.ndarray."""
+    buf = io.BytesIO()
+    np.save(buf, np.array([0.1, 0.2, 0.3], dtype=np.float32))
+    mock_session.get.return_value.content = buf.getvalue()
+    result = api.fold_get_batch_extra_result(mock_session, "job1", "ipae")
+    mock_session.get.assert_called_once_with("v1/fold/job1/results/ipae")
+    assert isinstance(result, np.ndarray)
+    assert result.shape == (3,)
+
+
+def test_fold_get_batch_extra_result_json(mock_session: MagicMock):
+    """Batch json key returns a length-N list with null→None for missing units."""
+    mock_session.get.return_value.json.return_value = [
+        [{"score": 0.9}],
+        None,
+        [{"score": 0.7}],
+    ]
+    result = api.fold_get_batch_extra_result(mock_session, "job1", "confidence")
+    mock_session.get.assert_called_once_with("v1/fold/job1/results/confidence")
+    assert result == [[{"score": 0.9}], None, [{"score": 0.7}]]
+
+
+def test_fold_get_batch_extra_result_rejects_unknown_key(mock_session: MagicMock):
+    """Unknown keys are rejected before the HTTP call."""
+    with pytest.raises(ValueError, match="Unexpected key"):
+        api.fold_get_batch_extra_result(mock_session, "job1", "unknown")  # ty: ignore[no-matching-overload]
+    mock_session.get.assert_not_called()
+
+
 def test_fold_models_post(mock_session: MagicMock):
     """Test fold_models_post."""
     mock_session.post.return_value.json.return_value = {

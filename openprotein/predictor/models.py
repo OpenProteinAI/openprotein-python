@@ -203,7 +203,7 @@ class PredictorModel(Future):
         """
         return api.predictor_delete(self.session, self.id)
 
-    def get(self, verbose: bool = False):
+    def _get(self, verbose: bool = False):
         """
         Returns the train loss curves.
         """
@@ -362,7 +362,7 @@ class PredictorModelGroup(Future):
             ),
         )
 
-    def get(self, verbose: bool = False):
+    def _get(self, verbose: bool = False):
         """
         Returns the predictor model.
 

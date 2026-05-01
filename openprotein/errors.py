@@ -72,6 +72,23 @@ class TimeoutException(Exception):
         super().__init__(self.message)
 
 
+class JobFailedException(Exception):
+    """Raised when retrieving results from a job that has failed."""
+
+    def __init__(
+        self,
+        job_id: str,
+        failure_message: str | None = None,
+    ):
+        self.job_id = job_id
+        self.failure_message = failure_message
+        message = f"Job {job_id} failed"
+        if failure_message:
+            message = f"{message}: {failure_message}"
+        self.message = message
+        super().__init__(self.message)
+
+
 class DeprecationError(Exception):
     """DeprecationError used for flagging to the user to not use this interface anymore."""
 

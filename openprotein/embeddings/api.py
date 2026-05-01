@@ -28,20 +28,28 @@ from .schemas import (
 PATH_PREFIX = "v1/embeddings"
 
 
-def list_models(session: APISession) -> list[str]:
+def list_models(
+    session: APISession, verbose: bool = False
+) -> list[str] | list[ModelMetadata]:
     """
     List available embeddings models.
 
     Args:
         session (APISession): API session
+        verbose (bool): If True, return full ModelMetadata objects instead of model ID strings.
 
     Returns:
-        list[str]: list of model names.
+        list[str] | list[ModelMetadata]: list of model names or metadata objects.
     """
 
     endpoint = PATH_PREFIX + "/models"
-    response = session.get(endpoint)
+    params = {}
+    if verbose:
+        params["verbose"] = "true"
+    response = session.get(endpoint, params=params)
     result = response.json()
+    if verbose:
+        return TypeAdapter(list[ModelMetadata]).validate_python(result)
     return result
 
 

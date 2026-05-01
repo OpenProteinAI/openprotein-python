@@ -23,7 +23,25 @@ def test_umap_list_get(mock_session: MagicMock):
         }
     ]
     result = api.umap_list_get(mock_session)
-    mock_session.get.assert_called_once_with("v1/umap")
+    mock_session.get.assert_called_once_with("v1/umap", params=None)
+    assert len(result) == 1
+    assert isinstance(result[0], UMAPMetadata)
+
+
+def test_umap_list_get_with_pagination(mock_session: MagicMock):
+    """Test umap_list_get with limit and offset."""
+    mock_session.get.return_value.json.return_value = [
+        {
+            "id": "umap-1",
+            "status": "SUCCESS",
+            "model_id": "model-1",
+            "feature_type": "PLM",
+        }
+    ]
+    result = api.umap_list_get(mock_session, limit=20, offset=0)
+    mock_session.get.assert_called_once_with(
+        "v1/umap", params={"limit": 20, "offset": 0}
+    )
     assert len(result) == 1
     assert isinstance(result[0], UMAPMetadata)
 

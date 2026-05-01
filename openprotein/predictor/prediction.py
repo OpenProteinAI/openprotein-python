@@ -64,7 +64,7 @@ class PredictionResultFuture(Future):
         )
         return api.decode_predict(data)
 
-    def get(self, verbose: bool = False) -> tuple[np.ndarray, np.ndarray]:
+    def _get(self, verbose: bool = False) -> tuple[np.ndarray, np.ndarray]:
         """
         Get embedding results for specified sequence.
 

@@ -13,8 +13,38 @@ def test_list_models(mock_session: MagicMock):
     """Test the list_models API function."""
     mock_session.get.return_value.json.return_value = ["model1", "model2"]
     result = api.list_models(mock_session)
-    mock_session.get.assert_called_once_with("v1/embeddings/models")
+    mock_session.get.assert_called_once_with("v1/embeddings/models", params={})
     assert result == ["model1", "model2"]
+
+
+def test_list_models_verbose(mock_session: MagicMock):
+    """Test the list_models API function with verbose=True returns ModelMetadata."""
+    mock_session.get.return_value.json.return_value = [
+        {
+            "model_id": "model1",
+            "description": {"summary": "Model 1"},
+            "dimension": 128,
+            "output_types": ["embedding"],
+            "input_tokens": ["protein"],
+            "token_descriptions": [],
+        },
+        {
+            "model_id": "model2",
+            "description": {"summary": "Model 2"},
+            "dimension": 256,
+            "output_types": ["embedding"],
+            "input_tokens": ["protein"],
+            "token_descriptions": [],
+        },
+    ]
+    result = api.list_models(mock_session, verbose=True)
+    mock_session.get.assert_called_once_with(
+        "v1/embeddings/models", params={"verbose": "true"}
+    )
+    assert len(result) == 2
+    assert all(isinstance(m, api.ModelMetadata) for m in result)
+    assert result[0].id == "model1"
+    assert result[1].id == "model2"
 
 
 def test_get_model(mock_session: MagicMock):

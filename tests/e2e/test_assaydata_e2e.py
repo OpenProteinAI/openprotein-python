@@ -187,6 +187,27 @@ def test_assaydata_metadata_consistency(
 
 
 @pytest.mark.e2e
+@pytest.mark.parametrize("with_name_column", [True, False])
+def test_assaydata_has_name_column(session: OpenProtein, with_name_column: bool):
+    """Server should report has_name_column based on the uploaded CSV."""
+    table = pd.DataFrame(
+        {
+            "sequence": ["AAAA", "CCCC", "GGGG"],
+            "activity": [0.1, 0.2, 0.3],
+        }
+    )
+    if with_name_column:
+        table.insert(0, "name", ["s1", "s2", "s3"])
+
+    assay_name = f"Test_name_col_{with_name_column}_{random_string(10)}"
+    data = session.data.create(
+        table=table, name=assay_name, description="name col test"
+    )
+
+    assert data.metadata.has_name_column is with_name_column
+
+
+@pytest.mark.e2e
 def test_assaydata_sequence_validation(session: OpenProtein, assay_small: AssayDataset):
     """
     Test that all sequences in the dataset have the expected length.

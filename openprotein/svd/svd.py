@@ -117,9 +117,20 @@ class SVDAPI:
         """
         return api.svd_delete(self.session, svd_id)
 
-    def list_svd(self) -> list[SVDModel]:
+    def list_svd(
+        self,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> list[SVDModel]:
         """
         List SVD models made by user.
+
+        Parameters
+        ----------
+        limit : int or None, optional
+            Maximum number of results to return. Defaults to None (all).
+        offset : int or None, optional
+            Number of results to skip. Defaults to None.
 
         Returns
         -------
@@ -132,5 +143,5 @@ class SVDAPI:
                 session=self.session,
                 metadata=metadata,
             )
-            for metadata in api.svd_list_get(self.session)
+            for metadata in api.svd_list_get(self.session, limit=limit, offset=offset)
         ]

@@ -8,8 +8,8 @@ import requests.auth
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry  # type: ignore
 
-import openprotein.config as config
-from openprotein.errors import APIError, AuthError, HTTPError
+from openprotein._version import __version__
+from openprotein.errors import AuthError, HTTPError
 
 
 class BearerAuth(requests.auth.AuthBase):
@@ -17,11 +17,19 @@ class BearerAuth(requests.auth.AuthBase):
     See https://stackoverflow.com/a/58055668
     """
 
-    def __init__(self, token):
-        self.token = token
+    def __init__(self, username, token):
+        self._username = username
+        self._token = token
+
+    @property
+    def token(self):
+        warnings.warn(
+            "DeprecationWarning: Accessing session.auth.token is deprecated and will throw an error in the future. Use session.auth._token if you need it."
+        )
+        return self._token
 
     def __call__(self, r):
-        r.headers["Authorization"] = "Bearer " + self.token
+        r.headers["Authorization"] = "Bearer " + self._token
         return r
 
 
@@ -56,6 +64,7 @@ class APISession(requests.Session):
         )
         adapter = HTTPAdapter(max_retries=retry)
         self.mount("https://", adapter)
+        self.headers["User-Agent"] = f"openprotein-python/{__version__}"
         self.login(username, password)
 
     def post(self, url, data=None, json=None, **kwargs):
@@ -101,14 +110,14 @@ class APISession(requests.Session):
         except HTTPError as e:
             # if an error occured during auth, we raise an AuthError with reference to the HTTPError
             raise AuthError(
-                f"Authentication failed. Please check your credentials and connection."
+                "Authentication failed. Please check your credentials and connection."
             ) from e
 
         result = response.json()
         token = result.get("access_token")
         if token is None:
             raise AuthError("Unable to authenticate with given credentials.")
-        return BearerAuth(token)
+        return BearerAuth(username=username, token=token)
 
     def request(self, method: str, url: str, *args, **kwargs):
         full_url = urljoin(self.backend, url)
@@ -136,7 +145,7 @@ class APISession(requests.Session):
         return response
 
 
-def _total_size(o: Sequence | Mapping, seen=None):
+def _total_size(o: Sequence | Mapping | object, seen=None):
     """Recursively finds size of objects including contents."""
     if seen is None:
         seen = set()

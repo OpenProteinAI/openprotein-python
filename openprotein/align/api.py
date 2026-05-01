@@ -269,6 +269,7 @@ def abnumber_post(
     session: APISession,
     sequence_file: BinaryIO,
     scheme: AbNumberScheme | str = AbNumberScheme.IMGT,
+    drop_minority_chains: bool = False,
 ) -> Job:
     """
     Align antibody sequences using AbNumber.
@@ -284,6 +285,10 @@ def abnumber_post(
         Sequences to align in FASTA or CSV format.
     scheme : AbNumberScheme, optional
         Antibody numbering scheme. Default is IMGT.
+    drop_minority_chains : bool, optional
+        If True, drop sequences belonging to chain types that are in the
+        minority (e.g. heavy vs light) so the resulting alignment contains
+        only the dominant chain type. Default is False.
 
     Returns
     -------
@@ -297,7 +302,10 @@ def abnumber_post(
             raise InvalidParameterError(f"Antibody numbering {scheme} not recognized")
 
     files = {"file": sequence_file}
-    params = {"scheme": scheme if isinstance(scheme, str) else scheme.value}
+    params = {
+        "scheme": scheme if isinstance(scheme, str) else scheme.value,
+        "drop_minority_chains": drop_minority_chains,
+    }
 
     response = session.post(endpoint, files=files, params=params)
     return Job.model_validate(response.json())

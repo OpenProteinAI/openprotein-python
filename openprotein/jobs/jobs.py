@@ -21,9 +21,21 @@ class JobsAPI:
         job_type: JobType | None = None,
         assay_id: str | None = None,
         more_recent_than: datetime | str | None = None,
-        limit: int = 100,
+        page_size: int | None = None,
+        page_offset: int | None = None,
+        limit: int | None = None,
     ) -> list[Job]:
-        """List jobs."""
+        """List jobs.
+
+        Pass `page_size` / `page_offset` to paginate. `limit` is a deprecated
+        alias for `page_size` — pass one, not both.
+        """
+        if limit is not None and page_size is not None:
+            raise ValueError(
+                "Pass either page_size or limit (deprecated), not both"
+            )
+        if page_size is None:
+            page_size = limit if limit is not None else 100
         more_recent_than_str = (
             more_recent_than.isoformat()
             if isinstance(more_recent_than, datetime)
@@ -37,7 +49,8 @@ class JobsAPI:
                 job_type=job_type,
                 assay_id=assay_id,
                 more_recent_than=more_recent_than_str,
-                limit=limit,
+                page_size=page_size,
+                page_offset=page_offset,
             )
         ]
 

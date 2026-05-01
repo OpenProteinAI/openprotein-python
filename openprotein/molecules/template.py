@@ -1,5 +1,5 @@
 import dataclasses
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from types import NoneType
 
 from .complex import Complex
@@ -28,10 +28,24 @@ class Template:
               a Complex, a selection algorithm is used to pick the best source chain).
             - None: Automatic assignment. The folding algorithm will determine which
               chain(s) this template applies to.
+        index (Sequence[int] | None): Restrict this template to specific sequence
+            positions in the batched fold job. The default (``None``) applies the
+            template to every sequence — matching the passthrough behavior callers
+            see today. Populate to scope a template to a subset, e.g. in a
+            binder-design refold where structure ``M[k]`` templates only sequences
+            ``[k*N, k*N+N)``.
+        index_intervals (Sequence[tuple[int, int]] | None): Range-form alternative
+            to ``index`` for scoping the template to contiguous spans of sequence
+            positions. Each tuple is a half-open ``[start, end)`` range. Useful
+            when the subset is large and contiguous (e.g. ``[(0, 1000)]`` instead
+            of ``list(range(1000))``). May be combined with ``index``; the server
+            unions the two.
     """
 
     template: TemplateSource
     mapping: ChainMapping = None
+    index: Sequence[int] | None = None
+    index_intervals: Sequence[tuple[int, int]] | None = None
 
     def __post_init__(self) -> None:
         """Validates the template upon initialization."""
