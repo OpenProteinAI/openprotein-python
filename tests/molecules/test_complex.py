@@ -30,24 +30,9 @@ def test_serde_multiple_fully_masked_structure():
     assert new_complex.get_protein(chain_id="C").sequence == sequence_c
 
 
-def test_tuple_key_expands_to_individual_chain_ids_sharing_value():
-    seq = b"M" * 10
-    p = Protein(seq)
-    complex = Complex({("A", "B"): p, "C": Ligand(ccd="SAH")})
-    assert list(complex.get_chains().keys()) == ["A", "B", "C"]
-    assert complex.get_protein("A") is complex.get_protein("B")
-    assert complex.get_protein("A").sequence == seq
-    assert complex.get_ligand("C").ccd == "SAH"
-
-
-def test_tuple_key_with_duplicate_id_raises():
-    with pytest.raises(ValueError, match="duplicate chain id"):
-        Complex({("A", "B"): Protein(b"M"), "B": Protein(b"K")})
-
-
-def test_tuple_key_rejects_non_string_elements():
+def test_non_string_chain_id_raises():
     with pytest.raises(TypeError, match="chain id must be str"):
-        Complex({("A", 1): Protein(b"M")})  # type: ignore[dict-item]
+        Complex({("A", "B"): Protein(b"M")})  # type: ignore[dict-item]
 
 
 def test_can_serde_hemoglobin_cif():

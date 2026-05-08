@@ -163,14 +163,11 @@ def serialize_input(session: APISession, complexes: list[Complex], needs_msa: bo
     msa_to_seed: dict[str, set[str]] = dict()
     for complex in complexes:
         _complex: list[dict[str, Any]] = []
-        for chain_ids, chain in complex.get_id_groups():
-            id_field: str | list[str] = (
-                chain_ids[0] if len(chain_ids) == 1 else list(chain_ids)
-            )
+        for chain_id, chain in complex.get_chains().items():
             if isinstance(chain, Protein):
                 # add the protein in the unified format
                 p: dict = {
-                    "id": id_field,
+                    "id": chain_id,
                     "sequence": chain.sequence.decode(),
                 }
                 if needs_msa:
@@ -208,17 +205,17 @@ def serialize_input(session: APISession, complexes: list[Complex], needs_msa: bo
                     p["msa_id"] = msa_id
                 _complex.append({"protein": p})
             elif isinstance(chain, Ligand):
-                ligand_payload: dict[str, Any] = {"id": id_field}
+                ligand_payload: dict[str, Any] = {"id": chain_id}
                 if chain.smiles is not None:
                     ligand_payload["smiles"] = chain.smiles
                 if chain.ccd is not None:
                     ligand_payload["ccd"] = chain.ccd
                 _complex.append({"ligand": ligand_payload})
             elif isinstance(chain, DNA):
-                d: dict[str, Any] = {"id": id_field, "sequence": chain.sequence}
+                d: dict[str, Any] = {"id": chain_id, "sequence": chain.sequence}
                 _complex.append({"dna": d})
             elif isinstance(chain, RNA):
-                r: dict[str, Any] = {"id": id_field, "sequence": chain.sequence}
+                r: dict[str, Any] = {"id": chain_id, "sequence": chain.sequence}
                 _complex.append({"rna": r})
             else:
                 raise ValueError(f"Unexpected chain type: {chain}")

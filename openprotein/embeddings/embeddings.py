@@ -3,6 +3,7 @@
 from openprotein.base import APISession
 
 from . import api
+from .ablang import AbLang2Model
 from .esm import ESMModel
 from .future import EmbeddingsResultFuture
 from .models import EmbeddingModel
@@ -55,6 +56,7 @@ class EmbeddingsAPI:
     #: Rotaprot model trained on UniRef90
     rotaprot_large_uniref90_ft: OpenProteinModel
     poet_2: PoET2Model
+    ablang2: AbLang2Model
 
     #: ESM1b model
     esm1b: ESMModel  # alias

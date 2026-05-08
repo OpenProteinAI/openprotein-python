@@ -59,6 +59,7 @@ class DataAPI:
         metadata = api.assaydata_post(
             self.session, stream, name, assay_description=description
         )
+        table.columns = [str(column).lower() for column in table.columns]
         metadata.sequence_length = len(table["sequence"].values[0])
         return AssayDataset(self.session, metadata)
 

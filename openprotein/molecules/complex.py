@@ -24,32 +24,16 @@ if TYPE_CHECKING:
 class Complex:
     def __init__(
         self,
-        chains: Mapping[
-            str | tuple[str, ...], Protein | DNA | RNA | Ligand
-        ]
-        | None = None,
+        chains: Mapping[str, Protein | DNA | RNA | Ligand] | None = None,
         name: bytes | str | None = None,
     ):
-        expanded: dict[str, Protein | DNA | RNA | Ligand] = {}
-        groups: list[tuple[str, ...]] = []
+        collected: dict[str, Protein | DNA | RNA | Ligand] = {}
         if chains is not None:
             for key, value in chains.items():
-                ids = (key,) if isinstance(key, str) else key
-                if not isinstance(ids, tuple) or not all(
-                    isinstance(cid, str) for cid in ids
-                ):
-                    raise TypeError(
-                        f"chain id must be str or tuple[str, ...]; got {key!r}"
-                    )
-                if len(ids) == 0:
-                    raise ValueError("tuple chain id must be non-empty")
-                for cid in ids:
-                    if cid in expanded:
-                        raise ValueError(f"duplicate chain id: {cid!r}")
-                    expanded[cid] = value
-                groups.append(tuple(ids))
-        self._chains = dict(sorted(expanded.items()))
-        self._id_groups: list[tuple[str, ...]] = sorted(groups, key=lambda g: g[0])
+                if not isinstance(key, str):
+                    raise TypeError(f"chain id must be str; got {key!r}")
+                collected[key] = value
+        self._chains = dict(sorted(collected.items()))
         self._templates: "Sequence[Protein | Complex | Template]" = ()
         self.name = name
 
@@ -88,17 +72,6 @@ class Complex:
 
     def get_chains(self) -> Mapping[str, Protein | DNA | RNA | Ligand]:
         return MappingProxyType(self._chains)
-
-    def get_id_groups(
-        self,
-    ) -> "list[tuple[tuple[str, ...], Protein | DNA | RNA | Ligand]]":
-        """Return ordered (chain_ids, chain) pairs grouped by entity.
-
-        Each group's ``chain_ids`` is the tuple originally passed to the
-        constructor (a 1-tuple for scalar keys), and the chain object is
-        shared across all ids in the group.
-        """
-        return [(ids, self._chains[ids[0]]) for ids in self._id_groups]
 
     def get_proteins(self) -> Mapping[str, Protein]:
         return MappingProxyType(
@@ -143,18 +116,8 @@ class Complex:
     def set_chain(
         self, chain_id: str, value: Protein | DNA | RNA | Ligand
     ) -> "Complex":
-        new_groups: list[tuple[str, ...]] = []
-        for ids in self._id_groups:
-            if chain_id in ids:
-                remaining = tuple(i for i in ids if i != chain_id)
-                if remaining:
-                    new_groups.append(remaining)
-            else:
-                new_groups.append(ids)
-        new_groups.append((chain_id,))
         self._chains[chain_id] = value
         self._chains = dict(sorted(self._chains.items()))
-        self._id_groups = sorted(new_groups, key=lambda g: g[0])
         return self
 
     def __rand__(self, left: "Complex | Protein | str") -> "Complex":
@@ -184,9 +147,6 @@ class Complex:
                     f"Trying to combine two sets of chains with overlapping chain ids: {overlapping_chain_ids}"
                 )
             self._chains = dict(sorted((self._chains | right._chains).items()))
-            self._id_groups = sorted(
-                self._id_groups + right._id_groups, key=lambda g: g[0]
-            )
         return self
 
     @overload
@@ -309,12 +269,9 @@ class Complex:
         )
 
     def copy(self) -> "Complex":
-        chains_copy: dict[
-            str | tuple[str, ...], Protein | DNA | RNA | Ligand
-        ] = {}
-        for ids in self._id_groups:
-            value = self._chains[ids[0]].copy()
-            chains_copy[ids if len(ids) > 1 else ids[0]] = value
+        chains_copy: dict[str, Protein | DNA | RNA | Ligand] = {
+            chain_id: chain.copy() for chain_id, chain in self._chains.items()
+        }
         return Complex(chains=chains_copy, name=self._name)
 
     def _assert_valid_templates(self):

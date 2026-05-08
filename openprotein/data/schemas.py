@@ -13,6 +13,7 @@ class AssayMetadata(BaseModel):
     num_entries: int
     measurement_names: list[str]
     sequence_length: int | None = None
+    has_name_column: bool = False
 
 
 class AssayDataRow(BaseModel):

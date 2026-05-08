@@ -38,6 +38,26 @@ def test_assay_metadata_schema_optional_fields() -> None:
     }
     assay_metadata = AssayMetadata(**data)
     assert assay_metadata.sequence_length is None
+    # has_name_column defaults to False so older servers without the field still parse
+    assert assay_metadata.has_name_column is False
+
+
+@pytest.mark.parametrize("has_name_column", [True, False])
+def test_assay_metadata_schema_has_name_column(has_name_column: bool) -> None:
+    """Test AssayMetadata round-trips the has_name_column flag from the server."""
+    data = {
+        "assay_name": "Test Assay",
+        "assay_description": "A test assay",
+        "assay_id": "assay123",
+        "original_filename": "data.csv",
+        "created_date": datetime.now(),
+        "num_rows": 100,
+        "num_entries": 200,
+        "measurement_names": ["activity"],
+        "has_name_column": has_name_column,
+    }
+    assay_metadata = AssayMetadata(**data)
+    assert assay_metadata.has_name_column is has_name_column
 
 
 def test_assay_metadata_schema_invalid_data() -> None:
