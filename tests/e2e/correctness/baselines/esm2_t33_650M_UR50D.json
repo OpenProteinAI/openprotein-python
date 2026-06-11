@@ -1,0 +1,143 @@
+{
+  "esm2_t33_650M_UR50D/amie_split/heldout_mu": {
+    "atol": 1e-05,
+    "kind": "array",
+    "provenance": {
+      "backend": "https://api.openprotein.ai/api/"
+    },
+    "rtol": 0.0001,
+    "shape": [
+      150
+    ]
+  },
+  "esm2_t33_650M_UR50D/amie_split/heldout_spearman": {
+    "atol": 1e-05,
+    "kind": "scalar",
+    "provenance": {
+      "backend": "https://api.openprotein.ai/api/"
+    },
+    "rtol": 0.0001,
+    "value": 0.4918814874134529
+  },
+  "esm2_t33_650M_UR50D/ubiquitin/attn_head_mean": {
+    "atol": 1e-05,
+    "kind": "array",
+    "provenance": {
+      "backend": "https://api.openprotein.ai/api/"
+    },
+    "rtol": 0.0001,
+    "shape": [
+      20
+    ]
+  },
+  "esm2_t33_650M_UR50D/ubiquitin/embed_mean": {
+    "atol": 1e-05,
+    "kind": "array",
+    "provenance": {
+      "backend": "https://api.openprotein.ai/api/"
+    },
+    "rtol": 0.0001,
+    "shape": [
+      1280
+    ]
+  },
+  "esm2_t33_650M_UR50D/ubiquitin/logits": {
+    "atol": 1e-05,
+    "kind": "array",
+    "provenance": {
+      "backend": "https://api.openprotein.ai/api/"
+    },
+    "rtol": 0.0001,
+    "shape": [
+      78,
+      33
+    ]
+  },
+  "esm2_t33_650M_UR50D/ubiquitin/logits_argmax": {
+    "kind": "tokens",
+    "mismatch_fraction": 0.0,
+    "provenance": {
+      "backend": "https://api.openprotein.ai/api/"
+    },
+    "tokens": [
+      0,
+      20,
+      16,
+      12,
+      18,
+      7,
+      15,
+      11,
+      4,
+      11,
+      6,
+      15,
+      11,
+      12,
+      11,
+      4,
+      9,
+      7,
+      9,
+      14,
+      8,
+      13,
+      11,
+      12,
+      9,
+      17,
+      7,
+      15,
+      5,
+      15,
+      12,
+      16,
+      13,
+      15,
+      9,
+      6,
+      12,
+      14,
+      14,
+      13,
+      16,
+      16,
+      10,
+      4,
+      12,
+      18,
+      5,
+      6,
+      15,
+      16,
+      4,
+      9,
+      13,
+      6,
+      10,
+      11,
+      4,
+      8,
+      13,
+      19,
+      17,
+      12,
+      16,
+      15,
+      9,
+      8,
+      11,
+      4,
+      21,
+      4,
+      7,
+      4,
+      10,
+      4,
+      10,
+      6,
+      6,
+      2
+    ]
+  }
+}

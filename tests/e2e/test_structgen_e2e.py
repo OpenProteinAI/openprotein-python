@@ -128,6 +128,58 @@ def test_e2e_proteinmpnn_single_site_not_implemented(session: OpenProtein):
 
 
 @pytest.mark.e2e
+def test_e2e_esmif1_generate_basic(session: OpenProtein):
+    """ESM-IF1 samples sequences conditioned on a backbone structure."""
+    structure_filepath = Path("tests/data/8bo9.cif")
+    if not structure_filepath.exists():
+        pytest.skip(f"Missing test structure file: {structure_filepath}")
+
+    n_sequences = 2
+    query_protein = Protein.from_filepath(path=structure_filepath, chain_id="A")
+
+    future = session.models.esmif1.generate(
+        query=query_protein,
+        num_samples=n_sequences,
+        temperature=1.0,
+        seed=42,
+    )
+    assert future.wait_until_done(timeout=GENERATE_TIMEOUT)
+    results = future.get()
+    _assert_generated_sequences(results=results, expected_count=n_sequences)
+    # Note: samples are not asserted to be distinct. With a fixed seed (and on a
+    # well-determined backbone) ESM-IF1 can legitimately return identical samples,
+    # so sequence diversity is not a reliable invariant here.
+
+
+@pytest.mark.e2e
+def test_e2e_esmif1_score_native_against_structure(session: OpenProtein):
+    """ESM-IF1 scores the native sequence against its backbone."""
+    structure_filepath = Path("tests/data/8bo9.cif")
+    if not structure_filepath.exists():
+        pytest.skip(f"Missing test structure file: {structure_filepath}")
+
+    query_protein = Protein.from_filepath(path=structure_filepath, chain_id="A")
+
+    future = session.models.esmif1.score(
+        sequences=[query_protein.sequence],
+        query=query_protein,
+    )
+    assert future.wait_until_done(timeout=GENERATE_TIMEOUT)
+    results = future.get()
+
+    assert len(results) == 1
+    [row] = results
+    assert isinstance(row.sequence, str)
+    assert isinstance(row.score, np.ndarray)
+    assert row.score.shape == (1,)
+    # ESM-IF1 returns ll_fullseq: the summed log-likelihood over the sequence,
+    # which scales with length. Normalize to a per-residue average before
+    # bounding. Natural proteins score ~[-2.5, -1.0] per residue; allow [-4, 0].
+    per_residue_ll = float(row.score[0]) / len(row.sequence)
+    assert -4.0 <= per_residue_ll <= 0.0
+
+
+@pytest.mark.e2e
 def test_e2e_rfdiffusion_generate_basic(session: OpenProtein):
     """Standalone smoke test: rfdiffusion generates a structure from `contigs` only."""
     n_designs = 1

@@ -29,10 +29,13 @@ class PromptAPI:
         Parameters
         ----------
         context : Context | Sequence[Context]
-            context or list of contexts, where each context is a Sequence of str,
-            bytes, and/or Protein
-        query : Optional[bytes | str | Protein]
-            Optional query provided as sequence/structure
+            Context or list of contexts. Each context is a sequence of entries
+            where each entry is a raw sequence (``bytes``/``str``, optionally with
+            ``:`` chain breaks for multichain), :py:class:`Protein`, or
+            :py:class:`Complex`. Currently only protein chains are accepted;
+            passing a Complex with DNA, RNA, or Ligand chains raises
+            :py:class:`InvalidParameterError`. This restriction may be relaxed
+            in the future.
         name : str
             Name of the prompt.
         description : Optional[str]
@@ -40,8 +43,8 @@ class PromptAPI:
 
         Returns
         -------
-        PromptMetadata
-            Metadata of the created prompt.
+        Prompt
+            The created prompt.
         """
         return Prompt(
             session=self.session,
@@ -64,8 +67,8 @@ class PromptAPI:
 
         Returns
         -------
-        BinaryIO
-            The prompt data in binary format.
+        Prompt
+            The prompt.
         """
         return Prompt(
             session=self.session,
@@ -78,8 +81,8 @@ class PromptAPI:
 
         Returns
         -------
-        List[PromptMetadata]
-            List of prompt metadata.
+        List[Prompt]
+            List of prompts.
         """
         return [
             Prompt(session=self.session, metadata=p)
@@ -97,7 +100,11 @@ class PromptAPI:
         Parameters
         ----------
         query : bytes or str or Protein or Complex
-            A query representing a protein/complex to be used with a query.
+            A query protein or complex. Raw ``bytes``/``str`` inputs may include
+            ``:`` chain breaks to denote a multichain protein. Currently only
+            protein chains are accepted; passing a Complex with DNA, RNA, or
+            Ligand chains raises :py:class:`InvalidParameterError`. This
+            restriction may be relaxed in the future.
         force_structure : bool, optional
             Optionally force a query to be interpreted with a structure.
             Useful for creating structure prediction queries which can have
@@ -105,8 +112,8 @@ class PromptAPI:
 
         Returns
         -------
-        QueryMetadata
-            Metadata of the created query.
+        Query
+            The created query.
         """
         return Query(
             session=self.session,
@@ -128,8 +135,8 @@ class PromptAPI:
 
         Returns
         -------
-        BinaryIO
-            The query data in binary format.
+        Query
+            The query.
         """
         return Query(
             session=self.session,

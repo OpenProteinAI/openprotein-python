@@ -166,3 +166,215 @@ def test_request_generate_post_rejects_query_id_list_for_poet(mock_session: Magi
             model_id="poet",
             query_id=["q-1"],
         )
+
+
+# force_recompute tests for all 7 api functions
+
+
+def test_request_post_force_recompute_sends_param(mock_session: MagicMock):
+    """force_recompute=True sends ?force=true."""
+    mock_session.post.return_value.json.return_value = {
+        "job_id": "job-123",
+        "status": JobStatus.SUCCESS,
+        "job_type": JobType.embeddings_embed,
+        "created_date": "2023-01-01T00:00:00",
+    }
+    api.request_post(mock_session, "test_model", ["ACGT"], force_recompute=True)
+    _, kwargs = mock_session.post.call_args
+    assert kwargs["params"] == {"force": "true"}
+
+
+def test_request_post_no_force_recompute_by_default(mock_session: MagicMock):
+    """Without force_recompute, no ?force param is sent."""
+    mock_session.post.return_value.json.return_value = {
+        "job_id": "job-123",
+        "status": JobStatus.SUCCESS,
+        "job_type": JobType.embeddings_embed,
+        "created_date": "2023-01-01T00:00:00",
+    }
+    api.request_post(mock_session, "test_model", ["ACGT"])
+    _, kwargs = mock_session.post.call_args
+    assert kwargs.get("params") is None
+
+
+def test_request_logits_post_force_recompute_sends_param(mock_session: MagicMock):
+    """force_recompute=True sends ?force=true for logits."""
+    mock_session.post.return_value.json.return_value = {
+        "job_id": "job-123",
+        "status": JobStatus.SUCCESS,
+        "job_type": JobType.embeddings_logits,
+        "created_date": "2023-01-01T00:00:00",
+    }
+    api.request_logits_post(mock_session, "test_model", ["ACGT"], force_recompute=True)
+    _, kwargs = mock_session.post.call_args
+    assert kwargs["params"] == {"force": "true"}
+
+
+def test_request_logits_post_no_force_recompute_by_default(mock_session: MagicMock):
+    """Without force_recompute, no ?force param is sent for logits."""
+    mock_session.post.return_value.json.return_value = {
+        "job_id": "job-123",
+        "status": JobStatus.SUCCESS,
+        "job_type": JobType.embeddings_logits,
+        "created_date": "2023-01-01T00:00:00",
+    }
+    api.request_logits_post(mock_session, "test_model", ["ACGT"])
+    _, kwargs = mock_session.post.call_args
+    assert kwargs.get("params") is None
+
+
+def test_request_attn_post_force_recompute_sends_param(mock_session: MagicMock):
+    """force_recompute=True sends ?force=true for attn."""
+    mock_session.post.return_value.json.return_value = {
+        "job_id": "job-123",
+        "status": JobStatus.SUCCESS,
+        "job_type": JobType.embeddings_attn,
+        "created_date": "2023-01-01T00:00:00",
+    }
+    api.request_attn_post(mock_session, "test_model", ["ACGT"], force_recompute=True)
+    _, kwargs = mock_session.post.call_args
+    assert kwargs["params"] == {"force": "true"}
+
+
+def test_request_attn_post_no_force_recompute_by_default(mock_session: MagicMock):
+    """Without force_recompute, no ?force param is sent for attn."""
+    mock_session.post.return_value.json.return_value = {
+        "job_id": "job-123",
+        "status": JobStatus.SUCCESS,
+        "job_type": JobType.embeddings_attn,
+        "created_date": "2023-01-01T00:00:00",
+    }
+    api.request_attn_post(mock_session, "test_model", ["ACGT"])
+    _, kwargs = mock_session.post.call_args
+    assert kwargs.get("params") is None
+
+
+def test_request_score_post_force_recompute_sends_param(mock_session: MagicMock):
+    """force_recompute=True sends ?force=true for score."""
+    mock_session.post.return_value.json.return_value = {
+        "job_id": "job-123",
+        "status": JobStatus.SUCCESS,
+        "job_type": JobType.poet_score,
+        "created_date": "2023-01-01T00:00:00",
+    }
+    api.request_score_post(
+        mock_session, "test_model", ["ACGT"], prompt_id="prompt1", force_recompute=True
+    )
+    _, kwargs = mock_session.post.call_args
+    assert kwargs["params"] == {"force": "true"}
+
+
+def test_request_score_post_no_force_recompute_by_default(mock_session: MagicMock):
+    """Without force_recompute, no ?force param is sent for score."""
+    mock_session.post.return_value.json.return_value = {
+        "job_id": "job-123",
+        "status": JobStatus.SUCCESS,
+        "job_type": JobType.poet_score,
+        "created_date": "2023-01-01T00:00:00",
+    }
+    api.request_score_post(mock_session, "test_model", ["ACGT"], prompt_id="prompt1")
+    _, kwargs = mock_session.post.call_args
+    assert kwargs.get("params") is None
+
+
+def test_request_score_indel_post_force_recompute_sends_param(mock_session: MagicMock):
+    """force_recompute=True sends ?force=true for score/indel."""
+    mock_session.post.return_value.json.return_value = {
+        "job_id": "job-123",
+        "status": JobStatus.SUCCESS,
+        "job_type": JobType.poet_score_indel,
+        "created_date": "2023-01-01T00:00:00",
+    }
+    api.request_score_indel_post(
+        mock_session,
+        "test_model",
+        "ACGT",
+        insert="A",
+        prompt_id="prompt1",
+        force_recompute=True,
+    )
+    _, kwargs = mock_session.post.call_args
+    assert kwargs["params"] == {"force": "true"}
+
+
+def test_request_score_indel_post_no_force_recompute_by_default(mock_session: MagicMock):
+    """Without force_recompute, no ?force param is sent for score/indel."""
+    mock_session.post.return_value.json.return_value = {
+        "job_id": "job-123",
+        "status": JobStatus.SUCCESS,
+        "job_type": JobType.poet_score_indel,
+        "created_date": "2023-01-01T00:00:00",
+    }
+    api.request_score_indel_post(
+        mock_session, "test_model", "ACGT", insert="A", prompt_id="prompt1"
+    )
+    _, kwargs = mock_session.post.call_args
+    assert kwargs.get("params") is None
+
+
+def test_request_score_single_site_post_force_recompute_sends_param(
+    mock_session: MagicMock,
+):
+    """force_recompute=True sends ?force=true for score_single_site."""
+    mock_session.post.return_value.json.return_value = {
+        "job_id": "job-123",
+        "status": JobStatus.SUCCESS,
+        "job_type": JobType.poet_single_site,
+        "created_date": "2023-01-01T00:00:00",
+    }
+    api.request_score_single_site_post(
+        mock_session, "test_model", "ACGT", prompt_id="prompt1", force_recompute=True
+    )
+    _, kwargs = mock_session.post.call_args
+    assert kwargs["params"] == {"force": "true"}
+
+
+def test_request_score_single_site_post_no_force_recompute_by_default(
+    mock_session: MagicMock,
+):
+    """Without force_recompute, no ?force param is sent for score_single_site."""
+    mock_session.post.return_value.json.return_value = {
+        "job_id": "job-123",
+        "status": JobStatus.SUCCESS,
+        "job_type": JobType.poet_single_site,
+        "created_date": "2023-01-01T00:00:00",
+    }
+    api.request_score_single_site_post(
+        mock_session, "test_model", "ACGT", prompt_id="prompt1"
+    )
+    _, kwargs = mock_session.post.call_args
+    assert kwargs.get("params") is None
+
+
+def test_request_generate_post_force_recompute_sends_param(mock_session: MagicMock):
+    """force_recompute=True sends ?force=true for generate."""
+    mock_session.post.return_value.json.return_value = {
+        "job_id": "job-123",
+        "status": JobStatus.SUCCESS,
+        "job_type": JobType.embeddings_generate,
+        "created_date": "2023-01-01T00:00:00",
+    }
+    api.request_generate_post(
+        mock_session,
+        "test_model",
+        num_samples=4,
+        prompt_id="prompt1",
+        force_recompute=True,
+    )
+    _, kwargs = mock_session.post.call_args
+    assert kwargs["params"] == {"force": "true"}
+
+
+def test_request_generate_post_no_force_recompute_by_default(mock_session: MagicMock):
+    """Without force_recompute, no ?force param is sent for generate."""
+    mock_session.post.return_value.json.return_value = {
+        "job_id": "job-123",
+        "status": JobStatus.SUCCESS,
+        "job_type": JobType.embeddings_generate,
+        "created_date": "2023-01-01T00:00:00",
+    }
+    api.request_generate_post(
+        mock_session, "test_model", num_samples=4, prompt_id="prompt1"
+    )
+    _, kwargs = mock_session.post.call_args
+    assert kwargs.get("params") is None

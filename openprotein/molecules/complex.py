@@ -317,8 +317,8 @@ class Complex:
                     e for e in structure.entities if subchain_id in e.subchains
                 ]
                 assert len(matching_entities) == 1, (
-                    f"expected only one entity to match {chain_id=}, but found "
-                    f"{len(matching_entities)}: {matching_entities}"
+                    f"expected only one entity to match chain_id={subchain_id!r}, "
+                    f"but found {len(matching_entities)}: {matching_entities}"
                 )
                 entity = matching_entities[0]
                 del matching_entities

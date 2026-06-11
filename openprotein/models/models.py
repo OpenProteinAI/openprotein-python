@@ -3,6 +3,7 @@
 from openprotein.base import APISession
 
 from .foundation.boltzgen import BoltzGenModel
+from .foundation.esmif1 import ESMIF1Model
 from .foundation.proteinmpnn import ProteinMPNNModel
 from .foundation.rfdiffusion import RFdiffusionModel
 
@@ -30,6 +31,8 @@ class ModelsAPI:
         self.rfdiffusion = RFdiffusionModel(session)
         self.proteinmpnn = ProteinMPNNModel(session)
         self.boltzgen = BoltzGenModel(session)
+        self.esmif1 = ESMIF1Model(session)
+        self.esm_if1 = self.esmif1  # alias mirroring the `esm-if1` model_id
 
         # To add new models, you would simply instantiate them here:
         # self.esm = ESMModel(session)

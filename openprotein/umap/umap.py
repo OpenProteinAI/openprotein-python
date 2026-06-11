@@ -35,6 +35,7 @@ class UMAPAPI:
         n_components: int = 2,
         n_neighbors: int = 15,
         min_dist: float = 0.1,
+        **kwargs,
     ) -> UMAPModel: ...
 
     @typing.overload
@@ -48,6 +49,7 @@ class UMAPAPI:
         n_components: int = 2,
         n_neighbors: int = 15,
         min_dist: float = 0.1,
+        **kwargs,
     ) -> UMAPModel: ...
 
     def fit_umap(

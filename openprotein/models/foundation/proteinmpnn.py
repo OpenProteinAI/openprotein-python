@@ -8,9 +8,10 @@ from openprotein.embeddings import api as embeddings_api
 from openprotein.embeddings.future import (
     EmbeddingsGenerateFuture,
     EmbeddingsScoreFuture,
+    EmbeddingsScoreSingleSiteFuture,
 )
 from openprotein.models.base import ProteinModel
-from openprotein.molecules import Protein, Complex
+from openprotein.molecules import Complex, Protein
 from openprotein.prompt import PromptAPI, Query
 
 if TYPE_CHECKING:
@@ -29,7 +30,7 @@ class ProteinMPNNModel(ProteinModel):
 
     Examples
     --------
-    .. code-block:: python
+    .. code-block:: ipython3
 
         >>> import openprotein
         >>> session = openprotein.connect(username="user", password="password")
@@ -110,7 +111,7 @@ class ProteinMPNNModel(ProteinModel):
         self,
         sequence: bytes,
         query: str | bytes | Protein | Query,
-    ) -> EmbeddingsScoreFuture:
+    ) -> EmbeddingsScoreSingleSiteFuture:
         """
         Score all single substitutions of the query sequence using the specified query.
 
@@ -123,10 +124,10 @@ class ProteinMPNNModel(ProteinModel):
 
         Returns
         -------
-        EmbeddingsScoreFuture
-            A future object that returns the scores of the mutated sequence.
+        EmbeddingsScoreSingleSiteFuture
+            A future object that returns the per-variant scores of the single substitutions.
         """
-        raise NotImplementedError("Score indel not yet implemented")
+        raise NotImplementedError("Score single site not yet implemented")
 
     def generate(
         self,
@@ -168,9 +169,7 @@ class ProteinMPNNModel(ProteinModel):
             A future object representing the status and information about the generation job.
         """
         if query is None and design is None:
-            raise ValueError(
-                "Expected either `query` or `design` to be provided"
-            )
+            raise ValueError("Expected either `query` or `design` to be provided")
 
         from openprotein.models.structure_generation import StructureGenerationFuture
 

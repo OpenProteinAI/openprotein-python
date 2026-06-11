@@ -54,6 +54,8 @@ class JobType(str, Enum):
     umap_fit = "/umap/fit"
     umap_embed = "/umap/embed"
 
+    clustering_hierarchical = "/clustering/hierarchical"
+
     embeddings_fold = "/embeddings/fold"
 
     # predictor jobs

@@ -11,7 +11,7 @@ class ESMModel(AttnModel, EmbeddingModel):
     --------
     View specific model details (inc supported tokens) with the `?` operator.
 
-    .. code-block:: python
+    .. code-block:: ipython3
 
         >>> import openprotein
         >>> session = openprotein.connect(username="user", password="password")
@@ -30,4 +30,7 @@ class ESMModel(AttnModel, EmbeddingModel):
         "esm2_t33_650M_UR50D",
         "esm2_t36_3B_UR50D",
         "esm2_t6_8M_UR50D",
+        "esmc-300m",
+        "esmc-600m",
+        "esmc-6b",
     ]

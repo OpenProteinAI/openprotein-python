@@ -1,15 +1,38 @@
 """Prompt REST API interface for making HTTP calls to the prompt backend."""
 
-import copy
 import io
 import zipfile
-from typing import BinaryIO, Literal, Sequence, cast
+from typing import BinaryIO, Sequence, cast
 
 from openprotein.base import APISession
 from openprotein.errors import APIError, InvalidParameterError, RawAPIError
 from openprotein.molecules import Complex, Protein
 
 from .schemas import Context, PromptMetadata, QueryMetadata
+
+
+def _coerce_sequence(name: str, sequence: bytes | str) -> Protein | Complex:
+    """Parse a raw sequence into a Protein, or a Complex if it contains ':' chain breaks."""
+    raw = sequence.encode() if isinstance(sequence, str) else sequence
+    parts = raw.split(b":")
+    if any(len(p) == 0 for p in parts):
+        raise InvalidParameterError("Invalid chain break usage in sequence")
+    if len(parts) == 1:
+        return Protein(name=name, sequence=parts[0])
+    complex_ = Complex()
+    for p in parts:
+        complex_ &= Protein(sequence=p)
+    complex_.name = name
+    return complex_
+
+
+def _assert_protein_only(complex_: Complex) -> None:
+    """Raise InvalidParameterError if the Complex has any non-protein chain."""
+    if len(complex_.get_chains()) != len(complex_.get_proteins()):
+        raise InvalidParameterError(
+            "prompts and queries support only protein chains; "
+            "found non-protein chains in the input Complex"
+        )
 
 
 def create_prompt(
@@ -27,6 +50,12 @@ def create_prompt(
         The API session.
     context : Context or Sequence[Context]
         Context or list of contexts, each of which is a list of sequences/structures.
+        Entries may be raw sequences (``bytes``/``str``), :py:class:`Protein`, or
+        :py:class:`Complex`. Raw sequences may include ``:`` chain breaks to denote
+        a multichain protein (e.g. ``"ACDE:GHIK"`` becomes a two-chain Complex).
+        Currently only protein chains are accepted; passing a Complex with DNA, RNA,
+        or Ligand chains raises :py:class:`InvalidParameterError`. This restriction
+        may be relaxed in the future.
     name : str or None, optional
         Name of the prompt.
     description : str or None, optional
@@ -113,9 +142,13 @@ def get_prompt_metadata(session: APISession, prompt_id: str) -> PromptMetadata:
         raise APIError(f"Unexpected response status code: {response.status_code}")
 
 
-def get_prompt(session: APISession, prompt_id: str) -> list[list[Protein]]:
+def get_prompt(session: APISession, prompt_id: str) -> list[list[Protein | Complex]]:
     """
     Get the prompt content for a given prompt ID.
+
+    Single-chain entries collapse to :py:class:`Protein`; multichain entries are
+    returned as :py:class:`Complex`. For a uniform return type, see
+    :py:meth:`Prompt.get_as_complexes` or :py:meth:`Prompt.get_as_proteins`.
 
     Parameters
     ----------
@@ -126,8 +159,8 @@ def get_prompt(session: APISession, prompt_id: str) -> list[list[Protein]]:
 
     Returns
     -------
-    list of list of Protein
-        The prompt data as a list of context protein lists.
+    list of list of Protein or Complex
+        The prompt data as a list of context entry lists.
 
     Raises
     ------
@@ -189,7 +222,9 @@ def zip_prompt(
     Parameters
     ----------
     context : Context or Sequence[Context]
-        A list of proteins, or a group of such proteins (for ensembles), representing the context for the prompt.
+        A list of context entries, or a group of such entries (for ensembles).
+        Each entry is a raw sequence (``bytes``/``str``, optionally with ``:``
+        chain breaks for multichain), :py:class:`Protein`, or :py:class:`Complex`.
 
     Returns
     -------
@@ -198,40 +233,47 @@ def zip_prompt(
     """
     if len(context) == 0:
         context = [[]]
-    if isinstance(context[0], (bytes, str, Protein)):
+    if isinstance(context[0], (bytes, str, Protein, Complex)):
         context = [cast(Context, context)]
     context = cast(Sequence[Context], context)
 
     context_zip_files = []
     for this_context in context:
-        this_context_as_proteins: list[Protein] = []
-        for i, x in enumerate(this_context):
-            if not isinstance(x, Protein):
-                x = Protein(name=f"unnamed-{i:06}", sequence=x)
-            else:
-                x = copy.copy(x)
-            if x.name is None:
-                x.name = f"unnamed-{i:06}"
-            this_context_as_proteins.append(x)
         context_files: list[tuple[str, io.BytesIO]] = []
-        for protein in this_context_as_proteins:
+        for i, x in enumerate(this_context):
+            if isinstance(x, (bytes, str)):
+                x = _coerce_sequence(name=f"unnamed-{i:06}", sequence=x)
+            elif not isinstance(x, (Protein, Complex)):
+                raise InvalidParameterError(
+                    f"unexpected context entry type: {type(x).__name__}"
+                )
+            name = x.name if x.name is not None else f"unnamed-{i:06}"
             index = len(context_files)
-            if protein.has_structure:
+            if isinstance(x, Protein):
+                has_struct = x.has_structure
+            else:
+                _assert_protein_only(x)
+                has_struct = any(p.has_structure for p in x.get_proteins().values())
+            if has_struct:
                 context_files.append(
                     (
-                        f"{index:06}.{protein.name}.cif",
-                        io.BytesIO(protein.to_string().encode()),
+                        f"{index:06}.{name}.cif",
+                        io.BytesIO(x.to_string().encode()),
                     )
                 )
             else:
-                # write sequences with no structure as fasta, continuing existing fasta file
-                # if previous protein was sequence only
+                # write sequences with no structure as fasta, continuing existing
+                # fasta file if previous entry was also sequence only
                 if len(context_files) == 0 or not context_files[-1][0].endswith(
                     ".fasta"
                 ):
                     context_files.append((f"{index:06}.fasta", io.BytesIO()))
                 _, current_file = context_files[-1]
-                current_file.write(protein.make_fasta_bytes())
+                if isinstance(x, Protein):
+                    seq = x.sequence
+                else:
+                    seq = b":".join(p.sequence for p in x.get_proteins().values())
+                current_file.write(b">" + name.encode() + b"\n" + seq + b"\n")
         # generate context zip file
         in_memory_zip = io.BytesIO()
         with zipfile.ZipFile(in_memory_zip, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -243,12 +285,13 @@ def zip_prompt(
     return context_zip_files
 
 
-def unzip_prompt(prompt_zip: BinaryIO) -> list[list[Protein]]:
+def unzip_prompt(prompt_zip: BinaryIO) -> list[list[Protein | Complex]]:
     """
     Unzip a prompt zip file retrieved from the prompt API.
 
-    This function is the reverse of zip_prompt. It extracts the context proteins
-    from a prompt zip file returned by get_prompt().
+    This function is the reverse of zip_prompt. It extracts the context entries
+    from a prompt zip file returned by get_prompt(). Single-chain entries are
+    returned as :py:class:`Protein`; multichain entries as :py:class:`Complex`.
 
     Parameters
     ----------
@@ -257,8 +300,8 @@ def unzip_prompt(prompt_zip: BinaryIO) -> list[list[Protein]]:
 
     Returns
     -------
-    list of list of Protein
-        List of context protein lists, where each inner list represents a context group.
+    list of list of Protein or Complex
+        List of context entry lists, where each inner list represents a context group.
     """
     context_zip_files = []
     with zipfile.ZipFile(prompt_zip, "r") as zip_file:
@@ -275,71 +318,62 @@ def unzip_prompt(prompt_zip: BinaryIO) -> list[list[Protein]]:
 
 def __parse_prompt(
     context_files: Sequence[BinaryIO],
-) -> list[list[Protein]]:
+) -> list[list[Protein | Complex]]:
+    """Parse context files into Protein or Complex entries.
+
+    Single-chain entries collapse to :py:class:`Protein`; multichain entries are
+    returned as :py:class:`Complex`.
     """
-    Parse context and query files into proteins.
+    context: list[list[Protein | Complex]] = []
 
-    Parameters
-    ----------
-    context_files : Sequence[BinaryIO]
-        Sequence of binary zip files, each representing a context group.
-
-    Returns
-    -------
-    list of list of Protein
-        List of context protein lists, where each inner list represents a context group.
-    """
-    context: list[list[Protein]] = []
-
-    # Process each context file (representing an ensemble)
     for context_file in context_files:
-        # Reset the file pointer to the beginning
         context_file.seek(0)
-        proteins_in_context: list[Protein] = []
+        entries_in_context: list[Protein | Complex] = []
 
         with zipfile.ZipFile(context_file, "r") as zf:
-            # Sort filenames to process them in a consistent order
             filenames = zf.namelist()
 
-            # Process each file in the zip
             for filename in filenames:
                 with zf.open(filename) as f:
                     content = f.read()
 
-                    if filename.endswith(".cif"):
-                        # For CIF files, create a temporary file for gemmi to read
-                        import tempfile
-
-                        with tempfile.NamedTemporaryFile(
-                            suffix=".cif", delete=True
-                        ) as tmp:
-                            tmp.write(content)
-                            tmp.flush()
-                            # extract chain ID (using 'A' as default)
-                            chain_id = "A"
-                            # extract name from filename (without extension)
-                            name = filename[:-4]
-                            protein = Protein.from_filepath(
-                                path=tmp.name, chain_id=chain_id, verbose=False
-                            )
-                            # override the name with the filename
+                    if filename.endswith(".cif") or filename.endswith(".pdb"):
+                        # Structure files may carry one or many chains; load as
+                        # Complex and collapse to Protein only when there's
+                        # exactly one protein chain and no other chain types.
+                        fmt = "cif" if filename.endswith(".cif") else "pdb"
+                        name = filename[:-4]
+                        complex_ = Complex.from_string(
+                            filestring=content, format=fmt, verbose=False
+                        )
+                        complex_.name = name
+                        proteins = complex_.get_proteins()
+                        if len(proteins) == 1 and len(complex_.get_chains()) == 1:
+                            protein = next(iter(proteins.values()))
                             protein.name = name
-                            proteins_in_context.append(protein)
+                            entries_in_context.append(protein)
+                        else:
+                            entries_in_context.append(complex_)
 
                     elif filename.endswith(".fasta"):
-                        # Process FASTA file
-                        import io
-
                         from openprotein import fasta
 
                         fasta_stream = io.BytesIO(content)
                         for name, sequence in fasta.parse_stream(fasta_stream):
-                            proteins_in_context.append(
-                                Protein(name=name, sequence=sequence)
+                            entry_name = (
+                                name.decode() if isinstance(name, bytes) else name
+                            )
+                            entries_in_context.append(
+                                _coerce_sequence(name=entry_name, sequence=sequence)
                             )
 
-        # Add this group of proteins to the context
-        context.append(proteins_in_context)
+                    else:
+                        raise APIError(
+                            f"Unrecognized prompt context file extension: "
+                            f"{filename!r}; expected .cif, .pdb, or .fasta"
+                        )
+
+        context.append(entries_in_context)
 
     return context
 
@@ -357,7 +391,11 @@ def create_query(
     session : APISession
         The API session.
     query : bytes or str or Protein or Complex
-        A query representing a protein/model to be used with a query.
+        A query protein or complex. Raw ``bytes``/``str`` inputs may include ``:``
+        chain breaks to denote a multichain protein (e.g. ``"ACDE:GHIK"`` becomes
+        a two-chain Complex). Currently only protein chains are accepted; passing a
+        Complex with DNA, RNA, or Ligand chains raises :py:class:`InvalidParameterError`.
+        This restriction may be relaxed in the future.
     force_structure : bool, optional
         Optionally force a query to be interpreted with a structure.
         Useful for creating structure prediction queries which can have
@@ -377,8 +415,8 @@ def create_query(
     """
     endpoint = "v1/prompt/query"
 
-    if isinstance(query, str) or isinstance(query, bytes):
-        query = Protein(name="query", sequence=query)
+    if isinstance(query, (str, bytes)):
+        query = _coerce_sequence("query", query)
     if isinstance(query, Protein):
         has_structure = query.has_structure
         if has_structure or force_structure:
@@ -390,13 +428,26 @@ def create_query(
         else:
             qf, filename, typ = query.make_fasta_bytes(), "query.fasta", "text/x-fasta"
     elif isinstance(query, Complex):
-        qf, filename, typ = (
-            query.to_string().encode(),
-            "query.cif",
-            "chemical/x-mmcif",
-        )
+        _assert_protein_only(query)
+        has_structure = any(p.has_structure for p in query.get_proteins().values())
+        if has_structure or force_structure:
+            qf, filename, typ = (
+                query.to_string("cif").encode(),
+                "query.cif",
+                "chemical/x-mmcif",
+            )
+        else:
+            name = query.name or "query"
+            seq = b":".join(p.sequence for p in query.get_proteins().values())
+            qf, filename, typ = (
+                b">" + name.encode() + b"\n" + seq + b"\n",
+                "query.fasta",
+                "text/x-fasta",
+            )
     else:
-        raise ValueError(f"unexpected type query {type(query)}")
+        raise InvalidParameterError(
+            f"unexpected query type: {type(query).__name__}"
+        )
 
     response = session.post(endpoint, files={"query": (filename, io.BytesIO(qf), typ)})
 
@@ -461,8 +512,9 @@ def get_query(session: APISession, query_id: str) -> Protein | Complex:
 
     Returns
     -------
-    Protein
-        The query protein.
+    Protein or Complex
+        The query content. Single-chain entries collapse to :py:class:`Protein`;
+        multichain entries are returned as :py:class:`Complex`.
 
     Raises
     ------
@@ -471,6 +523,16 @@ def get_query(session: APISession, query_id: str) -> Protein | Complex:
     """
     endpoint = f"v1/prompt/query/{query_id}/content"
     response = session.get(endpoint, stream=True)
+
+    if response.status_code == 401:
+        error = RawAPIError.model_validate(response.json())
+        raise APIError(error.detail)
+    elif response.status_code == 404:
+        error = RawAPIError.model_validate(response.json())
+        raise APIError(error.detail)
+    elif response.status_code != 200:
+        raise APIError(f"Unexpected response status code: {response.status_code}")
+
     filename = response.headers.get("Content-Disposition", "query")
     media_type = response.headers.get("Content-Type", "text/plain")
     is_mmcif = filename.endswith(".cif") or media_type == "chemical/x-mmcif"
@@ -478,15 +540,14 @@ def get_query(session: APISession, query_id: str) -> Protein | Complex:
 
     query = None
     if is_mmcif:
-        # for cif files, create a temporary file for gemmi to read
-        import tempfile
-
-        with tempfile.NamedTemporaryFile(suffix=".cif", delete=True) as tmp:
-            tmp.write(response.content)
-            tmp.flush()
-            query = Complex.from_filepath(path=tmp.name, verbose=False)
-            if len(query.get_proteins()) == 1:
-                query = list(query.get_proteins().values())[0]
+        complex_ = Complex.from_string(
+            filestring=response.content, format="cif", verbose=False
+        )
+        proteins = complex_.get_proteins()
+        if len(proteins) == 1 and len(complex_.get_chains()) == 1:
+            query = next(iter(proteins.values()))
+        else:
+            query = complex_
 
     elif is_fasta:
         # Process FASTA file - take only the first sequence
@@ -496,8 +557,8 @@ def get_query(session: APISession, query_id: str) -> Protein | Complex:
 
         fasta_stream = io.BytesIO(response.content)
         for name, sequence in fasta.parse_stream(fasta_stream):
-            # can only be protein
-            query = Protein(name=name, sequence=sequence)
+            entry_name = name.decode() if isinstance(name, bytes) else name
+            query = _coerce_sequence(name=entry_name, sequence=sequence)
             break  # Only take the first sequence
     else:
         raise APIError(
@@ -507,13 +568,4 @@ def get_query(session: APISession, query_id: str) -> Protein | Complex:
     if query is None:
         raise APIError(f"Invalid query file returned from API {response.content[:10]}")
 
-    if response.status_code == 200:
-        return query
-    elif response.status_code == 401:
-        error = RawAPIError.model_validate(response.json())
-        raise APIError(error.detail)
-    elif response.status_code == 404:
-        error = RawAPIError.model_validate(response.json())
-        raise APIError(error.detail)
-    else:
-        raise APIError(f"Unexpected response status code: {response.status_code}")
+    return query

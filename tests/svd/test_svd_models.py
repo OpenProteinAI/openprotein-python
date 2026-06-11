@@ -75,7 +75,9 @@ def test_svd_model_embed(mock_session: MagicMock, mock_svd_metadata, mock_svd_fi
     ) as mock_embed_post:
         future = model.embed(sequences)
         mock_embed_post.assert_called_once_with(
-            session=mock_session, svd_id=model.id, sequences=sequences
+            session=mock_session,
+            svd_id=model.id,
+            sequences=sequences,
         )
         assert isinstance(future, SVDEmbeddingsResultFuture)
         assert future.id == "embed-job-123"

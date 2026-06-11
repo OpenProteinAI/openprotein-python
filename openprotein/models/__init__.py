@@ -7,11 +7,16 @@ from ..fold import (
     Boltz1Model,
     Boltz1xModel,
     Boltz2Model,
+    ESMFold2FastModel,
+    ESMFold2Model,
     ESMFoldModel,
     MiniFoldModel,
+    ProtenixModel,
+    ProtenixV2Model,
     RosettaFold3Model,
 )
 from .foundation.boltzgen import BoltzGenFuture, BoltzGenModel
+from .foundation.esmif1 import ESMIF1Model
 from .foundation.proteinmpnn import ProteinMPNNModel
 from .foundation.rfdiffusion import RFdiffusionFuture, RFdiffusionModel
 from .models import ModelsAPI

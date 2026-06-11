@@ -1,0 +1,43 @@
+{
+  "poet-2/amie/variant_effect_spearman": {
+    "atol": 1e-05,
+    "kind": "scalar",
+    "provenance": {
+      "backend": "https://api.openprotein.ai/api/"
+    },
+    "rtol": 0.0001,
+    "value": 0.5495401952508384
+  },
+  "poet-2/poetctx/generate_mean_score": {
+    "atol": 1e-05,
+    "kind": "scalar",
+    "provenance": {
+      "backend": "https://api.openprotein.ai/api/"
+    },
+    "rtol": 0.0001,
+    "value": -85.4536716
+  },
+  "poet-2/ubiquitin@poetctx/embed": {
+    "atol": 1e-05,
+    "kind": "array",
+    "provenance": {
+      "backend": "https://api.openprotein.ai/api/"
+    },
+    "rtol": 0.0001,
+    "shape": [
+      1024
+    ]
+  },
+  "poet-2/ubiquitin@poetctx/logits": {
+    "atol": 1e-05,
+    "kind": "array",
+    "provenance": {
+      "backend": "https://api.openprotein.ai/api/"
+    },
+    "rtol": 0.0001,
+    "shape": [
+      78,
+      29
+    ]
+  }
+}

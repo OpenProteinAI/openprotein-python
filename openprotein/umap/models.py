@@ -153,7 +153,9 @@ class UMAPModel(Future["UMAPModel"]):
         return api.umap_get_sequences(session=self.session, umap_id=self.id)
 
     def embed(
-        self, sequences: list[bytes] | list[str], **kwargs
+        self,
+        sequences: list[bytes] | list[str],
+        **kwargs,
     ) -> "UMAPEmbeddingsResultFuture":
         """
         Use this UMAP model to get projected embeddings from input sequences.
@@ -171,7 +173,10 @@ class UMAPModel(Future["UMAPModel"]):
         return UMAPEmbeddingsResultFuture.create(
             session=self.session,
             job=api.umap_embed_post(
-                session=self.session, umap_id=self.id, sequences=sequences, **kwargs
+                session=self.session,
+                umap_id=self.id,
+                sequences=sequences,
+                **kwargs,
             ),
             sequences=sequences,
         )

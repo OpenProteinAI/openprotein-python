@@ -407,6 +407,7 @@ class Protein:
         Args:
             tgt: The target Protein to compare against.
             backbone_only: Specifies which atoms to include in the RMSD calculation.
+
                 - If False (default), all atom types are included.
                 - If True, only backbone atoms ("N", "CA", "C") are included.
                 - If a string, it must be a single atom type (e.g., "CA").
@@ -417,11 +418,11 @@ class Protein:
                 (default), returns only the rmsd value.
 
         Returns:
-            If `return_transform` is False (default):
-                The RMSD value (float).
-            If `return_transform` is True:
-                A tuple `(float, np.ndarray, np.ndarray)` containing the RMSD value,
-                the rotation matrix, and the translation vector.
+            The RMSD value (float) if `return_transform` is False (default).
+
+            If `return_transform` is True, a tuple
+            `(float, np.ndarray, np.ndarray)` containing the RMSD value, the
+            rotation matrix, and the translation vector.
 
         Notes:
             This method assumes that sequences of `self` and `tgt` are already aligned.
@@ -992,9 +993,22 @@ class Protein:
 
 
 def parse_fasta_as_proteins(path: str | Path) -> list[Protein]:
+    warnings.warn(
+        "parse_fasta_as_proteins is deprecated and will be removed in a future "
+        "release. It does not support multichain FASTA entries (':' chain breaks).",
+        FutureWarning,
+        stacklevel=2,
+    )
     proteins = []
     with open(path, "rb") as fp:
         for name, sequence in fasta.parse_stream(fp):
+            if b":" in sequence:
+                entry = name.decode() if isinstance(name, bytes) else name
+                raise ValueError(
+                    f"FASTA entry {entry!r} contains a ':' chain break, which "
+                    "indicates a multichain protein that cannot be represented "
+                    "as a Protein. Use a Complex-aware loader instead."
+                )
             proteins.append(Protein(name=name, sequence=sequence))
     return proteins
 

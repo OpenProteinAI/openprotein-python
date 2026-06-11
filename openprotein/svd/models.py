@@ -118,7 +118,9 @@ class SVDModel(Future):
         return api.svd_get_sequences(session=self.session, svd_id=self.id)
 
     def embed(
-        self, sequences: list[bytes] | list[str], **kwargs
+        self,
+        sequences: list[bytes] | list[str],
+        **kwargs,
     ) -> "SVDEmbeddingsResultFuture":
         """
         Use this SVD model to get reduced embeddings from input sequences.
@@ -136,7 +138,10 @@ class SVDModel(Future):
         return SVDEmbeddingsResultFuture.create(
             session=self.session,
             job=api.svd_embed_post(
-                session=self.session, svd_id=self.id, sequences=sequences, **kwargs
+                session=self.session,
+                svd_id=self.id,
+                sequences=sequences,
+                **kwargs,
             ),
             sequences=sequences,
         )

@@ -136,6 +136,40 @@ def test_fold_models_post(mock_session: MagicMock):
     mock_session.post.assert_called_once_with(
         "v1/fold/models/model1",
         json={"sequences": [[{"protein": {"sequence": "AAA"}}]]},
+        params=None,
     )
     assert isinstance(result, FoldJob)
     assert result.job_id == "job1"
+
+
+def test_fold_models_post_force_recompute_sends_param(mock_session: MagicMock):
+    """force_recompute=True sends ?force=true."""
+    mock_session.post.return_value.json.return_value = {
+        "job_id": "job1",
+        "status": "PENDING",
+        "job_type": JobType.embeddings_fold.value,
+        "created_date": "2024-01-01T00:00:00",
+    }
+    api.fold_models_post(
+        mock_session,
+        "model1",
+        sequences=[[{"protein": {"sequence": "AAA"}}]],
+        force_recompute=True,
+    )
+    _, kwargs = mock_session.post.call_args
+    assert kwargs["params"] == {"force": "true"}
+
+
+def test_fold_models_post_no_force_recompute_by_default(mock_session: MagicMock):
+    """Without force_recompute, no ?force param is sent."""
+    mock_session.post.return_value.json.return_value = {
+        "job_id": "job1",
+        "status": "PENDING",
+        "job_type": JobType.embeddings_fold.value,
+        "created_date": "2024-01-01T00:00:00",
+    }
+    api.fold_models_post(
+        mock_session, "model1", sequences=[[{"protein": {"sequence": "AAA"}}]]
+    )
+    _, kwargs = mock_session.post.call_args
+    assert kwargs.get("params") is None

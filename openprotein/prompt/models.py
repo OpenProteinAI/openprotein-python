@@ -1,5 +1,6 @@
 from openprotein import config
 from openprotein.base import APISession
+from openprotein.errors import InvalidParameterError
 from openprotein.jobs import Future, JobsAPI
 from openprotein.molecules import Complex, Protein
 
@@ -22,18 +23,21 @@ class Prompt(Future):
         num_replicates: int | None = None,
     ):
         """
-        Initialize a new Prompt instance.
+        Initialize a new Prompt instance from a job or metadata.
 
         Parameters
         ----------
         session : APISession
             An APISession object used for interacting with the API.
-        job: PromptJob | None
+        job : PromptJob | None
             A PromptJob containing information about the optional prompt job.
-        metadata : PromptMetadata
-            A PromptMetadata object containing metadata for the prompt.
+        metadata : PromptMetadata | None
+            A PromptMetadata object containing metadata for the prompt. If
+            omitted, metadata is fetched (or constructed) from ``job``.
+        num_replicates : int | None
+            If provided alongside ``job``, build metadata locally without an
+            extra API call.
         """
-        """Initializes with either job get or svd metadata get."""
         if metadata is None:
             # use job to fetch metadata
             if job is None:
@@ -69,15 +73,61 @@ class Prompt(Future):
     def __repr__(self) -> str:
         return repr(self.metadata)
 
-    def _get(self, verbose: bool = False, **kwargs) -> list[list[Protein]]:
+    def _get(self, verbose: bool = False, **kwargs) -> list[list[Protein | Complex]]:
         """
-        Retrieve the prompt as a list of :py:class:`~openprotein.molecules.Protein`.
+        Retrieve the prompt as context entries.
+
+        Single-chain entries collapse to :py:class:`~openprotein.molecules.Protein`;
+        multichain entries are returned as :py:class:`~openprotein.molecules.Complex`.
+        Use :py:meth:`get_as_complexes` for a uniform ``Complex`` return, or
+        :py:meth:`get_as_proteins` for a uniform ``Protein`` return (the latter
+        raises if any entry is multichain).
 
         Returns:
-            list of list of Protein representing the prompt context
+            list of list of Protein or Complex representing the prompt context
         """
         context = api.get_prompt(session=self.session, prompt_id=str(self.id))
         return context
+
+    def get_as_complexes(self) -> list[list[Complex]]:
+        """
+        Retrieve the prompt context with every entry as a :py:class:`Complex`.
+
+        Single-chain entries are wrapped as ``Complex({"A": protein})`` so the
+        return type is uniform regardless of chain count.
+        """
+        context = api.get_prompt(session=self.session, prompt_id=str(self.id))
+        return [
+            [
+                (
+                    entry
+                    if isinstance(entry, Complex)
+                    else Complex({"A": entry}, name=entry.name)
+                )
+                for entry in entries
+            ]
+            for entries in context
+        ]
+
+    def get_as_proteins(self) -> list[list[Protein]]:
+        """
+        Retrieve the prompt context with every entry as a :py:class:`Protein`.
+
+        Raises :py:class:`InvalidParameterError` if any entry is multichain — use
+        :py:meth:`get_as_complexes` instead when multichain entries may be present.
+        """
+        context = api.get_prompt(session=self.session, prompt_id=str(self.id))
+        result: list[list[Protein]] = []
+        for entries in context:
+            row: list[Protein] = []
+            for entry in entries:
+                if isinstance(entry, Complex):
+                    raise InvalidParameterError(
+                        "prompt contains a multichain entry; use get_as_complexes()"
+                    )
+                row.append(entry)
+            result.append(row)
+        return result
 
     def _wait_job(
         self,
@@ -158,11 +208,38 @@ class Query:
         """
         Retrieve the query as a :py:class:`~openprotein.molecules.Protein` or  :py:class:`~openprotein.molecules.Complex`.
 
+        Single-chain queries collapse to :py:class:`Protein`; multichain queries are
+        returned as :py:class:`Complex`. For a uniform return type, see
+        :py:meth:`get_as_complex` or :py:meth:`get_as_protein`.
 
         Returns:
             Protein or Complex representing the query
         """
         query = api.get_query(session=self.session, query_id=str(self.id))
+        return query
+
+    def get_as_complex(self) -> Complex:
+        """
+        Retrieve the query as a :py:class:`Complex`.
+
+        A single-chain :py:class:`Protein` result is wrapped as
+        ``Complex({"A": protein})`` so the return type is uniform.
+        """
+        query = api.get_query(session=self.session, query_id=str(self.id))
+        if isinstance(query, Protein):
+            return Complex({"A": query}, name=query.name)
+        return query
+
+    def get_as_protein(self) -> Protein:
+        """
+        Retrieve the query as a :py:class:`Protein`.
+
+        Raises :py:class:`InvalidParameterError` if the query is multichain — use
+        :py:meth:`get_as_complex` instead when multichain queries may be present.
+        """
+        query = api.get_query(session=self.session, query_id=str(self.id))
+        if isinstance(query, Complex):
+            raise InvalidParameterError("query is multichain; use get_as_complex()")
         return query
 
     @property

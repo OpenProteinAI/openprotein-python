@@ -265,6 +265,7 @@ def request_post(
     model_id: str,
     sequences: list[bytes] | list[str],
     reduction: str | None = "MEAN",
+    force_recompute: bool = False,
     **kwargs,
 ) -> EmbeddingsJob:
     """
@@ -281,6 +282,8 @@ def request_post(
         sequences to request results for
     reduction : str | None
         reduction to apply to the embeddings. options are None, "MEAN", or "SUM". defaul: "MEAN"
+    force_recompute : bool
+        If True, send ?force=true so the backend bypasses the result cache and recomputes. Default: False.
     **kwargs:
         Optional parameters for models, e.g. prompt_id for PoET
 
@@ -306,7 +309,8 @@ def request_post(
             ]
     if kwargs.get("decoder_type"):
         body["decoder_type"] = kwargs["decoder_type"]
-    response = session.post(endpoint, json=body)
+    params = {"force": "true"} if force_recompute else None
+    response = session.post(endpoint, json=body, params=params)
     return EmbeddingsJob.model_validate(response.json())
 
 
@@ -314,6 +318,7 @@ def request_logits_post(
     session: APISession,
     model_id: str,
     sequences: list[bytes] | list[str],
+    force_recompute: bool = False,
     **kwargs,
 ) -> LogitsJob:
     """
@@ -328,6 +333,8 @@ def request_logits_post(
         model ID to request results from
     sequences : List[bytes]
         sequences to request results for
+    force_recompute : bool
+        If True, send ?force=true so the backend bypasses the result cache and recomputes. Default: False.
     **kwargs:
         Optional parameters for models, e.g. prompt_id for PoET
 
@@ -351,7 +358,8 @@ def request_logits_post(
             ]
     if kwargs.get("decoder_type"):
         body["decoder_type"] = kwargs["decoder_type"]
-    response = session.post(endpoint, json=body)
+    params = {"force": "true"} if force_recompute else None
+    response = session.post(endpoint, json=body, params=params)
     return LogitsJob.model_validate(response.json())
 
 
@@ -359,6 +367,7 @@ def request_attn_post(
     session: APISession,
     model_id: str,
     sequences: list[bytes] | list[str],
+    force_recompute: bool = False,
     **kwargs,
 ) -> AttnJob:
     """
@@ -374,6 +383,8 @@ def request_attn_post(
         model ID to request results from
     sequences : List[bytes]
         sequences to request results for
+    force_recompute : bool
+        If True, send ?force=true so the backend bypasses the result cache and recomputes. Default: False.
     **kwargs:
         Optional parameters for models, e.g. prompt_id for PoET
 
@@ -395,7 +406,8 @@ def request_attn_post(
             body["use_query_structure_in_decoder"] = kwargs[
                 "use_query_structure_in_decoder"
             ]
-    response = session.post(endpoint, json=body)
+    params = {"force": "true"} if force_recompute else None
+    response = session.post(endpoint, json=body, params=params)
     return AttnJob.model_validate(response.json())
 
 
@@ -403,6 +415,7 @@ def request_score_post(
     session: APISession,
     model_id: str,
     sequences: list[bytes] | list[str],
+    force_recompute: bool = False,
     **kwargs,
 ) -> ScoreJob:
     """
@@ -418,6 +431,8 @@ def request_score_post(
         model ID to request results from
     sequences : List[bytes]
         sequences to request results for
+    force_recompute : bool
+        If True, send ?force=true so the backend bypasses the result cache and recomputes. Default: False.
 
     Returns
     -------
@@ -438,7 +453,8 @@ def request_score_post(
             ]
     if kwargs.get("decoder_type"):
         body["decoder_type"] = kwargs["decoder_type"]
-    response = session.post(endpoint, json=body)
+    params = {"force": "true"} if force_recompute else None
+    response = session.post(endpoint, json=body, params=params)
     return ScoreJob.model_validate(response.json())
 
 
@@ -448,6 +464,7 @@ def request_score_indel_post(
     base_sequence: bytes | str,
     insert: str | None = None,
     delete: list[int] | None = None,
+    force_recompute: bool = False,
     **kwargs,
 ) -> ScoreIndelJob:
     """
@@ -467,6 +484,8 @@ def request_score_indel_post(
         Insertion fragment at each site.
     delete: int | None
         Range of size of fragment to delete at each site.
+    force_recompute : bool
+        If True, send ?force=true so the backend bypasses the result cache and recomputes. Default: False.
     **kwargs:
         Optional parameters for models, e.g. prompt_id for PoET
 
@@ -497,7 +516,8 @@ def request_score_indel_post(
             ]
     if kwargs.get("decoder_type"):
         body["decoder_type"] = kwargs["decoder_type"]
-    response = session.post(endpoint, json=body)
+    params = {"force": "true"} if force_recompute else None
+    response = session.post(endpoint, json=body, params=params)
     return ScoreIndelJob.model_validate(response.json())
 
 
@@ -505,6 +525,7 @@ def request_score_single_site_post(
     session: APISession,
     model_id: str,
     base_sequence: bytes | str,
+    force_recompute: bool = False,
     **kwargs,
 ) -> ScoreSingleSiteJob:
     """
@@ -520,6 +541,8 @@ def request_score_single_site_post(
         model ID to request results from
     sequences : List[bytes]
         sequences to request results for
+    force_recompute : bool
+        If True, send ?force=true so the backend bypasses the result cache and recomputes. Default: False.
     **kwargs:
         Optional parameters for models, e.g. prompt_id for PoET
 
@@ -546,7 +569,8 @@ def request_score_single_site_post(
             ]
     if kwargs.get("decoder_type"):
         body["decoder_type"] = kwargs["decoder_type"]
-    response = session.post(endpoint, json=body)
+    params = {"force": "true"} if force_recompute else None
+    response = session.post(endpoint, json=body, params=params)
     return ScoreSingleSiteJob.model_validate(response.json())
 
 
@@ -559,6 +583,7 @@ def request_generate_post(
     topp: float | None = None,
     max_length: int = 1000,
     random_seed: int | None = None,
+    force_recompute: bool = False,
     **kwargs,
 ) -> GenerateJob:
     """
@@ -572,6 +597,8 @@ def request_generate_post(
         Session object for API communication.
     model_id : str
         model ID to request results from
+    force_recompute : bool
+        If True, send ?force=true so the backend bypasses the result cache and recomputes. Default: False.
     **kwargs:
         Optional parameters for models, e.g. prompt_id for PoET
 
@@ -630,5 +657,6 @@ def request_generate_post(
             model_id != "poet"
         ), f"Model with id {model_id} does not support ensemble_method parameter"
         body["ensemble_method"] = ensemble_method
-    response = session.post(endpoint, json=body)
+    params = {"force": "true"} if force_recompute else None
+    response = session.post(endpoint, json=body, params=params)
     return GenerateJob.model_validate(response.json())

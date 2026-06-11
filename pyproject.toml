@@ -19,7 +19,7 @@ classifiers = [
 dependencies = [
   "requests>=2.32.3,<3",
   "pydantic>=2.5,<3",
-  "tqdm>=4.66.5,<5",
+  "tqdm>=4.66.4,<5",
   "pandas>=2.2.2,<3",
   "numpy>=1.9,<3",
   "gemmi>=0.6.0,<0.8",
@@ -96,6 +96,8 @@ markers = [
   "e2e: End-to-end tests that require API credentials",
   "slow: Slow-running tests",
   "integration: Integration tests",
+  "correctness: Correctness tests (invariants, ground-truth, prod-baseline)",
+  "differential: Correctness tests that compare against a captured prod baseline",
 ]
 addopts = "-v --strict-markers --tb=short --disable-warnings -m 'not e2e'"
 timeout = 1200

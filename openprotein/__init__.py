@@ -20,6 +20,7 @@ from openprotein.fold import FoldAPI
 from openprotein.models import ModelsAPI
 from openprotein.svd import SVDAPI
 from openprotein.umap import UMAPAPI
+from openprotein.clustering import ClusteringAPI
 from openprotein.predictor import PredictorAPI
 from openprotein.design import DesignAPI
 from openprotein.jobs import Future
@@ -38,6 +39,7 @@ class OpenProtein(APISession):
     _embeddings = None
     _svd = None
     _umap = None
+    _clustering = None
     _fold = None
     _predictor = None
     _design = None
@@ -81,7 +83,7 @@ class OpenProtein(APISession):
     @property
     def prompt(self) -> PromptAPI:
         """
-        The Align submodule gives access to the sequence alignment capabilities by building MSAs and prompts that can be used with PoET.
+        The prompt submodule gives access to creating and retrieving prompts and queries used to condition PoET models.
         """
         if self._prompt is None:
             self._prompt = PromptAPI(self)
@@ -119,6 +121,15 @@ class OpenProtein(APISession):
                 session=self,
             )
         return self._umap
+
+    @property
+    def clustering(self) -> ClusteringAPI:
+        """The clustering API for fitting hierarchical clustering jobs."""
+        if self._clustering is None:
+            self._clustering = ClusteringAPI(
+                session=self,
+            )
+        return self._clustering
 
     @property
     def predictor(self) -> PredictorAPI:

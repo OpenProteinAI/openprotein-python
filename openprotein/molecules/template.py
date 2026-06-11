@@ -23,6 +23,7 @@ class Template:
             Must contain structural data (coordinates).
         mapping (Mapping[str, str] | str | None): The rule for assigning this template
             to the target.
+
             - Mapping[str, str]: Explicitly maps {template_chain_id: target_chain_id}.
             - str: Apply this template to a specific target_chain_id. (If template is
               a Complex, a selection algorithm is used to pick the best source chain).

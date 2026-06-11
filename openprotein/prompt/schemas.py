@@ -4,9 +4,9 @@ from typing import Literal, Sequence
 from pydantic import BaseModel, Field
 
 from openprotein.jobs import Job, JobStatus, JobType
-from openprotein.molecules import Protein
+from openprotein.molecules import Complex, Protein
 
-Context = Sequence[bytes | str | Protein]
+Context = Sequence[bytes | str | Protein | Complex]
 
 
 class PromptJob(Job):

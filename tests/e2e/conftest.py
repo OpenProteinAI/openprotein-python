@@ -14,6 +14,7 @@ from openprotein.molecules import Protein, Complex
 from openprotein.utils.chain_id import id_generator
 from tests.e2e.config import scaled_timeout
 from tests.utils.sequences import (
+    ANTIBODY_HEAVY_SEQUENCE,
     random_mutated_sequences,
     random_sequence_fake,
     random_sequence_real,
@@ -30,7 +31,7 @@ TEST_ASSAY_LARGE_FILE = "AMIE_PSEAE_Whitehead.wide.csv"  # ~6000 sequences
 
 # Shared sequence constants for E2E tests
 BASE_SEQUENCE = "MQYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE"
-TEST_ANTIBODY_SEQUENCE = "EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAKYYYYGMDVWGQGTTVTVSS"
+TEST_ANTIBODY_SEQUENCE = ANTIBODY_HEAVY_SEQUENCE
 MSA_SEED_SEQUENCE_LENGTH = 1000
 
 

@@ -155,3 +155,14 @@ class ProtenixModel(FoldModel):
             ),
             complexes=normalized_complexes,
         )
+
+
+class ProtenixV2Model(ProtenixModel, FoldModel):
+    """
+    Class providing inference endpoints for Protenix-v2 structure prediction.
+
+    Protenix-v2 shares Protenix's fold API surface and confidence schema; only
+    the backend ``model_id`` differs.
+    """
+
+    model_id = "protenix-v2"

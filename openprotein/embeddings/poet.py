@@ -12,6 +12,7 @@ from .future import (
     EmbeddingsGenerateFuture,
     EmbeddingsResultFuture,
     EmbeddingsScoreFuture,
+    EmbeddingsScoreSingleSiteFuture,
 )
 from .models import EmbeddingModel
 
@@ -236,7 +237,7 @@ class PoETModel(EmbeddingModel):
         sequence: bytes,
         prompt: str | Prompt | None = None,
         **kwargs,
-    ) -> EmbeddingsScoreFuture:
+    ) -> EmbeddingsScoreSingleSiteFuture:
         """
         Score all single substitutions of the query sequence using the specified prompt.
 
@@ -251,14 +252,14 @@ class PoETModel(EmbeddingModel):
 
         Returns
         -------
-        EmbeddingsScoreFuture
-            Future object that returns the scores of the mutated sequence.
+        EmbeddingsScoreSingleSiteFuture
+            Future object that returns the per-variant scores of the single substitutions.
         """
         if prompt is None:
             prompt_id = None
         else:
             prompt_id = prompt if isinstance(prompt, str) else prompt.id
-        return EmbeddingsScoreFuture.create(
+        return EmbeddingsScoreSingleSiteFuture.create(
             session=self.session,
             job=api.request_score_single_site_post(
                 session=self.session,

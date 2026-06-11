@@ -15,6 +15,8 @@ class JobsAPI:
     def __init__(self, session: APISession):
         self.session = session
 
+    # `list` shadows the builtin, so the return annotation is quoted to keep it
+    # resolving to the builtin (not this method) under PEP 649 deferred evaluation.
     def list(
         self,
         status: JobStatus | None = None,
@@ -24,7 +26,7 @@ class JobsAPI:
         page_size: int | None = None,
         page_offset: int | None = None,
         limit: int | None = None,
-    ) -> list[Job]:
+    ) -> "list[Job]":
         """List jobs.
 
         Pass `page_size` / `page_offset` to paginate. `limit` is a deprecated

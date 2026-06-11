@@ -8,7 +8,13 @@ from openprotein.common.reduction import ReductionType
 from openprotein.data import AssayDataset
 from openprotein.errors import HTTPError
 from tests.e2e.config import scaled_timeout
-from tests.utils.sequences import random_sequence_fake, random_sequence_real
+from tests.utils.sequences import (
+    ANTIBODY_HEAVY_SEQUENCE,
+    ANTIBODY_LIGHT_SEQUENCE,
+    mutate_sequence,
+    random_sequence_fake,
+    random_sequence_real,
+)
 
 def _build_single_chain_sequence(seq_len: int) -> bytes:
     """Default sequence builder: a single-chain random AA sequence."""
@@ -16,10 +22,20 @@ def _build_single_chain_sequence(seq_len: int) -> bytes:
 
 
 def _build_paired_chain_sequence(seq_len: int) -> bytes:
-    """Antibody paired-chain sequence builder: 'heavy:light'."""
-    half = max(seq_len // 2, 16)
-    heavy = random_sequence_fake(half)
-    light = random_sequence_fake(half)
+    """
+    Antibody paired-chain sequence builder: 'heavy:light'.
+
+    Antibody models such as ablang2 reject random amino-acid strings, so we
+    start from real antibody variable-region sequences and apply random
+    substitutions to each chain. The substitutions keep the chains valid
+    antibodies while making every generated pair unique, which busts
+    server-side caches across test runs.
+
+    ``seq_len`` is ignored: antibody variable domains have a fixed natural
+    length.
+    """
+    heavy = mutate_sequence(ANTIBODY_HEAVY_SEQUENCE, mutation_rate=0.02)
+    light = mutate_sequence(ANTIBODY_LIGHT_SEQUENCE, mutation_rate=0.02)
     return f"{heavy}:{light}".encode()
 
 
@@ -29,6 +45,7 @@ def _build_paired_chain_sequence(seq_len: int) -> bytes:
 # collapse back to (model_id, expected_dimension).
 EMBEDDING_MODELS = [
     ("esm2_t33_650M_UR50D", 1280, _build_single_chain_sequence),
+    ("esmc-300m", None, _build_single_chain_sequence),
     ("prot-seq", 1024, _build_single_chain_sequence),
     ("poet", 1024, _build_single_chain_sequence),
     ("poet-2", 1024, _build_single_chain_sequence),
@@ -40,11 +57,19 @@ REDUCTION_TYPES = [
     ReductionType.SUM,
 ]
 
+# Encoder-style PLMs exercised by the generic per-model checks below
+# (reduction, batch sizes, varied lengths, error handling, logits, attn).
+PER_MODEL_TEST_IDS = ["esm2_t33_650M_UR50D", "esmc-300m"]
+
 SEQ_LEN = 1000
 NUM_SEQS_SMALL = 10
 NUM_SEQS_MEDIUM = 100
 TIMEOUT = scaled_timeout(1.0)
 GENERATE_TIMEOUT = scaled_timeout(2.0)
+
+
+def _supports_model(session: OpenProtein, model_id: str) -> bool:
+    return model_id in {model.id for model in session.embedding.list_models()}
 
 
 @pytest.mark.e2e
@@ -89,13 +114,15 @@ def test_embedding_single_model(
 
 
 @pytest.mark.e2e
+@pytest.mark.parametrize("model_id", PER_MODEL_TEST_IDS)
 @pytest.mark.parametrize("reduction", REDUCTION_TYPES)
-def test_embedding_reduction_types(session: OpenProtein, reduction: ReductionType):
-    """
-    Test different reduction types for embeddings.
-    Uses ESM2 model as baseline.
-    """
-    model = session.embedding.esm2
+def test_embedding_reduction_types(
+    session: OpenProtein, reduction: ReductionType, model_id: str
+):
+    """Test different reduction types for embeddings."""
+    if not _supports_model(session, model_id):
+        pytest.skip(f"{model_id} model is not available in this backend")
+    model = session.embedding.get_model(model_id)
     sequences = [random_sequence_fake(SEQ_LEN).encode() for _ in range(NUM_SEQS_SMALL)]
 
     future = model.embed(sequences=sequences, reduction=reduction)
@@ -145,13 +172,16 @@ def test_embedding_parallel_models(session: OpenProtein):
 
 
 @pytest.mark.e2e
+@pytest.mark.parametrize("model_id", PER_MODEL_TEST_IDS)
 @pytest.mark.parametrize("num_seqs", [1, 10, 100])
-def test_embedding_batch_sizes(session: OpenProtein, num_seqs: int):
+def test_embedding_batch_sizes(session: OpenProtein, num_seqs: int, model_id: str):
     """
     Test embedding with different batch sizes.
     Validates scalability and batch processing.
     """
-    model = session.embedding.esm2
+    if not _supports_model(session, model_id):
+        pytest.skip(f"{model_id} model is not available in this backend")
+    model = session.embedding.get_model(model_id)
     sequences = [random_sequence_fake(SEQ_LEN).encode() for _ in range(num_seqs)]
 
     future = model.embed(sequences=sequences)
@@ -165,12 +195,17 @@ def test_embedding_batch_sizes(session: OpenProtein, num_seqs: int):
 
 
 @pytest.mark.e2e
-def test_embedding_varied_sequence_lengths(session: OpenProtein, test_sequences_varied):
+@pytest.mark.parametrize("model_id", PER_MODEL_TEST_IDS)
+def test_embedding_varied_sequence_lengths(
+    session: OpenProtein, test_sequences_varied, model_id: str
+):
     """
     Test embedding sequences of varying lengths.
     Validates handling of short, medium, long, and very long sequences.
     """
-    model = session.embedding.esm2
+    if not _supports_model(session, model_id):
+        pytest.skip(f"{model_id} model is not available in this backend")
+    model = session.embedding.get_model(model_id)
 
     future = model.embed(sequences=test_sequences_varied)
     results = future.wait(timeout=TIMEOUT)
@@ -183,11 +218,12 @@ def test_embedding_varied_sequence_lengths(session: OpenProtein, test_sequences_
 
 
 @pytest.mark.e2e
-def test_embedding_empty_sequence_handling(session: OpenProtein):
-    """
-    Test error handling for edge cases like empty sequences.
-    """
-    model = session.embedding.esm2
+@pytest.mark.parametrize("model_id", PER_MODEL_TEST_IDS)
+def test_embedding_empty_sequence_handling(session: OpenProtein, model_id: str):
+    """Test error handling for edge cases like empty sequences."""
+    if not _supports_model(session, model_id):
+        pytest.skip(f"{model_id} model is not available in this backend")
+    model = session.embedding.get_model(model_id)
 
     with pytest.raises(HTTPError, match="Status code"):
         future = model.embed(sequences=[b""])
@@ -195,11 +231,12 @@ def test_embedding_empty_sequence_handling(session: OpenProtein):
 
 
 @pytest.mark.e2e
-def test_embedding_invalid_amino_acids(session: OpenProtein):
-    """
-    Test error handling for sequences with invalid amino acids.
-    """
-    model = session.embedding.esm2
+@pytest.mark.parametrize("model_id", PER_MODEL_TEST_IDS)
+def test_embedding_invalid_amino_acids(session: OpenProtein, model_id: str):
+    """Test error handling for sequences with invalid amino acids."""
+    if not _supports_model(session, model_id):
+        pytest.skip(f"{model_id} model is not available in this backend")
+    model = session.embedding.get_model(model_id)
 
     # Sequence with invalid characters
     invalid_seq = b"ACDEFGHIKLMNPQRSTVWYXBZJ123"
@@ -209,17 +246,14 @@ def test_embedding_invalid_amino_acids(session: OpenProtein):
         future.wait(timeout=TIMEOUT)
 
 
-def _supports_model(session: OpenProtein, model_id: str) -> bool:
-    return model_id in {model.id for model in session.embedding.list_models()}
-
-
 @pytest.mark.e2e
-def test_e2e_embedding_logits(session: OpenProtein):
+@pytest.mark.parametrize("model_id", PER_MODEL_TEST_IDS)
+def test_e2e_embedding_logits(session: OpenProtein, model_id: str):
     """Validate logits retrieval for a model that supports logits output."""
-    if not _supports_model(session, "esm2_t33_650M_UR50D"):
-        pytest.skip("esm2_t33_650M_UR50D model is not available in this backend")
+    if not _supports_model(session, model_id):
+        pytest.skip(f"{model_id} model is not available in this backend")
 
-    model = session.embedding.esm2
+    model = session.embedding.get_model(model_id)
     sequence = b"ACDEFGHIKLMNPQRSTVWY"
     results = model.logits(sequences=[sequence]).wait(timeout=TIMEOUT)
 
@@ -233,12 +267,13 @@ def test_e2e_embedding_logits(session: OpenProtein):
 
 
 @pytest.mark.e2e
-def test_e2e_embedding_attn(session: OpenProtein):
+@pytest.mark.parametrize("model_id", PER_MODEL_TEST_IDS)
+def test_e2e_embedding_attn(session: OpenProtein, model_id: str):
     """Validate attention output for a model that supports attention."""
-    if not _supports_model(session, "esm2_t33_650M_UR50D"):
-        pytest.skip("esm2_t33_650M_UR50D model is not available in this backend")
+    if not _supports_model(session, model_id):
+        pytest.skip(f"{model_id} model is not available in this backend")
 
-    model = session.embedding.esm2
+    model = session.embedding.get_model(model_id)
     sequence = b"ACDEFGHIKLMNPQRSTVWY"
     results = model.attn(sequences=[sequence]).wait(timeout=TIMEOUT)
 
@@ -381,6 +416,126 @@ def test_e2e_msa_to_prompt_to_poet2_score(session: OpenProtein):
 
     assert len(score_results) == len(score_sequences)
     for row in score_results:
+        assert isinstance(row.sequence, str)
+        assert len(row.sequence) > 0
+        assert isinstance(row.score, np.ndarray)
+        assert row.score.size > 0
+        assert np.isfinite(row.score).all()
+
+
+# Models whose inference is conditioned on a prompt (and, for PoET-2, a query).
+PROMPT_MODELS = ["poet", "poet-2"]
+
+
+def _novel_multichain_context() -> list[str]:
+    """A two-chain context joined by ':' — novel each run to bust server-side caches."""
+    chain_a = random_sequence_real(80)
+    chain_b = random_sequence_real(80)
+    return [f"{chain_a}:{chain_b}"]
+
+
+def _require_prompt_model(session: OpenProtein, model_id: str):
+    """Skip if the model is unavailable on this backend; otherwise return it."""
+    if model_id not in {m.id for m in session.embedding.list_models()}:
+        pytest.skip(f"{model_id} is not available in this backend")
+    return session.embedding.get_model(model_id)
+
+
+@pytest.mark.e2e
+@pytest.mark.parametrize("model_id", PROMPT_MODELS)
+def test_e2e_multichain_prompt_embed(session: OpenProtein, model_id: str):
+    """Embed a sequence conditioned on a multichain (':'-delimited) prompt."""
+    model = _require_prompt_model(session, model_id)
+    prompt = session.prompt.create_prompt(_novel_multichain_context())
+    assert prompt.wait_until_done(timeout=TIMEOUT)
+
+    sequences = [random_sequence_real(80).encode()]
+    results = model.embed(sequences=sequences, prompt=prompt).wait(
+        timeout=GENERATE_TIMEOUT
+    )
+
+    assert len(results) == len(sequences)
+    sequence, embedding = results[0]
+    assert sequence == sequences[0]
+    assert isinstance(embedding, np.ndarray)
+    assert embedding.shape == (model.metadata.dimension,)
+    assert np.isfinite(embedding).all()
+
+
+@pytest.mark.e2e
+@pytest.mark.parametrize("model_id", PROMPT_MODELS)
+def test_e2e_multichain_prompt_score(session: OpenProtein, model_id: str):
+    """Score a sequence against a multichain (':'-delimited) prompt."""
+    model = _require_prompt_model(session, model_id)
+    prompt = session.prompt.create_prompt(_novel_multichain_context())
+    assert prompt.wait_until_done(timeout=TIMEOUT)
+
+    sequences = [random_sequence_real(80).encode()]
+    results = model.score(sequences=sequences, prompt=prompt).wait(
+        timeout=GENERATE_TIMEOUT
+    )
+
+    assert len(results) == len(sequences)
+    for row in results:
+        assert isinstance(row.sequence, str)
+        assert len(row.sequence) > 0
+        assert isinstance(row.score, np.ndarray)
+        assert row.score.size > 0
+        assert np.isfinite(row.score).all()
+
+
+@pytest.mark.e2e
+@pytest.mark.parametrize("model_id", PROMPT_MODELS)
+def test_e2e_multichain_prompt_generate(session: OpenProtein, model_id: str):
+    """Generate sequences conditioned on a multichain (':'-delimited) prompt."""
+    model = _require_prompt_model(session, model_id)
+    n_samples = 2
+    prompt = session.prompt.create_prompt(_novel_multichain_context())
+    assert prompt.wait_until_done(timeout=TIMEOUT)
+
+    future = model.generate(prompt=prompt, num_samples=n_samples, temperature=1.0)
+    assert future.wait_until_done(timeout=GENERATE_TIMEOUT)
+    results = future.get()
+    assert isinstance(results, list)
+    assert len(results) == n_samples
+    for entry in results:
+        assert isinstance(entry.sequence, str)
+        assert len(entry.sequence) > 0
+        assert isinstance(entry.score, np.ndarray)
+
+
+@pytest.mark.e2e
+def test_e2e_multichain_query_poet2_embed(session: OpenProtein):
+    """PoET-2 embed with a multichain (':'-delimited) query."""
+    _require_prompt_model(session, "poet-2")
+    query = f"{random_sequence_real(80)}:{random_sequence_real(80)}"
+
+    sequences = [random_sequence_real(80).encode()]
+    results = session.embedding.poet2.embed(sequences=sequences, query=query).wait(
+        timeout=GENERATE_TIMEOUT
+    )
+
+    assert len(results) == len(sequences)
+    sequence, embedding = results[0]
+    assert sequence == sequences[0]
+    assert isinstance(embedding, np.ndarray)
+    assert embedding.shape == (session.embedding.poet2.metadata.dimension,)
+    assert np.isfinite(embedding).all()
+
+
+@pytest.mark.e2e
+def test_e2e_multichain_query_poet2_score(session: OpenProtein):
+    """PoET-2 score with a multichain (':'-delimited) query."""
+    _require_prompt_model(session, "poet-2")
+    query = f"{random_sequence_real(80)}:{random_sequence_real(80)}"
+
+    sequences = [random_sequence_real(80).encode()]
+    results = session.embedding.poet2.score(sequences=sequences, query=query).wait(
+        timeout=GENERATE_TIMEOUT
+    )
+
+    assert len(results) == len(sequences)
+    for row in results:
         assert isinstance(row.sequence, str)
         assert len(row.sequence) > 0
         assert isinstance(row.score, np.ndarray)

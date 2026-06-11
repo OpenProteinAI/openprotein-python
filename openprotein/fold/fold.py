@@ -6,12 +6,13 @@ from . import api
 from .alphafold2 import AlphaFold2Model
 from .boltz import Boltz1Model, Boltz1xModel, Boltz2Model
 from .esmfold import ESMFoldModel
+from .esmfold2 import ESMFold2FastModel, ESMFold2Model
 from .future import FoldResultFuture
 from .minifold import MiniFoldModel
 from .models import (
     FoldModel,
 )
-from .protenix import ProtenixModel
+from .protenix import ProtenixModel, ProtenixV2Model
 from .rosettafold3 import RosettaFold3Model
 
 
@@ -37,10 +38,16 @@ class FoldAPI:
     rosettafold_3: RosettaFold3Model
     #: ESMFold model
     esmfold: ESMFoldModel
+    #: ESMFold2 model
+    esmfold2: ESMFold2Model
+    #: ESMFold2-Fast model
+    esmfold2_fast: ESMFold2FastModel
     #: MiniFold model
     minifold: MiniFoldModel
     #: Protenix model
     protenix: ProtenixModel
+    #: Protenix-v2 model
+    protenix_v2: ProtenixV2Model
 
     def __init__(self, session: APISession):
         self.session = session

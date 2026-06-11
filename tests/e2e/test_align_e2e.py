@@ -8,9 +8,9 @@ from openprotein import OpenProtein
 from openprotein.align.schemas import AbNumberScheme
 from openprotein.errors import HTTPError
 from openprotein.jobs import JobStatus
-from openprotein.molecules import Protein
+from openprotein.molecules import Complex, Protein
 from tests.e2e.config import scaled_timeout
-from tests.utils.sequences import random_sequence_real
+from tests.utils.sequences import mutated_antibody_sequences, random_sequence_real
 
 E2E_TIMEOUT = scaled_timeout(1.0)
 
@@ -114,7 +114,7 @@ def test_e2e_msa_sample_workflow(session: OpenProtein, msa_seed_sequence_length:
     assert len(ensemble_prompts) == 3
     for prompt in ensemble_prompts:
         if len(prompt) > 0:
-            assert isinstance(prompt[0], Protein)
+            assert isinstance(prompt[0], (Protein, Complex))
 
 
 @pytest.mark.e2e
@@ -213,14 +213,16 @@ def test_e2e_clustalo_workflow(
 def test_e2e_abnumber_workflow(
     session: OpenProtein,
     test_antibody_sequence: str,
-    mutated_sequences: Callable[..., list[str]],
 ):
     """
     Tests the full antibody numbering workflow.
     """
-    # 1. Generate unique antibody sequences for this test run
-    generated_sequences = mutated_sequences(
-        sequence=test_antibody_sequence, num_sequences=3, mutation_rate=0.02
+    # 1. Generate unique antibody sequences for this test run. Use
+    # substitution-only mutation so the variable-domain framing stays intact and
+    # every sequence remains numberable by AbNumber (indels would shift the
+    # frame and break numbering / round-trip recovery).
+    generated_sequences = mutated_antibody_sequences(
+        test_antibody_sequence, num_sequences=3, mutation_rate=0.02
     )
 
     # 2. Start an AbNumber job

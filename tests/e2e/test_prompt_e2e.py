@@ -1,7 +1,9 @@
 import pytest
 
 from openprotein import OpenProtein
-from openprotein.molecules import Protein
+from openprotein.errors import InvalidParameterError
+from openprotein.molecules import Complex, Protein
+from openprotein.molecules.chains import DNA
 from tests.utils.strings import random_string
 
 
@@ -75,3 +77,49 @@ def test_prompt_editing_e2e(session: OpenProtein) -> None:
     assert isinstance(retrieved_edited_protein, Protein)
     assert retrieved_edited_protein.sequence.startswith(b"GSHSM")
     assert retrieved_edited_protein.sequence.count(ord("X")) > 10
+
+
+@pytest.mark.e2e
+def test_multichain_prompt_and_query_e2e(session: OpenProtein) -> None:
+    """End-to-end roundtrip for multichain prompts and queries."""
+    chain_a, chain_b = "ACDEFGHIKLMNPQRSTVWY", "MVLSEGEWQLVLHVWAKVEADVAGHGQ"
+
+    # 1. Multichain context as a raw ":" sequence
+    prompt_name = f"test-multichain-{random_string()}"
+    prompt = session.prompt.create_prompt([f"{chain_a}:{chain_b}"], name=prompt_name)
+    retrieved = prompt.get()
+    entry = retrieved[0][0]
+    assert isinstance(entry, Complex)
+    seqs = sorted(p.sequence.decode() for p in entry.get_proteins().values())
+    assert seqs == sorted([chain_a, chain_b])
+
+    # 2. Multichain context as a Complex
+    complex_in = Complex(
+        {"A": Protein(sequence=chain_a), "B": Protein(sequence=chain_b)},
+        name=f"complex-{random_string()}",
+    )
+    prompt_2 = session.prompt.create_prompt([complex_in])
+    entry_2 = prompt_2.get()[0][0]
+    assert isinstance(entry_2, Complex)
+
+    # 3. Multichain query roundtrip
+    query = session.prompt.create_query(f"{chain_a}:{chain_b}")
+    retrieved_query = query.get()
+    assert isinstance(retrieved_query, Complex)
+    assert len(retrieved_query.get_proteins()) == 2
+
+    # 4. get_as_complex still returns a Complex for a single-chain query
+    single_query = session.prompt.create_query(chain_a)
+    as_complex = single_query.get_as_complex()
+    assert isinstance(as_complex, Complex)
+    assert len(as_complex.get_proteins()) == 1
+
+
+@pytest.mark.e2e
+def test_non_protein_complex_rejected_clientside(session: OpenProtein) -> None:
+    """Complex with DNA/RNA/Ligand chains is rejected before any HTTP call."""
+    bad = Complex({"A": Protein(sequence="ACDE"), "B": DNA(sequence="ACGT")})
+    with pytest.raises(InvalidParameterError, match="protein chains"):
+        session.prompt.create_prompt([bad])
+    with pytest.raises(InvalidParameterError, match="protein chains"):
+        session.prompt.create_query(bad)

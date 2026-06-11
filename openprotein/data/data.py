@@ -14,9 +14,11 @@ class DataAPI:
     def __init__(self, session: APISession):
         self.session = session
 
+    # `list` shadows the builtin, so the return annotation is quoted to keep it
+    # resolving to the builtin (not this method) under PEP 649 deferred evaluation.
     def list(
         self, limit: int | None = None, offset: int | None = None
-    ) -> list[AssayDataset]:
+    ) -> "list[AssayDataset]":
         """
         List all assay datasets.
 

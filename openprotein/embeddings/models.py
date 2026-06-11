@@ -180,7 +180,9 @@ class EmbeddingModel:
         )
 
     def logits(
-        self, sequences: list[bytes] | list[str], **kwargs
+        self,
+        sequences: list[bytes] | list[str],
+        **kwargs,
     ) -> EmbeddingsResultFuture:
         """
         Compute logit embeddings for sequences using this model.
@@ -200,7 +202,10 @@ class EmbeddingModel:
         return EmbeddingsResultFuture.create(
             session=self.session,
             job=api.request_logits_post(
-                session=self.session, model_id=self.id, sequences=sequences, **kwargs
+                session=self.session,
+                model_id=self.id,
+                sequences=sequences,
+                **kwargs,
             ),
             sequences=sequences,
         )
@@ -401,7 +406,9 @@ class AttnModel(EmbeddingModel):
     """Embeddings model that provides attention computation."""
 
     def attn(
-        self, sequences: list[bytes] | list[str], **kwargs
+        self,
+        sequences: list[bytes] | list[str],
+        **kwargs,
     ) -> EmbeddingsResultFuture:
         """
         Compute attention embeddings for sequences using this model.
@@ -421,7 +428,10 @@ class AttnModel(EmbeddingModel):
         return EmbeddingsResultFuture.create(
             session=self.session,
             job=api.request_attn_post(
-                session=self.session, model_id=self.id, sequences=sequences, **kwargs
+                session=self.session,
+                model_id=self.id,
+                sequences=sequences,
+                **kwargs,
             ),
             sequences=sequences,
         )

@@ -11,7 +11,7 @@ class AbLang2Model(EmbeddingModel):
     --------
     View specific model details (inc supported tokens) with the `?` operator.
 
-    .. code-block:: python
+    .. code-block:: ipython3
 
         >>> import openprotein
         >>> session = openprotein.connect(username="user", password="password")

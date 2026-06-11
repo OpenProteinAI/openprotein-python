@@ -78,6 +78,11 @@ class EmbeddingsAPI:
     esm2_t36_3B_UR50D: ESMModel
     esm2_t6_8M_UR50D: ESMModel
 
+    #: ESM-C (Cambrian) model
+    esmc_300m: ESMModel
+    esmc_600m: ESMModel
+    esmc_6b: ESMModel
+
     def __init__(self, session: APISession):
         self.session = session
         # dynamically add models from  api list

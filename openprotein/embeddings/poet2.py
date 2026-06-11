@@ -15,6 +15,7 @@ from .future import (
     EmbeddingsGenerateFuture,
     EmbeddingsResultFuture,
     EmbeddingsScoreFuture,
+    EmbeddingsScoreSingleSiteFuture,
 )
 from .models import EmbeddingModel
 from .poet import PoETModel
@@ -38,7 +39,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
 
     Examples
     --------
-    .. code-block:: python
+    .. code-block:: ipython3
 
         >>> import openprotein
         >>> session = openprotein.connect(username="user", password="password")
@@ -255,7 +256,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
         query: str | bytes | Protein | Complex | Query | None = None,
         use_query_structure_in_decoder: bool = True,
         decoder_type: Literal["mlm", "clm"] | None = None,
-    ) -> EmbeddingsScoreFuture:
+    ) -> EmbeddingsScoreSingleSiteFuture:
         """
         Score all single substitutions of the query sequence using the specified prompt.
 

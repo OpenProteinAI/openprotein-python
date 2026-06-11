@@ -20,9 +20,10 @@ from .schemas import FoldJob, FoldMetadata
 
 if TYPE_CHECKING:
     from .boltz import BoltzAffinity, BoltzConfidence
+    from .esmfold2 import ESMFold2Confidence
     from .protenix import ProtenixConfidence
 
-FoldResult: typing.TypeAlias = "Structure | np.ndarray | pd.DataFrame | BoltzAffinity | list[BoltzConfidence] | list[ProtenixConfidence]"
+FoldResult: typing.TypeAlias = "Structure | np.ndarray | pd.DataFrame | BoltzAffinity | list[BoltzConfidence] | list[ProtenixConfidence] | list[ESMFold2Confidence]"
 
 
 class FoldResultFuture(
@@ -250,7 +251,7 @@ class FoldResultFuture(
         self,
         k: int,
         key: Literal["confidence"],
-    ) -> "list[BoltzConfidence]": ...
+    ) -> "list[BoltzConfidence] | list[ProtenixConfidence] | list[ESMFold2Confidence]": ...
 
     @typing.overload
     def get_item(
@@ -308,10 +309,14 @@ class FoldResultFuture(
 
                 data = TypeAdapter(BoltzAffinity).validate_python(data)
             elif key == "confidence":
-                if self.model_id == "protenix":
+                if self.model_id in {"protenix", "protenix-v2"}:
                     from .protenix import ProtenixConfidence
 
                     data = TypeAdapter(list[ProtenixConfidence]).validate_python(data)
+                elif self.model_id in {"esmfold2", "esmfold2-fast"}:
+                    from .esmfold2 import ESMFold2Confidence
+
+                    data = TypeAdapter(list[ESMFold2Confidence]).validate_python(data)
                 else:
                     from .boltz import BoltzConfidence
 
@@ -349,7 +354,7 @@ class FoldResultFuture(
     def stream(
         self,
         key: Literal["confidence"],
-    ) -> "Iterator[list[BoltzConfidence]]": ...
+    ) -> "Iterator[list[BoltzConfidence]] | Iterator[list[ProtenixConfidence]] | Iterator[list[ESMFold2Confidence]]": ...
 
     @typing.overload
     def stream(
@@ -380,7 +385,7 @@ class FoldResultFuture(
             ]
             | None
         ) = None,
-    ) -> "Iterator[Structure] | Iterator[np.ndarray] | Iterator[pd.DataFrame] | Iterator[BoltzAffinity] | Iterator[list[BoltzConfidence]]":  # ty: ignore[invalid-method-override]
+    ) -> "Iterator[Structure] | Iterator[np.ndarray] | Iterator[pd.DataFrame] | Iterator[BoltzAffinity] | Iterator[list[BoltzConfidence]] | Iterator[list[ProtenixConfidence]] | Iterator[list[ESMFold2Confidence]]":  # ty: ignore[invalid-method-override]
         for _, v in super().stream(key=key):
             yield v
 
@@ -419,7 +424,7 @@ class FoldResultFuture(
         self,
         verbose: bool = False,
         key: Literal["confidence"] | None = None,
-    ) -> "list[list[BoltzConfidence]]": ...
+    ) -> "list[list[BoltzConfidence]] | list[list[ProtenixConfidence]] | list[list[ESMFold2Confidence]]": ...
 
     @typing.overload
     def get(
@@ -451,7 +456,7 @@ class FoldResultFuture(
             ]
             | None
         ) = None,
-    ) -> "list[Structure] | list[np.ndarray] | list[pd.DataFrame] | list[list[BoltzConfidence]] | list[BoltzAffinity]":  # ty: ignore[invalid-method-override]
+    ) -> "list[Structure] | list[np.ndarray] | list[pd.DataFrame] | list[list[BoltzConfidence]] | list[list[ProtenixConfidence]] | list[list[ESMFold2Confidence]] | list[BoltzAffinity]":  # ty: ignore[invalid-method-override]
         return super().get(verbose, key=key)  # ty: ignore[invalid-return-type]
 
     def get_pae(self) -> list[np.ndarray]:
@@ -474,6 +479,10 @@ class FoldResultFuture(
             "boltz-2",
             "alphafold2",
             "esmfold",
+            "esmfold2",
+            "esmfold2-fast",
+            "protenix",
+            "protenix-v2",
         }:
             raise AttributeError("pae not supported for this model")
         if not hasattr(self, "_pae"):
@@ -497,7 +506,13 @@ class FoldResultFuture(
         AttributeError
             If PDE is not supported for the model.
         """
-        if self.model_id not in {"boltz-1", "boltz-1x", "boltz-2"}:
+        if self.model_id not in {
+            "boltz-1",
+            "boltz-1x",
+            "boltz-2",
+            "protenix",
+            "protenix-v2",
+        }:
             raise AttributeError("pde not supported for this model")
         if not hasattr(self, "_pde"):
             self._pde = None
@@ -520,7 +535,16 @@ class FoldResultFuture(
         AttributeError
             If pLDDT is not supported for the model.
         """
-        if self.model_id not in {"boltz-1", "boltz-1x", "boltz-2", "alphafold2"}:
+        if self.model_id not in {
+            "boltz-1",
+            "boltz-1x",
+            "boltz-2",
+            "alphafold2",
+            "esmfold2",
+            "esmfold2-fast",
+            "protenix",
+            "protenix-v2",
+        }:
             raise AttributeError("plddt not supported for this model")
         if not hasattr(self, "_plddt"):
             self._plddt = None
@@ -574,6 +598,10 @@ class FoldResultFuture(
             "boltz-2",
             "alphafold2",
             "esmfold",
+            "esmfold2",
+            "esmfold2-fast",
+            "protenix",
+            "protenix-v2",
         }:
             raise AttributeError("ipae not supported for this model")
         if not hasattr(self, "_ipae"):
@@ -631,17 +659,17 @@ class FoldResultFuture(
 
     def get_confidence(
         self,
-    ) -> "list[list[BoltzConfidence]] | list[list[ProtenixConfidence]]":
+    ) -> "list[list[BoltzConfidence]] | list[list[ProtenixConfidence]] | list[list[ESMFold2Confidence]]":
         """
         Retrieve the confidences of the structure prediction.
 
         Note
         ----
-        This is currently supported for Boltz models and Protenix.
+        This is currently supported for Boltz, Protenix, and ESMFold2 models.
 
         Returns
         -------
-        list[list[BoltzConfidence]] | list[list[ProtenixConfidence]]
+        list[list[BoltzConfidence]] | list[list[ProtenixConfidence]] | list[list[ESMFold2Confidence]]
             List of list of confidence objects (model-specific schema).
 
         Raises
@@ -649,7 +677,15 @@ class FoldResultFuture(
         AttributeError
             If confidence is not supported for the model.
         """
-        if self.model_id not in {"boltz-1", "boltz-1x", "boltz-2", "protenix"}:
+        if self.model_id not in {
+            "boltz-1",
+            "boltz-1x",
+            "boltz-2",
+            "protenix",
+            "protenix-v2",
+            "esmfold2",
+            "esmfold2-fast",
+        }:
             raise AttributeError("confidence not supported for this model")
         if not hasattr(self, "_confidence"):
             self._confidence = None
@@ -677,8 +713,8 @@ class FoldResultFuture(
             If affinity is not supported for the model.
         """
 
-        if self.model_id not in {"boltz-1", "boltz-1x", "boltz-2"}:
-            raise AttributeError("affinity not supported for non-Boltz model")
+        if self.model_id != "boltz-2":
+            raise AttributeError("affinity is only supported for boltz-2")
         if not hasattr(self, "_affinity"):
             self._affinity = None
         if self._affinity is None:
@@ -703,6 +739,10 @@ class FoldResultFuture(
             "boltz-2",
             "alphafold2",
             "esmfold",
+            "esmfold2",
+            "esmfold2-fast",
+            "protenix",
+            "protenix-v2",
         }:
             raise AttributeError("pae not supported for this model")
         return readonly_view(
@@ -711,7 +751,13 @@ class FoldResultFuture(
 
     def get_pde_batch(self) -> np.ndarray:
         """Like ``get_pae_batch`` but for PDE. Shape ``[N, ...]``, NaN-padded."""
-        if self.model_id not in {"boltz-1", "boltz-1x", "boltz-2"}:
+        if self.model_id not in {
+            "boltz-1",
+            "boltz-1x",
+            "boltz-2",
+            "protenix",
+            "protenix-v2",
+        }:
             raise AttributeError("pde not supported for this model")
         return readonly_view(
             api.fold_get_batch_extra_result(self.session, self.job.job_id, "pde")
@@ -719,7 +765,16 @@ class FoldResultFuture(
 
     def get_plddt_batch(self) -> np.ndarray:
         """Like ``get_pae_batch`` but for pLDDT. Shape ``[N, ...]``, NaN-padded."""
-        if self.model_id not in {"boltz-1", "boltz-1x", "boltz-2", "alphafold2"}:
+        if self.model_id not in {
+            "boltz-1",
+            "boltz-1x",
+            "boltz-2",
+            "alphafold2",
+            "esmfold2",
+            "esmfold2-fast",
+            "protenix",
+            "protenix-v2",
+        }:
             raise AttributeError("plddt not supported for this model")
         return readonly_view(
             api.fold_get_batch_extra_result(self.session, self.job.job_id, "plddt")
@@ -744,6 +799,10 @@ class FoldResultFuture(
             "boltz-2",
             "alphafold2",
             "esmfold",
+            "esmfold2",
+            "esmfold2-fast",
+            "protenix",
+            "protenix-v2",
         }:
             raise AttributeError("ipae not supported for this model")
         arr = api.fold_get_batch_extra_result(self.session, self.job.job_id, "ipae")
@@ -753,7 +812,7 @@ class FoldResultFuture(
 
     def get_confidence_batch(
         self,
-    ) -> "list[list[BoltzConfidence] | None] | list[list[ProtenixConfidence] | None]":
+    ) -> "list[list[BoltzConfidence] | None] | list[list[ProtenixConfidence] | None] | list[list[ESMFold2Confidence] | None]":
         """
         Retrieve per-unit confidence objects in a single HTTP call.
 
@@ -761,18 +820,35 @@ class FoldResultFuture(
         confidence list, or ``None`` if the server could not fetch the
         result for that unit.
         """
-        if self.model_id not in {"boltz-1", "boltz-1x", "boltz-2", "protenix"}:
+        if self.model_id not in {
+            "boltz-1",
+            "boltz-1x",
+            "boltz-2",
+            "protenix",
+            "protenix-v2",
+            "esmfold2",
+            "esmfold2-fast",
+        }:
             raise AttributeError("confidence not supported for this model")
         raw = api.fold_get_batch_extra_result(
             self.session, self.job.job_id, "confidence"
         )
-        if self.model_id == "protenix":
+        if self.model_id in {"protenix", "protenix-v2"}:
             from .protenix import ProtenixConfidence
 
             return [
                 None
                 if entry is None
                 else TypeAdapter(list[ProtenixConfidence]).validate_python(entry)
+                for entry in raw
+            ]
+        if self.model_id in {"esmfold2", "esmfold2-fast"}:
+            from .esmfold2 import ESMFold2Confidence
+
+            return [
+                None
+                if entry is None
+                else TypeAdapter(list[ESMFold2Confidence]).validate_python(entry)
                 for entry in raw
             ]
         from .boltz import BoltzConfidence
@@ -791,8 +867,8 @@ class FoldResultFuture(
         Returns a length-``N`` list; each entry is a ``BoltzAffinity`` or
         ``None`` if the server could not fetch that unit's result.
         """
-        if self.model_id not in {"boltz-1", "boltz-1x", "boltz-2"}:
-            raise AttributeError("affinity not supported for non-Boltz model")
+        if self.model_id != "boltz-2":
+            raise AttributeError("affinity is only supported for boltz-2")
         raw = api.fold_get_batch_extra_result(self.session, self.job.job_id, "affinity")
         from .boltz import BoltzAffinity
 

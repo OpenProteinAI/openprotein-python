@@ -4,7 +4,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from openprotein.errors import InvalidParameterError
 from openprotein.jobs import JobStatus, JobType
+from openprotein.molecules import Complex, Protein
 from openprotein.prompt import Prompt, PromptJob, PromptMetadata, Query, QueryMetadata
 
 
@@ -94,3 +96,84 @@ def test_query_get(mock_get_query, mock_session, query_metadata):
     content = query.get()
     mock_get_query.assert_called_with(session=mock_session, query_id="query-123")
     assert content == "Query Content"
+
+
+# ---------- multichain typed accessors ----------
+
+
+@patch("openprotein.prompt.api.get_prompt")
+def test_prompt_get_as_complexes_wraps_proteins(
+    mock_get_prompt, mock_session, prompt_metadata
+):
+    """Single-chain Protein entries are wrapped as Complex."""
+    p = Protein(name="p", sequence=b"ACDE")
+    multi = Complex({"A": Protein(sequence=b"ACDE"), "B": Protein(sequence=b"GHIK")})
+    mock_get_prompt.return_value = [[p, multi]]
+    prompt = Prompt(session=mock_session, metadata=prompt_metadata)
+    result = prompt.get_as_complexes()
+    assert len(result) == 1 and len(result[0]) == 2
+    assert all(isinstance(e, Complex) for e in result[0])
+    assert result[0][1] is multi  # passthrough for already-Complex
+
+
+@patch("openprotein.prompt.api.get_prompt")
+def test_prompt_get_as_proteins_raises_on_multichain(
+    mock_get_prompt, mock_session, prompt_metadata
+):
+    """get_as_proteins raises if any entry is multichain."""
+    multi = Complex({"A": Protein(sequence=b"ACDE"), "B": Protein(sequence=b"GHIK")})
+    mock_get_prompt.return_value = [[Protein(name="p", sequence=b"ACDE"), multi]]
+    prompt = Prompt(session=mock_session, metadata=prompt_metadata)
+    with pytest.raises(InvalidParameterError, match="multichain"):
+        prompt.get_as_proteins()
+
+
+@patch("openprotein.prompt.api.get_prompt")
+def test_prompt_get_as_proteins_passthrough_when_all_single(
+    mock_get_prompt, mock_session, prompt_metadata
+):
+    p = Protein(name="p", sequence=b"ACDE")
+    mock_get_prompt.return_value = [[p]]
+    prompt = Prompt(session=mock_session, metadata=prompt_metadata)
+    result = prompt.get_as_proteins()
+    assert result == [[p]]
+
+
+@patch("openprotein.prompt.api.get_query")
+def test_query_get_as_complex_wraps_protein(
+    mock_get_query, mock_session, query_metadata
+):
+    """A Protein result is wrapped as Complex."""
+    p = Protein(name="q", sequence=b"ACDE")
+    mock_get_query.return_value = p
+    query = Query(session=mock_session, metadata=query_metadata)
+    result = query.get_as_complex()
+    assert isinstance(result, Complex)
+    assert len(result.get_proteins()) == 1
+
+
+@patch("openprotein.prompt.api.get_query")
+def test_query_get_as_complex_passthrough(mock_get_query, mock_session, query_metadata):
+    c = Complex({"A": Protein(sequence=b"ACDE"), "B": Protein(sequence=b"GHIK")})
+    mock_get_query.return_value = c
+    query = Query(session=mock_session, metadata=query_metadata)
+    assert query.get_as_complex() is c
+
+
+@patch("openprotein.prompt.api.get_query")
+def test_query_get_as_protein_raises_on_multichain(
+    mock_get_query, mock_session, query_metadata
+):
+    c = Complex({"A": Protein(sequence=b"ACDE"), "B": Protein(sequence=b"GHIK")})
+    mock_get_query.return_value = c
+    query = Query(session=mock_session, metadata=query_metadata)
+    with pytest.raises(InvalidParameterError, match="multichain"):
+        query.get_as_protein()
+
+
+@patch("openprotein.prompt.api.get_query")
+def test_query_get_as_protein_passthrough(mock_get_query, mock_session, query_metadata):
+    p = Protein(name="q", sequence=b"ACDE")
+    mock_get_query.return_value = p
+    query = Query(session=mock_session, metadata=query_metadata)
+    assert query.get_as_protein() is p

@@ -4,6 +4,42 @@ import random
 
 AMINO_ACIDS = "ACDEFGHIKLMNPQRSTVWY"
 
+# Real antibody variable-region sequences for antibody-specific models such as
+# ablang2, which reject random amino-acid strings. The heavy chain is an
+# IGHV3-23-based VH; the light chain is the trastuzumab kappa VL. Both are valid
+# natural antibody variable domains.
+ANTIBODY_HEAVY_SEQUENCE = "EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAKYYYYGMDVWGQGTTVTVSS"
+ANTIBODY_LIGHT_SEQUENCE = "DIQMTQSPSSLSASVGDRVTITCRASQDVNTAVAWYQQKPGKAPKLLIYSASFLYSGVPSRFSGSRSGTDFTLTISSLQPEDFATYYCQQHYTTPPTFGQGTKVEIK"
+
+
+def mutate_sequence(
+    sequence: str, mutation_rate: float = 0.05, ensure_mutation: bool = True
+) -> str:
+    """
+    Return a copy of ``sequence`` with random substitutions applied.
+
+    Substitution-only (no insertions or deletions) so antibody variable domains
+    keep a valid length and numbering. Used to make each test run produce a
+    unique sequence and bust server-side caches.
+
+    When ``ensure_mutation`` is True, at least one residue is guaranteed to be
+    substituted, so callers can rely on the result differing from the input.
+    """
+    if not sequence:
+        return sequence
+
+    while True:
+        residues = []
+        mutated = False
+        for aa in sequence:
+            if random.random() < mutation_rate:
+                residues.append(random.choice([a for a in AMINO_ACIDS if a != aa]))
+                mutated = True
+            else:
+                residues.append(aa)
+        if mutated or not ensure_mutation:
+            return "".join(residues)
+
 
 def random_sequence_fake(length: int) -> str:
     """
@@ -90,6 +126,25 @@ def random_sequence_real(length: int, real_proteins: list[str] | None = None) ->
                 sequence += weighted_random_aa()
 
     return sequence[:length]  # Ensure exact length
+
+
+def mutated_antibody_sequences(
+    base_seq: str, num_sequences: int = 3, mutation_rate: float = 0.02
+) -> list[str]:
+    """
+    Generate unique antibody sequences via substitution-only mutation.
+
+    Returns the base sequence plus mutated copies. Unlike
+    ``random_mutated_sequences``, this never inserts or deletes residues, so the
+    variable-domain length and framing stay intact and every sequence remains a
+    valid antibody that AbNumber/ANARCI can number. Used to make each test run
+    unique and bust server-side caches without producing un-numberable
+    sequences.
+    """
+    sequences = {base_seq}
+    while len(sequences) < num_sequences:
+        sequences.add(mutate_sequence(base_seq, mutation_rate=mutation_rate))
+    return list(sequences)
 
 
 def random_mutated_sequences(
