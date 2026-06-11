@@ -50,10 +50,10 @@ def test_clustering_list_get_no_params():
 
 def test_clustering_list_get_with_params():
     session = _session_with_response([])
-    api.clustering_list_get(session, method="hierarchical", page_size=10, page_offset=5)
+    api.clustering_list_get(session, method="hierarchical", limit=10, offset=5)
     session.get.assert_called_once_with(
         "v1/clustering",
-        params={"method": "hierarchical", "page_size": 10, "page_offset": 5},
+        params={"method": "hierarchical", "limit": 10, "offset": 5},
     )
 
 

@@ -75,9 +75,9 @@ def test_list_passes_method_filter():
     with patch("openprotein.clustering.clustering.api") as capi_api:
         capi_api.clustering_list_get.return_value = []
         capi = ClusteringAPI(session=session)
-        capi.list(method="hierarchical", page_size=5, page_offset=10)
+        capi.list(method="hierarchical", limit=5, offset=10)
         capi_api.clustering_list_get.assert_called_once_with(
-            session, method="hierarchical", page_size=5, page_offset=10
+            session, method="hierarchical", limit=5, offset=10
         )
 
 

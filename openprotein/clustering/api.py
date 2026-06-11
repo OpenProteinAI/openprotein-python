@@ -17,17 +17,17 @@ PATH_PREFIX = "v1/clustering"
 def clustering_list_get(
     session: APISession,
     method: str | None = None,
-    page_size: int | None = None,
-    page_offset: int | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
 ) -> list[ClusteringMetadata]:
     """List clustering jobs, optionally filtered by method."""
     params: dict = {}
     if method is not None:
         params["method"] = method
-    if page_size is not None:
-        params["page_size"] = page_size
-    if page_offset is not None:
-        params["page_offset"] = page_offset
+    if limit is not None:
+        params["limit"] = limit
+    if offset is not None:
+        params["offset"] = offset
     response = session.get(PATH_PREFIX, params=params or None)
     return TypeAdapter(list[ClusteringMetadata]).validate_python(response.json())
 

@@ -64,9 +64,7 @@ class ClusteringAPI:
         assay_id = (
             assay.assay_id
             if isinstance(assay, AssayMetadata)
-            else assay.id
-            if isinstance(assay, AssayDataset)
-            else assay
+            else assay.id if isinstance(assay, AssayDataset) else assay
         )
         if sequences is not None and assay_id is not None:
             raise InvalidParameterError(
@@ -86,9 +84,7 @@ class ClusteringAPI:
         feature_type = (
             FeatureType.PLM
             if isinstance(model, EmbeddingModel)
-            else FeatureType.SVD
-            if isinstance(model, SVDModel)
-            else feature_type
+            else FeatureType.SVD if isinstance(model, SVDModel) else feature_type
         )
         if feature_type is None:
             raise InvalidParameterError(
@@ -175,12 +171,13 @@ class ClusteringAPI:
     def list(
         self,
         method: str | None = None,
-        page_size: int | None = None,
-        page_offset: int | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
     ) -> list[HierarchicalClusteringFuture]:
         """List clustering jobs, optionally filtering by method.
 
-        Pass `page_size` / `page_offset` to paginate."""
+        Pass `limit` / `offset` to paginate (the clustering list endpoint
+        uses `limit`/`offset`, unlike the `jobs` endpoint's page_size/page_offset)."""
         # Single-method dispatch today; when new methods are added,
         # branch on metadata.method to pick the concrete future type.
         return [
@@ -188,7 +185,7 @@ class ClusteringAPI:
             for md in api.clustering_list_get(
                 self.session,
                 method=method,
-                page_size=page_size,
-                page_offset=page_offset,
+                limit=limit,
+                offset=offset,
             )
         ]
