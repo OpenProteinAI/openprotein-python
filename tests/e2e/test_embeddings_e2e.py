@@ -2,11 +2,11 @@
 
 import numpy as np
 import pytest
-
 from openprotein import OpenProtein
 from openprotein.common.reduction import ReductionType
 from openprotein.data import AssayDataset
 from openprotein.errors import HTTPError
+
 from tests.e2e.config import scaled_timeout
 from tests.utils.sequences import (
     ANTIBODY_HEAVY_SEQUENCE,
@@ -15,6 +15,7 @@ from tests.utils.sequences import (
     random_sequence_fake,
     random_sequence_real,
 )
+
 
 def _build_single_chain_sequence(seq_len: int) -> bytes:
     """Default sequence builder: a single-chain random AA sequence."""
@@ -101,16 +102,16 @@ def test_embedding_single_model(
 
     results = future.wait(timeout=TIMEOUT)
     assert isinstance(results, list), f"Expected list, got {type(results)}"
-    assert (
-        len(results) == NUM_SEQS_SMALL
-    ), f"Expected {NUM_SEQS_SMALL} results, got {len(results)}"
+    assert len(results) == NUM_SEQS_SMALL, (
+        f"Expected {NUM_SEQS_SMALL} results, got {len(results)}"
+    )
 
     sequence, embedding = results[0]
     assert sequence == sequences[0], "Sequence mismatch in results"
     assert isinstance(embedding, np.ndarray), "Embedding is not a numpy array"
-    assert embedding.shape == (
-        effective_dim,
-    ), f"Expected shape ({effective_dim},), got {embedding.shape}"
+    assert embedding.shape == (effective_dim,), (
+        f"Expected shape ({effective_dim},), got {embedding.shape}"
+    )
 
 
 @pytest.mark.e2e
@@ -156,18 +157,18 @@ def test_embedding_parallel_models(session: OpenProtein):
         futures.append((model_id, model.metadata.dimension, sequences, future))
 
     if not futures:
-        pytest.skip("No embedding models from EMBEDDING_MODELS available in this backend")
+        pytest.skip(
+            "No embedding models from EMBEDDING_MODELS available in this backend"
+        )
 
     for model_id, dim, sequences, future in futures:
         results = future.wait(timeout=TIMEOUT)
         assert len(results) == len(sequences), (
-            f"Model {model_id}: expected {len(sequences)} results, "
-            f"got {len(results)}"
+            f"Model {model_id}: expected {len(sequences)} results, got {len(results)}"
         )
         _, embedding = results[0]
         assert embedding.shape == (dim,), (
-            f"Model {model_id}: expected shape ({dim},), "
-            f"got {embedding.shape}"
+            f"Model {model_id}: expected shape ({dim},), got {embedding.shape}"
         )
 
 
@@ -305,7 +306,9 @@ def test_e2e_poet2_score_single_site_and_indel(session: OpenProtein):
         assert row.score.size > 0
         assert np.isfinite(row.score).all()
 
-    single_site_results = model.single_site(sequence=base_sequence).wait(timeout=TIMEOUT)
+    single_site_results = model.single_site(sequence=base_sequence).wait(
+        timeout=TIMEOUT
+    )
     assert len(single_site_results) > 0
     for row in single_site_results[:10]:
         assert isinstance(row.mut_code, str)
@@ -314,7 +317,9 @@ def test_e2e_poet2_score_single_site_and_indel(session: OpenProtein):
         assert row.score.size > 0
         assert np.isfinite(row.score).all()
 
-    indel_results = model.indel(sequence=base_sequence, insert="A").wait(timeout=TIMEOUT)
+    indel_results = model.indel(sequence=base_sequence, insert="A").wait(
+        timeout=TIMEOUT
+    )
     assert len(indel_results) > 0
     for row in indel_results[:10]:
         assert isinstance(row.sequence, str)
@@ -510,7 +515,7 @@ def test_e2e_multichain_query_poet2_embed(session: OpenProtein):
     _require_prompt_model(session, "poet-2")
     query = f"{random_sequence_real(80)}:{random_sequence_real(80)}"
 
-    sequences = [random_sequence_real(80).encode()]
+    sequences = [f"{random_sequence_real(80)}:{random_sequence_real(80)}".encode()]
     results = session.embedding.poet2.embed(sequences=sequences, query=query).wait(
         timeout=GENERATE_TIMEOUT
     )
@@ -529,7 +534,7 @@ def test_e2e_multichain_query_poet2_score(session: OpenProtein):
     _require_prompt_model(session, "poet-2")
     query = f"{random_sequence_real(80)}:{random_sequence_real(80)}"
 
-    sequences = [random_sequence_real(80).encode()]
+    sequences = [f"{random_sequence_real(80)}:{random_sequence_real(80)}".encode()]
     results = session.embedding.poet2.score(sequences=sequences, query=query).wait(
         timeout=GENERATE_TIMEOUT
     )

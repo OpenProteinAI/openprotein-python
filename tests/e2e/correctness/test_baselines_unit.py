@@ -55,11 +55,6 @@ def test_two_keys_same_model_coexist(tmp_path):
     assert fresh.load(("esm2", None, "b", "t2")).value == pytest.approx(2.0)
 
 
-import pytest as _pytest
-
-from tests.e2e.correctness import metrics
-
-
 def _make_comparator(tmp_path, mode, repeats=1):
     store = bl.BaselineStore(tmp_path)
     return bl.Comparator(store=store, mode=mode, repeats=repeats, provenance={"backend": "test"})
@@ -86,13 +81,13 @@ def test_comparator_assert_fails_when_far(tmp_path):
     cap.check_array(key, lambda: truth)
 
     asr = _make_comparator(tmp_path, "assert")
-    with _pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):
         asr.check_array(key, lambda: truth + 1.0)
 
 
 def test_comparator_assert_skips_without_baseline(tmp_path):
     asr = _make_comparator(tmp_path, "assert")
-    with _pytest.raises(_pytest.skip.Exception):
+    with pytest.raises(pytest.skip.Exception):
         asr.check_array(("missing", None, "x", "y"), lambda: np.array([1.0]))
 
 
@@ -111,5 +106,66 @@ def test_comparator_tokens_exact_match(tmp_path):
     cap.check_tokens(key, lambda: np.array([3, 1, 4, 1, 5]))
     asr = _make_comparator(tmp_path, "assert")
     asr.check_tokens(key, lambda: np.array([3, 1, 4, 1, 5]))  # exact -> no raise
-    with _pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):
         asr.check_tokens(key, lambda: np.array([3, 1, 4, 1, 9]))  # one differs
+
+
+# --- dtype parity (records + asserts the wire dtype, not just values) --------
+
+
+def test_store_array_records_and_loads_dtype(tmp_path):
+    store = bl.BaselineStore(tmp_path)
+    key = ("poet-2", None, "ubiquitin", "embed")
+    arr = np.arange(6, dtype=float).reshape(2, 3)
+    store.save_array(key, arr, atol=1e-3, rtol=1e-4, provenance={}, dtype="float16")
+    rec = bl.BaselineStore(tmp_path).load(key)
+    assert rec.dtype == "float16"
+    # values are still stored/loaded as float64 for the closeness comparison
+    assert rec.array.dtype == np.float64
+
+
+def test_store_array_without_dtype_loads_none(tmp_path):
+    # Legacy baselines (captured before dtype tracking) carry no dtype.
+    store = bl.BaselineStore(tmp_path)
+    key = ("esm2", None, "ubiquitin", "embed_mean")
+    store.save_array(key, np.zeros(3), atol=1e-3, rtol=1e-4, provenance={})
+    rec = bl.BaselineStore(tmp_path).load(key)
+    assert rec.dtype is None
+
+
+def test_comparator_capture_records_wire_dtype(tmp_path):
+    key = ("poet-2", None, "ubiquitin", "embed")
+    cap = _make_comparator(tmp_path, "capture", repeats=1)
+    cap.check_array(key, lambda: np.array([1.0, 2.0, 3.0], dtype=np.float16))
+    rec = bl.BaselineStore(tmp_path).load(key)
+    assert rec.dtype == "float16"
+
+
+def test_comparator_assert_fails_on_dtype_mismatch(tmp_path):
+    # The disparity this feature exists to catch: same values, wrong dtype.
+    key = ("poet-2", None, "ubiquitin", "mean")
+    cap = _make_comparator(tmp_path, "capture", repeats=1)
+    cap.check_array(key, lambda: np.array([1.0, 2.0, 3.0], dtype=np.float32))
+
+    asr = _make_comparator(tmp_path, "assert")
+    with pytest.raises(AssertionError, match="dtype mismatch"):
+        asr.check_array(key, lambda: np.array([1.0, 2.0, 3.0], dtype=np.float16))
+
+
+def test_comparator_assert_passes_on_dtype_match(tmp_path):
+    key = ("poet-2", None, "ubiquitin", "embed")
+    cap = _make_comparator(tmp_path, "capture", repeats=1)
+    cap.check_array(key, lambda: np.array([1.0, 2.0, 3.0], dtype=np.float16))
+    asr = _make_comparator(tmp_path, "assert")
+    asr.check_array(key, lambda: np.array([1.0, 2.0, 3.0], dtype=np.float16))  # no raise
+
+
+def test_comparator_assert_skips_dtype_when_baseline_legacy(tmp_path):
+    # A legacy baseline (no recorded dtype) must not fail on dtype — only values.
+    store = bl.BaselineStore(tmp_path)
+    key = ("esm2", None, "ubiquitin", "embed_mean")
+    store.save_array(
+        key, np.array([1.0, 2.0, 3.0]), atol=1e-3, rtol=1e-4, provenance={}
+    )
+    asr = _make_comparator(tmp_path, "assert")
+    asr.check_array(key, lambda: np.array([1.0, 2.0, 3.0], dtype=np.float16))  # no raise

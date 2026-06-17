@@ -360,6 +360,23 @@ class TestCreateQueryMultichain:
         content = body.read()
         assert b"ACDEFGHIK" in content
 
+    def test_unnamed_protein_no_structure_sends_fasta(self, mock_session: MagicMock):
+        """A Protein created without a name (e.g. ``Protein("ARN")``) must be
+        accepted and serialized with a default fasta header."""
+        mock_session.post.return_value.status_code = 200
+        mock_session.post.return_value.json.return_value = {
+            "id": "query-789",
+            "created_date": datetime.now().isoformat(),
+        }
+        create_query(mock_session, Protein("ARN"))
+        files = mock_session.post.call_args.kwargs["files"]
+        filename, body, mimetype = files["query"]
+        assert filename == "query.fasta"
+        assert mimetype == "text/x-fasta"
+        body.seek(0)
+        content = body.read()
+        assert content == b">query\nARN\n"
+
     def test_protein_force_structure_sends_cif(
         self,
         mock_session: MagicMock,

@@ -172,7 +172,6 @@ def umap_fit_post(
     n_neighbors: int = 15,
     min_dist: float = 0.1,
     reduction: str | None = None,
-    force_recompute: bool = False,
     **kwargs,
 ) -> UMAPFitJob:
     """
@@ -201,8 +200,6 @@ def umap_fit_post(
         Minimum distance in UMAP fitting. Defaults to 0.1.
     reduction : str | None
         Embedding reduction to use for fitting the UMAP. Defaults to None.
-    force_recompute : bool
-        If True, send ?force=true so the backend bypasses the result cache and recomputes. Default: False.
     kwargs:
         Additional keyword arguments to be passed to foundational models, e.g. prompt_id for PoET models.
 
@@ -236,8 +233,7 @@ def umap_fit_post(
     # add kwargs for embeddings kwargs
     body.update(**kwargs)
 
-    params = {"force": "true"} if force_recompute else None
-    response = session.post(endpoint, json=body, params=params)
+    response = session.post(endpoint, json=body)
     # return job for metadata
     return UMAPFitJob.model_validate(response.json())
 
@@ -246,7 +242,7 @@ def umap_embed_post(
     session: APISession,
     umap_id: str,
     sequences: list[bytes] | list[str],
-    force_recompute: bool = False,
+    **kwargs,
 ) -> UMAPEmbeddingsJob:
     """
     POST a request for embeddings from the given UMAP model.
@@ -259,8 +255,6 @@ def umap_embed_post(
         UMAP model to use
     sequences : List[bytes]
         sequences to UMAP
-    force_recompute : bool
-        If True, send ?force=true so the backend bypasses the result cache and recomputes. Default: False.
 
     Returns
     -------
@@ -272,7 +266,6 @@ def umap_embed_post(
     body = {
         "sequences": sequences_unicode,
     }
-    params = {"force": "true"} if force_recompute else None
-    response = session.post(endpoint, json=body, params=params)
+    response = session.post(endpoint, json=body)
 
     return UMAPEmbeddingsJob.model_validate(response.json())

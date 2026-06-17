@@ -426,7 +426,12 @@ def create_query(
                 "chemical/x-mmcif",
             )
         else:
-            qf, filename, typ = query.make_fasta_bytes(), "query.fasta", "text/x-fasta"
+            name = query.name or "query"
+            qf, filename, typ = (
+                b">" + name.encode() + b"\n" + query.sequence + b"\n",
+                "query.fasta",
+                "text/x-fasta",
+            )
     elif isinstance(query, Complex):
         _assert_protein_only(query)
         has_structure = any(p.has_structure for p in query.get_proteins().values())

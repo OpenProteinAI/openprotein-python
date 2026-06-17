@@ -80,16 +80,9 @@ def clustering_hierarchical_post(
     assay_id: str | None = None,
     reduction: str | None = None,
     svd_id: str | None = None,
-    force_recompute: bool = False,
     **kwargs,
 ) -> HierarchicalFitJob:
-    """POST to create a hierarchical clustering fit job.
-
-    Parameters
-    ----------
-    force_recompute : bool
-        If True, send ?force=true so the backend bypasses the result cache and recomputes. Default: False.
-    """
+    """POST to create a hierarchical clustering fit job."""
     body: dict = {
         "model_id": model_id,
         "feature_type": feature_type,
@@ -112,6 +105,5 @@ def clustering_hierarchical_post(
         body["assay_id"] = assay_id
     body.update(**kwargs)
 
-    params = {"force": "true"} if force_recompute else None
-    response = session.post(f"{PATH_PREFIX}/hierarchical", json=body, params=params)
+    response = session.post(f"{PATH_PREFIX}/hierarchical", json=body)
     return HierarchicalFitJob.model_validate(response.json())

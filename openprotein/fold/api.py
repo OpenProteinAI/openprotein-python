@@ -211,15 +211,18 @@ def fold_get_extra_result(
 
         def formatter(response):
             return np.load(io.BytesIO(response.content))
+
     elif key in {"confidence", "affinity"}:
 
         def formatter(response):
             return response.json()
+
     elif key in {"score", "metrics"}:
         import pandas as pd
 
         def formatter(response):
             return pd.read_csv(io.StringIO(response.content.decode()))
+
     else:
         raise ValueError(f"Unexpected key: {key}")
     endpoint = PATH_PREFIX + f"/{job_id}/{sequence_or_index}/{key}"
@@ -295,10 +298,12 @@ def fold_get_batch_extra_result(
 
         def formatter(response):
             return np.load(io.BytesIO(response.content))
+
     elif key in {"confidence", "affinity"}:
 
         def formatter(response):
             return response.json()
+
     else:
         raise ValueError(f"Unexpected key: {key}")
     endpoint = PATH_PREFIX + f"/{job_id}/results/{key}"
@@ -315,7 +320,6 @@ def fold_models_post(
     session: APISession,
     model_id: str,
     sequences: Sequence[Sequence[Mapping[str, Any]]],
-    force_recompute: bool = False,
     **kwargs,
 ) -> FoldJob:
     """
@@ -335,8 +339,6 @@ def fold_models_post(
         The outer list represents the batch of requests, and the inner
         list represents the complex, with each item in the list being
         an entity in that complex. A monomer would thus be a single item.
-    force_recompute : bool
-        If True, send ?force=true so the backend bypasses the result cache and recomputes. Default: False.
     **kwargs
         Additional keyword arguments to be sent with POST body.
 
@@ -355,6 +357,5 @@ def fold_models_post(
         if v is not None:
             body[k] = v
 
-    params = {"force": "true"} if force_recompute else None
-    response = session.post(endpoint, json=body, params=params)
+    response = session.post(endpoint, json=body)
     return FoldJob.model_validate(response.json())

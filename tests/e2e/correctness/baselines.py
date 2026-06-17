@@ -45,6 +45,10 @@ class BaselineRecord:
     tokens: list[int] | None = None
     mismatch_fraction: float = 0.0
     array: np.ndarray | None = None
+    # numpy dtype name of the array as produced over the wire (e.g. "float16"),
+    # captured before the float64 coercion used for value comparison. None for
+    # baselines recorded before dtype tracking was added (dtype assert skipped).
+    dtype: str | None = None
     provenance: dict | None = None
 
 
@@ -78,16 +82,30 @@ class BaselineStore:
     def _write_npz(self, key: Key, arrays: dict[str, np.ndarray]) -> None:
         np.savez(self._npz_path(key), **arrays)
 
-    def save_array(self, key: Key, array, *, atol: float, rtol: float, provenance: dict) -> None:
+    def save_array(
+        self,
+        key: Key,
+        array,
+        *,
+        atol: float,
+        rtol: float,
+        provenance: dict,
+        dtype: str | None = None,
+    ) -> None:
         array = np.asarray(array, dtype=float)
         data = self._read_json(key)
-        data[_key_str(key)] = {
+        entry = {
             "kind": "array",
             "atol": atol,
             "rtol": rtol,
             "shape": list(array.shape),
             "provenance": provenance,
         }
+        # The wire dtype (e.g. "float16") is recorded separately from the float64
+        # value store so re-runs can assert dtype parity against prod.
+        if dtype is not None:
+            entry["dtype"] = dtype
+        data[_key_str(key)] = entry
         self._write_json(key, data)
         arrays = self._read_npz(key)
         arrays[_key_str(key)] = array
@@ -127,6 +145,7 @@ class BaselineStore:
                 atol=entry["atol"],
                 rtol=entry["rtol"],
                 array=arrays[_key_str(key)],
+                dtype=entry.get("dtype"),
                 provenance=entry.get("provenance"),
             )
         if kind == "scalar":
@@ -163,19 +182,39 @@ class Comparator:
         baseline's stored (jitter-derived) tolerance -- use this to absorb accepted
         cross-environment jitter on a genuinely-recomputed output (e.g. PoET)."""
         if self.mode == "capture":
-            samples = [np.asarray(produce(), dtype=float) for _ in range(self.repeats)]
+            # Capture the wire dtype before coercing to float64 for averaging.
+            # All repeats hit the same endpoint, so they share a dtype; record
+            # the first.
+            raw_samples = [np.asarray(produce()) for _ in range(self.repeats)]
+            dtype_name = raw_samples[0].dtype.name
+            samples = [s.astype(float) for s in raw_samples]
             value = np.nanmean(np.stack(samples, axis=0), axis=0)
             d_atol, d_rtol = metrics.derive_tolerance(
                 samples, safety=SAFETY, atol_floor=ATOL_FLOOR, rtol_floor=RTOL_FLOOR
             )
-            self.store.save_array(key, value, atol=d_atol, rtol=d_rtol, provenance=self.provenance)
+            self.store.save_array(
+                key,
+                value,
+                atol=d_atol,
+                rtol=d_rtol,
+                provenance=self.provenance,
+                dtype=dtype_name,
+            )
             return
         rec = self.store.load(key)
         if rec is None:
             pytest.skip(f"no baseline for {key}; run --update-baselines against prod")
-        actual = np.asarray(produce(), dtype=float)
+        raw = np.asarray(produce())
+        # Assert wire dtype parity before the value comparison. Skipped when the
+        # baseline predates dtype tracking (rec.dtype is None) so existing
+        # baselines keep working until re-captured against prod.
+        if rec.dtype is not None and raw.dtype.name != rec.dtype:
+            raise AssertionError(
+                f"dtype mismatch for {_key_str(key)}: "
+                f"actual {raw.dtype.name} vs baseline {rec.dtype}"
+            )
         metrics.assert_close(
-            actual,
+            raw.astype(float),
             rec.array,
             rtol=rtol if rtol is not None else rec.rtol,
             atol=atol if atol is not None else rec.atol,

@@ -8,8 +8,6 @@ from openprotein.embeddings.esm import ESMModel
 from openprotein.embeddings.models import EmbeddingModel
 from openprotein.embeddings.openprotein import OpenProteinModel
 from openprotein.embeddings.poet import PoETModel
-from openprotein.svd.svd import SVDAPI
-from openprotein.umap.umap import UMAPAPI
 from openprotein.embeddings.poet2 import PoET2Model
 from openprotein.jobs import JobType
 
@@ -164,12 +162,15 @@ def test_poet2_model_generate_with_query_list():
     with patch("openprotein.embeddings.api.get_model", return_value=MagicMock()):
         model = PoET2Model(session=mock_session, model_id="poet-2")
 
-    with patch(
-        "openprotein.embeddings.poet.api.request_generate_post",
-        return_value=MagicMock(),
-    ) as mock_request_post, patch(
-        "openprotein.embeddings.poet.EmbeddingsGenerateFuture.create",
-        return_value=MagicMock(),
+    with (
+        patch(
+            "openprotein.embeddings.poet.api.request_generate_post",
+            return_value=MagicMock(),
+        ) as mock_request_post,
+        patch(
+            "openprotein.embeddings.poet.EmbeddingsGenerateFuture.create",
+            return_value=MagicMock(),
+        ),
     ):
         model.generate(prompt=None, query=["query-1", "query-2"], num_samples=2)
 
@@ -178,39 +179,3 @@ def test_poet2_model_generate_with_query_list():
     )
     _, kwargs = mock_request_post.call_args
     assert kwargs["query_id"] == ["query-1", "query-2"]
-
-
-def test_embedding_model_fit_svd_force_recompute(mock_session: MagicMock):
-    """Test that fit_svd forwards force_recompute=True to SVDAPI.fit_svd."""
-    mock_svd_api = MagicMock(spec=SVDAPI)
-    mock_session.svd = mock_svd_api
-
-    with patch("openprotein.embeddings.api.get_model", return_value=MagicMock()):
-        model = EmbeddingModel(session=mock_session, model_id="test-model")
-
-    sequences = [b"ACGT"]
-    model.fit_svd(sequences=sequences, force_recompute=True)
-
-    mock_svd_api.fit_svd.assert_called_once()
-    _, call_kwargs = mock_svd_api.fit_svd.call_args
-    assert call_kwargs["force_recompute"] is True
-    assert call_kwargs["model"] is model
-    assert call_kwargs["sequences"] == sequences
-
-
-def test_embedding_model_fit_umap_force_recompute(mock_session: MagicMock):
-    """Test that fit_umap forwards force_recompute=True to UMAPAPI.fit_umap."""
-    mock_umap_api = MagicMock(spec=UMAPAPI)
-    mock_session.umap = mock_umap_api
-
-    with patch("openprotein.embeddings.api.get_model", return_value=MagicMock()):
-        model = EmbeddingModel(session=mock_session, model_id="test-model")
-
-    sequences = [b"ACGT"]
-    model.fit_umap(sequences=sequences, force_recompute=True)
-
-    mock_umap_api.fit_umap.assert_called_once()
-    _, call_kwargs = mock_umap_api.fit_umap.call_args
-    assert call_kwargs["force_recompute"] is True
-    assert call_kwargs["model"] is model
-    assert call_kwargs["sequences"] == sequences

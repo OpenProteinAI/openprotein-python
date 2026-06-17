@@ -1,9 +1,10 @@
 """Correctness tests for logits.
 
-Every check genuinely recomputes: encoders pass force_recompute=True (#235) to bypass
-the per-sequence cache; PoET cache-busts via a fresh prompt_id. Encoder argmax tokens
-are compared exactly; raw logit values use a relaxed tolerance for accepted cross-env
-jitter.
+Encoders feed a freshly mutated sequence (cache miss -> genuine recompute) for the
+shape/finite invariant; the prod-baseline differentials keep a fixed sequence to
+match the committed baseline and are cache-robust (genuine on a cold cache). PoET
+cache-busts via a fresh prompt_id. Encoder argmax tokens are compared exactly; raw
+logit values use a relaxed tolerance for accepted cross-env jitter.
 """
 
 import numpy as np
@@ -13,6 +14,7 @@ from openprotein import OpenProtein
 from tests.e2e.config import scaled_timeout
 from tests.e2e.correctness import metrics, well_known
 from tests.e2e.correctness.support import fresh_prompt, require_embedding_model
+from tests.utils.sequences import mutate_sequence
 
 TIMEOUT = scaled_timeout(1.0)
 # PoET logits are heavier/slower than embeddings on prod; give them more headroom.
@@ -22,17 +24,16 @@ POET_MODELS = ["poet", "poet-2"]
 
 
 def _logits_one(model, seq: bytes) -> np.ndarray:
-    # force_recompute=True bypasses the per-sequence cache (genuine recompute).
-    (returned, arr), = model.logits(
-        sequences=[seq], force_recompute=True
-    ).wait(timeout=TIMEOUT)
+    # Callers pass a freshly mutated sequence (cache miss) for a genuine recompute;
+    # the prod-baseline differentials keep a fixed sequence and are cache-robust.
+    ((returned, arr),) = model.logits(sequences=[seq]).wait(timeout=TIMEOUT)
     assert returned == seq
     return np.asarray(arr)
 
 
 def _poet_logits(model, query: bytes, prompt) -> np.ndarray:
-    # PoET cache-busts via the fresh prompt_id (force_recompute is not wired into
-    # PoET2Model), so a fresh prompt already guarantees a genuine recompute.
+    # PoET cache-busts via the fresh prompt_id, so a fresh prompt already guarantees
+    # a genuine recompute.
     results = model.logits(sequences=[query], prompt=prompt).wait(timeout=POET_TIMEOUT)
     return np.asarray(results[0][1])
 
@@ -46,11 +47,16 @@ def _poet_logits(model, query: bytes, prompt) -> np.ndarray:
 @pytest.mark.correctness
 @pytest.mark.parametrize("model_id", ENCODER_MODELS)
 def test_logits_shape_and_finite(session: OpenProtein, model_id: str):
-    """Logits are finite and 2-D with one row per position (+ specials)."""
+    """Logits are finite and 2-D with one row per position (+ specials).
+
+    A freshly mutated sequence each run cache-misses, so the logits genuinely
+    recompute on the current workers.
+    """
     model = require_embedding_model(session, model_id)
-    arr = _logits_one(model, well_known.UBIQUITIN.encode())
+    seq = mutate_sequence(well_known.UBIQUITIN)
+    arr = _logits_one(model, seq.encode())
     assert arr.ndim == 2
-    assert arr.shape[0] >= len(well_known.UBIQUITIN)
+    assert arr.shape[0] >= len(seq)
     assert np.isfinite(arr).all()
 
 
@@ -58,10 +64,14 @@ def test_logits_shape_and_finite(session: OpenProtein, model_id: str):
 @pytest.mark.correctness
 @pytest.mark.differential
 @pytest.mark.parametrize("model_id", ENCODER_MODELS)
-def test_encoder_logits_argmax_tokens_match_prod(session: OpenProtein, model_id: str, baseline):
+def test_encoder_logits_argmax_tokens_match_prod(
+    session: OpenProtein, model_id: str, baseline
+):
     """Per-position argmax token indices match the prod baseline exactly.
 
-    Reliable via force_recompute (the cache previously served a stale trimmed length).
+    Fixed sequence (to match the committed baseline), so this is cache-robust:
+    genuine on a cold cache, and a systematic cross-worker difference (e.g. a
+    different special-token trim) still surfaces here.
     """
     model = require_embedding_model(session, model_id)
     seq = well_known.UBIQUITIN.encode()
@@ -76,7 +86,9 @@ def test_encoder_logits_argmax_tokens_match_prod(session: OpenProtein, model_id:
 @pytest.mark.correctness
 @pytest.mark.differential
 @pytest.mark.parametrize("model_id", ENCODER_MODELS)
-def test_encoder_logits_values_match_prod(session: OpenProtein, model_id: str, baseline):
+def test_encoder_logits_values_match_prod(
+    session: OpenProtein, model_id: str, baseline
+):
     """Raw logit values match the prod baseline within accepted cross-env jitter."""
     model = require_embedding_model(session, model_id)
     seq = well_known.UBIQUITIN.encode()

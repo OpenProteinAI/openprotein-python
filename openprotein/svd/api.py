@@ -127,7 +127,6 @@ def svd_fit_post(
     assay_id: str | None = None,
     n_components: int = 1024,
     reduction: str | None = None,
-    force_recompute: bool = False,
     **kwargs,
 ) -> SVDFitJob:
     """
@@ -151,8 +150,6 @@ def svd_fit_post(
         Type of embedding reduction to use for computing features.
         E.g. "MEAN" or "SUM". Useful when dealing with variable length
         sequence. Defaults to None.
-    force_recompute : bool
-        If True, send ?force=true so the backend bypasses the result cache and recomputes. Default: False.
     kwargs:
         Additional keyword arguments to be passed to foundational models, e.g. prompt_id for PoET models.
 
@@ -183,8 +180,7 @@ def svd_fit_post(
     # add kwargs for embeddings kwargs
     body.update(**kwargs)
 
-    params = {"force": "true"} if force_recompute else None
-    response = session.post(endpoint, json=body, params=params)
+    response = session.post(endpoint, json=body)
     # return job for metadata
     return SVDFitJob.model_validate(response.json())
 
@@ -193,7 +189,7 @@ def svd_embed_post(
     session: APISession,
     svd_id: str,
     sequences: list[bytes] | list[str],
-    force_recompute: bool = False,
+    **kwargs,
 ) -> SVDEmbeddingsJob:
     """
     POST a request for embeddings from the given SVD model.
@@ -206,8 +202,6 @@ def svd_embed_post(
         SVD model to use
     sequences : List[bytes]
         sequences to SVD
-    force_recompute : bool
-        If True, send ?force=true so the backend bypasses the result cache and recomputes. Default: False.
 
     Returns
     -------
@@ -219,7 +213,6 @@ def svd_embed_post(
     body = {
         "sequences": sequences_unicode,
     }
-    params = {"force": "true"} if force_recompute else None
-    response = session.post(endpoint, json=body, params=params)
+    response = session.post(endpoint, json=body)
 
     return SVDEmbeddingsJob.model_validate(response.json())

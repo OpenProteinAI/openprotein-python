@@ -144,9 +144,6 @@ class ClusteringAPI:
             reduction.value if isinstance(reduction, ReductionType) else reduction
         )
 
-        # Advanced flags such as `force_recompute` are accepted via **kwargs
-        # only (intentionally kept out of the typed signature / autocomplete):
-        # they bypass the backend result cache and are easy to misuse.
         job = api.clustering_hierarchical_post(
             session=self.session,
             model_id=model_id,

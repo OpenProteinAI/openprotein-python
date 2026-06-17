@@ -193,34 +193,3 @@ def test_hierarchical_post_rejects_neither():
             linkage_method="ward",
             metric="euclidean",
         )
-
-
-def test_hierarchical_post_force_recompute_true():
-    session = _session_with_response(_fit_response())
-    api.clustering_hierarchical_post(
-        session,
-        model_id="prot-seq",
-        feature_type="PLM",
-        linkage_method="ward",
-        metric="euclidean",
-        sequences=[b"MKTA", b"MRTV"],
-        reduction="MEAN",
-        force_recompute=True,
-    )
-    _, kwargs = session.post.call_args
-    assert kwargs["params"] == {"force": "true"}
-
-
-def test_hierarchical_post_force_recompute_default():
-    session = _session_with_response(_fit_response())
-    api.clustering_hierarchical_post(
-        session,
-        model_id="prot-seq",
-        feature_type="PLM",
-        linkage_method="ward",
-        metric="euclidean",
-        sequences=[b"MKTA", b"MRTV"],
-        reduction="MEAN",
-    )
-    _, kwargs = session.post.call_args
-    assert kwargs.get("params") is None

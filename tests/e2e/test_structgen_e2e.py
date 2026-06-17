@@ -120,7 +120,9 @@ def test_e2e_proteinmpnn_indel_not_implemented(session: OpenProtein):
 
 @pytest.mark.e2e
 def test_e2e_proteinmpnn_single_site_not_implemented(session: OpenProtein):
-    with pytest.raises(NotImplementedError, match="Score indel not yet implemented"):
+    with pytest.raises(
+        NotImplementedError, match="Score single site not yet implemented"
+    ):
         session.models.proteinmpnn.single_site(
             sequence=b"ACDEFGHIKLMNPQRSTVWY",
             query=b"ACDEFGHIKLMNPQRSTVWY",

@@ -26,8 +26,7 @@ MIN_VARIANT_EFFECT_SPEARMAN = 0.2
 
 
 def _score(model, sequence: bytes, prompt) -> float:
-    # PoET cache-busts via the fresh prompt_id (force_recompute is not wired into
-    # PoET2Model).
+    # PoET cache-busts via the fresh prompt_id, so each score genuinely recomputes.
     rows = model.score(sequences=[sequence], prompt=prompt).wait(timeout=TIMEOUT)
     assert len(rows) == 1
     return float(np.asarray(rows[0].score).ravel()[0])
@@ -57,7 +56,9 @@ def test_native_scores_above_shuffled(session: OpenProtein, model_id: str):
 @pytest.mark.correctness
 @pytest.mark.differential
 @pytest.mark.parametrize("model_id", SCORE_MODELS)
-def test_variant_effect_correlates_with_amie(session: OpenProtein, model_id: str, baseline):
+def test_variant_effect_correlates_with_amie(
+    session: OpenProtein, model_id: str, baseline
+):
     """single_site scores over AMIE single mutants correlate with measured DMS fitness.
 
     PoET is conditioned on a fixed slice of AMIE homologs (fresh prompt_id each run),
@@ -66,13 +67,15 @@ def test_variant_effect_correlates_with_amie(session: OpenProtein, model_id: str
     if not AMIE_PATH.exists():
         pytest.skip("AMIE DMS table not present")
     model = require_embedding_model(session, model_id)
-    wildtype, variants = well_known.load_amie_dms(AMIE_PATH, measurement=AMIE_MEASUREMENT)
+    wildtype, variants = well_known.load_amie_dms(
+        AMIE_PATH, measurement=AMIE_MEASUREMENT
+    )
     context = well_known.amie_prompt_context(AMIE_PATH, n=24)
     prompt = fresh_prompt(session, context, timeout=SCORE_TIMEOUT)
 
-    rows = model.single_site(
-        sequence=wildtype.encode(), prompt=prompt
-    ).wait(timeout=SCORE_TIMEOUT)
+    rows = model.single_site(sequence=wildtype.encode(), prompt=prompt).wait(
+        timeout=SCORE_TIMEOUT
+    )
     # mut_code is "<wt><pos1based><mut>" (e.g. "A1R", "L10V"). single_site also emits a
     # per-position "WT" identity row (no position) -- skip any row whose middle isn't a
     # position number.
@@ -95,7 +98,9 @@ def test_variant_effect_correlates_with_amie(session: OpenProtein, model_id: str
     rho = metrics.spearman(np.array(predicted), np.array(measured))
 
     # L2 floor: zero-shot variant effect must clear a minimum quality bar.
-    assert rho >= MIN_VARIANT_EFFECT_SPEARMAN, f"variant-effect Spearman {rho:.3f} too low"
+    assert (
+        rho >= MIN_VARIANT_EFFECT_SPEARMAN
+    ), f"variant-effect Spearman {rho:.3f} too low"
 
     # L3: the correlation tracks the captured prod baseline within a generous band
     # (small cross-env drift accepted; single_site is conditioned on a fresh prompt).

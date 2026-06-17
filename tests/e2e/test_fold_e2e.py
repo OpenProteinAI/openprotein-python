@@ -99,9 +99,16 @@ def test_e2e_fold_rejects_total_sequence_length_above_model_max(
     if max_len is None or max_len < 2:
         pytest.skip("Model does not report a usable max_sequence_length")
 
+    # esmfold2 reports the conservative with-MSA bound (e.g. 1641) in metadata, but
+    # enforces a more lenient no-MSA bound (e.g. 1671) — and this test runs in
+    # single_sequence_mode. So max_len+1 lands in the *accepted* no-MSA region.
+    # Overshoot far enough to clear the most lenient per-condition bound. Other
+    # models advertise their true enforced bound, so +1 is a precise boundary test.
+    overage = 200 if model_id == "esmfold2" else 1
+
     if uses_multichain_entity:
         chain_a_len = max_len // 2
-        chain_b_len = max_len - chain_a_len + 1  # total length is max_len + 1
+        chain_b_len = max_len - chain_a_len + overage  # total length is max_len + overage
 
         chain_a = Protein("A" * chain_a_len)
         chain_a.msa = Protein.single_sequence_mode
@@ -112,12 +119,12 @@ def test_e2e_fold_rejects_total_sequence_length_above_model_max(
         # Each chain is <= max_len, so this validates total entity length handling.
         assert len(chain_a) <= max_len
         assert len(chain_b) <= max_len
-        assert len(chain_a) + len(chain_b) == max_len + 1
+        assert len(chain_a) + len(chain_b) == max_len + overage
     else:
-        chain = Protein("A" * (max_len + 1))
+        chain = Protein("A" * (max_len + overage))
         chain.msa = Protein.single_sequence_mode
         input_sequence = chain
-        assert len(chain) == max_len + 1
+        assert len(chain) == max_len + overage
 
     with pytest.raises(HTTPError, match="Status code"):
         model.fold(sequences=[input_sequence])

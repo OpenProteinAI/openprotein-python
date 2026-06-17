@@ -59,19 +59,20 @@ class PoET2Model(PoETModel, EmbeddingModel):
 
     def embed(
         self,
-        sequences: list[bytes],
+        sequences: list[bytes] | list[str],
         reduction: ReductionType | None = ReductionType.MEAN,
         prompt: str | Prompt | None = None,
         query: str | bytes | Protein | Complex | Query | None = None,
         use_query_structure_in_decoder: bool = True,
         decoder_type: Literal["mlm", "clm"] | None = None,
+        **kwargs,
     ) -> EmbeddingsResultFuture:
         """
         Embed sequences using this model.
 
         Parameters
         ----------
-        sequences : list of bytes
+        sequences : list of bytes or list of str
             Sequences to embed.
         reduction : ReductionType or None, optional
             Embeddings reduction to use (e.g. mean). Default is ReductionType.MEAN.
@@ -83,6 +84,8 @@ class PoET2Model(PoETModel, EmbeddingModel):
             Whether to use query structure in decoder. Default is True.
         decoder_type : {'mlm', 'clm'} or None, optional
             Decoder type. Default is None.
+        **kwargs
+            Additional keyword arguments.
 
         Returns
         -------
@@ -105,22 +108,24 @@ class PoET2Model(PoETModel, EmbeddingModel):
             query_id=query_id,
             use_query_structure_in_decoder=use_query_structure_in_decoder,
             decoder_type=decoder_type,
+            **kwargs,
         )
 
     def logits(
         self,
-        sequences: list[bytes],
+        sequences: list[bytes] | list[str],
         prompt: str | Prompt | None = None,
         query: str | bytes | Protein | Complex | Query | None = None,
         use_query_structure_in_decoder: bool = True,
         decoder_type: Literal["mlm", "clm"] | None = None,
+        **kwargs,
     ) -> EmbeddingsResultFuture:
         """
         Compute logit embeddings for sequences using this model.
 
         Parameters
         ----------
-        sequences : list of bytes
+        sequences : list of bytes or list of str
             Sequences to analyze.
         prompt : str or Prompt or None, optional
             Prompt or prompt_id or prompt from an align workflow to condition PoET model.
@@ -130,6 +135,8 @@ class PoET2Model(PoETModel, EmbeddingModel):
             Whether to use query structure in decoder. Default is True.
         decoder_type : {'mlm', 'clm'} or None, optional
             Decoder type. Default is None.
+        **kwargs
+            Additional keyword arguments.
 
         Returns
         -------
@@ -151,6 +158,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
             query_id=query_id,
             use_query_structure_in_decoder=use_query_structure_in_decoder,
             decoder_type=decoder_type,
+            **kwargs,
         )
 
     def score(
@@ -160,6 +168,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
         query: str | bytes | Protein | Complex | Query | None = None,
         use_query_structure_in_decoder: bool = True,
         decoder_type: Literal["mlm", "clm"] | None = None,
+        **kwargs,
     ) -> EmbeddingsScoreFuture:
         """
         Score query sequences using the specified prompt.
@@ -176,6 +185,8 @@ class PoET2Model(PoETModel, EmbeddingModel):
             Whether to use query structure in decoder. Default is True.
         decoder_type : {'mlm', 'clm'} or None, optional
             Decoder type. Default is None.
+        **kwargs
+            Additional keyword arguments.
 
         Returns
         -------
@@ -191,6 +202,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
             query_id=query_id,
             use_query_structure_in_decoder=use_query_structure_in_decoder,
             decoder_type=decoder_type,
+            **kwargs,
         )
 
     def indel(
@@ -247,6 +259,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
             decoder_type=decoder_type,
             insert=insert,
             delete=delete,
+            **kwargs,
         )
 
     def single_site(
@@ -256,6 +269,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
         query: str | bytes | Protein | Complex | Query | None = None,
         use_query_structure_in_decoder: bool = True,
         decoder_type: Literal["mlm", "clm"] | None = None,
+        **kwargs,
     ) -> EmbeddingsScoreSingleSiteFuture:
         """
         Score all single substitutions of the query sequence using the specified prompt.
@@ -272,6 +286,8 @@ class PoET2Model(PoETModel, EmbeddingModel):
             Whether to use query structure in decoder. Default is True.
         decoder_type : {'mlm', 'clm'} or None, optional
             Decoder type. Default is None.
+        **kwargs
+            Additional keyword arguments.
 
         Returns
         -------
@@ -287,6 +303,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
             query_id=query_id,
             use_query_structure_in_decoder=use_query_structure_in_decoder,
             decoder_type=decoder_type,
+            **kwargs,
         )
 
     def generate(
@@ -311,6 +328,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
         seed: int | None = None,
         ensemble_weights: Sequence[float] | None = None,
         ensemble_method: Literal["arithmetic", "geometric"] | None = None,
+        **kwargs,
     ) -> EmbeddingsGenerateFuture:
         """
         Generate protein sequences conditioned on a prompt.
@@ -345,6 +363,8 @@ class PoET2Model(PoETModel, EmbeddingModel):
             If "arithmetic", the weighted mean is used; if "geometric", the weighted
             geometric mean is used. If None (default), the method defaults to
             "arithmetic", but this behavior may change in the future.
+        **kwargs
+            Additional keyword arguments.
 
         Returns
         -------
@@ -384,6 +404,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
             use_query_structure_in_decoder=use_query_structure_in_decoder,
             ensemble_weights=ensemble_weights,
             ensemble_method=ensemble_method,
+            **kwargs,
         )
 
     def fit_svd(
