@@ -1768,6 +1768,7 @@ wheels = [
 name = "openprotein-python"
 source = { editable = "." }
 dependencies = [
+    { name = "filelock" },
     { name = "gemmi" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
@@ -1799,6 +1800,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "filelock", specifier = ">=3.13,<4" },
     { name = "gemmi", specifier = ">=0.6.0,<0.8" },
     { name = "numpy", specifier = ">=1.9,<3" },
     { name = "pandas", specifier = ">=2.2.2,<3" },

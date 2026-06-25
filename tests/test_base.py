@@ -1,10 +1,7 @@
 import io
-import json
 from unittest.mock import MagicMock, patch
-from urllib.parse import urljoin
 
 import pytest
-import requests
 from openprotein.base import APISession, AuthError, BearerAuth
 
 from tests.conf import BACKEND
@@ -54,16 +51,25 @@ def test_APISession_authenticate_failed(response_mock_unauthenticated):
     username = "testuser"
     password = "testpassword"
 
-    with patch.object(APISession, "post", return_value=response_mock_unauthenticated):
-        with pytest.raises(AuthError) as exc:
-            APISession(username, password, backend=BACKEND)
+    # post() is patched, so request()'s status handling never runs: the failure
+    # this exercises is an empty response body (no access_token), not the 401.
+    response_mock_unauthenticated.json = MagicMock(return_value={})
+    with patch("openprotein.base.TokenStore") as store_cls:
+        store_cls.return_value.load.return_value = None
+        store_cls.return_value.identity.return_value = "id"
+        with patch.object(
+            APISession, "post", return_value=response_mock_unauthenticated
+        ):
+            with pytest.raises(AuthError) as exc:
+                APISession(username, password, backend=BACKEND)
 
-        assert "Unable to authenticate with given credentials" in str(exc.value)
-        APISession.post.assert_called_once_with(  # ty: ignore[unresolved-attribute]
-            f"{BACKEND}v1/login/access-token",
-            data={"username": username, "password": password},
-            timeout=3,
-        )
+            assert "Unable to authenticate with given credentials" in str(exc.value)
+            APISession.post.assert_called_once_with(  # ty: ignore[unresolved-attribute]
+                f"{BACKEND}v1/auth/login",
+                data={"username": username, "password": password},
+                headers={"X-Token-Delivery": "body"},
+                timeout=3,
+            )
 
 
 def test_APISession_authenticate_successful(response_mock_authenticated):
@@ -71,13 +77,19 @@ def test_APISession_authenticate_successful(response_mock_authenticated):
     password = "testpassword"
     token = "testtoken"
 
-    with patch.object(APISession, "post", return_value=response_mock_authenticated):
-        session = APISession(username, password, backend=BACKEND)
+    with patch("openprotein.base.TokenStore") as store_cls:
+        store_cls.return_value.load.return_value = None
+        store_cls.return_value.identity.return_value = "id"
+        with patch.object(APISession, "post", return_value=response_mock_authenticated):
+            session = APISession(username, password, backend=BACKEND)
 
-        assert isinstance(session.auth, BearerAuth)
-        assert session.auth._token == token
-        APISession.post.assert_called_once_with(  # ty: ignore[unresolved-attribute]
-            f"{BACKEND}v1/login/access-token",
-            data={"username": username, "password": password},
-            timeout=3,
-        )
+            assert isinstance(session.auth, BearerAuth)
+            assert session.auth._token == token
+            # No refresh_token in the response -> legacy mode, access token used as-is.
+            assert session._legacy_mode is True
+            APISession.post.assert_called_once_with(  # ty: ignore[unresolved-attribute]
+                f"{BACKEND}v1/auth/login",
+                data={"username": username, "password": password},
+                headers={"X-Token-Delivery": "body"},
+                timeout=3,
+            )
