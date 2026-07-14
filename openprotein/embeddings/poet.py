@@ -17,6 +17,7 @@ from .future import (
 from .models import EmbeddingModel
 
 if TYPE_CHECKING:
+    from openprotein.predictor.schemas import KernelType
     from openprotein.predictor import PredictorModel
     from openprotein.svd import SVDModel
     from openprotein.umap import UMAPModel
@@ -432,6 +433,9 @@ class PoETModel(EmbeddingModel):
         name: str | None = None,
         description: str | None = None,
         prompt: str | Prompt | None = None,
+        kernel: "KernelType | str" = "rbf",
+        period: float | None = None,
+        alpha: float | None = None,
         **kwargs,
     ) -> "PredictorModel":
         """
@@ -443,6 +447,13 @@ class PoETModel(EmbeddingModel):
             Assay to fit GP on.
         properties : list of str
             Properties in the assay to fit the GP on.
+        kernel : KernelType or str, optional
+            Kernel for the GP, e.g. "rbf", "matern52", "periodic",
+            "rational_quadratic". Defaults to "rbf".
+        period : float or None, optional
+            Period length; only valid for the "periodic" kernel (must be > 0).
+        alpha : float or None, optional
+            Scale-mixture parameter; only valid for "rational_quadratic" (must be > 0).
         prompt : str or Prompt or None, optional
             Prompt from an align workflow to condition the PoET model.
         **kwargs
@@ -464,5 +475,8 @@ class PoETModel(EmbeddingModel):
             name=name,
             description=description,
             prompt_id=prompt_id,
+            kernel=kernel,
+            period=period,
+            alpha=alpha,
             **kwargs,
         )

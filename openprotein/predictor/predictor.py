@@ -13,6 +13,7 @@ from openprotein.svd import SVDAPI, SVDModel
 
 from . import api
 from .models import PredictorModel
+from .schemas import KernelType
 
 
 class PredictorAPI:
@@ -125,6 +126,9 @@ class PredictorAPI:
         reduction: Reduction | ReductionType | None = None,
         name: str | None = None,
         description: str | None = None,
+        kernel: KernelType | str = "rbf",
+        period: float | None = None,
+        alpha: float | None = None,
         **kwargs,
     ) -> PredictorModel:
         """
@@ -147,6 +151,14 @@ class PredictorAPI:
             Type of embedding reduction to use for computing features.
             E.g. "MEAN" or "SUM". Used only if using EmbeddingModel, and
             must be non-nil if using an EmbeddingModel. Defaults to None.
+        kernel : KernelType or str, optional
+            Kernel for the GP. One of "linear", "rbf", "matern12", "matern32",
+            "matern52", "periodic", "rational_quadratic". Defaults to "rbf".
+        period : float or None, optional
+            Period length, only valid for the "periodic" kernel (must be > 0).
+        alpha : float or None, optional
+            Scale-mixture parameter, only valid for the "rational_quadratic"
+            kernel (must be > 0).
         kwargs :
             Additional keyword arguments to be passed to foundational models, e.g. prompt_id for PoET models.
 
@@ -177,6 +189,24 @@ class PredictorAPI:
             raise InvalidParameterError(
                 "Training a multitask GP is not yet supported (i.e. number of properties should only be 1 for now)"
             )
+        # kernel selection + hyperparameter validation (fail fast, client-side)
+        if not isinstance(kernel, KernelType):
+            try:
+                kernel = KernelType(kernel)
+            except ValueError as e:
+                raise InvalidParameterError(
+                    f"Unknown kernel {kernel!r}; valid options: {[k.value for k in KernelType]}"
+                ) from e
+        if period is not None:
+            if kernel != KernelType.PERIODIC:
+                raise InvalidParameterError("`period` is only valid for the 'periodic' kernel")
+            if period <= 0:
+                raise InvalidParameterError("`period` must be > 0")
+        if alpha is not None:
+            if kernel != KernelType.RATIONAL_QUADRATIC:
+                raise InvalidParameterError("`alpha` is only valid for the 'rational_quadratic' kernel")
+            if alpha <= 0:
+                raise InvalidParameterError("`alpha` must be > 0")
         # 2. Check features input
         # extract feature type
         feature_type = (
@@ -228,6 +258,9 @@ class PredictorAPI:
                 reduction=reduction,
                 name=name,
                 description=description,
+                kernel=kernel.value,
+                period=period,
+                alpha=alpha,
                 **kwargs,
             ),
         )

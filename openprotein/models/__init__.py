@@ -19,6 +19,7 @@ from .foundation.boltzgen import BoltzGenFuture, BoltzGenModel
 from .foundation.esmif1 import ESMIF1Model
 from .foundation.proteinmpnn import ProteinMPNNModel
 from .foundation.rfdiffusion import RFdiffusionFuture, RFdiffusionModel
+from .foundation.solublempnn import SolubleMPNNModel
 from .models import ModelsAPI
 from .structure_generation import (
     StructureGenerationFuture,

@@ -5,13 +5,6 @@ replaces ":" with a chain linker, embeds, then mean-pools the linker residues
 back into a single column at the delimiter position; AbLang2 tokenizes ":"
 natively. Either way, each delimiter occupies exactly one per-residue column.
 
-These tests target the DEV backend, where multi-chain for non-AbLang2 models is
-rolling out. Point the SDK at dev WITHOUT editing ~/.openprotein/config.toml --
-``connect()`` reads ``OPENPROTEIN_API_BACKEND`` ahead of the toml backend:
-
-    OPENPROTEIN_API_BACKEND=https://dev.api.openprotein.ai/api/ \\
-        pixi run pytest -m e2e tests/e2e/test_multichain_e2e.py
-
 Coverage:
   * embeddings: per-residue length is residue-aligned -- a multi-chain sequence
     yields exactly one extra column per ":" vs the single-chain concatenation of
@@ -24,17 +17,9 @@ Coverage:
   * genetic-algorithm design driven by a multi-chain GP (on-SVD and
     with-reduction): every designed sequence preserves the ":" layout (same
     length, ":" frozen at its column, never introduced elsewhere).
-
-NOTE: the predictor single-site ":"-preservation assertions
-(``_assert_single_site_preserves_delimiter``) depend on backend-service-predictor
-PR #57. Until it deploys to dev they are expected to fail -- they are the
-acceptance check for that fix.
-
-NOTE: the GA design assertions (``_assert_design_preserves_delimiter``) depend on
-backend-service-design PR #14 (chain-aware GA) AND on the multi-chain predictor
-predict path, which currently fails server-side on dev for both GP-on-SVD and
-GP-with-reduction. Until both land on dev these tests are expected to fail --
-they are the acceptance check for end-to-end multi-chain design.
+  * alignment jobs (mafft / clustalo / abnumber) on multi-chain inputs: each
+    chain is aligned independently and rejoined with a single ":" column, and
+    gap-stripping each chain recovers the input chains.
 """
 
 from __future__ import annotations
@@ -44,6 +29,7 @@ import pandas as pd
 import pytest
 
 from openprotein import OpenProtein
+from openprotein.align.schemas import AbNumberScheme
 from openprotein.common.reduction import ReductionType
 from openprotein.design import ModelCriterion
 from tests.e2e.config import scaled_timeout
@@ -137,7 +123,7 @@ def _delimiter_positions(seq: str) -> list[int]:
 
 def _assert_single_site_preserves_delimiter(predictor, base: str) -> None:
     """Predictor single-site over a multi-chain base must keep ":" intact in every
-    generated mutant (acceptance check for backend-service-predictor PR #57)."""
+    generated mutant."""
     delim = _delimiter_positions(base)
     assert delim, "base sequence has no chain delimiter"
     result = predictor.single_site(sequence=base.encode())
@@ -364,7 +350,7 @@ def _assert_design_preserves_delimiter(results, base: str) -> None:
     """Every GA-designed sequence must keep ``base``'s chain layout intact: same
     length, exactly one ":" per delimiter at its original column, and finite
     scores. This is the acceptance check that the design GA never mutates or
-    introduces ":" (backend-service-design PR #14)."""
+    introduces ":"."""
     delim = _delimiter_positions(base)
     assert delim, "base sequence has no chain delimiter"
     assert len(results) > 0, "design produced no results"
@@ -395,8 +381,7 @@ def _run_multichain_design(session: OpenProtein, assay, property_name: str, pred
 
 def test_multichain_ga_design_gp_on_svd(session: OpenProtein):
     """GA design driven by a GP trained on an SVD of multi-chain sequences; every
-    designed sequence must preserve the ":" layout (acceptance check -- see the
-    module NOTE on backend-service-design PR #14 + the multi-chain predict path)."""
+    designed sequence must preserve the ":" layout."""
     model = require_embedding_model(session, DESIGN_MODEL)
     heavy0, light0 = _generic_chains()
     seqs = _multichain_same_length_dataset(40, heavy0, light0)
@@ -415,9 +400,7 @@ def test_multichain_ga_design_gp_on_svd(session: OpenProtein):
 
 def test_multichain_ga_design_gp_with_reduction(session: OpenProtein):
     """GA design driven by a GP trained on reduced (MEAN) embeddings of multi-chain
-    sequences; every designed sequence must preserve the ":" layout (acceptance
-    check -- see the module NOTE on backend-service-design PR #14 + the multi-chain
-    predict path)."""
+    sequences; every designed sequence must preserve the ":" layout."""
     model = require_embedding_model(session, DESIGN_MODEL)
     heavy0, light0 = _generic_chains()
     seqs = _multichain_same_length_dataset(40, heavy0, light0)
@@ -431,3 +414,73 @@ def test_multichain_ga_design_gp_with_reduction(session: OpenProtein):
 
     results = _run_multichain_design(session, assay, property_name, predictor)
     _assert_design_preserves_delimiter(results, seqs[0])
+
+
+# --------------------------------------------------------------------------- #
+# Alignment jobs on multi-chain sequences (mafft / clustalo / abnumber)
+# --------------------------------------------------------------------------- #
+#
+# Submitting ":"-delimited sequences to the alignment endpoints exercises the
+# split / align-each-chain / rejoin path: every chain position is aligned
+# independently, then rejoined with a single ":" column.
+
+ALIGN_TIMEOUT = scaled_timeout(2.0)
+
+
+def _assert_multichain_alignment(rows, inputs: list[str], n_delim: int = 1) -> None:
+    """A multi-chain alignment preserves the ":" layout: exactly ``n_delim``
+    delimiter(s) per row, all delimiters at the same column, uniform row length,
+    and gap-stripping each chain recovers the original input chains."""
+    aligned = [row[1] for row in rows]
+    assert len(aligned) == len(inputs), "expected one aligned row per input"
+    assert all(s.count(":") == n_delim for s in aligned), (
+        f"expected exactly {n_delim} delimiter(s) per row: {aligned}"
+    )
+    assert len({s.index(":") for s in aligned}) == 1, "delimiters not column-aligned"
+    assert len({len(s) for s in aligned}) == 1, "alignment rows are not equal length"
+    recovered = {
+        ":".join(c.replace("-", "").replace(".", "") for c in s.split(":"))
+        for s in aligned
+    }
+    assert recovered == set(inputs), "gap-stripped chains do not recover the inputs"
+
+
+def test_multichain_mafft_alignment(session: OpenProtein):
+    """MAFFT aligns multi-chain sequences chain-wise, preserving the ":" column."""
+    heavy0, light0 = _generic_chains()
+    seqs = _multichain_same_length_dataset(3, heavy0, light0)
+
+    future = session.align.mafft(sequences=seqs)
+    future.wait_until_done(verbose=True, timeout=ALIGN_TIMEOUT)
+    assert future.status == "SUCCESS"
+
+    _assert_multichain_alignment(list(future.get()), seqs)
+
+
+def test_multichain_clustalo_alignment(session: OpenProtein):
+    """ClustalO aligns multi-chain sequences chain-wise, preserving the ":" column."""
+    heavy0, light0 = _generic_chains()
+    seqs = _multichain_same_length_dataset(3, heavy0, light0)
+
+    future = session.align.clustalo(sequences=seqs)
+    future.wait_until_done(verbose=True, timeout=ALIGN_TIMEOUT)
+    assert future.status == "SUCCESS"
+
+    _assert_multichain_alignment(list(future.get()), seqs)
+
+
+def test_multichain_abnumber_alignment(session: OpenProtein):
+    """AbNumber numbers each chain of a paired heavy:light antibody independently
+    and rejoins with the ":" column. Substitution-only mutation keeps every chain
+    numberable (indels would break the variable-domain framing)."""
+    seqs = [
+        f"{mutate_sequence(ANTIBODY_HEAVY_SEQUENCE, mutation_rate=0.02)}:"
+        f"{mutate_sequence(ANTIBODY_LIGHT_SEQUENCE, mutation_rate=0.02)}"
+        for _ in range(3)
+    ]
+
+    future = session.align.abnumber(sequences=seqs, scheme=AbNumberScheme.CHOTHIA)
+    future.wait_until_done(verbose=True, timeout=ALIGN_TIMEOUT)
+    assert future.status == "SUCCESS"
+
+    _assert_multichain_alignment(list(future.get()), seqs)

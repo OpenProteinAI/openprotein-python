@@ -13,40 +13,28 @@ from openprotein.prompt import PromptAPI
 def normalize_inputs(
     proteins: Sequence[Complex | Protein | str | bytes],
 ):
-    # collate the id's used
-    used_ids = []
     normalized_complexes: list[Complex] = []
-    remaining_proteins: list[Protein] = []
-    remaining_protein_strings: list[str] = []
     for protein in proteins:
-        if isinstance(protein, Protein):
-            # collate these to init with id_gen
-            remaining_proteins.append(protein)
-        elif isinstance(protein, Complex):
-            used_ids.extend(list(protein.get_chains().keys()))
+        if isinstance(protein, Complex):
             normalized_complexes.append(protein)
+        elif isinstance(protein, Protein):
+            # a lone protein becomes a single-chain complex
+            id_gen = id_generator()
+            normalized_complexes.append(Complex(chains={next(id_gen): protein}))
         else:
             if isinstance(protein, bytes):
                 protein = protein.decode()
-            # handle ':'-delimited
+            # a ':'-delimited string is one complex, one chain per split sequence.
+            # chain ids only need to be unique within the complex, so use a fresh
+            # generator per complex.
+            id_gen = id_generator()
+            chains: dict[str, Protein] = {}
             for seq in protein.split(":"):
-                # collate these to init with id_gen
-                remaining_protein_strings.append(seq)
-
-    # auto generate the chain ids
-    id_gen = id_generator(used_ids)
-
-    # add the remaining proteins with id gen
-    for protein in remaining_proteins:
-        id = next(id_gen)
-        normalized_complexes.append(Complex(chains={id: protein}))
-
-    for protein_str in remaining_protein_strings:
-        id = next(id_gen)
-        protein = Protein(sequence=protein_str)
-        # protein strings default to null msa
-        protein.msa = Protein.NullMSA
-        normalized_complexes.append(Complex(chains={id: protein}))
+                chain = Protein(sequence=seq)
+                # protein strings default to null msa
+                chain.msa = Protein.NullMSA
+                chains[next(id_gen)] = chain
+            normalized_complexes.append(Complex(chains=chains))
 
     return normalized_complexes
 

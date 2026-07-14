@@ -6,6 +6,7 @@ isort:skip_file
 
 from .schemas import (
     Kernel,
+    KernelType,
     Constraints,
     Features,
     Dataset,

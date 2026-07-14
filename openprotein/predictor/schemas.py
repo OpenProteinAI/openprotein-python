@@ -10,9 +10,24 @@ from openprotein.common import FeatureType
 from openprotein.jobs import Job, JobStatus, JobType
 
 
+class KernelType(str, Enum):
+    """Kernel options for a GP predictor."""
+
+    LINEAR = "linear"
+    RBF = "rbf"
+    MATERN12 = "matern12"
+    MATERN32 = "matern32"
+    MATERN52 = "matern52"
+    PERIODIC = "periodic"
+    RATIONAL_QUADRATIC = "rational_quadratic"
+
+
 class Kernel(BaseModel):
     type: str
     multitask: bool = False
+    # period applies only to the periodic kernel; alpha only to rational_quadratic
+    period: float | None = None
+    alpha: float | None = None
 
 
 class Constraints(BaseModel):

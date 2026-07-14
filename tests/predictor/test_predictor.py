@@ -9,6 +9,7 @@ from openprotein import OpenProtein
 from openprotein.base import APISession
 from openprotein.common import FeatureType
 from openprotein.data.data import DataAPI
+from openprotein.errors import InvalidParameterError
 from openprotein.jobs import JobStatus, JobType
 from openprotein.predictor.predictor import PredictorAPI
 from openprotein.svd.models import SVDModel
@@ -67,3 +68,19 @@ def test_fit_gp_with_svd_model(
     # 3. Verification
     predictor_api.session.svd.get_svd.assert_called_once_with("svd-1")
     mock_fit_gp_post.assert_called_once()
+
+
+def test_fit_gp_kernel_validation(predictor_api: PredictorAPI, mock_session: MagicMock):
+    """Client-side fail-fast validation of kernel hyperparameters."""
+    predictor_api.session.data = MagicMock(spec=DataAPI)
+    predictor_api.session.data.get.return_value.measurement_names = ["p1"]
+    bad = [
+        dict(kernel="rbf", period=2.0),               # period on non-periodic
+        dict(kernel="periodic", alpha=2.0),           # alpha on non-rq
+        dict(kernel="periodic", period=0),            # period must be > 0
+        dict(kernel="rational_quadratic", alpha=-1),  # alpha must be > 0
+        dict(kernel="bogus"),                         # unknown kernel
+    ]
+    for kw in bad:
+        with pytest.raises(InvalidParameterError):
+            predictor_api.fit_gp("assay-1", ["p1"], "m1", feature_type="PLM", reduction="MEAN", **kw)

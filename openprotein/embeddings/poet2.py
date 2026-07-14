@@ -21,6 +21,7 @@ from .models import EmbeddingModel
 from .poet import PoETModel
 
 if TYPE_CHECKING:
+    from openprotein.predictor.schemas import KernelType
     from openprotein.models.structure_generation import StructureGenerationFuture
     from openprotein.predictor import PredictorModel
     from openprotein.svd import SVDModel
@@ -533,6 +534,9 @@ class PoET2Model(PoETModel, EmbeddingModel):
         query: str | bytes | Protein | Complex | Query | None = None,
         use_query_structure_in_decoder: bool = True,
         decoder_type: Literal["mlm", "clm"] | None = None,
+        kernel: "KernelType | str" = "rbf",
+        period: float | None = None,
+        alpha: float | None = None,
         **kwargs,
     ) -> "PredictorModel":
         """
@@ -544,6 +548,13 @@ class PoET2Model(PoETModel, EmbeddingModel):
             Assay to fit GP on.
         properties : list of str
             Properties in the assay to fit the GP on.
+        kernel : KernelType or str, optional
+            Kernel for the GP, e.g. "rbf", "matern52", "periodic",
+            "rational_quadratic". Defaults to "rbf".
+        period : float or None, optional
+            Period length; only valid for the "periodic" kernel (must be > 0).
+        alpha : float or None, optional
+            Scale-mixture parameter; only valid for "rational_quadratic" (must be > 0).
         prompt : str or Prompt or None, optional
             Prompt from an align workflow to condition PoET model.
         query : str or bytes or Protein or Complex or Query or None, optional
@@ -570,5 +581,8 @@ class PoET2Model(PoETModel, EmbeddingModel):
             query_id=query_id,
             use_query_structure_in_decoder=use_query_structure_in_decoder,
             decoder_type=decoder_type,
+            kernel=kernel,
+            period=period,
+            alpha=alpha,
             **kwargs,
         )

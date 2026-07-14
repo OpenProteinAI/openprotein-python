@@ -55,3 +55,20 @@ def test_predictor_fit_gp_post(mock_session: MagicMock):
     call_args, call_kwargs = mock_session.post.call_args
     assert call_kwargs["json"]["features"]["type"] == "PLM"
     assert call_kwargs["json"]["features"]["reduction"] == "mean"
+
+
+def test_predictor_fit_gp_post_kernel(mock_session: MagicMock):
+    """The kernel + hyperparameters are serialized into the request body."""
+    mock_session.post.return_value.json.return_value = {
+        "job_id": "job1",
+        "status": "SUCCESS",
+        "created_date": "2023-01-01T00:00:00",
+        "job_type": JobType.predictor_train.value,
+    }
+    common = dict(assay_id="a1", properties=["p1"], feature_type="PLM", model_id="m1")
+    api.predictor_fit_gp_post(mock_session, **common)
+    assert mock_session.post.call_args.kwargs["json"]["kernel"] == {"type": "rbf"}
+    api.predictor_fit_gp_post(mock_session, kernel="periodic", period=2.0, **common)
+    assert mock_session.post.call_args.kwargs["json"]["kernel"] == {"type": "periodic", "period": 2.0}
+    api.predictor_fit_gp_post(mock_session, kernel="rational_quadratic", alpha=3.0, **common)
+    assert mock_session.post.call_args.kwargs["json"]["kernel"] == {"type": "rational_quadratic", "alpha": 3.0}

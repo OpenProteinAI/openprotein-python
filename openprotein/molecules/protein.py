@@ -738,6 +738,7 @@ class Protein:
         # extract coordinates and plddt
         coordinates = np.full((len(chain_seq), _N_ATOM, 3), np.nan, dtype=np.float32)
         plddt = np.full(len(chain_seq), np.nan, dtype=np.float32)
+        max_atom_b_iso = -np.inf  # max B-factor over all atoms (for pLDDT check below)
         for residue_idx, residue in enumerate(residues):
             i = (
                 residue.label_seq - label_seq_offset
@@ -764,6 +765,8 @@ class Protein:
                         )
             for atom in residue.first_conformer():
                 atom_name = atom.name
+                if atom.b_iso != _NAN_BFACTOR_VALUE:
+                    max_atom_b_iso = max(max_atom_b_iso, atom.b_iso)
                 if residue.name == "MSE" and atom_name == "SE":
                     atom_name = "SD"
                 if (j := _ATOM_TYPE_TO_IDX.get(atom.name)) is None:
@@ -779,12 +782,12 @@ class Protein:
                 and np.isfinite(coordinates[i, _ATOM_TYPE_TO_IDX["CA"]]).all()
             ):
                 plddt[i] = 100.0
-        if (
-            maybe_use_bfactor_as_plddt
-            and not np.isnan(plddt).all()
-            and np.nanmax(plddt) <= 10
-        ):
-            plddt[~np.isnan(plddt)] = 100.0  # these were almost surely not plddts
+        if maybe_use_bfactor_as_plddt and not np.isnan(plddt).all():
+            # B-factors that are implausibly low (all <= 10) or impossible for pLDDT
+            # (any atom > 100) are almost surely not pLDDTs, so treat the structure
+            # as experimental and assign full confidence.
+            if np.nanmax(plddt) <= 10 or max_atom_b_iso > 100:
+                plddt[~np.isnan(plddt)] = 100.0
         assert np.isnan(plddt).all() or (
             (np.nanmin(plddt) >= 0) and (np.nanmax(plddt) <= 100)
         )

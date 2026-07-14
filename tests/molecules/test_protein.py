@@ -118,6 +118,69 @@ def test_protein_serde_binding(binding: str):
     )
 
 
+def _cif_with_b_isos(b_iso_by_atom: dict[str, float]) -> str:
+    # Build a 3-residue ALA chain with the given per-atom B-factors and no
+    # resolution/_exptl.method, serialized to CIF. The "xp" polymer-subchain suffix is
+    # stripped so the chain reads back as "A", matching normalized structure input.
+    structure = gemmi.Structure()
+    model = gemmi.Model("1")
+    chain = gemmi.Chain("A")
+    coords = {
+        "N": (0.0, 0.0, 0.0),
+        "CA": (1.5, 0.0, 0.0),
+        "C": (2.0, 1.4, 0.0),
+        "O": (1.3, 2.4, 0.0),
+        "CB": (2.1, -0.8, 1.2),
+    }
+    for n in range(1, 4):
+        residue = gemmi.Residue()
+        residue.name = "ALA"
+        residue.seqid = gemmi.SeqId(n, " ")
+        for name, (x, y, z) in coords.items():
+            atom = gemmi.Atom()
+            atom.name = name
+            atom.element = gemmi.Element(name[0])
+            atom.pos = gemmi.Position(x + 3.8 * (n - 1), y, z)
+            atom.b_iso = b_iso_by_atom[name]
+            residue.add_atom(atom)
+        chain.add_residue(residue)
+    model.add_chain(chain)
+    structure.add_model(model)
+    structure.setup_entities()
+    structure.assign_label_seq_id()
+    for mdl in structure:
+        for subchain in mdl.subchains():
+            if subchain.subchain_id().endswith("xp"):
+                for residue in subchain:
+                    residue.subchain = residue.subchain.removesuffix("xp")
+    for entity in structure.entities:
+        entity.subchains = [s.removesuffix("xp") for s in entity.subchains]
+    return structure.make_mmcif_block(
+        groups=gemmi.MmcifOutputGroups(True, chem_comp=False)
+    ).as_string()
+
+
+def test_protein_from_string_bfactor_over_100_treated_as_experimental():
+    # pLDDT is bounded to [0, 100], so a B-factor > 100 cannot be pLDDT. A structure
+    # lacking resolution/_exptl.method but with such B-factors must be treated as
+    # experimental (pLDDT 100), not parsed as pLDDT (which would fail the range assert).
+    cif = _cif_with_b_isos({"N": 150, "CA": 150, "C": 150, "O": 150, "CB": 150})
+    protein = Protein.from_string(cif, format="cif", chain_id="A")
+    assert np.allclose(protein.plddt[~np.isnan(protein.plddt)], 100.0)
+    # explicit opt-in is still respected: out-of-range values are not silently rescued
+    with pytest.raises(AssertionError):
+        Protein.from_string(cif, format="cif", chain_id="A", use_bfactor_as_plddt=True)
+
+
+def test_protein_from_string_bfactor_over_100_considers_all_atoms_not_just_ca():
+    # The >100 check must consider all atoms, not just CA: here the CA B-factors are in
+    # range (50) but a side-chain atom is 150, so it is still not pLDDT and must be
+    # treated as experimental. A CA-only check would miss it and yield pLDDT 50.
+    cif = _cif_with_b_isos({"N": 50, "CA": 50, "C": 50, "O": 50, "CB": 150})
+    protein = Protein.from_string(cif, format="cif", chain_id="A")
+    assert np.allclose(protein.plddt[~np.isnan(protein.plddt)], 100.0)
+
+
 @pytest.mark.parametrize(
     "range_str,seq_str",
     (("1", "X"), ("2", "XX"), ("1..1", "X"), ("3..3", "XXX"), ("1..3", "X??")),

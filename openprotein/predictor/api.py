@@ -109,6 +109,9 @@ def predictor_fit_gp_post(
     reduction: str | None = None,
     name: str | None = None,
     description: str | None = None,
+    kernel: str = "rbf",
+    period: float | None = None,
+    alpha: float | None = None,
     **kwargs,
 ) -> PredictorTrainJob:
     """
@@ -132,6 +135,13 @@ def predictor_fit_gp_post(
         Optional name of predictor model. Randomly generated if not provided.
     description: str | None
         Optional description to attach to the model.
+    kernel : str
+        Kernel to train the GP with (e.g. "rbf", "matern52", "periodic",
+        "rational_quadratic"). default = "rbf".
+    period : float | None
+        Period length for the periodic kernel. default = None.
+    alpha : float | None
+        Scale-mixture parameter for the rational_quadratic kernel. default = None.
     kwargs:
         Additional keyword arguments to be passed to foundational models, e.g. prompt_id for PoET models.
 
@@ -142,6 +152,12 @@ def predictor_fit_gp_post(
     """
     endpoint = PATH_PREFIX + "/gp"
 
+    kernel_spec: dict = {"type": kernel}
+    if period is not None:
+        kernel_spec["period"] = period
+    if alpha is not None:
+        kernel_spec["alpha"] = alpha
+
     body = {
         "dataset": {
             "assay_id": assay_id,
@@ -151,10 +167,7 @@ def predictor_fit_gp_post(
             "type": feature_type,
             "model_id": model_id,
         },
-        "kernel": {
-            "type": "rbf",
-            # "multitask": True
-        },
+        "kernel": kernel_spec,
     }
     if reduction is not None:
         body["features"]["reduction"] = reduction
