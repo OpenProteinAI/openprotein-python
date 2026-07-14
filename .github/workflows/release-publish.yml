@@ -1,0 +1,156 @@
+# Publish an openprotein-python release.
+#
+# Triggered by merging a pull request labeled `release`. The version is read from
+# .release-please-manifest.json; on merge it creates + pushes the vX.Y.Z tag (so
+# hatch-vcs can derive the version), builds the wheel + sdist + conda package,
+# publishes to PyPI via OIDC trusted publishing (no token), uploads the conda
+# package to anaconda.org, and cuts the GitHub release with all three assets.
+#
+# Every build/release job checks out the merge commit with fetch-depth: 0 so
+# hatch-vcs and the changelog compare-link have full tag history.
+#
+# Required repo config:
+#   - PyPI trusted publisher registered for OpenProteinAI/openprotein-python +
+#     workflow release-publish.yml (no secret needed for PyPI).
+#   - secret  ANACONDA_TOKEN  — anaconda.org API token for `anaconda upload`.
+#   - var     ANACONDA_OWNER  — anaconda.org user/org (channel) to upload to.
+
+name: release-publish
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  build:
+    # Only when a PR labeled `release` is actually merged.
+    if: >-
+      github.event.pull_request.merged == true &&
+      contains(github.event.pull_request.labels.*.name, 'release')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # push the release tag
+    defaults:
+      run:
+        shell: bash -el {0}
+    outputs:
+      tag: ${{ steps.resolve.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
+
+      - name: Resolve version + create tag
+        id: resolve
+        run: |
+          TAG="v$(jq -r '."."' .release-please-manifest.json)"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          git tag -a "${TAG}" -m "${TAG}"
+          git push origin "${TAG}"
+
+      - name: Set up conda (conda-build + anaconda-client)
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          channels: conda-forge
+          python-version: "3.11"
+
+      - name: Install build tooling
+        run: |
+          conda install -y -c conda-forge conda-build anaconda-client
+          pip install hatch
+
+      - name: Build wheel + sdist
+        run: hatch build
+
+      - name: Stage python dists
+        run: |
+          mkdir -p pypi-dist
+          cp dist/*.whl dist/*.tar.gz pypi-dist/
+
+      - name: Build conda package
+        run: |
+          hatch build -t conda
+          mkdir -p conda-dist
+          cp dist/conda/noarch/*.conda conda-dist/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pypi-dist
+          path: pypi-dist/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: conda-dist
+          path: conda-dist/
+
+  pypi:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # OIDC trusted publishing
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: pypi-dist
+          path: dist/
+      - name: Publish to PyPI (OIDC)
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  conda:
+    needs: build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: conda-dist
+          path: conda-dist/
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          channels: conda-forge
+      - name: Upload to anaconda.org
+        env:
+          ANACONDA_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
+          ANACONDA_OWNER: ${{ vars.ANACONDA_OWNER }}
+        run: |
+          conda install -y -c conda-forge anaconda-client
+          anaconda -t "$ANACONDA_TOKEN" upload --user "$ANACONDA_OWNER" --force conda-dist/*.conda
+
+  github-release:
+    needs: [build, pypi, conda]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ needs.build.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: pypi-dist
+          path: dist/
+      - uses: actions/download-artifact@v4
+        with:
+          name: conda-dist
+          path: dist/
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prev=$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || echo "")
+          if [ -n "$prev" ]; then
+            notes="**Full Changelog**: https://github.com/${GITHUB_REPOSITORY}/compare/${prev}...${TAG}"
+          else
+            notes="Release ${TAG}"
+          fi
+          gh release create "${TAG}" \
+            --title "${TAG}" \
+            --notes "${notes}" \
+            dist/*.whl dist/*.tar.gz dist/*.conda
