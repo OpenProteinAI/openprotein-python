@@ -158,14 +158,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # Pull this version's bullet points from the (sanitized) CHANGELOG.
+          section=$(awk -v hdr="## ${TAG#v} " 'index($0,hdr)==1{c=1;next} c&&/^## /{exit} c{print}' CHANGELOG.md | sed '/./,$!d')
           prev=$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || echo "")
+          notes="${section:-Release ${TAG}}"
           if [ -n "$prev" ]; then
-            notes="**Full Changelog**: https://github.com/${GITHUB_REPOSITORY}/compare/${prev}...${TAG}"
-          else
-            notes="Release ${TAG}"
+            notes="${notes}
+
+          **Full Changelog**: https://github.com/${GITHUB_REPOSITORY}/compare/${prev}...${TAG}"
           fi
           if gh release view "${TAG}" >/dev/null 2>&1; then
-            echo "Release ${TAG} exists; uploading assets (re-run)."
+            echo "Release ${TAG} exists; updating notes + assets (re-run)."
+            gh release edit "${TAG}" --notes "${notes}"
             gh release upload "${TAG}" dist/*.whl dist/*.tar.gz dist/*.conda --clobber
           else
             gh release create "${TAG}" \
