@@ -56,6 +56,10 @@ jobs:
             git tag -a "${TAG}" -m "${TAG}"
             git push origin "${TAG}"
           fi
+          # Build from the tag so hatch-vcs produces the exact release version.
+          # (On a manual re-run, main may have advanced past the tag, which would
+          # otherwise yield a rejected dev/local version like 0.16.2.dev1+g….)
+          git checkout -q "refs/tags/${TAG}"
 
       - name: Set up conda (conda-build + anaconda-client)
         uses: conda-incubator/setup-miniconda@v3
