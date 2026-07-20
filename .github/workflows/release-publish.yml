@@ -20,13 +20,15 @@ name: release-publish
 on:
   pull_request:
     types: [closed]
+  workflow_dispatch: {} # manual re-run (reads the version from the manifest on main)
 
 jobs:
   build:
-    # Only when a PR labeled `release` is actually merged.
+    # A merged PR labeled `release`, or a manual dispatch.
     if: >-
-      github.event.pull_request.merged == true &&
-      contains(github.event.pull_request.labels.*.name, 'release')
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.merged == true &&
+       contains(github.event.pull_request.labels.*.name, 'release'))
     runs-on: ubuntu-latest
     permissions:
       contents: write # push the release tag
@@ -38,12 +40,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
           fetch-depth: 0
 
       - name: Resolve version + create tag
         id: resolve
         run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           TAG="v$(jq -r '."."' .release-please-manifest.json)"
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
           git tag -a "${TAG}" -m "${TAG}"
