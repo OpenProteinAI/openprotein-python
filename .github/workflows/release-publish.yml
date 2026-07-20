@@ -46,12 +46,16 @@ jobs:
       - name: Resolve version + create tag
         id: resolve
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           TAG="v$(jq -r '."."' .release-please-manifest.json)"
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-          git tag -a "${TAG}" -m "${TAG}"
-          git push origin "${TAG}"
+          if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
+            echo "Tag ${TAG} already exists; skipping tag creation (re-run)."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -a "${TAG}" -m "${TAG}"
+            git push origin "${TAG}"
+          fi
 
       - name: Set up conda (conda-build + anaconda-client)
         uses: conda-incubator/setup-miniconda@v3
@@ -101,6 +105,8 @@ jobs:
           path: dist/
       - name: Publish to PyPI (OIDC)
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true # idempotent on re-run
 
   conda:
     needs: build
@@ -154,7 +160,12 @@ jobs:
           else
             notes="Release ${TAG}"
           fi
-          gh release create "${TAG}" \
-            --title "${TAG}" \
-            --notes "${notes}" \
-            dist/*.whl dist/*.tar.gz dist/*.conda
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "Release ${TAG} exists; uploading assets (re-run)."
+            gh release upload "${TAG}" dist/*.whl dist/*.tar.gz dist/*.conda --clobber
+          else
+            gh release create "${TAG}" \
+              --title "${TAG}" \
+              --notes "${notes}" \
+              dist/*.whl dist/*.tar.gz dist/*.conda
+          fi
