@@ -5,6 +5,7 @@ import pytest
 
 from openprotein.align.api import (
     abnumber_post,
+    antibody_schema_get,
     clustalo_post,
     get_align_job_inputs,
     get_input,
@@ -14,7 +15,7 @@ from openprotein.align.api import (
     msa_post,
     prompt_post,
 )
-from openprotein.align.schemas import AlignType, MSASamplingMethod
+from openprotein.align.schemas import AlignType, MSASamplingMethod, UnnumberedPolicy
 from openprotein.base import APISession
 from openprotein.errors import HTTPError, InvalidParameterError, MissingParameterError
 from openprotein.jobs import Job, JobStatus, JobType
@@ -163,6 +164,63 @@ def test_abnumber_post_with_drop_minority_chains(
 
     args, kwargs = mock_session.post.call_args
     assert kwargs["params"]["drop_minority_chains"] is True
+
+
+def test_abnumber_post_default_unnumbered_policy(
+    mock_session: MagicMock, sample_job_dict: dict
+):
+    """abnumber_post should default unnumbered_policy to error, so dropping
+    residues is always a choice the caller made."""
+    mock_session.post.return_value.json.return_value = sample_job_dict
+    abnumber_post(mock_session, io.BytesIO(b"test"))
+
+    _args, kwargs = mock_session.post.call_args
+    assert kwargs["params"]["unnumbered_policy"] == "error"
+
+
+@pytest.mark.parametrize("policy", ["drop", "retain"])
+def test_abnumber_post_forwards_unnumbered_policy(
+    mock_session: MagicMock, sample_job_dict: dict, policy: str
+):
+    """abnumber_post should forward the policy as its wire value."""
+    mock_session.post.return_value.json.return_value = sample_job_dict
+    abnumber_post(mock_session, io.BytesIO(b"test"), unnumbered_policy=policy)
+
+    _args, kwargs = mock_session.post.call_args
+    assert kwargs["params"]["unnumbered_policy"] == policy
+
+
+def test_abnumber_post_accepts_policy_enum(
+    mock_session: MagicMock, sample_job_dict: dict
+):
+    """The enum and its string value are interchangeable on the wire."""
+    mock_session.post.return_value.json.return_value = sample_job_dict
+    abnumber_post(
+        mock_session, io.BytesIO(b"test"), unnumbered_policy=UnnumberedPolicy.RETAIN
+    )
+
+    _args, kwargs = mock_session.post.call_args
+    assert kwargs["params"]["unnumbered_policy"] == "retain"
+
+
+def test_abnumber_post_invalid_unnumbered_policy(mock_session: MagicMock):
+    """abnumber_post rejects an unknown policy before submitting."""
+    with pytest.raises(
+        Exception, match="Unnumbered residue policy maybe not recognized"
+    ):
+        abnumber_post(mock_session, io.BytesIO(), unnumbered_policy="maybe")
+
+
+def test_antibody_schema_get(mock_session: MagicMock):
+    """antibody_schema_get returns the job's extras as sent."""
+    extras = {"chains": [{"chain_type": "H"}], "warnings": []}
+    mock_session.get.return_value.json.return_value = extras
+
+    assert antibody_schema_get(mock_session, "job123") == extras
+
+    args, kwargs = mock_session.get.call_args
+    assert args[0] == "v1/align/antibody_schema"
+    assert kwargs["params"] == {"job_id": "job123"}
 
 
 def test_prompt_post_valid(mock_session: MagicMock, sample_job_dict: dict):

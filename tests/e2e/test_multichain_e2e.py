@@ -19,22 +19,52 @@ Coverage:
     length, ":" frozen at its column, never introduced elsewhere).
   * alignment jobs (mafft / clustalo / abnumber) on multi-chain inputs: each
     chain is aligned independently and rejoined with a single ":" column, and
-    gap-stripping each chain recovers the input chains.
+    gap-stripping each chain recovers the input chains. Chain order is
+    positional, so "L:H" is as valid as "H:L".
+  * multi-chain input that cannot be aligned: ragged chain counts and empty
+    chain positions are refused at submission; abnumber
+    ``drop_minority_chains`` and a chain position holding more than one chain
+    type fail the job.
+  * prompt sampling from a multi-chain MSA: sampling scores residue columns, so
+    the ":" break is dropped from the encoded MSA and restored in the sampled
+    rows. Every context entry comes back as a Complex with the seed's chain
+    layout, across the sequence and residue budgets, ensemble replicates,
+    similarity bounds, and seed inclusion. Covers both a search-built MSA and
+    one a user uploads directly (the non-a3m reader), including that reader's
+    validation of a misaligned chain break.
+  * prompt context entries may leave a chain slot empty -- a homolog covering
+    one chain of the complex -- and only an entry with no residues at all is
+    refused.
+  * abnumber ``unnumbered_policy`` on a paired row whose heavy chain carries a
+    constant region: the default fails the job, ``drop`` aligns the variable
+    domains alone, and ``retain`` keeps every residue. Either way the job
+    reports what it did in ``get_warnings()``, scoped to the chain position
+    it affected.
 """
 
 from __future__ import annotations
 
+import io
+
 import numpy as np
 import pandas as pd
 import pytest
-
 from openprotein import OpenProtein
-from openprotein.align.schemas import AbNumberScheme
+from openprotein.align.msa import MSAFuture
+from openprotein.align.schemas import (
+    AbNumberScheme,
+    MSASamplingMethod,
+    UnnumberedPolicy,
+)
 from openprotein.common.reduction import ReductionType
 from openprotein.design import ModelCriterion
+from openprotein.errors import HTTPError, InvalidParameterError
+from openprotein.molecules import Complex
+
 from tests.e2e.config import scaled_timeout
 from tests.e2e.correctness.support import fresh_prompt, require_embedding_model
 from tests.utils.sequences import (
+    ANTIBODY_HEAVY_CONSTANT_SEQUENCE,
     ANTIBODY_HEAVY_SEQUENCE,
     ANTIBODY_LIGHT_SEQUENCE,
     mutate_sequence,
@@ -469,18 +499,403 @@ def test_multichain_clustalo_alignment(session: OpenProtein):
     _assert_multichain_alignment(list(future.get()), seqs)
 
 
+def _paired_antibodies(n: int, *, heavy_first: bool = True) -> list[str]:
+    """``n`` paired antibody rows. Substitution-only mutation keeps every chain
+    numberable (indels would break the variable-domain framing)."""
+    first, second = (
+        (ANTIBODY_HEAVY_SEQUENCE, ANTIBODY_LIGHT_SEQUENCE)
+        if heavy_first
+        else (ANTIBODY_LIGHT_SEQUENCE, ANTIBODY_HEAVY_SEQUENCE)
+    )
+    return [
+        f"{mutate_sequence(first, mutation_rate=0.02)}:"
+        f"{mutate_sequence(second, mutation_rate=0.02)}"
+        for _ in range(n)
+    ]
+
+
 def test_multichain_abnumber_alignment(session: OpenProtein):
     """AbNumber numbers each chain of a paired heavy:light antibody independently
-    and rejoins with the ":" column. Substitution-only mutation keeps every chain
-    numberable (indels would break the variable-domain framing)."""
-    seqs = [
-        f"{mutate_sequence(ANTIBODY_HEAVY_SEQUENCE, mutation_rate=0.02)}:"
-        f"{mutate_sequence(ANTIBODY_LIGHT_SEQUENCE, mutation_rate=0.02)}"
-        for _ in range(3)
-    ]
+    and rejoins with the ":" column."""
+    seqs = _paired_antibodies(3)
 
     future = session.align.abnumber(sequences=seqs, scheme=AbNumberScheme.CHOTHIA)
     future.wait_until_done(verbose=True, timeout=ALIGN_TIMEOUT)
     assert future.status == "SUCCESS"
 
     _assert_multichain_alignment(list(future.get()), seqs)
+    assert future.get_warnings() == [], "fully numbered input has nothing to report"
+
+
+def test_multichain_abnumber_light_heavy_order(session: OpenProtein):
+    """Chain order is positional, so "L:H" aligns as readily as "H:L"."""
+    seqs = _paired_antibodies(3, heavy_first=False)
+
+    future = session.align.abnumber(sequences=seqs, scheme=AbNumberScheme.CHOTHIA)
+    future.wait_until_done(verbose=True, timeout=ALIGN_TIMEOUT)
+    assert future.status == "SUCCESS"
+
+    _assert_multichain_alignment(list(future.get()), seqs)
+
+
+# --------------------------------------------------------------------------- #
+# Unnumbered residues on multi-chain input
+# --------------------------------------------------------------------------- #
+#
+# ANARCI numbers the variable domain only, so a heavy chain carrying its
+# constant region has residues with no antibody position. ``unnumbered_policy``
+# decides their fate, per chain position: here only the heavy position is
+# affected, the light one is numbered end to end.
+
+
+def _paired_antibodies_with_constant(n: int) -> list[str]:
+    """``n`` paired rows whose heavy chain runs past the variable domain into
+    CH1, so every heavy position carries unnumbered residues."""
+    return [
+        f"{mutate_sequence(ANTIBODY_HEAVY_SEQUENCE, mutation_rate=0.02)}"
+        f"{ANTIBODY_HEAVY_CONSTANT_SEQUENCE}:"
+        f"{mutate_sequence(ANTIBODY_LIGHT_SEQUENCE, mutation_rate=0.02)}"
+        for _ in range(n)
+    ]
+
+
+def _variable_domains_only(seqs: list[str]) -> set[str]:
+    """``seqs`` with the constant region cut off the heavy position."""
+    return {
+        ":".join(c.replace(ANTIBODY_HEAVY_CONSTANT_SEQUENCE, "") for c in s.split(":"))
+        for s in seqs
+    }
+
+
+def _assert_unnumbered_warning(future, code: str, seqs: list[str]) -> None:
+    """The job reports the unnumbered residues under ``code``, scoped to the
+    heavy position: only chain 0 is affected, and every constant region counts
+    towards the total."""
+    (warning,) = future.get_warnings()
+    assert warning.code == code
+    assert warning.message
+
+    metadata = warning.metadata
+    assert metadata is not None
+    assert metadata["chain_count"] == 1, "only the heavy position is affected"
+    assert metadata["residue_count"] == len(ANTIBODY_HEAVY_CONSTANT_SEQUENCE) * len(
+        seqs
+    )
+
+    (chain,) = metadata["chains"]
+    assert chain["chain_index"] == 0
+    assert chain["sequence_count"] == len(seqs)
+    assert chain["max_prefix_length"] == 0
+    assert chain["max_suffix_length"] == len(ANTIBODY_HEAVY_CONSTANT_SEQUENCE)
+
+
+def test_multichain_abnumber_unnumbered_error_is_the_default(session: OpenProtein):
+    """Residues outside the numbered domain fail the job unless the caller picks
+    a policy, so they are never discarded by default."""
+    seqs = _paired_antibodies_with_constant(2)
+
+    future = session.align.abnumber(sequences=seqs, scheme=AbNumberScheme.CHOTHIA)
+    future.wait_until_done(verbose=True, timeout=ALIGN_TIMEOUT)
+
+    assert future.status == "FAILURE"
+
+
+def test_multichain_abnumber_unnumbered_drop(session: OpenProtein):
+    """``drop`` aligns the numbered variable domains and discards the rest, so
+    gap-stripping recovers the input minus its constant region."""
+    seqs = _paired_antibodies_with_constant(3)
+
+    future = session.align.abnumber(
+        sequences=seqs,
+        scheme=AbNumberScheme.CHOTHIA,
+        unnumbered_policy=UnnumberedPolicy.DROP,
+    )
+    future.wait_until_done(verbose=True, timeout=ALIGN_TIMEOUT)
+    assert future.status == "SUCCESS"
+
+    with pytest.warns(UserWarning, match="UNNUMBERED_RESIDUES_DROPPED"):
+        rows = list(future.get())
+
+    _assert_multichain_alignment(rows, list(_variable_domains_only(seqs)))
+    _assert_unnumbered_warning(future, "UNNUMBERED_RESIDUES_DROPPED", seqs)
+
+
+def test_multichain_abnumber_unnumbered_retain(session: OpenProtein):
+    """``retain`` keeps every unnumbered residue, so the ":" layout still holds
+    and gap-stripping recovers the full input including the constant region."""
+    seqs = _paired_antibodies_with_constant(3)
+
+    future = session.align.abnumber(
+        sequences=seqs,
+        scheme=AbNumberScheme.CHOTHIA,
+        unnumbered_policy=UnnumberedPolicy.RETAIN,
+    )
+    future.wait_until_done(verbose=True, timeout=ALIGN_TIMEOUT)
+    assert future.status == "SUCCESS"
+
+    with pytest.warns(UserWarning, match="UNNUMBERED_RESIDUES_RETAINED"):
+        rows = list(future.get())
+
+    _assert_multichain_alignment(rows, seqs)
+
+    aligned = [row[1] for row in rows]
+    assert all(ANTIBODY_HEAVY_CONSTANT_SEQUENCE in s for s in aligned), (
+        "retain pads the constant region against the domain boundary, so it "
+        "stays contiguous"
+    )
+
+    _assert_unnumbered_warning(future, "UNNUMBERED_RESIDUES_RETAINED", seqs)
+
+
+# --------------------------------------------------------------------------- #
+# Multi-chain layout and semantics that are refused
+# --------------------------------------------------------------------------- #
+#
+# Layout violations are structural and are caught at submission, before a job
+# exists. Chain-type violations need ANARCI numbering, so they surface as a
+# failed job.
+
+
+def test_multichain_ragged_chain_counts_rejected(session: OpenProtein):
+    """Chain positions are aligned independently and rejoined by index, so every
+    row has to carry the same number of chains."""
+    heavy0, light0 = _generic_chains()
+
+    with pytest.raises(HTTPError, match="Status code 400"):
+        session.align.mafft(sequences=[f"{heavy0}:{light0}", heavy0])
+
+
+def test_multichain_empty_chain_rejected(session: OpenProtein):
+    """A trailing ":" leaves a chain position with no residues in it."""
+    heavy0, light0 = _generic_chains()
+
+    with pytest.raises(HTTPError, match="Status code 400"):
+        session.align.mafft(sequences=[f"{heavy0}:", f"{heavy0}:{light0}"])
+
+
+def test_multichain_abnumber_drop_minority_chains_rejected(session: OpenProtein):
+    """``drop_minority_chains`` removes whole rows, which the index-wise rejoin
+    cannot honour, so it is only available for single-chain input."""
+    seqs = _paired_antibodies(2)
+
+    future = session.align.abnumber(
+        sequences=seqs,
+        scheme=AbNumberScheme.CHOTHIA,
+        drop_minority_chains=True,
+    )
+    future.wait_until_done(verbose=True, timeout=ALIGN_TIMEOUT)
+
+    assert future.status == "FAILURE"
+
+
+def test_multichain_abnumber_mixed_chain_types_rejected(session: OpenProtein):
+    """One chain position is numbered as a single alignment, so every row must
+    agree on that position's chain type."""
+    heavy = mutate_sequence(ANTIBODY_HEAVY_SEQUENCE, mutation_rate=0.02)
+    light = mutate_sequence(ANTIBODY_LIGHT_SEQUENCE, mutation_rate=0.02)
+    other_light = mutate_sequence(ANTIBODY_LIGHT_SEQUENCE, mutation_rate=0.02)
+
+    future = session.align.abnumber(
+        sequences=[f"{heavy}:{light}", f"{other_light}:{light}"],
+        scheme=AbNumberScheme.CHOTHIA,
+    )
+    future.wait_until_done(verbose=True, timeout=ALIGN_TIMEOUT)
+
+    assert future.status == "FAILURE"
+
+
+# --------------------------------------------------------------------------- #
+# Prompt sampling from multi-chain MSAs
+# --------------------------------------------------------------------------- #
+#
+# Sampling scores residue columns, so the ":" break is dropped from the encoded
+# MSA and restored in the sampled rows. Every sampled context entry therefore
+# carries the seed's chain layout and comes back as a Complex.
+
+PROMPT_TIMEOUT = scaled_timeout(4.0)
+PROMPT_CONTEXT_SIZE = 8
+
+
+def _multichain_msa(session: OpenProtein, chain_a: str, chain_b: str) -> MSAFuture:
+    """MSA search seeded with a two-chain complex."""
+    return session.align.create_msa(seed=f"{chain_a}:{chain_b}".encode())
+
+
+def _uploaded_multichain_msa(
+    session: OpenProtein, query: str, rows: list[str]
+) -> MSAFuture:
+    """A ready-made multi-chain MSA a user uploads directly, bypassing homology
+    search. This is the non-a3m path: a plain FASTA block, no insertions."""
+    records = [f">query\n{query}"] + [
+        f">homolog_{i}\n{row}" for i, row in enumerate(rows)
+    ]
+    fasta = ("\n".join(records) + "\n").encode()
+    return session.align.upload_msa(io.BytesIO(fasta))
+
+
+def _assert_multichain_prompt(replicates, n_chains: int = 2) -> None:
+    """Every sampled context entry carries the seed's chain layout: a Complex of
+    ``n_chains`` protein chains, none of them holding a further ":"."""
+    assert replicates, "prompt returned no replicates"
+    for entries in replicates:
+        assert entries, "prompt replicate has no context entries"
+        for entry in entries:
+            assert isinstance(entry, Complex), (
+                f"multi-chain context entry came back as {type(entry).__name__}"
+            )
+            proteins = entry.get_proteins()
+            assert len(proteins) == n_chains, (
+                f"expected {n_chains} chains, got {len(proteins)}"
+            )
+            assert len(entry.get_chains()) == len(proteins), (
+                "non-protein chain in prompt"
+            )
+            for chain in proteins.values():
+                assert b":" not in chain.sequence, f"chain retains a break: {chain!r}"
+
+
+def _sample(msa: MSAFuture, **kwargs):
+    """Sample a prompt and return its replicates, asserting the job succeeded."""
+    prompt = msa.sample_prompt(**kwargs)
+    prompt.wait_until_done(verbose=True, timeout=PROMPT_TIMEOUT)
+    assert prompt.status == "SUCCESS"
+    return prompt.get()
+
+
+def test_multichain_prompt_sampling(session: OpenProtein):
+    """Sampling a multi-chain MSA yields context entries with the seed's layout."""
+    chain_a, chain_b = _generic_chains()
+    msa = _multichain_msa(session, chain_a, chain_b)
+
+    _assert_multichain_prompt(_sample(msa, num_sequences=PROMPT_CONTEXT_SIZE))
+
+
+def test_multichain_prompt_sampling_by_residues(session: OpenProtein):
+    """The residue budget counts the break column, so a token-bounded prompt keeps
+    the same chain layout as a sequence-bounded one."""
+    chain_a, chain_b = _generic_chains()
+    msa = _multichain_msa(session, chain_a, chain_b)
+
+    _assert_multichain_prompt(_sample(msa, num_residues=2048))
+
+
+def test_multichain_prompt_sampling_ensemble(session: OpenProtein):
+    """Each ensemble replicate is sampled with its own seed and keeps the layout."""
+    chain_a, chain_b = _generic_chains()
+    msa = _multichain_msa(session, chain_a, chain_b)
+
+    replicates = _sample(msa, num_sequences=PROMPT_CONTEXT_SIZE, num_ensemble_prompts=3)
+    assert len(replicates) == 3
+    _assert_multichain_prompt(replicates)
+
+
+def test_multichain_prompt_sampling_similarity_bounds(session: OpenProtein):
+    """Similarity bounds are measured over residue columns. A break counted as a
+    matching column shifts every row's similarity toward the seed's, which is what
+    these bounds gate on."""
+    chain_a, chain_b = _generic_chains()
+    msa = _multichain_msa(session, chain_a, chain_b)
+
+    _assert_multichain_prompt(
+        _sample(
+            msa,
+            num_sequences=PROMPT_CONTEXT_SIZE,
+            max_similarity=0.95,
+            min_similarity=0.2,
+        )
+    )
+
+
+def test_multichain_prompt_sampling_random_method(session: OpenProtein):
+    """RANDOM skips the homology weights, so it isolates the similarity filter."""
+    chain_a, chain_b = _generic_chains()
+    msa = _multichain_msa(session, chain_a, chain_b)
+
+    _assert_multichain_prompt(
+        _sample(
+            msa,
+            num_sequences=PROMPT_CONTEXT_SIZE,
+            method=MSASamplingMethod.RANDOM,
+        )
+    )
+
+
+def test_multichain_prompt_sampling_includes_seed(session: OpenProtein):
+    """``always_include_seed_sequence`` puts the seed complex in the context with
+    both chains at full length."""
+    chain_a, chain_b = _generic_chains()
+    msa = _multichain_msa(session, chain_a, chain_b)
+
+    replicates = _sample(
+        msa,
+        num_sequences=PROMPT_CONTEXT_SIZE,
+        always_include_seed_sequence=True,
+    )
+    _assert_multichain_prompt(replicates)
+
+    wanted = sorted([chain_a, chain_b])
+    found = [
+        sorted(p.sequence.decode() for p in entry.get_proteins().values())
+        for entries in replicates
+        for entry in entries
+    ]
+    assert wanted in found, "seed complex is not in the sampled context"
+
+
+def test_multichain_prompt_sampling_from_uploaded_msa(session: OpenProtein):
+    """A user-uploaded MSA has no homology-search a3m behind it -- it hits the
+    worker's plain-FASTA/CSV reader, which has to drop the chain break itself
+    just like the a3m reader does."""
+    chain_a, chain_b = _generic_chains()
+    query = f"{chain_a}:{chain_b}"
+    homologs = _multichain_same_length_dataset(10, chain_a, chain_b)
+    msa = _uploaded_multichain_msa(session, query, homologs)
+
+    _assert_multichain_prompt(_sample(msa, num_sequences=PROMPT_CONTEXT_SIZE))
+
+
+def test_multichain_prompt_uploaded_msa_misaligned_break_fails(session: OpenProtein):
+    """Every row of an uploaded MSA has to place its break at the query's column.
+    A homolog whose break lands one column early (same total width, wrong chain
+    boundary) fails the prompt job instead of sampling on a silently misaligned
+    complex."""
+    chain_a, chain_b = _generic_chains()
+    query = f"{chain_a}:{chain_b}"
+    good = _multichain_same_length_dataset(5, chain_a, chain_b)
+    misaligned = f"{chain_a[:-1]}:{chain_a[-1]}{chain_b}"
+    msa = _uploaded_multichain_msa(session, query, good + [misaligned])
+
+    prompt = msa.sample_prompt(num_sequences=PROMPT_CONTEXT_SIZE)
+    prompt.wait_until_done(verbose=True, timeout=PROMPT_TIMEOUT)
+
+    assert prompt.status == "FAILURE"
+
+
+def test_multichain_prompt_empty_chain_round_trips(session: OpenProtein):
+    """A chain position with no residues is an empty slot, and it survives the
+    round trip.
+
+    Sampling emits this shape for a homolog that covers only one chain of the
+    seed: the absent chain gap-strips to an empty segment, so the row renders as
+    ":SEQ". The empty slot is what says which chain the residues cover, so it has
+    to reach the service and come back rather than being refused or collapsed.
+    """
+    chain_a, _chain_b = _generic_chains()
+
+    for sequence, expected in [
+        (f":{chain_a}", [b"", chain_a.encode()]),
+        (f"{chain_a}:", [chain_a.encode(), b""]),
+    ]:
+        prompt = session.prompt.create_prompt([sequence])
+        (entry,) = prompt.get()[0]
+        assert isinstance(entry, Complex), (
+            f"empty-slot entry came back as {type(entry).__name__}"
+        )
+        assert [p.sequence for p in entry.get_proteins().values()] == expected
+
+
+def test_multichain_prompt_entry_without_residues_rejected(session: OpenProtein):
+    """An entry that is empty in every chain carries nothing, so the client refuses
+    it rather than creating a prompt with a contentless context entry."""
+    with pytest.raises(InvalidParameterError, match="no residues"):
+        session.prompt.create_prompt([":"])

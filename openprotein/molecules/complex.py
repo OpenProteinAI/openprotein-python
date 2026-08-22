@@ -1,6 +1,6 @@
 import gzip
 import operator
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping, Sequence, MutableMapping
 from functools import reduce
 from pathlib import Path
 from types import MappingProxyType
@@ -20,8 +20,14 @@ if TYPE_CHECKING:
     from .template import Template
 
 
+Chain = Protein | DNA | RNA | Ligand | str
+
+def _is_chain_type(chain):
+    return isinstance(chain, Chain)
+
+
 # TODO: deserialization note about plddt parsed per residue
-class Complex:
+class Complex(MutableMapping):
     def __init__(
         self,
         chains: Mapping[str, Protein | DNA | RNA | Ligand] | None = None,
@@ -33,9 +39,13 @@ class Complex:
                 if not isinstance(key, str):
                     raise TypeError(f"chain id must be str; got {key!r}")
                 collected[key] = value
-        self._chains = dict(sorted(collected.items()))
+        # preserve insertion order of the chains by not sorting the dictionary
+        # Note that as of python 3.7 dicts preserve insertion order (OrderedDict not needed)
+        self._chains = collected
         self._templates: "Sequence[Protein | Complex | Template]" = ()
         self.name = name
+
+    # --- NAME methods ---
 
     @property
     def name(self) -> str | None:
@@ -51,6 +61,8 @@ class Complex:
     def set_name(self, x: bytes | str | None) -> "Complex":
         self.name = x
         return self
+
+    # --- TEMPLATE methods ---
 
     @property
     def templates(self) -> "Sequence[Protein | Complex | Template]":
@@ -70,8 +82,149 @@ class Complex:
         self.templates = templates
         return self
 
+    # --- dict-like methods and other general ops ---
+
+    def get_chain_ids(self):
+        """Returns the Chain IDs in this Complex"""
+        return self._chains.keys()
+
     def get_chains(self) -> Mapping[str, Protein | DNA | RNA | Ligand]:
+        """Get all chains as a {chain_id: chain} mapping"""
         return MappingProxyType(self._chains)
+
+    def get_chain(self, chain_id: str):
+        """Get the chain for this chain_id"""
+        return self._chains[chain_id]
+    
+    def set_chain(
+        self, chain_id: str, value: Protein | DNA | RNA | Ligand
+    ) -> "Complex":
+        """Add a new chain to this complex or overwrite an existing one with the same chain_id"""
+        self._chains[chain_id] = value
+        return self
+
+    def remove_chain(self, chain_id: str):
+        """Remove a chain from this complex"""
+        del self._chains[chain_id]
+
+    def insert_chain(self, chain: Protein | DNA | RNA | Ligand | str):
+        """Inserts a new chain into this Complex with an auto-generated chain_id. Casts strings into Proteins."""
+        assert _is_chain_type(chain)
+        id_gen = _chain_id_utils.id_generator(list(self._chains.keys()))
+        if isinstance(chain, str):
+            chain = Protein.from_expr(chain)
+
+        chain_id = next(id_gen)
+        self.set_chain(chain_id, chain)
+        return self
+
+    def __len__(self):
+        """Returns the number of chains in the complex"""
+        return len(self._chains)
+
+    def __getitem__(self, key):
+        """Retrieve the given chain"""
+        return self.get_chain(key)
+
+    def __setitem__(self, key, value):
+        """Add a chain or overwrite a chain with the given chain_id"""
+        self.set_chain(key, value)
+
+    def __delitem__(self, key):
+        """Remove the given chain from this complex"""
+        self.remove_chain(key)
+
+    def __contains__(self, chain_id):
+        return chain_id in self._chains
+
+    def __eq__(self, other):
+        if isinstance(other, Complex):
+            if self._chains != other._chains:
+                return False
+            if self._templates != other._templates:
+                return False
+            return True
+        return False
+
+    def __iter__(self):
+        """Iterate the chains in this complex"""
+        return iter(self._chains)
+
+    def keys(self):
+        return self._chains.keys()
+
+    def values(self):
+        return self._chains.values()
+
+    def items(self):
+        return self._chains.items()
+
+    def update(self, **kwargs):
+        """Add a collection of chains to this complex"""
+        overlapping_chain_ids = []
+        for key, value in kwargs.items():
+            if not isinstance(key, str):
+                raise TypeError(f"chain id must be str; got {key!r}")
+            # TODO - assert that chain objects are the right types too
+            # assert _is_chain_type(value)
+
+            # strictly do not allow replacing existing chain_ids
+            if key in self._chains:
+                overlapping_chain_ids.append(key)
+        if len(overlapping_chain_ids) > 0:
+            raise ValueError(
+                f"Trying to combine two sets of chains with overlapping chain ids: {overlapping_chain_ids}"
+            )
+        
+        # update chains
+        self._chains.update(**kwargs)
+
+    def clear(self):
+        """Remove all chains and templates from this complex"""
+        self._chains.clear()
+        # also deletes the templates if you clear this complex
+        self._templates = ()
+
+    def copy(self) -> "Complex":
+        """Copy this Complex. Returns a deep copy of the contained Chains"""
+        # TODO - should this deepcopy the chain objects themselves?
+        chains_copy: dict[str, Protein | DNA | RNA | Ligand] = {
+            chain_id: chain.copy() for chain_id, chain in self._chains.items()
+        }
+        return Complex(chains=chains_copy, name=self._name)
+
+    # --- other dictionary operators like set combine ---
+
+    # python actually uses the or operator for dict combine
+    def __ior__(self, other) -> "Complex":
+        """In-place update to this Complex using |= """
+
+        # other is either a single Chain or a Complex
+        # if single chain, we insert it with an autogenerated ID
+        # if complex, we add all of its chains
+        if _is_chain_type(other):
+            self.insert_chain(other)
+        else:
+            self.update(**other)
+        return self
+
+    def __or__(self, right) -> "Complex":
+        """Create a combined copy: self | right"""
+        a = self.copy()
+        a |= right # handles right being Complex or single Chain
+        return a
+
+    def __ror__(self, left) -> "Complex":
+        if isinstance(left, str):
+            left = Protein.from_expr(expr=left)
+        return left | self
+
+    # NOTE - python uses the or operator (|) for set and dict unions, but we also
+    # support this using the and operator (&)
+    __rand__ = __ror__
+    __and__ = __or__
+
+    # -- Chain-type specific methods ---
 
     def get_proteins(self) -> Mapping[str, Protein]:
         return MappingProxyType(
@@ -113,41 +266,7 @@ class Complex:
         assert isinstance(chain, Ligand)
         return chain
 
-    def set_chain(
-        self, chain_id: str, value: Protein | DNA | RNA | Ligand
-    ) -> "Complex":
-        self._chains[chain_id] = value
-        self._chains = dict(sorted(self._chains.items()))
-        return self
-
-    def __rand__(self, left: "Complex | Protein | str") -> "Complex":
-        if isinstance(left, str):
-            left = Protein.from_expr(expr=left)
-        return left & self
-
-    def __and__(self, right: "Complex | Protein | str") -> "Complex":
-        """Combine multiple objects into a single Complex."""
-
-        assert (
-            isinstance(right, Complex)
-            or isinstance(right, Protein)
-            or isinstance(right, str)
-        )
-        id_gen = _chain_id_utils.id_generator(list(self._chains.keys()))
-        if isinstance(right, str):
-            right = Protein.from_expr(right)
-        if isinstance(right, Protein):
-            self.set_chain(chain_id=next(id_gen), value=right)
-        else:
-            if (
-                len(overlapping_chain_ids := self._chains.keys() & right._chains.keys())
-                > 0
-            ):
-                raise ValueError(
-                    f"Trying to combine two sets of chains with overlapping chain ids: {overlapping_chain_ids}"
-                )
-            self._chains = dict(sorted((self._chains | right._chains).items()))
-        return self
+    # --- structure comparison and geometry methods ---
 
     @overload
     def rmsd(
@@ -208,6 +327,8 @@ class Complex:
         _, R, t = tgt.rmsd(self, backbone_only=backbone_only, return_transform=True)
         return self.transform(R=R, t=t)
 
+    # --- read and write PDB and CIF files and strings ---
+
     def to_string(self, format: Literal["cif", "pdb"] = "cif") -> str:
         """
         Serialize this Complex to a string. Note that format="pdb" may not serialize all
@@ -267,12 +388,6 @@ class Complex:
             model_idx=model_idx,
             verbose=verbose,
         )
-
-    def copy(self) -> "Complex":
-        chains_copy: dict[str, Protein | DNA | RNA | Ligand] = {
-            chain_id: chain.copy() for chain_id, chain in self._chains.items()
-        }
-        return Complex(chains=chains_copy, name=self._name)
 
     def _assert_valid_templates(self):
         from .template import Template

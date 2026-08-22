@@ -1,5 +1,6 @@
 """MSA results represented as a future."""
 
+import warnings
 from typing import Iterator
 
 from openprotein import config
@@ -12,6 +13,7 @@ from .future import AlignFuture
 from .schemas import (
     AbNumberJob,
     ClustalOJob,
+    JobWarning,
     MafftJob,
     MSAJob,
     MSASamplingMethod,
@@ -44,6 +46,7 @@ class MSAFuture(AlignFuture, Future):
         super().__init__(session, job)
         self.page_size = page_size
         self.msa_id = self.job.job_id
+        self._warned = False
 
     def _get(self, verbose: bool = False) -> Iterator[tuple[str, str]]:
         """
@@ -59,7 +62,53 @@ class MSAFuture(AlignFuture, Future):
         Iterator[tuple[str, str]]
             An iterator over names and sequences of the MSA data.
         """
+        self._warn_once()
         return api.get_msa(session=self.session, job_id=self.job.job_id)
+
+    def _warn_once(self) -> None:
+        """Surface what the job reported about its own output, once."""
+        if self._warned or not isinstance(self.job, AbNumberJob):
+            return
+        self._warned = True
+        try:
+            job_warnings = self.get_warnings()
+        except Exception:
+            # reading the results cannot depend on the schema endpoint answering
+            return
+        for job_warning in job_warnings:
+            warnings.warn(f"{job_warning.code}: {job_warning.message}")
+
+    def get_antibody_schema(self) -> dict:
+        """
+        Retrieve the antibody numbering for an AbNumber job.
+
+        Returns
+        -------
+        dict
+            One ``chains`` entry per chain position, carrying that position's
+            numbering, CDR regions and chain type, plus a ``warnings`` list.
+
+        Raises
+        ------
+        HTTPError
+            If the job did not use AbNumber.
+        """
+        return api.antibody_schema_get(session=self.session, job_id=self.job.job_id)
+
+    def get_warnings(self) -> list[JobWarning]:
+        """
+        Retrieve what the job reported about its own output.
+
+        A job that succeeds can still have changed the data, e.g. by dropping
+        residues AbNumber could not number.
+
+        Returns
+        -------
+        list[JobWarning]
+            Empty if the job had nothing to report.
+        """
+        schema = self.get_antibody_schema()
+        return [JobWarning.model_validate(w) for w in schema.get("warnings", [])]
 
     def sample_prompt(
         self,

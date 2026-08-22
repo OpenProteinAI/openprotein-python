@@ -8,6 +8,7 @@ from openprotein.common import FeatureType
 from openprotein.common.reduction import ReductionType
 from openprotein.data import AssayDataset
 from openprotein.errors import HTTPError, InvalidParameterError
+from openprotein.predictor import KernelType
 from tests.e2e.config import scaled_timeout
 from tests.utils.sequences import random_sequence_fake
 
@@ -474,3 +475,115 @@ def test_predictor_svd_batch_prediction(
     # Validate batch output
     assert mus.shape == (10, 1)
     assert vs.shape == (10, 1)
+
+
+# (kernel, extra hyperparameters) for the GP kernels exposed in the client.
+# period/alpha are only valid for periodic/rational_quadratic respectively.
+KERNEL_CONFIGS = [
+    ("linear", {}),
+    ("rbf", {}),
+    ("matern12", {}),
+    ("matern32", {}),
+    ("matern52", {}),
+    ("periodic", {"period": 1.0}),
+    ("rational_quadratic", {"alpha": 1.0}),
+]
+
+
+@pytest.mark.e2e
+@pytest.mark.parametrize("kernel,kernel_kwargs", KERNEL_CONFIGS)
+def test_predictor_training_kernels(
+    session: OpenProtein,
+    assay_small: AssayDataset,
+    kernel: str,
+    kernel_kwargs: dict,
+):
+    """
+    Train a GP predictor with each exposed kernel and confirm the backend
+    accepts the kernel (and its hyperparameters) and returns valid predictions.
+    """
+    embedding_model = session.embedding.esm2
+    property_name = assay_small.measurement_names[0]
+
+    predictor_future = embedding_model.fit_gp(
+        assay=assay_small,
+        properties=[property_name],
+        reduction=ReductionType.MEAN,
+        kernel=kernel,
+        **kernel_kwargs,
+    )
+
+    assert predictor_future.wait(
+        timeout=TIMEOUT
+    ), f"Predictor training failed for kernel {kernel!r}"
+    predictor_model = predictor_future
+
+    assert predictor_model.id is not None
+    assert predictor_model.training_assay.id == assay_small.id
+
+    seq_len = assay_small.sequence_length or 346
+    test_sequence = random_sequence_fake(seq_len)
+    prediction_future = predictor_model.predict(sequences=[test_sequence])
+    mus, vs = prediction_future.wait(timeout=TIMEOUT)
+
+    _assert_prediction_arrays(mus=mus, vs=vs, rows=1, cols=1)
+
+
+@pytest.mark.e2e
+def test_predictor_training_kernel_enum(
+    session: OpenProtein, assay_small: AssayDataset
+):
+    """
+    The KernelType enum is accepted interchangeably with its string value.
+    """
+    embedding_model = session.embedding.esm2
+    property_name = assay_small.measurement_names[0]
+
+    predictor_future = embedding_model.fit_gp(
+        assay=assay_small,
+        properties=[property_name],
+        reduction=ReductionType.MEAN,
+        kernel=KernelType.MATERN52,
+    )
+
+    assert predictor_future.wait(
+        timeout=TIMEOUT
+    ), "Predictor training failed for KernelType.MATERN52"
+
+    seq_len = assay_small.sequence_length or 346
+    test_sequence = random_sequence_fake(seq_len)
+    mus, vs = predictor_future.predict(sequences=[test_sequence]).wait(timeout=TIMEOUT)
+    _assert_prediction_arrays(mus=mus, vs=vs, rows=1, cols=1)
+
+
+@pytest.mark.e2e
+@pytest.mark.parametrize(
+    "kernel_kwargs,match",
+    [
+        ({"kernel": "bogus"}, "Unknown kernel"),
+        ({"kernel": "rbf", "period": 2.0}, "`period` is only valid"),
+        ({"kernel": "periodic", "period": 0.0}, "`period` must be > 0"),
+        ({"kernel": "rbf", "alpha": 2.0}, "`alpha` is only valid"),
+        ({"kernel": "rational_quadratic", "alpha": -1.0}, "`alpha` must be > 0"),
+    ],
+)
+def test_predictor_kernel_validation_fails_fast(
+    session: OpenProtein,
+    assay_small: AssayDataset,
+    kernel_kwargs: dict,
+    match: str,
+):
+    """
+    Invalid kernel/hyperparameter combinations are rejected client-side before
+    any training job is submitted.
+    """
+    embedding_model = session.embedding.esm2
+    property_name = assay_small.measurement_names[0]
+
+    with pytest.raises(InvalidParameterError, match=match):
+        embedding_model.fit_gp(
+            assay=assay_small,
+            properties=[property_name],
+            reduction=ReductionType.MEAN,
+            **kernel_kwargs,
+        )
