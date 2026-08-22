@@ -10,6 +10,11 @@ from . import api
 from .models import Prompt, Query
 from .schemas import Context
 
+HUMAN_ANTIBODY_VH_V1 = "c044b1b9-9842-536a-83e0-e81400199f67"
+HUMAN_ANTIBODY_VH_VL_V1 = "0ddde5dc-d140-5d53-bebf-e69fff5a05c5"
+HUMAN_ANTIBODY_VL_V1 = "3da24801-7032-5b79-a0b9-6e687581de60"
+HUMAN_ANTIBODY_VL_VH_V1 = "6de556eb-a739-5986-ab20-cf574a780f69"
+
 
 class PromptAPI:
     """Prompt API providing the interface to create prompts for use with PoET models."""
@@ -142,6 +147,96 @@ class PromptAPI:
             session=self.session,
             metadata=api.get_query_metadata(session=self.session, query_id=query_id),
         )
+
+    @property
+    def human_antibody_vh(self) -> Prompt:
+        """
+        Curated prompt of naive human antibody heavy chains (VH).
+
+        Tracks the latest version of this prompt, currently
+        :py:attr:`human_antibody_vh_v1`. Use the versioned attribute directly to
+        pin a version that will not change in a later release.
+        """
+        return self.human_antibody_vh_v1
+
+    @property
+    def human_antibody_vh_v1(self) -> Prompt:
+        """
+        Curated prompt of naive human antibody heavy chains (VH), version 1.
+
+        An ensemble of 10 replicates, each a random sample of 200 naive human
+        antibody heavy chain (VH) sequences from the OAS paired database,
+        clustered at 70% sequence identity.
+        """
+        return self.get_prompt(HUMAN_ANTIBODY_VH_V1)
+
+    @property
+    def human_antibody_vl(self) -> Prompt:
+        """
+        Curated prompt of naive human antibody light chains (VL).
+
+        Tracks the latest version of this prompt, currently
+        :py:attr:`human_antibody_vl_v1`. Use the versioned attribute directly to
+        pin a version that will not change in a later release.
+        """
+        return self.human_antibody_vl_v1
+
+    @property
+    def human_antibody_vl_v1(self) -> Prompt:
+        """
+        Curated prompt of naive human antibody light chains (VL), version 1.
+
+        An ensemble of 10 replicates, each a random sample of 200 naive human
+        antibody light chain (VL) sequences from the OAS paired database,
+        clustered at 70% sequence identity.
+        """
+        return self.get_prompt(HUMAN_ANTIBODY_VL_V1)
+
+    @property
+    def human_antibody_vh_vl(self) -> Prompt:
+        """
+        Curated prompt of naive paired human antibodies, heavy chain first.
+
+        Tracks the latest version of this prompt, currently
+        :py:attr:`human_antibody_vh_vl_v1`. Use the versioned attribute directly
+        to pin a version that will not change in a later release.
+        """
+        return self.human_antibody_vh_vl_v1
+
+    @property
+    def human_antibody_vh_vl_v1(self) -> Prompt:
+        """
+        Curated prompt of naive paired human antibodies (VH-VL), version 1.
+
+        An ensemble of 10 replicates, each a random sample of 200 naive paired
+        human antibody sequences from the OAS paired database, clustered at 70%
+        sequence identity. Each complex is the heavy chain (VH) followed by the
+        light chain (VL).
+        """
+        return self.get_prompt(HUMAN_ANTIBODY_VH_VL_V1)
+
+    @property
+    def human_antibody_vl_vh(self) -> Prompt:
+        """
+        Curated prompt of naive paired human antibodies, light chain first.
+
+        Tracks the latest version of this prompt, currently
+        :py:attr:`human_antibody_vl_vh_v1`. Use the versioned attribute directly
+        to pin a version that will not change in a later release.
+        """
+        return self.human_antibody_vl_vh_v1
+
+    @property
+    def human_antibody_vl_vh_v1(self) -> Prompt:
+        """
+        Curated prompt of naive paired human antibodies (VL-VH), version 1.
+
+        An ensemble of 10 replicates, each a random sample of 200 naive paired
+        human antibody sequences from the OAS paired database, clustered at 70%
+        sequence identity. Each complex is the light chain (VL) followed by the
+        heavy chain (VH).
+        """
+        return self.get_prompt(HUMAN_ANTIBODY_VL_VH_V1)
 
     def _resolve_query(
         self,

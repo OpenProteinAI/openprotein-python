@@ -180,3 +180,47 @@ class AbNumberScheme(str, Enum):
     CHOTHIA = "chothia"
     KABAT = "kabat"
     AHO = "aho"
+
+
+class UnnumberedPolicy(str, Enum):
+    """
+    What to do with residues the numbering scheme gives no antibody position.
+
+    ANARCI numbers one variable domain per sequence. Residues outside it -- a
+    constant/Fc region, an N-terminal tag -- have no antibody position and
+    cannot share the numbering coordinate system.
+
+    Attributes
+    ----------
+    ERROR : str
+        Fail the job if any sequence carries unnumbered residues.
+    DROP : str
+        Align the numbered residues only, discarding the rest.
+    RETAIN : str
+        Keep the unnumbered residues, padded against the numbered-domain
+        boundary. They are preserved, not aligned to each other.
+    """
+
+    ERROR = "error"
+    DROP = "drop"
+    RETAIN = "retain"
+
+
+class JobWarning(BaseModel):
+    """
+    Something a job reports about its own output while still succeeding.
+
+    Attributes
+    ----------
+    code : str
+        Machine-readable identifier, e.g. ``UNNUMBERED_RESIDUES_DROPPED``.
+    message : str
+        Human-readable description.
+    metadata : dict or None
+        Code-specific detail. For the unnumbered-residue codes this carries a
+        ``chains`` list, one entry per affected chain position.
+    """
+
+    code: str
+    message: str
+    metadata: dict | None = None

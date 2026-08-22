@@ -11,11 +11,25 @@ from openprotein.molecules import Complex, Protein
 from .schemas import Context, PromptMetadata, QueryMetadata
 
 
-def _coerce_sequence(name: str, sequence: bytes | str) -> Protein | Complex:
-    """Parse a raw sequence into a Protein, or a Complex if it contains ':' chain breaks."""
+def _coerce_sequence(
+    name: str, sequence: bytes | str, allow_empty_chains: bool = False
+) -> Protein | Complex:
+    """Parse a raw sequence into a Protein, or a Complex if it contains ':' chain breaks.
+
+    With ``allow_empty_chains`` a chain may hold no residues. That is how a prompt
+    sampled from a multi-chain MSA describes coverage: it carries one slot per chain
+    of the complex, so a homolog that only matches one of them renders as ``":SEQ"``
+    and the empty slot says which chain the residues belong to. A query has no such
+    layout to describe, so an empty chain there is malformed. Either way, an entry
+    with no residues in any chain carries nothing and is rejected.
+    """
     raw = sequence.encode() if isinstance(sequence, str) else sequence
     parts = raw.split(b":")
-    if any(len(p) == 0 for p in parts):
+    if all(len(p) == 0 for p in parts):
+        raise InvalidParameterError(
+            f"sequence {raw.decode()!r} has no residues in any chain"
+        )
+    if not allow_empty_chains and any(len(p) == 0 for p in parts):
         raise InvalidParameterError("Invalid chain break usage in sequence")
     if len(parts) == 1:
         return Protein(name=name, sequence=parts[0])
@@ -52,7 +66,10 @@ def create_prompt(
         Context or list of contexts, each of which is a list of sequences/structures.
         Entries may be raw sequences (``bytes``/``str``), :py:class:`Protein`, or
         :py:class:`Complex`. Raw sequences may include ``:`` chain breaks to denote
-        a multichain protein (e.g. ``"ACDE:GHIK"`` becomes a two-chain Complex).
+        a multichain protein (e.g. ``"ACDE:GHIK"`` becomes a two-chain Complex). A
+        chain of a context entry may be empty (``":GHIK"``), which says the entry
+        covers only the chains that do have residues; an entry empty in every chain
+        is rejected.
         Currently only protein chains are accepted; passing a Complex with DNA, RNA,
         or Ligand chains raises :py:class:`InvalidParameterError`. This restriction
         may be relaxed in the future.
@@ -147,8 +164,10 @@ def get_prompt(session: APISession, prompt_id: str) -> list[list[Protein | Compl
     Get the prompt content for a given prompt ID.
 
     Single-chain entries collapse to :py:class:`Protein`; multichain entries are
-    returned as :py:class:`Complex`. For a uniform return type, see
-    :py:meth:`Prompt.get_as_complexes` or :py:meth:`Prompt.get_as_proteins`.
+    returned as :py:class:`Complex`, empty chains included - a prompt sampled from a
+    multi-chain MSA has an empty chain wherever the entry covers only part of the
+    complex. For a uniform return type, see :py:meth:`Prompt.get_as_complexes` or
+    :py:meth:`Prompt.get_as_proteins`.
 
     Parameters
     ----------
@@ -242,7 +261,11 @@ def zip_prompt(
         context_files: list[tuple[str, io.BytesIO]] = []
         for i, x in enumerate(this_context):
             if isinstance(x, (bytes, str)):
-                x = _coerce_sequence(name=f"unnamed-{i:06}", sequence=x)
+                # a sampled prompt marks the chains an entry does not cover with an
+                # empty slot
+                x = _coerce_sequence(
+                    name=f"unnamed-{i:06}", sequence=x, allow_empty_chains=True
+                )
             elif not isinstance(x, (Protein, Complex)):
                 raise InvalidParameterError(
                     f"unexpected context entry type: {type(x).__name__}"
@@ -364,7 +387,11 @@ def __parse_prompt(
                                 name.decode() if isinstance(name, bytes) else name
                             )
                             entries_in_context.append(
-                                _coerce_sequence(name=entry_name, sequence=sequence)
+                                _coerce_sequence(
+                                    name=entry_name,
+                                    sequence=sequence,
+                                    allow_empty_chains=True,
+                                )
                             )
 
                     else:

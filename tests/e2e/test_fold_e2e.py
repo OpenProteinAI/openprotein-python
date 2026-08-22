@@ -6,13 +6,13 @@ from typing import Callable, List, Tuple
 
 import numpy as np
 import pytest
-
 from openprotein import OpenProtein
 from openprotein.align.msa import MSAFuture
 from openprotein.errors import APIError, HTTPError
 from openprotein.fold.future import FoldResultFuture
 from openprotein.molecules import Complex, Ligand, Protein, Structure
 from openprotein.molecules.template import Template
+
 from tests.e2e.config import scaled_timeout
 
 E2E_TIMEOUT = scaled_timeout(1.5)
@@ -108,7 +108,9 @@ def test_e2e_fold_rejects_total_sequence_length_above_model_max(
 
     if uses_multichain_entity:
         chain_a_len = max_len // 2
-        chain_b_len = max_len - chain_a_len + overage  # total length is max_len + overage
+        chain_b_len = (
+            max_len - chain_a_len + overage
+        )  # total length is max_len + overage
 
         chain_a = Protein("A" * chain_a_len)
         chain_a.msa = Protein.single_sequence_mode
@@ -154,6 +156,142 @@ def test_e2e_fold_rejects_invalid_chain_ids(
 
     with pytest.raises(HTTPError, match="Status code"):
         model.fold(sequences=[complex_input])
+
+
+# Oseltamivir phosphate as a user actually submitted it. The phosphate carries
+# one oxygen too many, leaving P with valence 6, so RDKit refuses to parse it.
+# It reached a protenix worker, where RDKit returned None and the resulting
+# Boost.Python error could not be pickled, taking the LitServe worker process
+# down with it. Validation has to reject this at submission.
+UNPARSEABLE_LIGAND_SMILES = "CCOC(=O)C1=CC(C(CC1NC(=O)C)OC(CC)CC)N.OP(=O)(O)(O)O"
+
+MALFORMED_LIGAND_SMILES = [
+    UNPARSEABLE_LIGAND_SMILES,
+    "not a smiles",
+    "CC(",  # unbalanced parens
+    "c1ccccc",  # unclosed aromatic ring
+]
+
+# The same molecule written correctly: a two-fragment salt.
+OSELTAMIVIR_PHOSPHATE = "CCOC(=O)C1=CC(C(CC1NC(=O)C)OC(CC)CC)N.OP(=O)(O)O"
+
+# Models whose workers accept ligand chains, and which therefore validate them.
+LIGAND_MODEL_IDS = [
+    "boltz-1",
+    "boltz-1x",
+    "boltz-2",
+    "esmfold2",
+    "esmfold2-fast",
+    "protenix",
+    "protenix-v2",
+    "rosettafold-3",
+]
+
+
+# Variants that take no MSA. The SDK rejects an attached MSA client-side, which
+# would abort the request before any ligand reached validation.
+SINGLE_SEQUENCE_MODEL_IDS = {"esmfold2-fast"}
+
+
+def _require_model(session: OpenProtein, model_id: str):
+    """Skip rather than fail when this backend does not serve the model."""
+    if model_id not in {model.id for model in session.fold.list_models()}:
+        pytest.skip(f"{model_id} is not available in this backend")
+    return session.fold.get_model(model_id)
+
+
+def _with_ligand(fold_complex: Complex, model_id: str, ligand: Ligand) -> Complex:
+    """Attach `ligand` as chain D, shedding MSAs where the model forbids them."""
+    if model_id in SINGLE_SEQUENCE_MODEL_IDS:
+        for protein in fold_complex.get_proteins().values():
+            protein.msa = Protein.single_sequence_mode
+    fold_complex.set_chain("D", ligand)
+    return fold_complex
+
+
+@pytest.mark.e2e
+@pytest.mark.parametrize("model_id", LIGAND_MODEL_IDS)
+def test_e2e_fold_rejects_unparseable_ligand_smiles(
+    session: OpenProtein,
+    fold_complex: Complex,
+    model_id: str,
+):
+    """Every ligand-capable model rejects a SMILES that RDKit cannot parse."""
+    model = _require_model(session, model_id)
+    fold_complex = _with_ligand(
+        fold_complex, model_id, Ligand(smiles=UNPARSEABLE_LIGAND_SMILES)
+    )
+
+    with pytest.raises(HTTPError, match="Status code") as exc_info:
+        model.fold(sequences=[fold_complex])
+    # Pin the reason: a fold rejected for some unrelated reason would otherwise
+    # satisfy this test and hide the fact that ligands went unchecked.
+    assert "ligand" in exc_info.value.text.lower()
+
+
+@pytest.mark.e2e
+@pytest.mark.parametrize("smiles", MALFORMED_LIGAND_SMILES)
+def test_e2e_fold_rejects_malformed_ligand_smiles(
+    session: OpenProtein,
+    fold_complex: Complex,
+    smiles: str,
+):
+    """Malformed SMILES are rejected in several shapes, not just the prod one."""
+    model = _require_model(session, "boltz-2")
+    fold_complex.set_chain("D", Ligand(smiles=smiles))
+
+    with pytest.raises(HTTPError, match="Status code"):
+        model.fold(sequences=[fold_complex])
+
+
+@pytest.mark.e2e
+@pytest.mark.parametrize("model_id", LIGAND_MODEL_IDS)
+def test_e2e_fold_rejects_unknown_ligand_ccd(
+    session: OpenProtein,
+    fold_complex: Complex,
+    model_id: str,
+):
+    """CCD ligands are checked against the PDB component set."""
+    model = _require_model(session, model_id)
+    fold_complex = _with_ligand(fold_complex, model_id, Ligand(ccd="ZZZZ"))
+
+    with pytest.raises(HTTPError, match="Status code") as exc_info:
+        model.fold(sequences=[fold_complex])
+    assert "ligand" in exc_info.value.text.lower()
+
+
+@pytest.mark.e2e
+def test_e2e_fold_rejects_ccd_the_model_cannot_build(
+    session: OpenProtein,
+    fold_complex: Complex,
+):
+    """CCD support is per model, not a single global list.
+
+    0IL is a real PDB component that boltz-1 cannot build, so it has to be
+    rejected there while remaining acceptable to models that can.
+    """
+    model = _require_model(session, "boltz-1")
+    fold_complex.set_chain("D", Ligand(ccd="0IL"))
+
+    with pytest.raises(HTTPError, match="Status code"):
+        model.fold(sequences=[fold_complex])
+
+
+@pytest.mark.e2e
+def test_e2e_fold_rejects_ccd_outside_esmfold2_allowlist(
+    session: OpenProtein,
+    fold_complex: Complex,
+):
+    """ESMFold2 ships its own CCD list rather than the universal one.
+
+    UNL is a known PDB component that ESMFold2 does not carry, so being in the
+    universal set is not enough to be accepted.
+    """
+    model = _require_model(session, "esmfold2")
+    fold_complex.set_chain("D", Ligand(ccd="UNL"))
+
+    with pytest.raises(HTTPError, match="Status code"):
+        model.fold(sequences=[fold_complex])
 
 
 @pytest.mark.e2e

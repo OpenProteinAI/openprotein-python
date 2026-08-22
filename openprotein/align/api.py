@@ -11,7 +11,12 @@ from openprotein.base import APISession
 from openprotein.errors import APIError, InvalidParameterError, MissingParameterError
 from openprotein.jobs import Job
 
-from .schemas import AbNumberScheme, AlignType, MSASamplingMethod
+from .schemas import (
+    AbNumberScheme,
+    AlignType,
+    MSASamplingMethod,
+    UnnumberedPolicy,
+)
 
 
 def get_align_job_inputs(
@@ -270,6 +275,7 @@ def abnumber_post(
     sequence_file: BinaryIO,
     scheme: AbNumberScheme | str = AbNumberScheme.IMGT,
     drop_minority_chains: bool = False,
+    unnumbered_policy: UnnumberedPolicy | str = UnnumberedPolicy.ERROR,
 ) -> Job:
     """
     Align antibody sequences using AbNumber.
@@ -289,6 +295,9 @@ def abnumber_post(
         If True, drop sequences belonging to chain types that are in the
         minority (e.g. heavy vs light) so the resulting alignment contains
         only the dominant chain type. Default is False.
+    unnumbered_policy : UnnumberedPolicy, optional
+        What to do with residues outside the numbered variable domain.
+        Default is ERROR, which fails the job.
 
     Returns
     -------
@@ -300,18 +309,28 @@ def abnumber_post(
     if isinstance(scheme, str):
         if scheme not in {value.value for value in AbNumberScheme}:
             raise InvalidParameterError(f"Antibody numbering {scheme} not recognized")
+    if isinstance(unnumbered_policy, str):
+        if unnumbered_policy not in {value.value for value in UnnumberedPolicy}:
+            raise InvalidParameterError(
+                f"Unnumbered residue policy {unnumbered_policy} not recognized"
+            )
 
     files = {"file": sequence_file}
     params = {
         "scheme": scheme if isinstance(scheme, str) else scheme.value,
         "drop_minority_chains": drop_minority_chains,
+        "unnumbered_policy": (
+            unnumbered_policy
+            if isinstance(unnumbered_policy, str)
+            else unnumbered_policy.value
+        ),
     }
 
     response = session.post(endpoint, files=files, params=params)
     return Job.model_validate(response.json())
 
 
-def antibody_schema_get(session: APISession, job_id: str):
+def antibody_schema_get(session: APISession, job_id: str) -> dict:
     """
     Retrieve the antibody numbering for an AbNumber job.
 
@@ -322,16 +341,16 @@ def antibody_schema_get(session: APISession, job_id: str):
     job_id : str
         The job identifier.
 
-    Raises
-    ------
-    NotImplementedError
-        This function is not yet implemented.
-
     Returns
     -------
-    None
+    dict
+        The job's extras: a ``chains`` entry per chain position carrying the
+        numbering and CDR regions, and a ``warnings`` list.
     """
-    raise NotImplementedError()
+    endpoint = "v1/align/antibody_schema"
+
+    response = session.get(endpoint, params={"job_id": job_id})
+    return response.json()
 
 
 def prompt_post(

@@ -179,10 +179,34 @@ class TestCoerceSequence:
         result = _coerce_sequence("foo", b"ACDE:GHIK")
         assert isinstance(result, Complex)
 
-    @pytest.mark.parametrize("bad", ["ACDE::GHIK", ":ACDE", "ACDE:", ":"])
-    def test_invalid_chain_break_raises(self, bad: str):
+    @pytest.mark.parametrize(
+        "sequence,sequences",
+        [
+            (":ACDE", [b"", b"ACDE"]),
+            ("ACDE:", [b"ACDE", b""]),
+            ("ACDE::GHIK", [b"ACDE", b"", b"GHIK"]),
+        ],
+    )
+    def test_empty_chain_slot_is_kept(self, sequence: str, sequences: list[bytes]):
+        """A chain the entry does not cover is an empty slot, not an error: a prompt
+        sampled from a multi-chain MSA renders a homolog that only matches one chain
+        of the complex as ``:SEQ``, and that says which chain it covers."""
+        result = _coerce_sequence("foo", sequence, allow_empty_chains=True)
+        assert isinstance(result, Complex)
+        assert [p.sequence for p in result.get_proteins().values()] == sequences
+
+    @pytest.mark.parametrize("bad", [":ACDE", "ACDE:", "ACDE::GHIK"])
+    def test_empty_chain_slot_raises_by_default(self, bad: str):
+        """Only a prompt context gives an empty slot a meaning, so it stays opt-in."""
         with pytest.raises(InvalidParameterError, match="chain break"):
             _coerce_sequence("foo", bad)
+
+    @pytest.mark.parametrize("bad", ["", ":", "::"])
+    def test_entry_without_residues_raises(self, bad: str):
+        """Empty slots say what a chain layout looks like; an entry that is empty in
+        every chain says nothing at all."""
+        with pytest.raises(InvalidParameterError, match="no residues"):
+            _coerce_sequence("foo", bad, allow_empty_chains=True)
 
     @pytest.mark.parametrize(
         "sequence,n_chains",
@@ -238,6 +262,20 @@ class TestZipUnzipRoundtrip:
         proteins = entry.get_proteins()
         assert len(proteins) == 2
         assert sorted(p.sequence for p in proteins.values()) == [b"ACDE", b"GHIK"]
+
+    def test_empty_chain_slot_survives_the_roundtrip(self):
+        """The empty slot has to reach the service and come back, or a prompt row for
+        a homolog covering one chain of two loses which chain that was."""
+        zips = zip_prompt([":GHIK"])
+        import zipfile
+
+        zf = zipfile.ZipFile(zips[0])
+        assert zf.read(zf.namelist()[0]).endswith(b"\n:GHIK\n")
+
+        result = unzip_prompt(self._wrap(zips))
+        entry = result[0][0]
+        assert isinstance(entry, Complex)
+        assert [p.sequence for p in entry.get_proteins().values()] == [b"", b"GHIK"]
 
     def test_raw_string_with_colon_returns_complex(self):
         zips = zip_prompt(["ACDE:GHIK"])

@@ -216,6 +216,10 @@ class Protein:
         }
         return new
 
+    # --- complex set operations to support & and | operators between proteins and Complexes ---
+    # NOTE - in python, the or operator (|) is used to combine sets and dicts, but we also support
+    # the and operator (&) to do the same thing
+
     def __rand__(self, left: "Complex | Protein | str") -> "Complex":
         if isinstance(left, str):
             left = self.from_expr(expr=left)
@@ -235,7 +239,15 @@ class Protein:
         if isinstance(right, Protein):
             id_gen = _chain_id_utils.id_generator()
             return Complex({next(id_gen): self, next(id_gen): right})
-        return right & self
+        # NOTE - this inserts this protein at the _end_ of the Complex even though the operation
+        # was Protein & Complex
+        return right & self 
+
+    # map the (|) or operator to the and operators
+    __ror__ = __rand__
+    __or__ = __and__
+
+    # --- end set operator definitions ---
 
     def at(self, positions: Sequence[int] | npt.NDArray[np.integer]) -> "Protein":
         """

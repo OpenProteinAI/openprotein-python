@@ -109,6 +109,8 @@ class DNA(_BasicSerde):
     def copy(self) -> "DNA":
         return replace(self)
 
+    # TODO - support (&) and (|) operators for combining into Complexes (like Protein)
+
     @staticmethod
     def _from_structure_block(
         structure_block: _cif_utils.StructureCIFBlock, chain_id: str, model_idx: int
@@ -158,6 +160,8 @@ class RNA(_BasicSerde):
 
     def copy(self) -> "RNA":
         return replace(self)
+
+    # TODO - support (&) and (|) operators for combining into Complexes (like Protein)
 
     @staticmethod
     def _from_structure_block(
@@ -210,6 +214,8 @@ class Ligand(_BasicSerde):
 
     def copy(self) -> "Ligand":
         return replace(self)
+    
+    # TODO - support (&) and (|) operators for combining into Complexes (like Protein)
 
     @staticmethod
     def _from_structure_block(

@@ -25,4 +25,5 @@ from .future import (
     EmbeddingsGenerateFuture,
     EmbeddingsResultFuture,
     EmbeddingsScoreFuture,
+    EmbeddingsScoreSingleSiteFuture,
 )

@@ -11,7 +11,7 @@ from openprotein.molecules import Protein
 
 from . import api
 from .msa import MSAFuture
-from .schemas import AbNumberScheme, AlignType
+from .schemas import AbNumberScheme, AlignType, UnnumberedPolicy
 
 
 class AlignAPI:
@@ -190,6 +190,7 @@ class AlignAPI:
         names: Sequence[str] | None = None,
         scheme: AbNumberScheme = AbNumberScheme.CHOTHIA,
         drop_minority_chains: bool = False,
+        unnumbered_policy: UnnumberedPolicy = UnnumberedPolicy.ERROR,
     ) -> MSAFuture:
         """
         Align antibody sequences using `AbNumber`.
@@ -210,6 +211,11 @@ class AlignAPI:
             If True, drop sequences belonging to chain types that are in the
             minority (e.g. heavy vs light) so the resulting alignment contains
             only the dominant chain type.
+        unnumbered_policy : UnnumberedPolicy, default=UnnumberedPolicy.ERROR
+            What to do with residues outside the numbered variable domain --
+            a constant/Fc region, an N-terminal tag. ERROR fails the job, DROP
+            aligns the numbered residues only, RETAIN keeps them padded against
+            the numbered-domain boundary.
 
         Returns
         -------
@@ -241,7 +247,10 @@ class AlignAPI:
         content = b"\n".join(lines)
         stream = BytesIO(content)
         return self.abnumber_file(
-            stream, scheme=scheme, drop_minority_chains=drop_minority_chains
+            stream,
+            scheme=scheme,
+            drop_minority_chains=drop_minority_chains,
+            unnumbered_policy=unnumbered_policy,
         )
 
     def abnumber_file(
@@ -249,6 +258,7 @@ class AlignAPI:
         file,
         scheme: AbNumberScheme = AbNumberScheme.CHOTHIA,
         drop_minority_chains: bool = False,
+        unnumbered_policy: UnnumberedPolicy = UnnumberedPolicy.ERROR,
     ) -> MSAFuture:
         """
         Align antibody sequences using `AbNumber`.
@@ -267,6 +277,11 @@ class AlignAPI:
             If True, drop sequences belonging to chain types that are in the
             minority (e.g. heavy vs light) so the resulting alignment contains
             only the dominant chain type.
+        unnumbered_policy : UnnumberedPolicy, default=UnnumberedPolicy.ERROR
+            What to do with residues outside the numbered variable domain --
+            a constant/Fc region, an N-terminal tag. ERROR fails the job, DROP
+            aligns the numbered residues only, RETAIN keeps them padded against
+            the numbered-domain boundary.
 
         Returns
         -------
@@ -278,6 +293,7 @@ class AlignAPI:
             file,
             scheme=scheme,
             drop_minority_chains=drop_minority_chains,
+            unnumbered_policy=unnumbered_policy,
         )
         return MSAFuture.create(session=self.session, job=job)
 
