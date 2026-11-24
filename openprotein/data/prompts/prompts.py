@@ -23,7 +23,7 @@ from openprotein.errors import HTTPError
 from openprotein.jobs.schemas import Job, JobStatus
 
 from . import _api, _replicates
-from .schemas import PromptSummary
+from .schemas import PromptMetadata
 
 if TYPE_CHECKING:
     from openprotein.align.schemas import MSASamplingMethod
@@ -33,7 +33,7 @@ __all__ = ["Prompt"]
 _LIST_PAGE = 200
 
 
-class Prompt(_Resource[PromptSummary]):
+class Prompt(_Resource[PromptMetadata]):
     """A stored prompt.
 
     ``session.data.Prompt.create`` uploads one, ``session.data.Prompt.list``
@@ -49,7 +49,7 @@ class Prompt(_Resource[PromptSummary]):
     _replicates: builtins.list[builtins.list[str]] | None = None
 
     @classmethod
-    def _load(cls, session: APISession, id: str) -> PromptSummary:
+    def _load(cls, session: APISession, id: str) -> PromptMetadata:
         return _api.prompts_get(session, id)
 
     @classmethod
@@ -63,7 +63,7 @@ class Prompt(_Resource[PromptSummary]):
                 raise
         prompt = bound(
             session,
-            PromptSummary(
+            PromptMetadata(
                 id=job.job_id,
                 status=job.status,
                 job_id=job.job_id,
@@ -241,7 +241,7 @@ def _sample(
     )
     return Prompt._for(session)(
         session,
-        PromptSummary(
+        PromptMetadata(
             id=job["job_id"],
             status=job["status"],
             job_id=job["job_id"],

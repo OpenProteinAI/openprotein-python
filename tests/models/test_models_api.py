@@ -445,7 +445,7 @@ class TestMethod:
         self, mock_session
     ):
         from openprotein.data.prompts.prompts import Prompt
-        from openprotein.data.prompts.schemas import PromptSummary
+        from openprotein.data.prompts.schemas import PromptMetadata
 
         poet2 = Model(
             mock_session,
@@ -458,7 +458,7 @@ class TestMethod:
 
         stored_prompt = Prompt(
             mock_session,
-            PromptSummary(
+            PromptMetadata(
                 id="prompt-1",
                 owner="user",
                 created_at="2026-09-05T08:00:00Z",
@@ -466,7 +466,7 @@ class TestMethod:
         )
         sampled_prompt = Prompt(
             mock_session,
-            PromptSummary(id="sample-job-1", status="PENDING", job_id="sample-job-1"),
+            PromptMetadata(id="sample-job-1", status="PENDING", job_id="sample-job-1"),
         )
 
         poet2.embed(["MKTAYIAK"], prompt_id=stored_prompt.id)

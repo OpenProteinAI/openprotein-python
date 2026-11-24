@@ -6,7 +6,7 @@ import pytest
 
 from openprotein.data import MSA, Prompt
 from openprotein.data.msa import MSAMetadata
-from openprotein.data.prompts import PromptSummary
+from openprotein.data.prompts import PromptMetadata
 from openprotein.errors import (
     HTTPError,
     JobFailedException,
@@ -47,7 +47,7 @@ def _route(session: MagicMock, routes: dict[str, list[dict]]) -> None:
 def _sampled(session: MagicMock, status: str = "SUCCESS") -> Prompt:
     return Prompt(
         session,
-        PromptSummary(id=PROMPT_ID, status=JobStatus(status), job_id=PROMPT_ID),
+        PromptMetadata(id=PROMPT_ID, status=JobStatus(status), job_id=PROMPT_ID),
     )
 
 

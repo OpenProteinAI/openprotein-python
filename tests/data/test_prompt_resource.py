@@ -8,10 +8,10 @@ from unittest.mock import MagicMock
 import pytest
 
 from openprotein.data import DataAPI, Prompt
-from openprotein.data.prompts import PromptSummary
+from openprotein.data.prompts import PromptMetadata
 from openprotein.errors import HTTPError, JobOutputsNotReady
 from openprotein.jobs.schemas import JobStatus
-from openprotein.prompt.schemas import PromptMetadata
+from openprotein.prompt.schemas import PromptMetadata as CompatPromptMetadata
 
 SUMMARY = {
     "id": "p1",
@@ -21,7 +21,7 @@ SUMMARY = {
     "description": None,
     "created_at": "2026-07-20T00:00:00Z",
 }
-SAMPLED = PromptMetadata(
+SAMPLED = CompatPromptMetadata(
     id="s1",
     name="prompt-abc",
     description=None,
@@ -60,7 +60,7 @@ def prompt(session) -> Prompt:
     session.get.return_value = _response(
         content=_zip(b">a\nACDE\n>b\nAC:DE\n", b">a\nMKVL\n")
     )
-    return Prompt(session, PromptSummary.model_validate(SUMMARY))
+    return Prompt(session, PromptMetadata.model_validate(SUMMARY))
 
 
 def test_session_data_hands_out_one_bound_prompt_class(session):
@@ -140,7 +140,7 @@ def test_an_unknown_id_raises_the_404(session):
 
 def test_reading_a_prompt_the_data_routes_do_not_hold_raises_the_404(session):
     session.get.side_effect = _not_found()
-    prompt = Prompt(session, PromptSummary(id="s1", status=JobStatus.SUCCESS))
+    prompt = Prompt(session, PromptMetadata(id="s1", status=JobStatus.SUCCESS))
     with pytest.raises(HTTPError) as error:
         list(prompt)
     assert error.value.status_code == 404
@@ -167,7 +167,7 @@ def test_replicates_are_read_once_per_handle(prompt, session):
 def test_reading_a_pending_prompt_names_its_status(session, read):
     pending = SUMMARY | {"status": "PENDING", "job_id": "p1"}
     session.get.return_value = _response(pending)
-    prompt = Prompt(session, PromptSummary.model_validate(pending))
+    prompt = Prompt(session, PromptMetadata.model_validate(pending))
     with pytest.raises(JobOutputsNotReady, match="Prompt p1 is PENDING"):
         read(prompt)
     session.get.assert_called_once_with("v1/data/prompts/p1")
@@ -188,4 +188,4 @@ def test_delete_deletes_the_row(prompt, session):
 @pytest.mark.parametrize("name", ["download", "replicates", "record", "upload"])
 def test_a_prompt_has_no_download_replicates_record_or_upload(name):
     assert not hasattr(Prompt, name)
-    assert not hasattr(Prompt(MagicMock(), PromptSummary(id="p1")), name)
+    assert not hasattr(Prompt(MagicMock(), PromptMetadata(id="p1")), name)

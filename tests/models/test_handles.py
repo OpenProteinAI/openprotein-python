@@ -121,11 +121,11 @@ class TestSeeds:
 class TestPrompt:
     def test_a_prompt_object_sends_its_id(self, models, models_session):
         from openprotein.data.prompts.prompts import Prompt
-        from openprotein.data.prompts.schemas import PromptSummary
+        from openprotein.data.prompts.schemas import PromptMetadata
 
         prompt = Prompt(
             models_session.session,
-            PromptSummary(id="prompt-1", created_at="2026-10-21T08:00:00Z"),
+            PromptMetadata(id="prompt-1", created_at="2026-10-21T08:00:00Z"),
         )
 
         models.poet.score(["MKT"], prompt=prompt)
@@ -139,11 +139,11 @@ class TestPrompt:
     def test_a_prompt_that_is_not_ready_sends_its_id(
         self, models, models_session, model, verb
     ):
-        from openprotein.data.prompts import Prompt, PromptSummary
+        from openprotein.data.prompts import Prompt, PromptMetadata
 
         prompt = Prompt(
             models_session.session,
-            PromptSummary(id="prompt-9", status=JobStatus.PENDING, job_id="prompt-9"),
+            PromptMetadata(id="prompt-9", status=JobStatus.PENDING, job_id="prompt-9"),
         )
 
         getattr(getattr(models, model), verb)(["MKT"], prompt=prompt)
