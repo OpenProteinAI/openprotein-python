@@ -10,19 +10,19 @@ The OpenProtein.AI Python Interface provides a user-friendly library to interact
 
 # Table of Contents
 
-|   | Workflow                                                                                                     | Description                                                                              |
-|---|--------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|
-| 0 | [`Quick start`](#Quick-start)                                                                                | Quick start guide                                                                        |
-| 1 | [`Installation`](https://docs.openprotein.ai/python-api/installation.html)                                   | Install guide for pip and conda.                                                         |
-| 2 | [`Session management`](https://docs.openprotein.ai/python-api/index.html)                                    | An overview of the OpenProtein Python Client & the asynchronous jobs system.             |
-| 3 | [`Property-Regression-Models`](https://docs.openprotein.ai/python-api/property-regression-models/index.html) | Covers core tasks such as data upload, model training & prediction, and sequence design. |
-| 4 | [`De Novo prediction & generative models (PoET)`](https://docs.openprotein.ai/python-api/poet/index.html)    | Covers PoET, a protein LLM for *de novo* scoring, as well as sequence generation.        |
-| 5 | [`Foundational models`](https://docs.openprotein.ai/python-api/foundation-models/index.html)                 | Covers methods for creating sequence embeddings with proprietary & open-source models.   |
+|   | Workflow                                                                       | Description                                                                   |
+|---|--------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
+| 0 | [`Quick start`](#quick-start)                                                  | Quick start guide                                                             |
+| 1 | [`Installation`](#installation)                                                | Install with pip or conda.                                                    |
+| 2 | [`Python API reference`](https://docs.openprotein.ai/references/python-api/)   | Sessions, jobs and every interface in the Python client.                      |
+| 3 | [`Models`](https://docs.openprotein.ai/references/python-api/models/)          | Embedding, scoring, generative and structure models, plus GP, SVD and UMAP.   |
+| 4 | [`PoET`](https://docs.openprotein.ai/references/python-api/models/#poet)       | Score and generate sequences conditioned on a protein family.                 |
+| 5 | [`Tutorials`](https://docs.openprotein.ai/tutorials/)                          | End-to-end workflows.                                                         |
 
 
 # Quick-start
 
-Get started with our quickstart README! You can peruse the [official documentation](https://docs.openprotein.ai/python-api/) for more details!
+Get started with our quickstart README! You can peruse the [official documentation](https://docs.openprotein.ai/quickstart/) for more details!
 ## Installation 
 
 To install the python interface using pip, run the following command: 
@@ -43,7 +43,7 @@ conda install -c openprotein openprotein-python
 # Getting started
 
 
-Read on below for the quick-start guide, or see the [docs](https://docs.openprotein.ai/python-api/) for more information!
+Read on below for the quick-start guide, or see the [docs](https://docs.openprotein.ai/references/python-api/) for more information!
 
 To begin, create a session using your login credentials.
 ```
@@ -97,69 +97,63 @@ future.rename(name="my-run", description="baseline model")
 ```
 
 ### Resuming Jobs
-Jobs from prior workflows can be resumed using the load_job method provided by each API. 
+Jobs from prior workflows can be resumed by loading them by ID.
 ```
-session.load_job(JOB_ID)  # Replace JOB_ID with the ID of the training job to resume
+future = session.jobs.get(JOB_ID)  # Replace JOB_ID with the ID of the job to resume
 ```
 
 ## PoET interface
-The PoET Interface allows scoring, generating, and retrieving sequences using the PoET model.
+PoET scores and generates sequences conditioned on a prompt, a set of sequences from the protein family. Model handles are on `session.models`.
+
+### Building a Prompt
+Create a prompt from sequences you already have, or sample one from an MSA built by homology search.
+```
+model = session.models.poet
+
+seed = "MALWMRLLPLLALLALWGPDPAAAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN"
+
+prompt = session.prompt.create_prompt([seed])
+
+# or
+msa = session.align.create_msa(seed)
+prompt = msa.sample_prompt(num_sequences=50)
+```
 
 ### Scoring Sequences
-To score sequences, use the score function. Provide a prompt and a list of queries. The results will be a list of (sequence, score) pydantic objects.
-
-```
-prompt_seqs = b'MALWMRLLPLLALLALWGPDPAAAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN'
-
-prompt = session.poet.upload_prompt(prompt_seqs)
-```
-
+To score sequences, use `score` with a list of queries and the prompt.
 ```
 queries = [
-    b'MALWMRLLPLLALLALWGPDPAAAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN',
-    b'MALWMRLLPLLVLLALWGPDPASAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN',
-    b'MALWTRLRPLLALLALWPPPPARAFVNQHLCGSHLVEALYLVCGERGFFYTPKARREVEGPQVGALELAGGPGAGGLEGPPQKRGIVEQCCASVCSLYQLENYCN',
-    b'MALWIRSLPLLALLVFSGPGTSYAAANQHLCGSHLVEALYLVCGERGFFYSPKARRDVEQPLVSSPLRGEAGVLPFQQEEYEKVKRGIVEQCCHNTCSLYQLENYCN',
-    b'MALWMRLLPLLALLALWAPAPTRAFVNQHLCGSHLVEALYLVCGERGFFYTPKARREVEDLQVRDVELAGAPGEGGLQPLALEGALQKRGIVEQCCTSICSLYQLENYCN',
+    "MALWMRLLPLLALLALWGPDPAAAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN",
+    "MALWMRLLPLLVLLALWGPDPASAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN",
+    "MALWTRLRPLLALLALWPPPPARAFVNQHLCGSHLVEALYLVCGERGFFYTPKARREVEGPQVGALELAGGPGAGGLEGPPQKRGIVEQCCASVCSLYQLENYCN",
 ]
-```
 
-```
-future = session.poet.score(prompt, queries)
-result = future.wait()
-# result is a list of (sequence, score) pydantic objects
+future = model.score(queries, prompt=prompt)
+scores = future.wait()
+# one log-likelihood per query, in the order submitted
+# a prompt with several replicates gives one score per replicate
 ```
 
 ### Scoring Single Site Variants
-For scoring single site variants, use the `single_site function`, providing the original sequence and setting `prompt_is_seed` to True if the prompt is a seed sequence.
+To score every single-site substitution of a sequence, use `single_site`.
 ```
-sequence = "MALWMRLLPLLALLALWGPDPAAAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN"
-future = session.poet.single_site(prompt, sequence, prompt_is_seed=True) 
-result = future.wait()
-# result is a dictionary of {variant: score}
+future = model.single_site(seed, prompt=prompt)
+scores = future.wait()
+# one score per substitution, 20 per position: positions in sequence order,
+# substitutions in the order of openprotein.utils.sequence.AMINO_ACIDS
 ```
 
 ### Generating Sequences
-To generate sequences from the PoET model, use the `generate` function with relevant parameters. The result will be a list of generated samples.
+To sample new sequences from the prompt, use `generate`.
 ```
-future = session.poet.generate(
-    prompt,
-    max_seqs_from_msa=1024,
+future = model.generate(
+    prompt=prompt,
     num_samples=100,
     temperature=1.0,
-    topk=15
+    top_k=15,
 )
-samples = future.wait()
-```
-
-### Retrieving Input Sequences
-You can retrieve the prompt, MSA, or seed sequences for a PoET job using the `get_input` function or the individual functions for each type.
-```
-future.get_input(INPUT_TYPE)
-# or, functions for each type
-future.get_prompt()
-future.get_msa()
-future.get_seed()
+sequences = future.wait()                   # generated sequences as strings
+scores = future.get(output="loglikelihood")  # one log-likelihood per sequence
 ```
 
 See more at our [Homepage](https://docs.openprotein.ai/)

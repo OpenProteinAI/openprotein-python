@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from openprotein.data.prompts import Prompt, PromptRecord, PromptSummary
+from openprotein.data.prompts import Prompt, PromptMetadata, PromptRecord
 from openprotein.data.prompts._api import (
     prompts_delete,
     prompts_download,
@@ -195,7 +195,7 @@ def test_get_wraps_the_record(mock_session):
 def test_prompt_wrapper_methods_route_to_its_id(mock_session, sample_record):
     payload = _zip_of([b">c1\nACDE\n", b">c1\nMKVL\n"])
     mock_session.get.return_value.content = payload
-    prompt = Prompt(mock_session, PromptSummary.model_validate(sample_record))
+    prompt = Prompt(mock_session, PromptMetadata.model_validate(sample_record))
 
     assert list(prompt) == [["ACDE"], ["MKVL"]]
     assert mock_session.get.call_args[0][0] == "v1/data/prompts/prompt123/download"
@@ -222,7 +222,7 @@ def pending_summary(sample_summary) -> dict:
 
 
 def test_pending_summary_parses_with_its_job_status(mock_session, pending_summary):
-    summary = PromptSummary.model_validate(pending_summary)
+    summary = PromptMetadata.model_validate(pending_summary)
     prompt = Prompt(mock_session, summary)
     assert summary.status == JobStatus.RUNNING
     assert prompt.status == JobStatus.RUNNING
@@ -230,14 +230,14 @@ def test_pending_summary_parses_with_its_job_status(mock_session, pending_summar
 
 
 def test_summary_without_status_reads_success_and_no_job(mock_session, sample_summary):
-    prompt = Prompt(mock_session, PromptSummary.model_validate(sample_summary))
+    prompt = Prompt(mock_session, PromptMetadata.model_validate(sample_summary))
     assert prompt.status == JobStatus.SUCCESS
     assert prompt.job_id is None
 
 
 @pytest.mark.parametrize("status", ["FAILURE", "CANCELED"])
 def test_summary_parses_terminal_job_statuses(sample_summary, status):
-    summary = PromptSummary.model_validate({**sample_summary, "status": status})
+    summary = PromptMetadata.model_validate({**sample_summary, "status": status})
     assert summary.status == JobStatus(status)
 
 

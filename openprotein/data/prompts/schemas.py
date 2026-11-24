@@ -1,16 +1,21 @@
-"""Schemas for stored prompts (``session.data.Prompt``)."""
+"""Schemas for stored prompts (``session.data.Prompt``).
+
+.. deprecated:: 0.18.2
+    ``PromptSummary``: use ``openprotein.data.PromptMetadata``.
+"""
 
 from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel
 
+from openprotein import _deprecation
 from openprotein.jobs.schemas import JobStatus
 
-__all__ = ["PromptRecord", "PromptSummary", "PromptUnitValue"]
+__all__ = ["PromptMetadata", "PromptRecord", "PromptUnitValue"]
 
 
-class PromptSummary(BaseModel):
+class PromptMetadata(BaseModel):
     """One row as listed, without its replicates.
 
     A row whose job hasn't finished has a ``status`` other than ``SUCCESS`` and
@@ -34,10 +39,22 @@ class PromptUnitValue(BaseModel):
     value: dict[str, Any]
 
 
-class PromptRecord(PromptSummary):
+class PromptRecord(PromptMetadata):
     """One row read in full, carrying each replicate's presigned value.
 
     ``value`` is ``None`` until the row's job has produced the replicates.
     """
 
     value: list[PromptUnitValue] | None = None
+
+
+def __getattr__(name: str) -> Any:
+    if name == "PromptSummary":
+        _deprecation.warn_deprecated(
+            f"{__name__}.PromptSummary",
+            "`openprotein.data.PromptMetadata`",
+            since="0.18.2",
+            removed_in="0.19.0",
+        )
+        return PromptMetadata
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

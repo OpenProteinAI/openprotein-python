@@ -241,7 +241,7 @@ def test_ablang2_single_site_forwards_base_sequence():
 def test_a_poet_model_sends_the_id_of_a_stored_prompt_that_is_not_ready(
     model_class, model_id
 ):
-    from openprotein.data.prompts import Prompt, PromptSummary
+    from openprotein.data.prompts import Prompt, PromptMetadata
     from openprotein.jobs import JobStatus
     from openprotein.prompt import PromptAPI
 
@@ -250,7 +250,7 @@ def test_a_poet_model_sends_the_id_of_a_stored_prompt_that_is_not_ready(
     session.prompt._resolve_query.return_value = None
     prompt = Prompt(
         session,
-        PromptSummary(id="prompt-9", status=JobStatus.PENDING, job_id="prompt-9"),
+        PromptMetadata(id="prompt-9", status=JobStatus.PENDING, job_id="prompt-9"),
     )
     job = {
         "job_id": "job-123",

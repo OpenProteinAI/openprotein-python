@@ -10,13 +10,13 @@ from openprotein.base import APISession
 from openprotein.data._reads import read
 from openprotein.errors import MissingParameterError
 
-from .schemas import PromptRecord, PromptSummary
+from .schemas import PromptMetadata, PromptRecord
 
 
 class PromptPage(BaseModel):
     """One page of prompt summaries, newest first."""
 
-    items: list[PromptSummary]
+    items: list[PromptMetadata]
     next: str | None = None
 
 

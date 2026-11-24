@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.18.2 (2026-11-24)
+
+
+### Bug Fixes
+
+* **data:** export the stored prompt metadata as PromptMetadata
+* **readme:** show the session.models poet calls
+
+### Deprecations
+
+* **data:** `openprotein.data.prompts.PromptSummary` and `openprotein.data.prompts.schemas.PromptSummary`: use `openprotein.data.PromptMetadata`. The old name still works, warns with a `FutureWarning`, and is removed in 0.19.0.
+
 ## 0.18.1 (2026-11-24)
 
 

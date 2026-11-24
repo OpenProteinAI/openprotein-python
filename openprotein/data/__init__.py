@@ -7,7 +7,7 @@ isort:skip_file
 from .assaydataset import Assay, AssayDataset
 from .data import DataAPI
 from .msa import MSA, MSAFormat, MSAMetadata
-from .prompts import Prompt
+from .prompts import Prompt, PromptMetadata
 from .schemas import AssayDataPage, AssayDataRow, AssayMetadata
 
 __all__ = [
@@ -21,4 +21,5 @@ __all__ = [
     "MSAFormat",
     "MSAMetadata",
     "Prompt",
+    "PromptMetadata",
 ]

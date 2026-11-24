@@ -7,7 +7,7 @@ import pytest
 
 from openprotein.align.schemas import MSASamplingMethod
 from openprotein.data.msa import MSA, MSAMetadata
-from openprotein.data.prompts import Prompt, PromptSummary
+from openprotein.data.prompts import Prompt, PromptMetadata
 from openprotein.errors import HTTPError, MissingParameterError
 from openprotein.jobs import JobStatus
 
@@ -182,7 +182,7 @@ def _route(mock_session, routes: dict[str, MagicMock]) -> None:
 def _sampled(mock_session, status: str = "SUCCESS") -> Prompt:
     return Prompt(
         mock_session,
-        PromptSummary(id=PROMPT_ID, status=JobStatus(status), job_id=PROMPT_ID),
+        PromptMetadata(id=PROMPT_ID, status=JobStatus(status), job_id=PROMPT_ID),
     )
 
 
