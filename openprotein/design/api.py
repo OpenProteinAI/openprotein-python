@@ -19,7 +19,18 @@ from .schemas import (
     Subcriterion,
 )
 
-PATH_PREFIX = "v1/designer/design"
+__all__ = [
+    "decode_design_result",
+    "decode_design_results_stream",
+    "design_delete",
+    "design_get",
+    "designer_create_genetic_algorithm",
+    "designer_get_design_results",
+    "designs_list",
+]
+
+
+_PATH_PREFIX = "v1/designer/design"
 
 
 def designs_list(session: APISession) -> list[Design]:
@@ -36,7 +47,7 @@ def designs_list(session: APISession) -> list[Design]:
     list[Design]
         List of designs.
     """
-    endpoint = PATH_PREFIX
+    endpoint = _PATH_PREFIX
     response = session.get(endpoint)
     return TypeAdapter(list[Design]).validate_python(response.json())
 
@@ -57,7 +68,7 @@ def design_get(session: APISession, design_id: str) -> Design:
     Design
         Design metadata.
     """
-    endpoint = PATH_PREFIX + f"/{design_id}"
+    endpoint = _PATH_PREFIX + f"/{design_id}"
     response = session.get(endpoint)
     return TypeAdapter(Design).validate_python(response.json())
 
@@ -86,9 +97,9 @@ def designer_create_genetic_algorithm(
     criteria: list[list[DesignCriterion]]
         List of list of design criteria, logically grouping by OR then AND.
     num_steps: int, optional
-        The number of steps in the genetic algorithm. Default is 8.
+        The number of steps in the genetic algorithm. Default is 25.
     pop_size: int, optional
-        The population size for the genetic algorithm. Default is 256.
+        The population size for the genetic algorithm. Default is 1024.
     n_offsprings: int, optional
         The number of offspring for the genetic algorithm. Default is 5120.
     crossover_prob: float, optional
@@ -112,7 +123,7 @@ def designer_create_genetic_algorithm(
     if isinstance(allowed_tokens, DesignConstraint):
         allowed_tokens = allowed_tokens.as_dict()
 
-    endpoint = PATH_PREFIX + "/genetic-algorithm"
+    endpoint = _PATH_PREFIX + "/genetic-algorithm"
 
     body = {
         "assay_id": assay_id,
@@ -139,7 +150,7 @@ def designer_get_design_results(
     step: int | None = None,
 ) -> Iterator[list[str]]:
     """
-    Get csv encoded results for a design ID.
+    Get the results for a design ID.
 
     Parameters
     ----------
@@ -152,14 +163,15 @@ def designer_get_design_results(
 
     Returns
     -------
-    bytes
+    Iterator[list[str]]
+        An iterator over the rows of the design results.
     """
     params = {}
     if step is not None:
         if step != -1:
             step -= 1
         params["step"] = step
-    endpoint = PATH_PREFIX + f"/{design_id}/results"
+    endpoint = _PATH_PREFIX + f"/{design_id}/results"
     response = session.get(endpoint, params=params, stream=True)
     return csv.parse_stream(response.iter_lines())
 
@@ -171,15 +183,19 @@ def decode_design_result(
     pred_start_index: int,
 ) -> DesignResult:
     """
-    Decode prediction scores.
+    Decode a row of design results into scores, subscores and predictions.
 
     Args:
-        data (bytes): raw bytes encoding the array received over the API
-        batched (bool): whether or not the result was batched. affects the retrieved csv format whether they contain additional columns and header rows.
+        row: One row of design results, as yielded by `designer_get_design_results`.
+        score_start_index: Index of the first score column.
+        subscore_start_index: Index of the first subscore column, which also
+            marks the end of the scores.
+        pred_start_index: Index of the first prediction column, which also marks
+            the end of the subscores. Predictions alternate mean and variance
+            from this column onward.
 
     Returns:
-        mus (np.ndarray): decoded array of means
-        vars (np.ndarray): decoded array of variances
+        The decoded row. `step` and `sample_index` are returned 1-based.
     """
     scores = np.array(
         [float(score) for score in row[score_start_index:subscore_start_index]]
@@ -228,7 +244,6 @@ def decode_design_results_stream(
             K array of means for each model subscriterion.
         vars: np.ndarray[float]
             K array of variances for each model subscriterion.
-        vars (np.ndarray): decoded array of variances
     """
     if header is None:
         header = next(data)

@@ -8,20 +8,30 @@ from openprotein.prompt.schemas import PromptJob, PromptMetadata, QueryMetadata
 
 
 def test_prompt_job_schema():
-    """Test successful creation of a PromptJob."""
     job_data = {
         "job_id": "prompt-123",
         "job_type": JobType.align_prompt,
         "status": JobStatus.SUCCESS,
         "created_date": datetime.now(),
     }
-    job = PromptJob(**job_data)
+    job = PromptJob.model_validate(job_data)
     assert job.job_id == "prompt-123"
     assert job.prompt_id == "prompt-123"
 
 
+def test_prompt_job_msa_id_is_the_jobs_msa_id_when_it_carries_one():
+    job_data = {
+        "job_id": "prompt-123",
+        "job_type": "/prompt/sample_msa",
+        "status": JobStatus.SUCCESS,
+        "created_date": datetime.now(),
+    }
+
+    assert PromptJob.model_validate(job_data).msa_id is None
+    assert PromptJob.model_validate({**job_data, "msa_id": "msa-1"}).msa_id == "msa-1"
+
+
 def test_prompt_metadata_schema():
-    """Test successful creation of PromptMetadata."""
     metadata_data = {
         "id": "prompt-meta-123",
         "name": "Test Prompt",
@@ -37,7 +47,6 @@ def test_prompt_metadata_schema():
 
 
 def test_prompt_metadata_schema_optional_fields():
-    """Test PromptMetadata with optional fields omitted."""
     metadata_data = {
         "id": "prompt-meta-456",
         "name": "Another Test Prompt",
@@ -51,7 +60,6 @@ def test_prompt_metadata_schema_optional_fields():
 
 
 def test_prompt_metadata_validation_error():
-    """Test validation error for missing required fields in PromptMetadata."""
     with pytest.raises(ValidationError):
         PromptMetadata(
             id="prompt-meta-789",
@@ -63,7 +71,6 @@ def test_prompt_metadata_validation_error():
 
 
 def test_query_metadata_schema():
-    """Test successful creation of QueryMetadata."""
     query_data = {
         "id": "query-123",
         "created_date": datetime.now(),
@@ -73,6 +80,5 @@ def test_query_metadata_schema():
 
 
 def test_query_metadata_validation_error():
-    """Test validation error for missing required fields in QueryMetadata."""
     with pytest.raises(ValidationError):
         QueryMetadata(id="query-456")  # type: ignore - meant to be missing

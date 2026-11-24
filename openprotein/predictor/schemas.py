@@ -9,6 +9,25 @@ from pydantic import BaseModel, ConfigDict
 from openprotein.common import FeatureType
 from openprotein.jobs import Job, JobStatus, JobType
 
+__all__ = [
+    "Constraints",
+    "Dataset",
+    "Features",
+    "Kernel",
+    "KernelType",
+    "ModelSpec",
+    "PredictJob",
+    "PredictMultiJob",
+    "PredictMultiSingleSiteJob",
+    "PredictSingleSiteJob",
+    "PredictorArgs",
+    "PredictorCVJob",
+    "PredictorEnsembleJob",
+    "PredictorMetadata",
+    "PredictorTrainJob",
+    "PredictorType",
+]
+
 
 class KernelType(str, Enum):
     """Kernel options for a GP predictor."""
@@ -43,8 +62,6 @@ class Features(BaseModel):
     type: FeatureType
     model_id: str | None = None
     reduction: str | None = None
-
-    # TODO: model extra kwargs
 
     model_config = ConfigDict(protected_namespaces=())
 

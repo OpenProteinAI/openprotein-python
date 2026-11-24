@@ -3,6 +3,7 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import numpy as np
 import pytest
 
 from openprotein.errors import APIError, InvalidParameterError
@@ -11,9 +12,9 @@ from openprotein.molecules.chains import DNA
 from openprotein.prompt.api import (
     _assert_protein_only,
     _coerce_sequence,
+    _get_query_as_complex,
     create_prompt,
     create_query,
-    get_prompt,
     get_prompt_metadata,
     get_query,
     get_query_metadata,
@@ -38,13 +39,10 @@ def multichain_complex_with_structure(
 ) -> Complex:
     c2 = Complex.from_filepath(str(DATA_DIR / "9bkq-assembly2.cif"), verbose=False)
     other = next(iter(c2.get_proteins().values()))
-    return Complex(
-        {"A": single_chain_protein_with_structure, "B": other}, name="duo"
-    )
+    return Complex({"A": single_chain_protein_with_structure, "B": other}, name="duo")
 
 
 def test_create_prompt(mock_session: MagicMock):
-    """Test the create_prompt function."""
     mock_session.post.return_value.status_code = 200
     mock_session.post.return_value.json.return_value = {
         "id": "prompt-123",
@@ -63,7 +61,6 @@ def test_create_prompt(mock_session: MagicMock):
 
 
 def test_get_prompt_metadata(mock_session: MagicMock):
-    """Test the get_prompt_metadata function."""
     mock_session.get.return_value.status_code = 200
     mock_session.get.return_value.json.return_value = {
         "id": "prompt-123",
@@ -81,7 +78,6 @@ def test_get_prompt_metadata(mock_session: MagicMock):
 
 
 def test_list_prompts(mock_session: MagicMock):
-    """Test the list_prompts function."""
     mock_session.get.return_value.status_code = 200
     mock_session.get.return_value.json.return_value = [
         {
@@ -108,7 +104,6 @@ def test_list_prompts(mock_session: MagicMock):
 
 
 def test_create_query(mock_session: MagicMock):
-    """Test the create_query function."""
     mock_session.post.return_value.status_code = 200
     mock_session.post.return_value.json.return_value = {
         "id": "query-123",
@@ -124,7 +119,6 @@ def test_create_query(mock_session: MagicMock):
 
 
 def test_get_query_metadata(mock_session: MagicMock):
-    """Test the get_query_metadata function."""
     mock_session.get.return_value.status_code = 200
     mock_session.get.return_value.json.return_value = {
         "id": "query-123",
@@ -139,7 +133,6 @@ def test_get_query_metadata(mock_session: MagicMock):
 
 
 def test_api_error_handling(mock_session: MagicMock):
-    """Test that APIError is raised for non-200 status codes."""
     mock_session.get.return_value.status_code = 404
     mock_session.get.return_value.json.return_value = {"detail": "Not Found"}
 
@@ -148,15 +141,11 @@ def test_api_error_handling(mock_session: MagicMock):
 
 
 def test_invalid_parameter_error(mock_session: MagicMock):
-    """Test that InvalidParameterError is raised for 400 status code."""
     mock_session.post.return_value.status_code = 400
     mock_session.post.return_value.json.return_value = {"detail": "Invalid parameters"}
 
     with pytest.raises(InvalidParameterError, match="Invalid parameters"):
         create_prompt(mock_session, context=["ACGT"], name="Invalid Prompt")
-
-
-# ---------- multichain support ----------
 
 
 class TestCoerceSequence:
@@ -276,6 +265,29 @@ class TestZipUnzipRoundtrip:
         entry = result[0][0]
         assert isinstance(entry, Complex)
         assert [p.sequence for p in entry.get_proteins().values()] == [b"", b"GHIK"]
+
+    def test_only_context_n_members_are_ordered_by_position(self):
+        """``context-<n>.zip`` members sort by ``n``; other names follow in archive order."""
+        import io
+        import zipfile
+
+        zips = zip_prompt([["A"], ["AA"], ["AAA"], ["AAAA"], ["AAAAA"]])
+        members = {
+            "context-v2-0.zip": 3,
+            "context-10.zip": 2,
+            "context-x.zip": 4,
+            "context-2.zip": 1,
+            "context-1.zip": 0,
+        }
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w") as archive:
+            for name, source in members.items():
+                archive.writestr(name, zips[source].getvalue())
+        buf.seek(0)
+
+        result = unzip_prompt(buf)
+
+        assert [len(entries[0].sequence) for entries in result] == [1, 2, 3, 4, 5]
 
     def test_raw_string_with_colon_returns_complex(self):
         zips = zip_prompt(["ACDE:GHIK"])
@@ -451,12 +463,7 @@ class TestCreateQueryMultichain:
 
 class TestGetQueryMultichain:
     def test_multichain_fasta_response_returns_complex(self, mock_session: MagicMock):
-        """get_query must parse ':' chain breaks in FASTA responses into a Complex.
-
-        Regression: previously this branch called ``Protein(name, sequence)``
-        directly, which raised AssertionError because ':' isn't a valid amino
-        acid character.
-        """
+        """get_query must parse ':' chain breaks in FASTA responses into a Complex."""
         mock_session.get.return_value.status_code = 200
         mock_session.get.return_value.content = b">my-query\nACDE:GHIK\n"
         mock_session.get.return_value.headers = {
@@ -468,10 +475,8 @@ class TestGetQueryMultichain:
         seqs = sorted(p.sequence for p in result.get_proteins().values())
         assert seqs == [b"ACDE", b"GHIK"]
 
-    def test_single_chain_fasta_response_returns_protein(
-        self, mock_session: MagicMock
-    ):
-        """Single-chain FASTA responses still collapse to Protein."""
+    def test_single_chain_fasta_response_returns_protein(self, mock_session: MagicMock):
+        """Single-chain FASTA responses collapse to Protein."""
         mock_session.get.return_value.status_code = 200
         mock_session.get.return_value.content = b">my-query\nACDEFGHIK\n"
         mock_session.get.return_value.headers = {
@@ -482,14 +487,14 @@ class TestGetQueryMultichain:
         assert isinstance(result, Protein)
         assert result.sequence == b"ACDEFGHIK"
 
-    @pytest.mark.parametrize("status_code,detail", [(401, "Unauthorized"), (404, "Not Found")])
-    def test_error_status_surfaces_detail_not_file_format_error(
+    @pytest.mark.parametrize(
+        "status_code,detail", [(401, "Unauthorized"), (404, "Not Found")]
+    )
+    def test_error_status_surfaces_detail(
         self, mock_session: MagicMock, status_code: int, detail: str
     ):
-        """Regression: error responses must dispatch on status code before parsing
-        the body as a query file. Previously this raised an opaque
-        ``APIError("Unexpected file returned…")`` for 401/404 because file-format
-        parsing ran first."""
+        """An error response dispatches on its status code before the body is
+        parsed as a query file, so the server's detail reaches the caller."""
         mock_session.get.return_value.status_code = status_code
         mock_session.get.return_value.json.return_value = {"detail": detail}
         mock_session.get.return_value.headers = {
@@ -534,6 +539,54 @@ class TestGetQueryMultichain:
         assert isinstance(result, Protein)
 
 
+class TestGetQueryAsComplex:
+    def test_single_chain_mmcif_keeps_chain_id(
+        self,
+        mock_session: MagicMock,
+        single_chain_protein_with_structure: Protein,
+    ):
+        """A single-chain mmCIF upload whose chain isn't 'A' keeps its id."""
+        c = Complex({"B": single_chain_protein_with_structure}, name="q")
+        cif_bytes = c.to_string("cif").encode()
+        mock_session.get.return_value.status_code = 200
+        mock_session.get.return_value.content = cif_bytes
+        mock_session.get.return_value.headers = {
+            "Content-Disposition": "attachment; filename=query.cif",
+            "Content-Type": "chemical/x-mmcif",
+        }
+        result = _get_query_as_complex(mock_session, "query-789")
+        assert isinstance(result, Complex)
+        assert set(result.get_chains().keys()) == {"B"}
+
+    def test_single_chain_fasta_wraps_as_a(self, mock_session: MagicMock):
+        """A FASTA query has no chain id, so it's wrapped as 'A'."""
+        mock_session.get.return_value.status_code = 200
+        mock_session.get.return_value.content = b">my-query\nACDEFGHIK\n"
+        mock_session.get.return_value.headers = {
+            "Content-Disposition": "attachment; filename=query.fasta",
+            "Content-Type": "text/x-fasta",
+        }
+        result = _get_query_as_complex(mock_session, "query-789")
+        assert isinstance(result, Complex)
+        assert set(result.get_chains().keys()) == {"A"}
+
+    def test_multichain_mmcif_unchanged(
+        self,
+        mock_session: MagicMock,
+        multichain_complex_with_structure: Complex,
+    ):
+        cif_bytes = multichain_complex_with_structure.to_string("cif").encode()
+        mock_session.get.return_value.status_code = 200
+        mock_session.get.return_value.content = cif_bytes
+        mock_session.get.return_value.headers = {
+            "Content-Disposition": "attachment; filename=query.cif",
+            "Content-Type": "chemical/x-mmcif",
+        }
+        result = _get_query_as_complex(mock_session, "query-789")
+        assert isinstance(result, Complex)
+        assert len(result.get_proteins()) == 2
+
+
 class TestParseFastaAsProteins:
     def test_emits_future_warning_on_single_chain(self, tmp_path: Path):
         path = tmp_path / "single.fasta"
@@ -553,3 +606,36 @@ class TestParseFastaAsProteins:
         with pytest.warns(FutureWarning):
             with pytest.raises(ValueError, match="chain break"):
                 parse_fasta_as_proteins(path)
+
+
+class TestGetQueryPDB:
+    """The prompt service serves an uploaded .pdb query as ``chemical/x-pdb``."""
+
+    @pytest.mark.parametrize(
+        "headers",
+        [
+            {
+                "Content-Disposition": "attachment; filename=query.pdb",
+                "Content-Type": "chemical/x-pdb",
+            },
+            {"Content-Disposition": "attachment; filename=query.pdb"},
+            {"Content-Type": "chemical/x-pdb"},
+        ],
+    )
+    def test_pdb_response_parses_as_a_complex(
+        self, mock_session: MagicMock, headers: dict[str, str]
+    ):
+        pdb = (DATA_DIR / "1GCM.pdb").read_bytes()
+        mock_session.get.return_value.status_code = 200
+        mock_session.get.return_value.content = pdb
+        mock_session.get.return_value.headers = headers
+        expected = Complex.from_string(pdb, format="pdb", verbose=False)
+
+        result = _get_query_as_complex(mock_session, "query-789")
+
+        assert isinstance(result, Complex)
+        assert list(result.get_proteins()) == list(expected.get_proteins())
+        for chain_id, protein in expected.get_proteins().items():
+            served = result.get_proteins()[chain_id]
+            assert served.sequence == protein.sequence
+            np.testing.assert_array_equal(served.coordinates, protein.coordinates)

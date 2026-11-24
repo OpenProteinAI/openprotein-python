@@ -11,6 +11,25 @@ from .openprotein import OpenProteinModel
 from .poet import PoETModel
 from .poet2 import PoET2Model
 
+__all__ = ["EmbeddingsAPI"]
+
+
+_LEGACY_MODELS: dict[str, tuple[type[EmbeddingModel], str]] = {
+    "poet2": (PoET2Model, "poet-2"),
+    "poet": (PoETModel, "poet"),
+    "prot_seq": (OpenProteinModel, "prot-seq"),
+    "rotaprot_large_uniref50w": (OpenProteinModel, "rotaprot-large-uniref50w"),
+    "rotaprot_large_uniref90_ft": (OpenProteinModel, "rotaprot-large-uniref90-ft"),
+    "ablang2": (AbLang2Model, "ablang2"),
+    **{name.replace("-", "_"): (ESMModel, name) for name in ESMModel.get_model()},
+}
+_LEGACY_ALIASES = {
+    "poet_2": "poet2",
+    "esm1b": "esm1b_t33_650M_UR50S",
+    "esm1v": "esm1v_t33_650M_UR90S_1",
+    "esm2": "esm2_t33_650M_UR50D",
+}
+
 
 class EmbeddingsAPI:
     """
@@ -42,8 +61,7 @@ class EmbeddingsAPI:
         model = session.embedding.get_model('prot-seq')
     """
 
-    # added for static typing, eg pylance, for autocomplete
-    # at init these are all overwritten.
+    # Static declarations for typing and autocomplete.
 
     #: PoET-2 model
     poet2: PoET2Model
@@ -85,24 +103,33 @@ class EmbeddingsAPI:
 
     def __init__(self, session: APISession):
         self.session = session
-        # dynamically add models from  api list
-        self._load_models()
 
-    def _load_models(self):
-        # Dynamically add model instances as attributes - precludes any drift
-        models = self.list_models()
-        for model in models:
-            model_name = model.id.replace("-", "_")  # hyphens out
-            setattr(self, model_name, model)
-        # Setup aliases safely
-        if getattr(self, "esm1b_t33_650M_UR50S", None):
-            self.esm1b = self.esm1b_t33_650M_UR50S
-        if getattr(self, "esm1v_t33_650M_UR90S_1", None):
-            self.esm1v = self.esm1v_t33_650M_UR90S_1
-        if getattr(self, "esm2_t33_650M_UR50D", None):
-            self.esm2 = self.esm2_t33_650M_UR50D
-        if getattr(self, "poet_2", None):
-            self.poet2 = self.poet_2
+    def __getattr__(self, name: str) -> EmbeddingModel:
+        """Resolve a model handle under the embeddings namespace.
+
+        Names without a typed handle resolve against :meth:`list_models`.
+        """
+        if name.startswith("_") or "session" not in self.__dict__:
+            raise AttributeError(name)
+        canonical = _LEGACY_ALIASES.get(name, name)
+        if canonical not in self.__dict__:
+            self.__dict__[canonical] = self._resolve(canonical)
+        return self.__dict__[canonical]
+
+    def _resolve(self, name: str) -> EmbeddingModel:
+        entry = _LEGACY_MODELS.get(name)
+        if entry is not None:
+            cls, model_id = entry
+            return cls(self.session, model_id)
+        for model in self.list_models():
+            if model.id.replace("-", "_") == name:
+                return model
+        raise AttributeError(name)
+
+    def __dir__(self):
+        return sorted(
+            set(super().__dir__()) | _LEGACY_MODELS.keys() | _LEGACY_ALIASES.keys()
+        )
 
     def list_models(self) -> list[EmbeddingModel]:
         """list models available for creating embeddings of your sequences"""
@@ -138,6 +165,8 @@ class EmbeddingsAPI:
 
         Raises
         ------
+        AttributeError
+            If no listed model has that name.
         HTTPError
             If the GET request does not succeed.
         """

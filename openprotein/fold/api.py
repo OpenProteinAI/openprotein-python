@@ -17,7 +17,19 @@ from .schemas import FoldJob, FoldMetadata
 if TYPE_CHECKING:
     import pandas as pd
 
-PATH_PREFIX = "v1/fold"
+__all__ = [
+    "fold_get",
+    "fold_get_batch_extra_result",
+    "fold_get_extra_result",
+    "fold_get_sequence_result",
+    "fold_get_sequences",
+    "fold_model_get",
+    "fold_models_list_get",
+    "fold_models_post",
+]
+
+
+_PATH_PREFIX = "v1/fold"
 
 
 def fold_models_list_get(session: APISession) -> list[str]:
@@ -34,7 +46,7 @@ def fold_models_list_get(session: APISession) -> list[str]:
     list of str
         List of model names.
     """
-    endpoint = PATH_PREFIX + "/models"
+    endpoint = _PATH_PREFIX + "/models"
     response = session.get(endpoint)
     result = response.json()
     return result
@@ -56,7 +68,7 @@ def fold_model_get(session: APISession, model_id: str) -> ModelMetadata:
     ModelMetadata
         Metadata for the specified model.
     """
-    endpoint = PATH_PREFIX + f"/models/{model_id}"
+    endpoint = _PATH_PREFIX + f"/models/{model_id}"
     response = session.get(endpoint)
     result = response.json()
     return ModelMetadata(**result)
@@ -78,7 +90,7 @@ def fold_get(session: APISession, job_id: str) -> FoldMetadata:
     FoldMetadata
         Metadata about the fold job.
     """
-    endpoint = PATH_PREFIX + f"/{job_id}"
+    endpoint = _PATH_PREFIX + f"/{job_id}"
     response = session.get(endpoint)
     fold = FoldMetadata.model_validate(response.json())
     return fold
@@ -100,7 +112,7 @@ def fold_get_sequences(session: APISession, job_id: str) -> list[bytes]:
     list of bytes
         List of sequences as bytes.
     """
-    endpoint = PATH_PREFIX + f"/{job_id}/sequences"
+    endpoint = _PATH_PREFIX + f"/{job_id}/sequences"
     response = session.get(endpoint)
     return TypeAdapter(list[bytes]).validate_python(response.json())
 
@@ -130,7 +142,7 @@ def fold_get_sequence_result(
     """
     if isinstance(sequence_or_index, bytes):
         sequence_or_index = sequence_or_index.decode()
-    endpoint = PATH_PREFIX + f"/{job_id}/{sequence_or_index}"
+    endpoint = _PATH_PREFIX + f"/{job_id}/{sequence_or_index}"
     response = session.get(endpoint, params={"format": format})
     return response.content
 
@@ -225,7 +237,7 @@ def fold_get_extra_result(
 
     else:
         raise ValueError(f"Unexpected key: {key}")
-    endpoint = PATH_PREFIX + f"/{job_id}/{sequence_or_index}/{key}"
+    endpoint = _PATH_PREFIX + f"/{job_id}/{sequence_or_index}/{key}"
     try:
         response = session.get(
             endpoint,
@@ -270,12 +282,11 @@ def fold_get_batch_extra_result(
     """
     Fetch an extra result key stacked across every unit in a fold job.
 
-    Backed by a single server call to ``/v1/fold/{job_id}/results/{key}``
-    (not N per-unit calls). For ``.npy`` keys the server pads per-unit
-    arrays with NaN to the per-axis max shape and stacks along a new
-    leading dim; for ``.json`` keys it returns a length-``N`` array where
-    element ``i`` is unit ``i``'s parsed JSON (``None`` if that unit's
-    result was missing or failed to fetch).
+    For ``.npy`` keys, per-unit arrays are padded with NaN to the per-axis
+    max shape and stacked along a new leading dim. For ``.json`` keys, the
+    result is a length-``N`` array where element ``i`` is unit ``i``'s
+    parsed JSON (``None`` if that unit's result was missing or failed to
+    fetch).
 
     Parameters
     ----------
@@ -306,7 +317,7 @@ def fold_get_batch_extra_result(
 
     else:
         raise ValueError(f"Unexpected key: {key}")
-    endpoint = PATH_PREFIX + f"/{job_id}/results/{key}"
+    endpoint = _PATH_PREFIX + f"/{job_id}/results/{key}"
     try:
         response = session.get(endpoint)
     except HTTPError as e:
@@ -319,7 +330,7 @@ def fold_get_batch_extra_result(
 def fold_models_post(
     session: APISession,
     model_id: str,
-    sequences: Sequence[Sequence[Mapping[str, Any]]],
+    sequences: Sequence[Sequence[Mapping[str, Any]]] | None = None,
     **kwargs,
 ) -> FoldJob:
     """
@@ -334,11 +345,12 @@ def fold_models_post(
         Session object for API communication.
     model_id : str
         Model ID to use for prediction.
-    sequences : sequence of sequence of dict
+    sequences : sequence of sequence of dict or None
         Sequences/complexes to request results for.
         The outer list represents the batch of requests, and the inner
         list represents the complex, with each item in the list being
         an entity in that complex. A monomer would thus be a single item.
+        Omitted for models that derive the sequence server-side.
     **kwargs
         Additional keyword arguments to be sent with POST body.
 
@@ -347,12 +359,11 @@ def fold_models_post(
     FoldJob
         Job object referring to this request.
     """
-    endpoint = PATH_PREFIX + f"/models/{model_id}"
+    endpoint = _PATH_PREFIX + f"/models/{model_id}"
 
-    body: dict = {
-        "sequences": sequences,
-    }
-    # add non-None args
+    body: dict = {}
+    if sequences is not None:
+        body["sequences"] = sequences
     for k, v in kwargs.items():
         if v is not None:
             body[k] = v

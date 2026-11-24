@@ -10,17 +10,21 @@ import gemmi
 import numpy as np
 import numpy.typing as npt
 
-import openprotein.utils.chain_id as _chain_id_utils
-import openprotein.utils.cif as _cif_utils
-import openprotein.utils.numpy as _numpy_utils
-import openprotein.utils.sequence as _sequence_utils
+import openprotein.utils.chain_id as chain_id_utils
+import openprotein.utils.cif as cif_utils
+import openprotein.utils.numpy as numpy_utils
+import openprotein.utils.sequence as sequence_utils
 
 from .. import fasta
 
 if TYPE_CHECKING:
     from ..align.msa import MSAFuture
+    from ..data.msa import MSA
     from .complex import Complex
     from .template import Template
+
+__all__ = ["Binding", "Protein", "StrEnum", "T", "V", "parse_fasta_as_proteins"]
+
 
 V = TypeVar("V")
 
@@ -30,13 +34,11 @@ class StrEnum(str, enum.Enum): ...
 
 @enum.unique
 class Binding(StrEnum):
-    # TODO: should we use any/X/?/* or something else instead of unknown?
     UNKNOWN = "U"
     BINDING = "B"
     NOT_BINDING = "N"
 
 
-# TODO: deserialization note about plddt parsed per residue
 class Protein:
     """
     Represents a protein with an optional name.
@@ -63,14 +65,14 @@ class Protein:
     def __init__(self, sequence: bytes | str, name: bytes | str | None = None):
         assert set(
             sequence if isinstance(sequence, str) else sequence.decode()
-        ).issubset(
-            set(_sequence_utils.AMINO_ACIDS + _sequence_utils.EXTRA_TOKENS)
-        ), "Expected only amino acids or the mask token 'X' or the variable length token '?'\nHint: Use Protein.from_expr if using a sequence expression"
+        ).issubset(set(sequence_utils.AMINO_ACIDS + sequence_utils.EXTRA_TOKENS)), (
+            "Expected only amino acids or the mask token 'X' or the variable length token '?'\nHint: Use Protein.from_expr if using a sequence expression"
+        )
         self._sequence = sequence.encode() if isinstance(sequence, str) else sequence
         self.name = name
         # sequence-level properties
         self._cyclic: bool = False
-        self._msa: "str | MSAFuture | None | Type[Protein.NullMSA]" = None
+        self._msa: "str | MSAFuture | MSA | None | Type[Protein.NullMSA]" = None
         self._templates: "Sequence[Protein | Complex | Template]" = ()
         # per-residue arrays
         self._data: dict[str, npt.NDArray] = {}
@@ -94,8 +96,10 @@ class Protein:
     @sequence.setter
     def sequence(self, x: bytes | str) -> None:
         assert set(x if isinstance(x, str) else x.decode()).issubset(
-            set(_sequence_utils.AMINO_ACIDS + _sequence_utils.EXTRA_TOKENS)
-        ), "Expected only amino acids or the mask token 'X' or the variable length token '?'\nHint: Use Protein.from_expr if using a sequence expression"
+            set(sequence_utils.AMINO_ACIDS + sequence_utils.EXTRA_TOKENS)
+        ), (
+            "Expected only amino acids or the mask token 'X' or the variable length token '?'\nHint: Use Protein.from_expr if using a sequence expression"
+        )
         assert len(x) == len(self)
         self._sequence = x.encode() if isinstance(x, str) else x
 
@@ -105,11 +109,11 @@ class Protein:
 
     @property
     def coordinates(self) -> npt.NDArray[np.float32]:
-        return _numpy_utils.readonly_view(self._coordinates)
+        return numpy_utils.readonly_view(self._coordinates)
 
     @property
     def plddt(self) -> npt.NDArray[np.float32]:
-        return _numpy_utils.readonly_view(self._plddt)
+        return numpy_utils.readonly_view(self._plddt)
 
     @property
     def cyclic(self) -> bool:
@@ -131,20 +135,20 @@ class Protein:
     single_sequence_mode = NullMSA
 
     @property
-    def msa(self) -> "str | MSAFuture | None | Type[NullMSA]":
+    def msa(self) -> "str | MSAFuture | MSA | None | Type[NullMSA]":
         """A reference identifier to the MSA associated to this protein."""
         return self._msa
 
     @msa.setter
-    def msa(self, msa: "str | MSAFuture | None | Type[NullMSA]") -> None:
+    def msa(self, msa: "str | MSAFuture | MSA | None | Type[NullMSA]") -> None:
         # NB: no defensive copy of msa b/c we don't want to copy things like session
         #     objects, but msa should really be immutable anyways...
         self._msa = msa
 
-    def get_msa(self) -> "str | MSAFuture | None | Type[NullMSA]":
+    def get_msa(self) -> "str | MSAFuture | MSA | None | Type[NullMSA]":
         return self._msa
 
-    def set_msa(self, x: "str | MSAFuture | None | Type[NullMSA]") -> "Protein":
+    def set_msa(self, x: "str | MSAFuture | MSA | None | Type[NullMSA]") -> "Protein":
         self._msa = x
         return self
 
@@ -170,7 +174,12 @@ class Protein:
         return len(self.sequence)
 
     def __getitem__(
-        self, idx: int | slice | Sequence[int] | npt.NDArray[np.integer]
+        self,
+        idx: int
+        | slice
+        | Sequence[int]
+        | npt.NDArray[np.integer]
+        | npt.NDArray[np.bool_],
     ) -> "Protein":
         """Return a new Protein object indexing into residues by `idx`."""
         if isinstance(idx, int):
@@ -183,7 +192,6 @@ class Protein:
             sequence=np.frombuffer(self.sequence, dtype=np.uint8)[idx].tobytes(),
             name=self.name,
         )
-        # TODO: check msa compatible?
         new = new.set_msa(self._msa).set_cyclic(self._cyclic)
         new._data = {k: v[idx].copy() for k, v in self._data.items()}
         return new
@@ -199,14 +207,15 @@ class Protein:
         assert isinstance(right, Protein) or isinstance(right, str)
         if isinstance(right, str):
             right = self.from_expr(right)
-        # TODO: if either cyclic, should we actually disable adding?
         assert right._msa == self._msa and right._cyclic == self._cyclic
         new = Protein(
             sequence=self.sequence + right.sequence,
             name=(  # set name if equal, or if only one of the two have a name
                 self.name
                 if self.name == right.name or right.name is None
-                else right.name if self.name is None else None
+                else right.name
+                if self.name is None
+                else None
             ),
         )
         new = new.set_msa(self._msa).set_cyclic(self._cyclic)
@@ -216,7 +225,6 @@ class Protein:
         }
         return new
 
-    # --- complex set operations to support & and | operators between proteins and Complexes ---
     # NOTE - in python, the or operator (|) is used to combine sets and dicts, but we also support
     # the and operator (&) to do the same thing
 
@@ -237,17 +245,15 @@ class Protein:
         if isinstance(right, str):
             right = self.from_expr(right)
         if isinstance(right, Protein):
-            id_gen = _chain_id_utils.id_generator()
+            id_gen = chain_id_utils.id_generator()
             return Complex({next(id_gen): self, next(id_gen): right})
         # NOTE - this inserts this protein at the _end_ of the Complex even though the operation
         # was Protein & Complex
-        return right & self 
+        return right & self
 
     # map the (|) or operator to the and operators
     __ror__ = __rand__
     __or__ = __and__
-
-    # --- end set operator definitions ---
 
     def at(self, positions: Sequence[int] | npt.NDArray[np.integer]) -> "Protein":
         """
@@ -340,7 +346,7 @@ class Protein:
     ) -> npt.NDArray[np.int_]:
         if not isinstance(positions, np.ndarray):
             positions = np.fromiter(positions, dtype=int)
-        return _numpy_utils.readonly_view(self._group[positions - 1])
+        return numpy_utils.readonly_view(self._group[positions - 1])
 
     def set_group_at(
         self,
@@ -354,10 +360,10 @@ class Protein:
 
     @property
     def group(self) -> npt.NDArray[np.integer]:
-        return _numpy_utils.readonly_view(self._group)
+        return numpy_utils.readonly_view(self._group)
 
     def get_group(self) -> npt.NDArray[np.integer]:
-        return _numpy_utils.readonly_view(self._group)
+        return numpy_utils.readonly_view(self._group)
 
     def set_group(self, value: int) -> "Protein":
         self._group[:] = value
@@ -368,7 +374,7 @@ class Protein:
     ) -> npt.NDArray[np.str_]:
         if not isinstance(positions, np.ndarray):
             positions = np.fromiter(positions, dtype=int)
-        return _numpy_utils.readonly_view(self._binding[positions - 1])
+        return numpy_utils.readonly_view(self._binding[positions - 1])
 
     def set_binding_at(
         self,
@@ -382,10 +388,10 @@ class Protein:
 
     @property
     def binding(self) -> npt.NDArray[np.str_]:
-        return _numpy_utils.readonly_view(self._binding)
+        return numpy_utils.readonly_view(self._binding)
 
     def get_binding(self) -> npt.NDArray[np.str_]:
-        return _numpy_utils.readonly_view(self._binding)
+        return numpy_utils.readonly_view(self._binding)
 
     @overload
     def rmsd(
@@ -493,24 +499,6 @@ class Protein:
         else:
             raise ValueError(format)
 
-    def make_cif_string(self) -> str:
-        warnings.warn(
-            "`make_cif_string()` is deprecated and will be removed in v0.11. "
-            "Use `to_string()` instead.",
-            FutureWarning,
-            stacklevel=2,
-        )
-        return self._make_cif_string()
-
-    def make_pdb_string(self) -> str:
-        warnings.warn(
-            "`make_pdb_string()` is deprecated and will be removed in v0.11. "
-            'Use `to_string(format="pdb")` instead.',
-            FutureWarning,
-            stacklevel=2,
-        )
-        return self._make_pdb_string()
-
     def make_fasta_bytes(self) -> bytes:
         assert self.name is not None
         data = io.BytesIO()
@@ -557,7 +545,7 @@ class Protein:
         """
         if isinstance(expr, int):
             expr = str(expr)
-        sequence = _sequence_utils.SequenceExpr.parse(expr).to_protein_sequence()
+        sequence = sequence_utils.SequenceExpr.parse(expr).to_protein_sequence()
         return Protein(sequence=sequence, name=name)
 
     @staticmethod
@@ -617,7 +605,7 @@ class Protein:
         model_idx: int = 0,
         verbose: bool = True,
     ) -> "Protein":
-        structure_block = _cif_utils.StructureCIFBlock(
+        structure_block = cif_utils.StructureCIFBlock(
             filestring=filestring, format=format
         )
         return Protein._from_structure_block(
@@ -684,7 +672,7 @@ class Protein:
 
     @staticmethod
     def _from_structure_block(
-        structure_block: _cif_utils.StructureCIFBlock,
+        structure_block: cif_utils.StructureCIFBlock,
         chain_id: str,
         use_bfactor_as_plddt: bool | None = None,
         model_idx: int = 0,
@@ -711,12 +699,12 @@ class Protein:
                 f"{len(matching_entities)}: {matching_entities}"
             )
             entity = matching_entities[0]
-            assert (
-                entity.entity_type == gemmi.EntityType.Polymer
-            ), f"expected entity type polymer, got {entity.entity_type}"
-            assert (
-                entity.polymer_type == gemmi.PolymerType.PeptideL
-            ), f"expected polymer type PeptideL, got {entity.polymer_type}"
+            assert entity.entity_type == gemmi.EntityType.Polymer, (
+                f"expected entity type polymer, got {entity.entity_type}"
+            )
+            assert entity.polymer_type == gemmi.PolymerType.PeptideL, (
+                f"expected polymer type PeptideL, got {entity.polymer_type}"
+            )
             if len(entity.full_sequence) > 0:
                 chain_seq = entity.full_sequence
             else:
@@ -736,7 +724,6 @@ class Protein:
         # extract sequence
         entity = structure.get_entity_of(polymer)
         residues = list(polymer.first_conformer())
-        # TODO: consider utilizing polymer.make_one_letter_sequence() here or elsewhere
         del polymer
         if len(entity.full_sequence) > 0:
             chain_seq, label_seq_offset = entity.full_sequence, 1
@@ -750,7 +737,7 @@ class Protein:
         # extract coordinates and plddt
         coordinates = np.full((len(chain_seq), _N_ATOM, 3), np.nan, dtype=np.float32)
         plddt = np.full(len(chain_seq), np.nan, dtype=np.float32)
-        max_atom_b_iso = -np.inf  # max B-factor over all atoms (for pLDDT check below)
+        max_atom_b_iso = -np.inf
         for residue_idx, residue in enumerate(residues):
             i = (
                 residue.label_seq - label_seq_offset
@@ -761,8 +748,6 @@ class Protein:
             code = code.upper() if code != " " else "X"
             if code != chain_seq[i]:
                 if verbose:
-                    # TODO: can this ever happen...? probably want to have this regardless i guess
-                    # TODO: improve this message?
                     print(
                         f"Amino acid mismatch at position {i + 1}: SEQRES {chain_seq[i]} Structure {code}"
                     )
@@ -781,14 +766,13 @@ class Protein:
                     max_atom_b_iso = max(max_atom_b_iso, atom.b_iso)
                 if residue.name == "MSE" and atom_name == "SE":
                     atom_name = "SD"
-                if (j := _ATOM_TYPE_TO_IDX.get(atom.name)) is None:
+                if (j := _ATOM_TYPE_TO_IDX.get(atom_name)) is None:
                     continue
                 coordinates[i, j] = atom.pos.tolist()
                 if use_bfactor_as_plddt and atom_name == "CA":
                     plddt[i] = (
                         atom.b_iso if atom.b_iso != _NAN_BFACTOR_VALUE else np.nan
                     )
-            # TODO: we should experiment and see if this is the behavior we want
             if (
                 not use_bfactor_as_plddt
                 and np.isfinite(coordinates[i, _ATOM_TYPE_TO_IDX["CA"]]).all()
@@ -812,7 +796,7 @@ class Protein:
         return protein
 
     def _set_loop_data(
-        self, structure_block: _cif_utils.StructureCIFBlock, chain_id: str
+        self, structure_block: cif_utils.StructureCIFBlock, chain_id: str
     ):
         # TODO: chain id overload, extract this into its own method
         # TODO: for all tables, support optional columns being missing
@@ -899,11 +883,15 @@ class Protein:
     def _make_structure(
         self,
         structure: gemmi.Structure | None = None,
-        model_idx: int = 1,
+        model_idx: int = 0,
         chain_id: str = "A",
         entity_name: str = "1",
     ) -> gemmi.Structure:
-        # TODO: add note about _NAN_BFACTOR_VALUE
+        if b"?" in self.sequence:
+            raise ValueError(
+                "this protein has a length range (`?` positions); a structure takes "
+                "a fixed length, such as Protein.from_expr(15)"
+            )
         # Create an empty structure and add a model with a default chain.
         if structure is None:
             structure = gemmi.Structure()
@@ -913,9 +901,8 @@ class Protein:
         if len(structure) > 0:
             model = structure[model_idx]
         else:
-            model = structure.add_model(gemmi.Model(str(model_idx)))  # type: ignore - gemmi 0.6 needs str
+            model = structure.add_model(gemmi.Model(str(model_idx + 1)))  # type: ignore - gemmi 0.6 needs str
         # Process the sequence.
-        # TODO: handle optional token...?
         resnames = gemmi.expand_one_letter_sequence(
             self.sequence.decode(), gemmi.ResidueKind.AA
         )
@@ -927,9 +914,9 @@ class Protein:
         structure.entities.append(entity)
         # Process the coordinates.
         n_nan_coords = np.isnan(self._coordinates).sum(axis=2)
-        assert (
-            (n_nan_coords == 0) | (n_nan_coords == 3)
-        ).all(), "either all coords of an atom must be nan, or none are"
+        assert ((n_nan_coords == 0) | (n_nan_coords == 3)).all(), (
+            "either all coords of an atom must be nan, or none are"
+        )
         # Process the plddt.
         assert (
             np.isnan(self._plddt) | (~np.isnan(self._plddt) & (n_nan_coords[:, 1] == 0))
@@ -991,7 +978,7 @@ class Protein:
         block = structure.make_mmcif_block(
             groups=gemmi.MmcifOutputGroups(True, chem_comp=False)
         )
-        sequence_loop, atom_loop = _cif_utils.init_loops(block=block)
+        sequence_loop, atom_loop = cif_utils.init_loops(block=block)
         self._append_loop_data(
             chain_id="A", sequence_loop=sequence_loop, atom_loop=atom_loop
         )
@@ -1084,7 +1071,7 @@ _NAN_BFACTOR_VALUE = 9999.75  # can't/hard to use 9999.99 due to precision issue
 
 
 def _calc_rmsd_and_transform(
-    xyz1: npt.NDArray[np.floating], xyz2: npt.NDArray[np.floating], eps: float = 1e-6
+    xyz1: npt.NDArray[np.floating], xyz2: npt.NDArray[np.floating]
 ) -> tuple[float, npt.NDArray[np.floating], npt.NDArray[np.floating]]:
     """
     Calculates RMSD and the rigid transformation (R, t) to superimpose xyz2 onto xyz1.
@@ -1107,7 +1094,6 @@ def _calc_rmsd_and_transform(
 
     # 3. Compute optimal rotation matrix using SVD
     # Note: numpy.linalg.svd returns U, S, Vh (where Vh is V.T)
-    # The variable names V, W below follow the original code's notation logic
     V, S, W = np.linalg.svd(C)
 
     # 4. Get sign to ensure right-handedness (correct for reflections)
@@ -1121,7 +1107,7 @@ def _calc_rmsd_and_transform(
     # 6. Rotate xyz2 (centered) to calculate RMSD
     xyz2_aligned_c = xyz2_c @ U
     L = xyz2_aligned_c.shape[0]
-    rmsd = np.sqrt(np.sum((xyz2_aligned_c - xyz1_c) ** 2, axis=(0, 1)) / L + eps)
+    rmsd = np.sqrt(np.sum((xyz2_aligned_c - xyz1_c) ** 2, axis=(0, 1)) / L)
 
     # 7. Compute R and t
     # We want: xyz2 @ R.T + t

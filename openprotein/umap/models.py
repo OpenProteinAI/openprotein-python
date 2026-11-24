@@ -10,6 +10,8 @@ from openprotein.jobs import Future, JobsAPI
 from . import api
 from .schemas import UMAPEmbeddingsJob, UMAPFitJob, UMAPMetadata
 
+__all__ = ["UMAPEmbeddingsResultFuture", "UMAPModel"]
+
 
 class UMAPModel(Future["UMAPModel"]):
     """

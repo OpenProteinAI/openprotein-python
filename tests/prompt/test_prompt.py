@@ -1,4 +1,5 @@
 """L2 integration tests for the prompt domain."""
+
 from datetime import datetime
 from unittest.mock import MagicMock
 
@@ -12,13 +13,11 @@ from openprotein.prompt.schemas import PromptJob
 
 @pytest.fixture
 def prompt_api(mock_session: MagicMock):
-    """Fixture to create a PromptAPI instance."""
     return PromptAPI(mock_session)
 
 
 @pytest.fixture
 def mock_prompt_job():
-    """Fixture for a valid PromptJob instance."""
     return PromptJob(
         job_id="job-123",
         status=JobStatus.SUCCESS,
@@ -28,7 +27,6 @@ def mock_prompt_job():
 
 
 def test_create_prompt(prompt_api: PromptAPI, mock_session: MagicMock, mock_prompt_job):
-    """Test the create_prompt method."""
     mock_session.post.return_value.status_code = 200
     mock_session.post.return_value.json.return_value = {
         "id": "prompt-123",
@@ -49,7 +47,6 @@ def test_create_prompt(prompt_api: PromptAPI, mock_session: MagicMock, mock_prom
 
 
 def test_get_prompt(prompt_api: PromptAPI, mock_session: MagicMock, mock_prompt_job):
-    """Test the get_prompt method."""
     mock_session.get.return_value.status_code = 200
     mock_session.get.return_value.json.return_value = {
         "id": "prompt-123",
@@ -69,7 +66,6 @@ def test_get_prompt(prompt_api: PromptAPI, mock_session: MagicMock, mock_prompt_
 
 
 def test_create_query(prompt_api: PromptAPI, mock_session: MagicMock):
-    """Test the create_query method."""
     mock_session.post.return_value.status_code = 200
     mock_session.post.return_value.json.return_value = {
         "id": "query-123",
@@ -80,3 +76,23 @@ def test_create_query(prompt_api: PromptAPI, mock_session: MagicMock):
     mock_session.post.assert_called_once()
     assert isinstance(query, Query)
     assert query.id == "query-123"
+
+
+class TestResolveQueryIds:
+    """Text in the hyphenated id form names a query, in any case and as str or bytes."""
+
+    UPPER = "C9BF9E57-1685-4C89-BAFB-FF5AF830BE8A"
+    LOWER = UPPER.lower()
+
+    @pytest.mark.parametrize("value", [UPPER, LOWER, UPPER.encode()])
+    def test_an_id_is_sent_lower_cased_without_an_upload(self, mock_session, value):
+        api = PromptAPI(mock_session)
+        api.create_query = MagicMock()
+        assert api._resolve_query(query=value) == self.LOWER
+        api.create_query.assert_not_called()
+
+    def test_a_sequence_is_uploaded(self, mock_session):
+        api = PromptAPI(mock_session)
+        api.create_query = MagicMock()
+        api.create_query.return_value.id = "q-1"
+        assert api._resolve_query(query="ACDE") == "q-1"

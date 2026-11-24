@@ -18,11 +18,17 @@ from .fold import FoldAPI
 from .future import FoldResultFuture
 from .minifold import MiniFoldModel
 from .models import FoldModel
+from .opendde import (
+    OpenDDEAbagModel,
+    OpenDDEConfidence,
+    OpenDDEModel,
+)
 from .protenix import ProtenixConfidence, ProtenixModel, ProtenixV2Model
 from .rosettafold3 import RosettaFold3Model
-from .schemas import FoldJob, FoldMetadata
+from .schemas import FoldConfidence, FoldJob, FoldMetadata
 
 __all__ = [
+    "FoldConfidence",
     "FoldJob",
     "FoldMetadata",
     "FoldModel",
@@ -32,9 +38,6 @@ __all__ = [
     "ESMFold2Confidence",
     "MiniFoldModel",
     "AlphaFold2Model",
-    "ProtenixConfidence",
-    "ProtenixModel",
-    "ProtenixV2Model",
     "Boltz1Model",
     "Boltz1xModel",
     "Boltz2Model",
@@ -42,7 +45,13 @@ __all__ = [
     "BoltzConfidence",
     "BoltzConstraint",
     "BoltzProperty",
-    "RosettaFold3Model",
-    "FoldResultFuture",
     "FoldAPI",
+    "FoldResultFuture",
+    "OpenDDEAbagModel",
+    "OpenDDEConfidence",
+    "OpenDDEModel",
+    "ProtenixConfidence",
+    "ProtenixModel",
+    "ProtenixV2Model",
+    "RosettaFold3Model",
 ]

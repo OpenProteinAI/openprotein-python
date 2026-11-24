@@ -28,8 +28,15 @@ def test_linkage_method_is_str():
 
 def test_metric_values():
     expected = {
-        "euclidean", "cosine", "correlation", "hamming", "chebyshev",
-        "cityblock", "sqeuclidean", "canberra", "braycurtis",
+        "euclidean",
+        "cosine",
+        "correlation",
+        "hamming",
+        "chebyshev",
+        "cityblock",
+        "sqeuclidean",
+        "canberra",
+        "braycurtis",
     }
     assert {m.value for m in Metric} == expected
 
@@ -109,7 +116,5 @@ def test_clustering_result_linkage_becomes_ndarray():
 
 def test_clustering_result_accepts_ndarray():
     arr = np.asarray([[0.0, 1.0, 0.12, 2.0]])
-    r = HierarchicalClusteringResult(
-        n_leaves=2, linkage=arr, leaf_order=[0, 1]
-    )
+    r = HierarchicalClusteringResult(n_leaves=2, linkage=arr, leaf_order=[0, 1])
     assert r.linkage is arr

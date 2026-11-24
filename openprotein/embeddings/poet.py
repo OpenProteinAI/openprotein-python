@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from openprotein.base import APISession
 from openprotein.common import ModelMetadata, Reduction, ReductionType
 from openprotein.data import AssayDataset, AssayMetadata
+from openprotein.data.prompts import Prompt as StoredPrompt
 from openprotein.prompt import Prompt
 
 from . import api
@@ -21,6 +22,8 @@ if TYPE_CHECKING:
     from openprotein.predictor import PredictorModel
     from openprotein.svd import SVDModel
     from openprotein.umap import UMAPModel
+
+__all__ = ["PoETModel"]
 
 
 class PoETModel(EmbeddingModel):
@@ -55,7 +58,7 @@ class PoETModel(EmbeddingModel):
         self,
         sequences: list[bytes] | list[str],
         reduction: ReductionType | None = ReductionType.MEAN,
-        prompt: str | Prompt | None = None,
+        prompt: str | Prompt | StoredPrompt | None = None,
         **kwargs,
     ) -> EmbeddingsResultFuture:
         """
@@ -97,7 +100,7 @@ class PoETModel(EmbeddingModel):
     def logits(
         self,
         sequences: list[bytes] | list[str],
-        prompt: str | Prompt | None = None,
+        prompt: str | Prompt | StoredPrompt | None = None,
         **kwargs,
     ) -> EmbeddingsResultFuture:
         """
@@ -145,7 +148,7 @@ class PoETModel(EmbeddingModel):
     def score(
         self,
         sequences: list[bytes],
-        prompt: str | Prompt | None = None,
+        prompt: str | Prompt | StoredPrompt | None = None,
         **kwargs,
     ) -> EmbeddingsScoreFuture:
         """
@@ -183,7 +186,7 @@ class PoETModel(EmbeddingModel):
     def indel(
         self,
         sequence: bytes,
-        prompt: str | Prompt | None = None,
+        prompt: str | Prompt | StoredPrompt | None = None,
         insert: str | None = None,
         delete: list[int] | None = None,
         **kwargs,
@@ -236,7 +239,7 @@ class PoETModel(EmbeddingModel):
     def single_site(
         self,
         sequence: bytes,
-        prompt: str | Prompt | None = None,
+        prompt: str | Prompt | StoredPrompt | None = None,
         **kwargs,
     ) -> EmbeddingsScoreSingleSiteFuture:
         """
@@ -273,7 +276,7 @@ class PoETModel(EmbeddingModel):
 
     def generate(
         self,
-        prompt: str | Prompt,
+        prompt: str | Prompt | StoredPrompt,
         num_samples: int = 100,
         temperature: float = 1.0,
         topk: float | None = None,
@@ -335,7 +338,7 @@ class PoETModel(EmbeddingModel):
         assay: AssayDataset | AssayMetadata | None = None,
         n_components: int = 1024,
         reduction: Reduction | ReductionType | None = None,
-        prompt: str | Prompt | None = None,
+        prompt: str | Prompt | StoredPrompt | None = None,
         **kwargs,
     ) -> "SVDModel":
         """
@@ -383,7 +386,7 @@ class PoETModel(EmbeddingModel):
         assay: AssayDataset | AssayMetadata | None = None,
         n_components: int = 2,
         reduction: Reduction | ReductionType = ReductionType.MEAN,
-        prompt: str | Prompt | None = None,
+        prompt: str | Prompt | StoredPrompt | None = None,
         **kwargs,
     ) -> "UMAPModel":
         """
@@ -432,7 +435,7 @@ class PoETModel(EmbeddingModel):
         reduction: ReductionType,
         name: str | None = None,
         description: str | None = None,
-        prompt: str | Prompt | None = None,
+        prompt: str | Prompt | StoredPrompt | None = None,
         kernel: "KernelType | str" = "rbf",
         period: float | None = None,
         alpha: float | None = None,

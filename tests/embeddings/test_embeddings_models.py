@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from openprotein.embeddings.ablang import AbLang2Model
 from openprotein.embeddings.esm import ESMModel
 from openprotein.embeddings.models import EmbeddingModel
 from openprotein.embeddings.openprotein import OpenProteinModel
@@ -16,10 +17,12 @@ from openprotein.jobs import JobType
     "model_id, expected_class",
     [
         ("esm1b_t33_650M_UR50S", ESMModel),
+        ("esm1v_t33_650M_UR90S_1", ESMModel),
         ("esm2_t33_650M_UR50D", ESMModel),
         ("esmc-300m", ESMModel),
         ("esmc-600m", ESMModel),
         ("esmc-6b", ESMModel),
+        ("ablang2", AbLang2Model),
         ("prot-seq", OpenProteinModel),
         ("poet", PoETModel),
         ("poet-2", PoET2Model),
@@ -27,7 +30,6 @@ from openprotein.jobs import JobType
     ],
 )
 def test_embedding_model_create(model_id, expected_class):
-    """Test the EmbeddingModel.create factory method."""
     mock_session = MagicMock()
     # The factory calls get_metadata, which we can ignore for this test
     with patch.object(
@@ -43,7 +45,6 @@ def test_embedding_model_create(model_id, expected_class):
 
 
 def test_embedding_model_create_with_metadata():
-    """Test that pre-provided metadata skips the get_metadata API call."""
     mock_session = MagicMock()
     mock_metadata = MagicMock()
     mock_metadata.id = "prot-seq"
@@ -63,7 +64,6 @@ def test_embedding_model_create_with_metadata():
 
 
 def test_embedding_model_create_unsupported_error():
-    """Test that creating an unsupported model without a default raises an error."""
     mock_session = MagicMock()
     with pytest.raises(
         ValueError, match="Unsupported model_id type: unsupported-model"
@@ -72,7 +72,6 @@ def test_embedding_model_create_unsupported_error():
 
 
 def test_embedding_model_embed(mock_session: MagicMock):
-    """Test the base EmbeddingModel.embed method."""
     with patch("openprotein.embeddings.api.get_model", return_value=MagicMock()):
         model = EmbeddingModel(session=mock_session, model_id="test-model")
 
@@ -95,7 +94,6 @@ def test_embedding_model_embed(mock_session: MagicMock):
 
 
 def test_poet_model_embed(mock_session: MagicMock):
-    """Test that PoETModel.embed correctly passes the prompt_id."""
     with patch("openprotein.embeddings.api.get_model", return_value=MagicMock()):
         model = PoETModel(session=mock_session, model_id="poet")
 
@@ -119,7 +117,6 @@ def test_poet_model_embed(mock_session: MagicMock):
 
 
 def test_poet2_model_embed():
-    """Test that PoET2Model.embed correctly passes prompt and query IDs."""
     from openprotein.prompt import PromptAPI
 
     mock_session = MagicMock()
@@ -152,7 +149,6 @@ def test_poet2_model_embed():
 
 
 def test_poet2_model_generate_with_query_list():
-    """Test that PoET2Model.generate forwards list-valued query via query_id."""
     from openprotein.prompt import PromptAPI
 
     mock_session = MagicMock()
@@ -179,3 +175,93 @@ def test_poet2_model_generate_with_query_list():
     )
     _, kwargs = mock_request_post.call_args
     assert kwargs["query_id"] == ["query-1", "query-2"]
+
+
+@pytest.mark.parametrize(
+    "model_class, model_id",
+    [
+        (ESMModel, "esm1b_t33_650M_UR50S"),
+        (ESMModel, "esm2_t33_650M_UR50D"),
+        (ESMModel, "esmc-300m"),
+    ],
+)
+def test_single_site_forwards_base_sequence(model_class, model_id):
+    """single_site() posts the base sequence and returns the single-site future."""
+    mock_session = MagicMock()
+
+    with patch("openprotein.embeddings.api.get_model", return_value=MagicMock()):
+        model = model_class(session=mock_session, model_id=model_id)
+
+    with (
+        patch(
+            "openprotein.embeddings.esm.api.request_score_single_site_post",
+            return_value=MagicMock(),
+        ) as mock_request_post,
+        patch(
+            "openprotein.embeddings.esm.EmbeddingsScoreSingleSiteFuture.create",
+            return_value=MagicMock(),
+        ) as mock_future_create,
+    ):
+        model.single_site(sequence="MKTLL")
+
+    _, kwargs = mock_request_post.call_args
+    assert kwargs["model_id"] == model_id
+    assert kwargs["base_sequence"] == "MKTLL"
+    mock_future_create.assert_called_once()
+
+
+def test_ablang2_single_site_forwards_base_sequence():
+    """single_site() posts the base sequence and returns the single-site future."""
+    mock_session = MagicMock()
+
+    with patch("openprotein.embeddings.api.get_model", return_value=MagicMock()):
+        model = AbLang2Model(session=mock_session, model_id="ablang2")
+
+    with (
+        patch(
+            "openprotein.embeddings.ablang.api.request_score_single_site_post",
+            return_value=MagicMock(),
+        ) as mock_request_post,
+        patch(
+            "openprotein.embeddings.ablang.EmbeddingsScoreSingleSiteFuture.create",
+            return_value=MagicMock(),
+        ) as mock_future_create,
+    ):
+        model.single_site(sequence="EVQL:DIQM")
+
+    _, kwargs = mock_request_post.call_args
+    assert kwargs["model_id"] == "ablang2"
+    assert kwargs["base_sequence"] == "EVQL:DIQM"
+    mock_future_create.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    ("model_class", "model_id"), [(PoETModel, "poet"), (PoET2Model, "poet-2")]
+)
+def test_a_poet_model_sends_the_id_of_a_stored_prompt_that_is_not_ready(
+    model_class, model_id
+):
+    from openprotein.data.prompts import Prompt, PromptSummary
+    from openprotein.jobs import JobStatus
+    from openprotein.prompt import PromptAPI
+
+    session = MagicMock()
+    session.prompt = MagicMock(spec=PromptAPI)
+    session.prompt._resolve_query.return_value = None
+    prompt = Prompt(
+        session,
+        PromptSummary(id="prompt-9", status=JobStatus.PENDING, job_id="prompt-9"),
+    )
+    job = {
+        "job_id": "job-123",
+        "status": "PENDING",
+        "job_type": JobType.embeddings_embed.value,
+        "created_date": "2023-01-01T00:00:00",
+    }
+    with patch("openprotein.embeddings.api.get_model", return_value=MagicMock()):
+        model = model_class(session=session, model_id=model_id)
+
+    with patch("openprotein.embeddings.api.request_post", return_value=job) as post:
+        model.embed(sequences=[b"ACGT"], prompt=prompt)
+
+    assert post.call_args.kwargs["prompt_id"] == "prompt-9"

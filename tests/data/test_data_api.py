@@ -1,9 +1,7 @@
 from unittest.mock import MagicMock
 
 import pytest
-from pydantic import TypeAdapter
 
-from openprotein.base import APISession
 from openprotein.data.api import (
     assaydata_list,
     assaydata_page_get,
@@ -18,7 +16,6 @@ from openprotein.errors import APIError
 
 @pytest.fixture
 def sample_assay_metadata() -> dict:
-    """Fixture for sample assay metadata dictionary."""
     return {
         "assay_name": "Test Assay",
         "assay_description": "A test assay",
@@ -33,7 +30,6 @@ def sample_assay_metadata() -> dict:
 
 
 def test_list_models(mock_session: MagicMock) -> None:
-    """Test the list_models API function."""
     mock_session.get.return_value.json.return_value = [{"model_id": "1"}]
     result = list_models(mock_session, "assay123")
     mock_session.get.assert_called_once_with(
@@ -43,7 +39,6 @@ def test_list_models(mock_session: MagicMock) -> None:
 
 
 def test_assaydata_post(mock_session: MagicMock, sample_assay_metadata: dict) -> None:
-    """Test the assaydata_post API function."""
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.json.return_value = sample_assay_metadata
@@ -62,7 +57,6 @@ def test_assaydata_post(mock_session: MagicMock, sample_assay_metadata: dict) ->
 
 
 def test_assaydata_post_error(mock_session: MagicMock) -> None:
-    """Test assaydata_post for non-200 response."""
     mock_response = MagicMock()
     mock_response.status_code = 400
     mock_session.post.return_value = mock_response
@@ -71,7 +65,6 @@ def test_assaydata_post_error(mock_session: MagicMock) -> None:
 
 
 def test_assaydata_list(mock_session: MagicMock, sample_assay_metadata: dict) -> None:
-    """Test the assaydata_list API function."""
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.json.return_value = [sample_assay_metadata]
@@ -84,7 +77,6 @@ def test_assaydata_list(mock_session: MagicMock, sample_assay_metadata: dict) ->
 
 
 def test_assaydata_list_error(mock_session: MagicMock) -> None:
-    """Test assaydata_list for non-200 response."""
     mock_response = MagicMock()
     mock_response.status_code = 500
     mock_session.get.return_value = mock_response
@@ -95,7 +87,6 @@ def test_assaydata_list_error(mock_session: MagicMock) -> None:
 def test_get_assay_metadata(
     mock_session: MagicMock, sample_assay_metadata: dict
 ) -> None:
-    """Test the get_assay_metadata API function."""
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.json.return_value = sample_assay_metadata
@@ -110,7 +101,6 @@ def test_get_assay_metadata(
 
 
 def test_get_assay_metadata_not_found(mock_session: MagicMock) -> None:
-    """Test get_assay_metadata for an empty response."""
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.json.return_value = []  # Simulate not found
@@ -120,7 +110,6 @@ def test_get_assay_metadata_not_found(mock_session: MagicMock) -> None:
 
 
 def test_assaydata_put(mock_session: MagicMock, sample_assay_metadata: dict) -> None:
-    """Test the assaydata_put API function."""
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.json.return_value = sample_assay_metadata
@@ -128,7 +117,7 @@ def test_assaydata_put(mock_session: MagicMock, sample_assay_metadata: dict) -> 
 
     result = assaydata_put(mock_session, "assay123", "New Name")
     mock_session.put.assert_called_once_with(
-        "v1/assaydata/assay123", data={"assay_name": "New Name"}
+        "v1/assaydata/assay123", json={"assay_name": "New Name"}
     )
     assert isinstance(result, AssayMetadata)
 
@@ -136,7 +125,6 @@ def test_assaydata_put(mock_session: MagicMock, sample_assay_metadata: dict) -> 
 def test_assaydata_page_get(
     mock_session: MagicMock, sample_assay_metadata: dict
 ) -> None:
-    """Test the assaydata_page_get API function."""
     page_data = {
         "assaymetadata": sample_assay_metadata,
         "page_size": 1,
@@ -156,3 +144,59 @@ def test_assaydata_page_get(
     )
     assert isinstance(result, AssayDataPage)
     assert result.page_size == 1
+
+
+def test_assaydata_post_metadata_columns(
+    mock_session: MagicMock, sample_assay_metadata: dict
+) -> None:
+    mock_session.post.return_value.status_code = 200
+    mock_session.post.return_value.json.return_value = {
+        **sample_assay_metadata,
+        "metadata_names": ["notes"],
+    }
+
+    result = assaydata_post(
+        mock_session, "file_content", "Test Assay", metadata_columns=["notes"]
+    )
+
+    mock_session.post.assert_called_once_with(
+        "v1/assaydata",
+        files={"assay_data": "file_content"},
+        data={
+            "assay_name": "Test Assay",
+            "assay_description": "",
+            "metadata_columns": '["notes"]',
+        },
+    )
+    assert result.metadata_names == ["notes"]
+
+
+def test_assaydata_page_get_include_metadata(
+    mock_session: MagicMock, sample_assay_metadata: dict
+) -> None:
+    mock_session.get.return_value.status_code = 200
+    mock_session.get.return_value.json.return_value = {
+        "assaymetadata": {**sample_assay_metadata, "metadata_names": ["notes"]},
+        "page_size": 1,
+        "page_offset": 0,
+        "assaydata": [
+            {
+                "mut_sequence": "SEQ",
+                "measurement_values": [1.0],
+                "metadata_values": ["007"],
+            }
+        ],
+    }
+
+    result = assaydata_page_get(mock_session, "assay123", include_metadata=True)
+
+    mock_session.get.assert_called_once_with(
+        "v1/assaydata/assay123",
+        params={
+            "page_offset": 0,
+            "page_size": 1000,
+            "format": "wide",
+            "include_metadata": True,
+        },
+    )
+    assert result.assaydata[0].metadata_values == ["007"]

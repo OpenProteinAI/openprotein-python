@@ -1,0 +1,67 @@
+{
+ "bioemu-v1-1": {
+  "input_types": [
+   "protein"
+  ],
+  "multichain": false,
+  "tags": [
+   "structure",
+   "ensemble"
+  ],
+  "variant": null,
+  "base": true,
+  "max_sequence_length": 600
+ },
+ "alphaflow-md-base-v1": {
+  "input_types": [
+   "protein"
+  ],
+  "multichain": false,
+  "tags": [
+   "structure",
+   "ensemble"
+  ],
+  "variant": null,
+  "base": true,
+  "max_sequence_length": 600
+ },
+ "alphaflow-md-distilled-v1": {
+  "input_types": [
+   "protein"
+  ],
+  "multichain": false,
+  "tags": [
+   "structure",
+   "ensemble"
+  ],
+  "variant": "distilled",
+  "base": false,
+  "max_sequence_length": 600
+ },
+ "esmflow-md-base-v1": {
+  "input_types": [
+   "protein"
+  ],
+  "multichain": false,
+  "tags": [
+   "structure",
+   "ensemble"
+  ],
+  "variant": null,
+  "base": true,
+  "max_sequence_length": 600
+ },
+ "esmflow-md-distilled-v1": {
+  "input_types": [
+   "protein"
+  ],
+  "multichain": false,
+  "tags": [
+   "structure",
+   "ensemble"
+  ],
+  "variant": "distilled",
+  "base": false,
+  "max_sequence_length": 600
+ }
+}

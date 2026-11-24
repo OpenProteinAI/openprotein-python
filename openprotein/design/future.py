@@ -9,6 +9,8 @@ from openprotein.jobs import Future, JobsAPI, StreamingFuture
 from . import api
 from .schemas import Criteria, Design, DesignAlgorithm, DesignJob, DesignResult
 
+__all__ = ["DesignFuture"]
+
 
 class DesignFuture(StreamingFuture, Future):
     """A future object that will hold the results of the design job."""
@@ -29,7 +31,6 @@ class DesignFuture(StreamingFuture, Future):
         :meta private:
         """
         self._design_assay = None
-        # initialize the metadata
         if metadata is None:
             if job is None:
                 raise ValueError("Expected design metadata or job")
@@ -116,11 +117,7 @@ class DesignFuture(StreamingFuture, Future):
             )
 
     def __delete(self) -> bool:
-        """
-        Delete this design.
-
-        TODO - implementation
-        """
+        """Delete this design."""
         return api.design_delete(session=self.session, design_id=self.id)
 
     def stream(self, step: int | None = None) -> Iterator[DesignResult]:
@@ -143,4 +140,4 @@ class DesignFuture(StreamingFuture, Future):
         """
         data_api = getattr(self.session, "data", None)
         assert isinstance(data_api, DataAPI)
-        return data_api.get(self._metadata.assay_id)
+        return data_api.Assay(id=self._metadata.assay_id)

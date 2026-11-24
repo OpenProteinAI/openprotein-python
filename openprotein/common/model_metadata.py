@@ -2,6 +2,8 @@
 
 from pydantic import BaseModel, Field
 
+__all__ = ["ModelDescription", "ModelMetadata", "TokenInfo"]
+
 
 class ModelDescription(BaseModel):
     """Description of available protein embedding models."""

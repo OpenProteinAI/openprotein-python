@@ -1,6 +1,5 @@
 import os
 import pickle
-from pathlib import Path
 from typing import Any, Callable, List, Tuple
 
 import pandas as pd
@@ -31,6 +30,9 @@ TEST_ASSAY_LARGE_FILE = "AMIE_PSEAE_Whitehead.wide.csv"  # ~6000 sequences
 
 # Shared sequence constants for E2E tests
 BASE_SEQUENCE = "MQYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE"
+UBIQUITIN_SEQUENCE = (
+    "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG"
+)
 TEST_ANTIBODY_SEQUENCE = ANTIBODY_HEAVY_SEQUENCE
 MSA_SEED_SEQUENCE_LENGTH = 1000
 
@@ -38,8 +40,7 @@ MSA_SEED_SEQUENCE_LENGTH = 1000
 @pytest.fixture(scope="session")
 def session() -> OpenProtein:
     """
-    Establishes a session for the entire E2E test run using environment variables.
-    Scope is 'session' to ensure connection is established only once.
+    Session-scoped so the connection is established once for the whole E2E run.
     """
     try:
         return connect()
@@ -49,13 +50,11 @@ def session() -> OpenProtein:
 
 @pytest.fixture(scope="session")
 def base_sequence() -> str:
-    """Shared base sequence for mutation-based alignment/folding tests."""
     return BASE_SEQUENCE
 
 
 @pytest.fixture(scope="session")
 def test_antibody_sequence() -> str:
-    """Shared antibody sequence for AbNumber alignment tests."""
     return TEST_ANTIBODY_SEQUENCE
 
 
@@ -106,7 +105,6 @@ def _protein_complex_with_msa(
     """
     sequences = [random_sequence_real(56) for _ in range(2)]
     msa_future = session.align.create_msa(seed=":".join(sequences).encode())
-    # msa_future.wait_until_done(timeout=E2E_TIMEOUT)
 
     chains = {}
     id_gen = id_generator()
@@ -123,8 +121,7 @@ def _protein_complex_with_msa(
 @pytest.fixture(scope="session")
 def protein_complex_with_msa(session, tmp_path_factory, worker_id):
     """
-    Creates a set of protein sequences and a corresponding MSA.
-    This is session-scoped to avoid recreating the MSA for every test.
+    Session-scoped, and file-locked across xdist workers, so the MSA is created once.
     """
     if worker_id == "master":
         # Not running with xdist
@@ -153,13 +150,12 @@ def protein_complex_with_msa(session, tmp_path_factory, worker_id):
 @pytest.fixture(scope="session")
 def assay_small(session: OpenProtein) -> AssayDataset:
     """
-    Upload small assay dataset (~41 sequences) for training tests.
-    Session-scoped to reuse across tests.
+    Upload the small assay dataset (~41 sequences) for training tests.
     """
     filepath = os.path.join(TEST_ASSAY_DATA_DIR, TEST_ASSAY_SMALL_FILE)
     df = pd.read_csv(filepath)
     assay_name = f"E2E_Small_{random_string(8)}"
-    return session.data.create(
+    return session.data.Assay.create(
         table=df, name=assay_name, description="Small test assay for E2E tests"
     )
 
@@ -167,15 +163,14 @@ def assay_small(session: OpenProtein) -> AssayDataset:
 @pytest.fixture(scope="session")
 def assay_medium(session: OpenProtein) -> AssayDataset:
     """
-    Upload medium assay dataset (~1000 sequences) for training tests.
-    Session-scoped to reuse across tests.
+    Upload the medium assay dataset (~1000 sequences) for training tests.
     """
     filepath = os.path.join(TEST_ASSAY_DATA_DIR, TEST_ASSAY_MEDIUM_FILE)
     if not os.path.exists(filepath):
         pytest.skip(f"Medium assay dataset not found: {filepath}")
     df = pd.read_csv(filepath)
     assay_name = f"E2E_Medium_{random_string(8)}"
-    return session.data.create(
+    return session.data.Assay.create(
         table=df, name=assay_name, description="Medium test assay for E2E tests"
     )
 
@@ -183,15 +178,14 @@ def assay_medium(session: OpenProtein) -> AssayDataset:
 @pytest.fixture(scope="session")
 def assay_large(session: OpenProtein) -> AssayDataset:
     """
-    Upload large assay dataset (~10000 sequences) for training tests.
-    Session-scoped to reuse across tests.
+    Upload the large assay dataset (~10000 sequences) for training tests.
     """
     filepath = os.path.join(TEST_ASSAY_DATA_DIR, TEST_ASSAY_LARGE_FILE)
     if not os.path.exists(filepath):
         pytest.skip(f"Large assay dataset not found: {filepath}")
     df = pd.read_csv(filepath)
     assay_name = f"E2E_Large_{random_string(8)}"
-    return session.data.create(
+    return session.data.Assay.create(
         table=df, name=assay_name, description="Large test assay for E2E tests"
     )
 
@@ -199,8 +193,7 @@ def assay_large(session: OpenProtein) -> AssayDataset:
 @pytest.fixture(scope="session")
 def test_sequences_varied() -> List[bytes]:
     """
-    Generate a variety of test sequences with different characteristics.
-    Returns sequences as bytes for API compatibility.
+    Sequences of varied length, as bytes for API compatibility.
     """
     seqs = [random_sequence_fake(64).encode() for _ in range(150)]
     # remove two residues at every other sequence
@@ -211,7 +204,6 @@ def test_sequences_varied() -> List[bytes]:
 
 @pytest.fixture(scope="session")
 def test_sequences_short() -> List[bytes]:
-    """Short sequences for quick tests."""
     seqs = [random_sequence_fake(64).encode() for _ in range(10)]
     return seqs
 
@@ -219,8 +211,7 @@ def test_sequences_short() -> List[bytes]:
 @pytest.fixture(scope="session")
 def test_sequences_same_length() -> List[bytes]:
     """
-    Sequences of the same length for SVD/UMAP tests.
-    SVD and UMAP require same-length sequences when not using reduction.
+    SVD and UMAP require same-length sequences when not using a reduction.
     """
     # All sequences are 64 residues long
     return [random_sequence_fake(64).encode() for _ in range(150)]

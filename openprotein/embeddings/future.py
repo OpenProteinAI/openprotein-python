@@ -1,28 +1,35 @@
 """Future for embeddings-related jobs."""
 
 from collections import namedtuple
-from typing import Any, Generator, Iterator, TypeVar, Union
+from typing import Iterator, TypeVar, Union
 
 import numpy as np
 
 from openprotein import config
-
-"""Embeddings results represented as futures."""
-
 from openprotein.base import APISession
-from openprotein.jobs import Future, MappedFuture, StreamingFuture
+from openprotein.jobs import MappedFuture, StreamingFuture
 
 from . import api
 from .schemas import (
     AttnJob,
     EmbeddingsJob,
     GenerateJob,
-    JobType,
     LogitsJob,
     ScoreIndelJob,
     ScoreJob,
     ScoreSingleSiteJob,
 )
+
+__all__ = [
+    "BaseScoreFuture",
+    "EmbeddingsGenerateFuture",
+    "EmbeddingsResultFuture",
+    "EmbeddingsScoreFuture",
+    "EmbeddingsScoreSingleSiteFuture",
+    "S",
+    "Score",
+    "SingleSiteScore",
+]
 
 
 class EmbeddingsResultFuture(MappedFuture[bytes, np.ndarray]):
@@ -38,7 +45,6 @@ class EmbeddingsResultFuture(MappedFuture[bytes, np.ndarray]):
         max_workers: int = config.MAX_CONCURRENT_WORKERS,
     ):
         super().__init__(session=session, job=job, max_workers=max_workers)
-        # ensure all list[bytes]
         self._sequences = (
             [seq.encode() if isinstance(seq, str) else seq for seq in sequences]
             if sequences is not None
@@ -47,7 +53,7 @@ class EmbeddingsResultFuture(MappedFuture[bytes, np.ndarray]):
 
     def stream_sync(self):
         """
-        Stream the embeddings results synchronously using the streaming endpoint.
+        Stream the embeddings results synchronously.
         """
         for i, array in enumerate(
             api.request_get_embeddings_stream(session=self.session, job_id=self.id)
@@ -81,11 +87,16 @@ class EmbeddingsResultFuture(MappedFuture[bytes, np.ndarray]):
         """
         Get embedding results for specified sequence.
 
-        Args:
-            sequence (str | bytes): sequence to fetch results for
+        Parameters
+        ----------
+        sequence : str or bytes
+            One of the sequences submitted with the request.
 
-        Returns:
-            np.ndarray: embeddings
+        Returns
+        -------
+        np.ndarray
+            Embedding for that sequence. The shape depends on the model and on
+            the reduction requested at submission time.
         """
         data = api.request_get_sequence_result(
             session=self.session,
@@ -113,7 +124,6 @@ class BaseScoreFuture(StreamingFuture[S]):
         sequences: list[bytes] | list[str] | None = None,
     ):
         super().__init__(session=session, job=job)
-        # ensure all list[bytes]
         self._sequences = (
             [seq.encode() if isinstance(seq, str) else seq for seq in sequences]
             if sequences is not None

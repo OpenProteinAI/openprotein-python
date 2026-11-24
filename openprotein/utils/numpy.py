@@ -3,6 +3,9 @@ from typing import TypeVar
 import numpy as np
 import numpy.typing as npt
 
+__all__ = ["DType", "readonly_view"]
+
+
 DType = TypeVar("DType", bound=np.generic)
 
 

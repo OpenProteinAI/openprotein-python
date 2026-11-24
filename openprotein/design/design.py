@@ -1,12 +1,13 @@
 """Design API providing the interface to design novel proteins based on a your design criteria."""
 
 from openprotein.base import APISession
-from openprotein.data import AssayDataset, DataAPI
-from openprotein.jobs import JobsAPI
+from openprotein.data import AssayDataset
 
 from . import api
 from .future import DesignFuture
 from .schemas import Criteria, Criterion, DesignConstraint, Subcriterion
+
+__all__ = ["DesignAPI"]
 
 
 class DesignAPI:

@@ -5,18 +5,20 @@ from typing import ClassVar, Protocol
 
 import gemmi
 
-import openprotein.utils.cif as _cif_utils
+import openprotein.utils.cif as cif_utils
 
 from .protein import (
     _extract_full_sequence_from_residues,
     _extract_one_letter_from_full_sequence,
 )
 
+__all__ = ["DNA", "RNA", "Ligand"]
+
 
 class _BasicSerde(Protocol):
     _GEMMI_ENTITY_TYPE: ClassVar[gemmi.EntityType]
     _GEMMI_POLYMER_TYPE: ClassVar[gemmi.PolymerType]
-    _structure_block: _cif_utils.StructureCIFBlock | None
+    _structure_block: cif_utils.StructureCIFBlock | None
 
     def _make_structure(
         self,
@@ -25,24 +27,21 @@ class _BasicSerde(Protocol):
         chain_id: str = "A",
         entity_name: str = "1",
     ) -> gemmi.Structure:
-        assert (
-            self._structure_block is not None
-        ), "only chains constructed directly from a structure file can be serialized for now"
-        assert (
-            self._structure_block.structure.input_format == gemmi.CoorFormat.Mmcif
-        ), "only chains that were deserialized from cif can be serialized for now"
+        assert self._structure_block is not None, (
+            "only chains constructed directly from a structure file can be serialized for now"
+        )
+        assert self._structure_block.structure.input_format == gemmi.CoorFormat.Mmcif, (
+            "only chains that were deserialized from cif can be serialized for now"
+        )
         # Create an empty structure and add a model with a default chain.
         if structure is None:
             structure = gemmi.Structure()
-        # Get existing model or create new one
         if len(structure) > 0:
             model = structure[model_idx]
         else:
-            model = structure.add_model(gemmi.Model(str(model_idx)))  # type: ignore - gemmi 0.6 needs str
-        # Get existing chain
+            model = structure.add_model(gemmi.Model(str(model_idx + 1)))  # type: ignore - gemmi 0.6 needs str
         subchain = self._structure_block.structure[model_idx].get_subchain(chain_id)
         assert len(subchain) > 0
-        # Create entity
         if self._GEMMI_ENTITY_TYPE == gemmi.EntityType.Polymer:
             entity = gemmi.Entity(entity_name)
             entity.name = entity_name
@@ -72,7 +71,6 @@ class _BasicSerde(Protocol):
                 pass
             else:
                 raise ValueError("more matching entities found than expected")
-        # Create chain
         chain = model.add_chain(gemmi.Chain(chain_id))
         chain.append_residues(list(subchain.first_conformer()))
         return structure
@@ -97,7 +95,7 @@ class DNA(_BasicSerde):
 
     _GEMMI_ENTITY_TYPE: ClassVar[gemmi.EntityType] = gemmi.EntityType.Polymer
     _GEMMI_POLYMER_TYPE: ClassVar[gemmi.PolymerType] = gemmi.PolymerType.Dna
-    _structure_block: _cif_utils.StructureCIFBlock | None = None
+    _structure_block: cif_utils.StructureCIFBlock | None = None
 
     def __post_init__(self):
         if not all(nt in set("ACGT") for nt in self.sequence.upper()):
@@ -113,17 +111,15 @@ class DNA(_BasicSerde):
 
     @staticmethod
     def _from_structure_block(
-        structure_block: _cif_utils.StructureCIFBlock, chain_id: str, model_idx: int
+        structure_block: cif_utils.StructureCIFBlock, chain_id: str, model_idx: int
     ) -> "DNA":
         assert structure_block.structure.input_format == gemmi.CoorFormat.Mmcif
         structure = structure_block.structure
         model = structure[model_idx]
         polymer = model.get_subchain(chain_id)
         assert len(polymer) > 0
-        # extract sequence
         entity = structure.get_entity_of(polymer)
         residues = list(polymer.first_conformer())
-        # TODO: consider utilizing polymer.make_one_letter_sequence() here or elsewhere
         del polymer
         if len(entity.full_sequence) > 0:
             chain_seq = entity.full_sequence
@@ -149,7 +145,7 @@ class RNA(_BasicSerde):
 
     _GEMMI_ENTITY_TYPE: ClassVar[gemmi.EntityType] = gemmi.EntityType.Polymer
     _GEMMI_POLYMER_TYPE: ClassVar[gemmi.PolymerType] = gemmi.PolymerType.Rna
-    _structure_block: _cif_utils.StructureCIFBlock | None = None
+    _structure_block: cif_utils.StructureCIFBlock | None = None
 
     def __post_init__(self):
         if not all(nt in set("ACGU") for nt in self.sequence.upper()):
@@ -165,17 +161,15 @@ class RNA(_BasicSerde):
 
     @staticmethod
     def _from_structure_block(
-        structure_block: _cif_utils.StructureCIFBlock, chain_id: str, model_idx: int
+        structure_block: cif_utils.StructureCIFBlock, chain_id: str, model_idx: int
     ) -> "RNA":
         assert structure_block.structure.input_format == gemmi.CoorFormat.Mmcif
         structure = structure_block.structure
         model = structure[model_idx]
         polymer = model.get_subchain(chain_id)
         assert len(polymer) > 0
-        # extract sequence
         entity = structure.get_entity_of(polymer)
         residues = list(polymer.first_conformer())
-        # TODO: consider utilizing polymer.make_one_letter_sequence() here or elsewhere
         del polymer
         if len(entity.full_sequence) > 0:
             chain_seq = entity.full_sequence
@@ -204,7 +198,7 @@ class Ligand(_BasicSerde):
 
     _GEMMI_ENTITY_TYPE: ClassVar[gemmi.EntityType] = gemmi.EntityType.NonPolymer
     _GEMMI_POLYMER_TYPE: ClassVar[gemmi.PolymerType] = gemmi.PolymerType.Unknown
-    _structure_block: _cif_utils.StructureCIFBlock | None = None
+    _structure_block: cif_utils.StructureCIFBlock | None = None
 
     def __post_init__(self):
         if (self.ccd is None and self.smiles is None) or (
@@ -214,12 +208,12 @@ class Ligand(_BasicSerde):
 
     def copy(self) -> "Ligand":
         return replace(self)
-    
+
     # TODO - support (&) and (|) operators for combining into Complexes (like Protein)
 
     @staticmethod
     def _from_structure_block(
-        structure_block: _cif_utils.StructureCIFBlock, chain_id: str, model_idx: int
+        structure_block: cif_utils.StructureCIFBlock, chain_id: str, model_idx: int
     ) -> "Ligand":
         assert structure_block.structure.input_format == gemmi.CoorFormat.Mmcif
         subchain = structure_block.structure[model_idx].get_subchain(chain_id)

@@ -1,7 +1,6 @@
 """UMAP API providing the interface to fit and run UMAP visualizations."""
 
 import typing
-from typing import Literal
 
 from openprotein.base import APISession
 from openprotein.common import Feature, FeatureType, Reduction, ReductionType
@@ -13,6 +12,8 @@ from openprotein.svd import SVDAPI, SVDModel
 
 from . import api
 from .models import UMAPModel
+
+__all__ = ["UMAPAPI"]
 
 
 class UMAPAPI:
@@ -102,17 +103,19 @@ class UMAPAPI:
             The UMAP model being fit.
         """
         # 1. Check assay data input - just need the id
-        # get assay_id
         assay_id = (
             assay.assay_id
             if isinstance(assay, AssayMetadata)
-            else assay.id if isinstance(assay, AssayDataset) else assay
+            else assay.id
+            if isinstance(assay, AssayDataset)
+            else assay
         )
-        # extract feature type
         feature_type = (
             FeatureType.PLM
             if isinstance(model, EmbeddingModel)
-            else FeatureType.SVD if isinstance(model, SVDModel) else feature_type
+            else FeatureType.SVD
+            if isinstance(model, SVDModel)
+            else feature_type
         )
         if feature_type is None:
             raise InvalidParameterError(
@@ -122,7 +125,6 @@ class UMAPAPI:
             feature_type = FeatureType(feature_type)
         if isinstance(reduction, str):
             reduction = ReductionType(reduction)
-        # get model if model_id
         if feature_type == FeatureType.PLM:
             if reduction is None:
                 raise InvalidParameterError(

@@ -7,3 +7,12 @@ isort:skip_file
 from .schemas import UMAPMetadata, UMAPEmbeddingsJob, UMAPFitJob
 from .models import UMAPModel, UMAPEmbeddingsResultFuture
 from .umap import UMAPAPI
+
+__all__ = [
+    "UMAPAPI",
+    "UMAPEmbeddingsJob",
+    "UMAPEmbeddingsResultFuture",
+    "UMAPFitJob",
+    "UMAPMetadata",
+    "UMAPModel",
+]

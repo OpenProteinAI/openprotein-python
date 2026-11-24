@@ -8,7 +8,6 @@ import pytest
 from openprotein.clustering.clustering import ClusteringAPI
 from openprotein.clustering.models import HierarchicalClusteringFuture
 from openprotein.clustering.schemas import ClusteringMetadata, HierarchicalFitJob
-from openprotein.common import FeatureType
 from openprotein.embeddings import EmbeddingModel
 from openprotein.errors import InvalidParameterError
 from openprotein.jobs import JobsAPI, JobStatus

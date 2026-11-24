@@ -1,23 +1,20 @@
 import pytest
 from pydantic import ValidationError
 
-from openprotein.jobs import JobStatus, JobType
 from openprotein.align.schemas import (
-    PromptPostParams,
-    MSASamplingMethod,
-    MSAJob,
-    MafftJob,
-    ClustalOJob,
     AbNumberJob,
+    ClustalOJob,
+    MafftJob,
+    MSAJob,
+    MSASamplingMethod,
+    PromptPostParams,
 )
+from openprotein.jobs import JobStatus, JobType
 
-# ===================================
 # PromptPostParams Schema Tests
-# ===================================
 
 
 def test_prompt_post_params_valid_defaults():
-    """Test PromptPostParams with only required fields, relying on defaults."""
     params = PromptPostParams(
         msa_id="msa123",
         num_sequences=10,
@@ -34,7 +31,6 @@ def test_prompt_post_params_valid_defaults():
 
 
 def test_prompt_post_params_valid_all_fields():
-    """Test PromptPostParams with all fields provided."""
     data = {
         "msa_id": "msa123",
         "num_sequences": 50,
@@ -52,7 +48,6 @@ def test_prompt_post_params_valid_all_fields():
 
 
 def test_prompt_post_params_invalid_range():
-    """Test PromptPostParams with out-of-range values."""
     with pytest.raises(ValidationError):
         PromptPostParams(
             msa_id="msa123",
@@ -84,13 +79,8 @@ def test_prompt_post_params_invalid_range():
         )
 
 
-# ===================================
 # Job Schemas Tests
-# ===================================
-
-
 def create_base_job_dict(job_id: str, status: JobStatus) -> dict:
-    """Helper to create a base dictionary for a Job."""
     return {
         "job_id": job_id,
         "status": status,
@@ -101,7 +91,6 @@ def create_base_job_dict(job_id: str, status: JobStatus) -> dict:
 
 
 def test_msa_job_schema():
-    """Test the MSAJob schema."""
     job_dict = create_base_job_dict("job1", JobStatus.SUCCESS)
     job_dict["job_type"] = JobType.align_align
 
@@ -110,8 +99,15 @@ def test_msa_job_schema():
     assert msa_job.job_type == JobType.align_align
 
 
+def test_msa_job_msa_id_is_the_jobs_msa_id_or_its_job_id():
+    job_dict = create_base_job_dict("job1", JobStatus.SUCCESS)
+    job_dict["job_type"] = JobType.align_align
+
+    assert MSAJob.model_validate(job_dict).msa_id == "job1"
+    assert MSAJob.model_validate({**job_dict, "msa_id": "msa-1"}).msa_id == "msa-1"
+
+
 def test_mafft_job_schema():
-    """Test the MafftJob schema."""
     job_dict = create_base_job_dict("job2", JobStatus.RUNNING)
     job_dict["job_type"] = JobType.mafft
 
@@ -121,7 +117,6 @@ def test_mafft_job_schema():
 
 
 def test_clustalo_job_schema():
-    """Test the ClustalOJob schema."""
     job_dict = create_base_job_dict("job3", JobStatus.FAILURE)
     job_dict["job_type"] = JobType.clustalo
 
@@ -131,7 +126,6 @@ def test_clustalo_job_schema():
 
 
 def test_abnumber_job_schema():
-    """Test the AbNumberJob schema."""
     job_dict = create_base_job_dict("job4", JobStatus.PENDING)
     job_dict["job_type"] = JobType.abnumber
 
@@ -141,7 +135,6 @@ def test_abnumber_job_schema():
 
 
 def test_job_schema_invalid_type():
-    """Test that validation fails for an incorrect job_type."""
     job_dict = create_base_job_dict("job1", JobStatus.SUCCESS)
     job_dict["job_type"] = "not_a_real_type"  # Invalid type
 

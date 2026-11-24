@@ -21,9 +21,13 @@ from .schemas import FoldJob, FoldMetadata
 if TYPE_CHECKING:
     from .boltz import BoltzAffinity, BoltzConfidence
     from .esmfold2 import ESMFold2Confidence
+    from .opendde import OpenDDEConfidence
     from .protenix import ProtenixConfidence
 
-FoldResult: typing.TypeAlias = "Structure | np.ndarray | pd.DataFrame | BoltzAffinity | list[BoltzConfidence] | list[ProtenixConfidence] | list[ESMFold2Confidence]"
+__all__ = ["FoldResult", "FoldResultFuture"]
+
+
+FoldResult: typing.TypeAlias = "Structure | np.ndarray | pd.DataFrame | BoltzAffinity | list[BoltzConfidence] | list[OpenDDEConfidence] | list[ProtenixConfidence] | list[ESMFold2Confidence]"
 
 
 class FoldResultFuture(
@@ -59,7 +63,6 @@ class FoldResultFuture(
 
         :meta private:
         """
-        # initialize the fold job metadata
         if metadata is None:
             if job is None or job.job_id is None:
                 raise ValueError("Expected fold metadata or job")
@@ -121,7 +124,6 @@ class FoldResultFuture(
                 model = Complex(chains=proteins)
                 complexes.append(model)
         else:
-            # collate used ids
             used_ids = []
             for complex_dicts in self.metadata.sequences:
                 for complex_dict in complex_dicts:
@@ -207,12 +209,12 @@ class FoldResultFuture(
 
     def __keys__(self):
         """
-        Get the list of sequences submitted for the fold request.
+        The keys addressing each unit of the fold job.
 
         Returns
         -------
-        list of bytes
-            List of sequences.
+        list[int]
+            Zero-based indices, one per submitted input, in submission order.
         """
         return list(range(len(self._sequences)))
 
@@ -251,7 +253,9 @@ class FoldResultFuture(
         self,
         k: int,
         key: Literal["confidence"],
-    ) -> "list[BoltzConfidence] | list[ProtenixConfidence] | list[ESMFold2Confidence]": ...
+    ) -> (
+        "list[BoltzConfidence] | list[ProtenixConfidence] | list[ESMFold2Confidence]"
+    ): ...
 
     @typing.overload
     def get_item(
@@ -286,17 +290,24 @@ class FoldResultFuture(
         **kwargs,
     ) -> FoldResult:  # ty: ignore[invalid-method-override]
         """
-        Get fold results for a specified sequence.
+        Get fold results for one unit of the fold job.
 
         Parameters
         ----------
-        sequence : bytes
-            Sequence to fetch results for.
+        k : int
+            Zero-based index of the unit, as returned by ``__keys__``.
+        key : str or None, optional
+            Which result to fetch. ``None`` returns the predicted structure.
+            Otherwise one of ``"pae"``, ``"pde"``, ``"plddt"``, ``"ptm"``,
+            ``"ipae"``, ``"confidence"``, ``"affinity"``, ``"score"`` or
+            ``"metrics"``. Availability varies by model.
 
         Returns
         -------
-        Complex
-            Complex containing the folded structure.
+        Structure or np.ndarray or pd.DataFrame or BoltzAffinity or list
+            The predicted structure when ``key`` is ``None``; an array for the
+            per-residue and per-pair metrics; a parsed affinity or per-model
+            confidence object for ``"affinity"`` and ``"confidence"``.
         """
         if key is None:
             data = api.fold_get_sequence_result(self.session, self.job.job_id, k)
@@ -309,7 +320,11 @@ class FoldResultFuture(
 
                 data = TypeAdapter(BoltzAffinity).validate_python(data)
             elif key == "confidence":
-                if self.model_id in {"protenix", "protenix-v2"}:
+                if self.model_id in {"opendde", "opendde-abag"}:
+                    from .opendde import OpenDDEConfidence
+
+                    data = TypeAdapter(list[OpenDDEConfidence]).validate_python(data)
+                elif self.model_id in {"protenix", "protenix-v2"}:
                     from .protenix import ProtenixConfidence
 
                     data = TypeAdapter(list[ProtenixConfidence]).validate_python(data)
@@ -481,6 +496,8 @@ class FoldResultFuture(
             "esmfold",
             "esmfold2",
             "esmfold2-fast",
+            "opendde",
+            "opendde-abag",
             "protenix",
             "protenix-v2",
         }:
@@ -510,6 +527,8 @@ class FoldResultFuture(
             "boltz-1",
             "boltz-1x",
             "boltz-2",
+            "opendde",
+            "opendde-abag",
             "protenix",
             "protenix-v2",
         }:
@@ -542,6 +561,8 @@ class FoldResultFuture(
             "alphafold2",
             "esmfold2",
             "esmfold2-fast",
+            "opendde",
+            "opendde-abag",
             "protenix",
             "protenix-v2",
         }:
@@ -681,6 +702,8 @@ class FoldResultFuture(
             "boltz-1",
             "boltz-1x",
             "boltz-2",
+            "opendde",
+            "opendde-abag",
             "protenix",
             "protenix-v2",
             "esmfold2",
@@ -722,11 +745,6 @@ class FoldResultFuture(
             self._affinity = affinity
         return copy.deepcopy(self._affinity)
 
-    # ------------------------------------------------------------------ #
-    # Batch-extras accessors: one HTTP call to the server's
-    # /fold/{id}/results/{key} endpoint rather than per-unit fan-out.
-    # ------------------------------------------------------------------ #
-
     def get_pae_batch(self) -> np.ndarray:
         """
         Get the Predicted Aligned Error (PAE) for every unit as a single
@@ -741,6 +759,8 @@ class FoldResultFuture(
             "esmfold",
             "esmfold2",
             "esmfold2-fast",
+            "opendde",
+            "opendde-abag",
             "protenix",
             "protenix-v2",
         }:
@@ -755,6 +775,8 @@ class FoldResultFuture(
             "boltz-1",
             "boltz-1x",
             "boltz-2",
+            "opendde",
+            "opendde-abag",
             "protenix",
             "protenix-v2",
         }:
@@ -772,6 +794,8 @@ class FoldResultFuture(
             "alphafold2",
             "esmfold2",
             "esmfold2-fast",
+            "opendde",
+            "opendde-abag",
             "protenix",
             "protenix-v2",
         }:
@@ -812,18 +836,20 @@ class FoldResultFuture(
 
     def get_confidence_batch(
         self,
-    ) -> "list[list[BoltzConfidence] | None] | list[list[ProtenixConfidence] | None] | list[list[ESMFold2Confidence] | None]":
+    ) -> "list[list[BoltzConfidence] | None] | list[list[OpenDDEConfidence] | None] | list[list[ProtenixConfidence] | None] | list[list[ESMFold2Confidence] | None]":
         """
         Retrieve per-unit confidence objects in a single HTTP call.
 
         Returns a length-``N`` list; each entry is that unit's parsed
-        confidence list, or ``None`` if the server could not fetch the
-        result for that unit.
+        confidence list, or ``None`` if that unit's result could not be
+        fetched.
         """
         if self.model_id not in {
             "boltz-1",
             "boltz-1x",
             "boltz-2",
+            "opendde",
+            "opendde-abag",
             "protenix",
             "protenix-v2",
             "esmfold2",
@@ -833,6 +859,15 @@ class FoldResultFuture(
         raw = api.fold_get_batch_extra_result(
             self.session, self.job.job_id, "confidence"
         )
+        if self.model_id in {"opendde", "opendde-abag"}:
+            from .opendde import OpenDDEConfidence
+
+            return [
+                None
+                if entry is None
+                else TypeAdapter(list[OpenDDEConfidence]).validate_python(entry)
+                for entry in raw
+            ]
         if self.model_id in {"protenix", "protenix-v2"}:
             from .protenix import ProtenixConfidence
 
@@ -865,7 +900,7 @@ class FoldResultFuture(
         Retrieve per-unit affinity objects in a single HTTP call.
 
         Returns a length-``N`` list; each entry is a ``BoltzAffinity`` or
-        ``None`` if the server could not fetch that unit's result.
+        ``None`` if that unit's result could not be fetched.
         """
         if self.model_id != "boltz-2":
             raise AttributeError("affinity is only supported for boltz-2")

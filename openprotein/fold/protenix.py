@@ -8,6 +8,7 @@ from openprotein.align import MSAFuture
 from openprotein.base import APISession
 from openprotein.common import ModelMetadata
 from openprotein.fold.common import (
+    FoldInput,
     msa_future_to_complex,
     normalize_inputs,
     normalize_templates,
@@ -19,6 +20,8 @@ from openprotein.molecules import Complex, Protein, Template
 from . import api
 from .future import FoldResultFuture
 from .models import FoldModel
+
+__all__ = ["ProtenixConfidence", "ProtenixModel", "ProtenixV2Model"]
 
 
 class ProtenixConfidence(BaseModel):
@@ -96,11 +99,12 @@ class ProtenixModel(FoldModel):
 
     def fold(
         self,
-        sequences: Sequence[Complex | Protein | str | bytes] | MSAFuture,
+        sequences: FoldInput | MSAFuture,
         diffusion_samples: int = 1,
         num_recycles: int = 10,
         num_steps: int = 200,
         templates: Sequence[Protein | Complex | Template] | None = None,
+        seed: int | None = None,
         **_,
     ) -> FoldResultFuture:
         """
@@ -108,8 +112,8 @@ class ProtenixModel(FoldModel):
 
         Parameters
         ----------
-        sequences : Sequence[Complex | Protein | str | bytes] | MSAFuture
-            List of protein complexes to include in folded output. `Protein` objects must be tagged with an `msa`, which can be a `Protein.single_sequence_mode` for single sequence mode. Alternatively, supply an `MSAFuture` to use all query sequences as a multimer.
+        sequences : FoldInput | MSAFuture
+            Complexes to fold, or a lone complex/protein/sequence. `Protein` objects must be tagged with an `msa`, which can be a `Protein.single_sequence_mode` for single sequence mode. Alternatively, supply an `MSAFuture` to use all query sequences as a multimer.
         diffusion_samples: int
             Number of diffusion samples to use
         num_recycles : int
@@ -118,6 +122,10 @@ class ProtenixModel(FoldModel):
             Number of sampling steps to use
         templates: list[Protein | Complex | Template] | None = None
             List of templates to use for structure prediction.
+        seed : int | None
+            Seed for the prediction, from 0 to 2**31 - 1. None lets the model
+            pick its own, so every call is a fresh prediction. Folding the
+            same input with the same seed returns the same structures.
 
         Returns
         -------
@@ -152,6 +160,7 @@ class ProtenixModel(FoldModel):
                 num_recycles=num_recycles,
                 num_steps=num_steps,
                 templates=template_dicts or None,
+                seed=seed,
             ),
             complexes=normalized_complexes,
         )
@@ -161,8 +170,7 @@ class ProtenixV2Model(ProtenixModel, FoldModel):
     """
     Class providing inference endpoints for Protenix-v2 structure prediction.
 
-    Protenix-v2 shares Protenix's fold API surface and confidence schema; only
-    the backend ``model_id`` differs.
+    Protenix-v2 shares Protenix's fold API surface and confidence schema.
     """
 
     model_id = "protenix-v2"

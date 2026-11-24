@@ -1,14 +1,16 @@
 import gzip
-import requests
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Literal
 
 import gemmi
+import requests
 
-import openprotein.utils.cif as _cif_utils
+import openprotein.utils.cif as cif_utils
 
 from .complex import Complex
+
+__all__ = ["Structure"]
 
 
 class Structure:
@@ -93,7 +95,7 @@ class Structure:
         use_bfactor_as_plddt: bool | None = None,
         verbose: bool = True,
     ) -> "Structure":
-        structure_block = _cif_utils.StructureCIFBlock(
+        structure_block = cif_utils.StructureCIFBlock(
             filestring=filestring, format=format
         )
         return Structure(
@@ -154,7 +156,7 @@ class Structure:
         if len(self._complexes) == 0:
             return block.as_string()
         # add additional loops for first complex
-        sequence_loop, atom_loop = _cif_utils.init_loops(block=block)
+        sequence_loop, atom_loop = cif_utils.init_loops(block=block)
         for chain_id, chain in self._complexes[0].get_chains().items():
             chain._append_loop_data(
                 chain_id=chain_id, sequence_loop=sequence_loop, atom_loop=atom_loop
@@ -199,9 +201,9 @@ class Structure:
                 assert this_entity.sifts_unp_acc == first_entity.sifts_unp_acc
                 assert this_entity.full_sequence == first_entity.full_sequence
         if sum(_structure_has_no_atoms(structure) for structure in structures) > 0:
-            assert (
-                len(structures) == 1
-            ), "can only serialize Structures containing Complexes with no structure data if there is only one complex in the structure"
+            assert len(structures) == 1, (
+                "can only serialize Structures containing Complexes with no structure data if there is only one complex in the structure"
+            )
         structure = structures[0]
         for this_structure in structures[1:]:
             structure.add_model(this_structure[0])

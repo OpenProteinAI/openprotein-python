@@ -85,7 +85,9 @@ def assert_close(
     actual = np.asarray(actual, dtype=float)
     baseline = np.asarray(baseline, dtype=float)
     if actual.shape != baseline.shape:
-        raise AssertionError(f"shape mismatch: actual {actual.shape} vs baseline {baseline.shape}")
+        raise AssertionError(
+            f"shape mismatch: actual {actual.shape} vs baseline {baseline.shape}"
+        )
     if np.allclose(actual, baseline, rtol=rtol, atol=atol, equal_nan=True):
         return
     both_finite = np.isfinite(actual) & np.isfinite(baseline)

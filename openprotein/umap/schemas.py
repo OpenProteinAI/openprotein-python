@@ -8,6 +8,8 @@ from pydantic import BaseModel, ConfigDict
 from openprotein.common import FeatureType
 from openprotein.jobs import BatchJob, Job, JobStatus, JobType
 
+__all__ = ["UMAPEmbeddingsJob", "UMAPFitJob", "UMAPMetadata"]
+
 
 class UMAPMetadata(BaseModel):
     id: str

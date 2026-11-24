@@ -1,9 +1,22 @@
+import json
+from collections.abc import Sequence
+
 from pydantic import TypeAdapter
 
 from openprotein.base import APISession
 from openprotein.errors import APIError
 
 from .schemas import AssayDataPage, AssayMetadata
+
+__all__ = [
+    "assaydata_delete",
+    "assaydata_list",
+    "assaydata_page_get",
+    "assaydata_post",
+    "assaydata_put",
+    "get_assay_metadata",
+    "list_models",
+]
 
 
 def list_models(session: APISession, assay_id: str) -> list:
@@ -32,6 +45,7 @@ def assaydata_post(
     assay_file,
     assay_name: str,
     assay_description: str | None = "",
+    metadata_columns: Sequence[str] | None = None,
 ) -> AssayMetadata:
     """
     Post assay data.
@@ -46,6 +60,8 @@ def assaydata_post(
         Name of the assay.
     assay_description : str, optional
         Description of the assay, by default ''.
+    metadata_columns : Sequence[str], optional
+        Columns stored as free-text metadata per row instead of measurements.
 
     Returns
     -------
@@ -56,6 +72,10 @@ def assaydata_post(
 
     files = {"assay_data": assay_file}
     data = {"assay_name": assay_name, "assay_description": assay_description}
+    if isinstance(metadata_columns, str):
+        raise TypeError("metadata_columns must be a list of column names")
+    if metadata_columns is not None:
+        data["metadata_columns"] = json.dumps(list(metadata_columns))
 
     response = session.post(endpoint, files=files, data=data)
     if response.status_code == 200:
@@ -173,11 +193,25 @@ def assaydata_put(
     if assay_description is not None:
         data["assay_description"] = assay_description
 
-    response = session.put(endpoint, data=data)
+    response = session.put(endpoint, json=data)
     if response.status_code == 200:
         return TypeAdapter(AssayMetadata).validate_python(response.json())
     else:
         raise APIError(f"Unable to update assay data: {response.text}")
+
+
+def assaydata_delete(session: APISession, assay_id: str) -> None:
+    """
+    Delete an assay.
+
+    Parameters
+    ----------
+    session : APISession
+        Session object for API communication.
+    assay_id : str
+        Id of the assay.
+    """
+    session.delete(f"v1/assaydata/{assay_id}")
 
 
 def assaydata_page_get(
@@ -187,6 +221,7 @@ def assaydata_page_get(
     page_offset: int = 0,
     page_size: int = 1000,
     data_format: str = "wide",
+    include_metadata: bool = False,
 ) -> AssayDataPage:
     """
     Get a page of assay data.
@@ -205,6 +240,8 @@ def assaydata_page_get(
         Size of the page, by default 1000.
     data_format : str, optional
         data_format of the data, by default 'wide'.
+    include_metadata : bool, optional
+        Include each row's metadata values, by default False. Wide format only.
 
     Returns
     -------
@@ -221,6 +258,8 @@ def assaydata_page_get(
     params = {"page_offset": page_offset, "page_size": page_size, "format": data_format}
     if measurement_name is not None:
         params["measurement_name"] = measurement_name
+    if include_metadata:
+        params["include_metadata"] = True
 
     response = session.get(endpoint, params=params)
     if response.status_code == 200:

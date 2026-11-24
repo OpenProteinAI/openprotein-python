@@ -1,11 +1,9 @@
-from datetime import datetime
 import warnings
-import pytest
+from datetime import datetime
 from unittest.mock import MagicMock, patch
 
-from openprotein.base import APISession
-from openprotein.errors import APIError
-from openprotein.jobs import Job, JobStatus, JobType
+import pytest
+
 from openprotein.align.msa import MSAFuture
 from openprotein.align.schemas import (
     AbNumberJob,
@@ -13,7 +11,10 @@ from openprotein.align.schemas import (
     MafftJob,
     MSASamplingMethod,
 )
-from openprotein.prompt import Prompt
+from openprotein.base import APISession
+from openprotein.errors import APIError
+from openprotein.jobs import JobStatus, JobType
+from openprotein.prompt import Prompt, PromptMetadata
 
 
 @pytest.fixture
@@ -39,30 +40,30 @@ def msa_future(mock_session: MagicMock, mafft_job: MafftJob) -> MSAFuture:
     return MSAFuture(mock_session, mafft_job)
 
 
-@patch("openprotein.align.api.get_msa")
-def test_msa_future_get(mock_get_msa, msa_future: MSAFuture):
+@patch("openprotein.align.api._read_msa")
+def test_msa_future_get(mock_read_msa, msa_future: MSAFuture):
     """Test the get method of MSAFuture."""
     msa_future.get()
-    mock_get_msa.assert_called_once_with(
-        session=msa_future.session, job_id=msa_future.job.job_id
+    mock_read_msa.assert_called_once_with(
+        session=msa_future.session, msa_id=msa_future.job.msa_id, format="fasta"
     )
 
 
-@patch("openprotein.align.api.prompt_post")
-@patch("openprotein.prompt.Prompt.create")
+@patch("openprotein.align.api._sample_prompt")
+@patch("openprotein.align.msa.Prompt")
 def test_msa_future_sample_prompt(
-    mock_prompt_create, mock_prompt_post, msa_future: MSAFuture
+    mock_prompt_cls, mock_sample_prompt, msa_future: MSAFuture
 ):
     """Test the sample_prompt method of MSAFuture."""
-    mock_job = MagicMock(spec=Job)
-    mock_prompt_post.return_value = mock_job
+    mock_metadata = MagicMock(spec=PromptMetadata)
+    mock_sample_prompt.return_value = mock_metadata
 
-    mock_prompt_future = MagicMock(spec=Prompt)
-    mock_prompt_create.return_value = mock_prompt_future
+    mock_prompt = MagicMock(spec=Prompt)
+    mock_prompt_cls.return_value = mock_prompt
 
     prompt = msa_future.sample_prompt(num_sequences=10, method=MSASamplingMethod.RANDOM)
 
-    mock_prompt_post.assert_called_once_with(
+    mock_sample_prompt.assert_called_once_with(
         msa_future.session,
         msa_id=msa_future.msa_id,
         num_sequences=10,
@@ -76,11 +77,11 @@ def test_msa_future_sample_prompt(
         random_seed=None,
     )
 
-    mock_prompt_create.assert_called_once_with(
-        session=msa_future.session, job=mock_job, num_replicates=1
+    mock_prompt_cls.assert_called_once_with(
+        session=msa_future.session, metadata=mock_metadata
     )
 
-    assert prompt == mock_prompt_future
+    assert prompt == mock_prompt
 
 
 _UNNUMBERED_WARNING = {
@@ -159,10 +160,10 @@ def abnumber_future(mock_session: MagicMock, abnumber_job: AbNumberJob) -> MSAFu
     return MSAFuture(mock_session, abnumber_job)
 
 
-@patch("openprotein.align.api.get_msa")
+@patch("openprotein.align.api._read_msa")
 @patch("openprotein.align.api.antibody_schema_get")
 def test_msa_future_get_warns_on_reported_warning(
-    mock_schema_get, mock_get_msa, abnumber_future: MSAFuture
+    mock_schema_get, mock_read_msa, abnumber_future: MSAFuture
 ):
     """Fetching the results surfaces what the job reported about them."""
     mock_schema_get.return_value = {
@@ -179,13 +180,13 @@ def test_msa_future_get_warns_on_reported_warning(
     with pytest.warns(UserWarning, match="UNNUMBERED_RESIDUES_DROPPED"):
         abnumber_future.get()
 
-    mock_get_msa.assert_called_once()
+    mock_read_msa.assert_called_once()
 
 
-@patch("openprotein.align.api.get_msa")
+@patch("openprotein.align.api._read_msa")
 @patch("openprotein.align.api.antibody_schema_get")
 def test_msa_future_wait_warns_on_reported_warning(
-    mock_schema_get, mock_get_msa, abnumber_future: MSAFuture
+    mock_schema_get, mock_read_msa, abnumber_future: MSAFuture
 ):
     """`wait` reaches the results through `get`, so it warns too."""
     mock_schema_get.return_value = {
@@ -200,10 +201,10 @@ def test_msa_future_wait_warns_on_reported_warning(
             abnumber_future.wait()
 
 
-@patch("openprotein.align.api.get_msa")
+@patch("openprotein.align.api._read_msa")
 @patch("openprotein.align.api.antibody_schema_get")
 def test_msa_future_get_warns_once_per_future(
-    mock_schema_get, mock_get_msa, abnumber_future: MSAFuture
+    mock_schema_get, mock_read_msa, abnumber_future: MSAFuture
 ):
     """The schema is fetched once, however many times the results are read."""
     mock_schema_get.return_value = {
@@ -220,10 +221,10 @@ def test_msa_future_get_warns_once_per_future(
     mock_schema_get.assert_called_once()
 
 
-@patch("openprotein.align.api.get_msa")
+@patch("openprotein.align.api._read_msa")
 @patch("openprotein.align.api.antibody_schema_get")
 def test_msa_future_get_silent_without_warnings(
-    mock_schema_get, mock_get_msa, abnumber_future: MSAFuture
+    mock_schema_get, mock_read_msa, abnumber_future: MSAFuture
 ):
     """A job that reported nothing warns about nothing."""
     mock_schema_get.return_value = {"chains": [], "warnings": []}
@@ -235,10 +236,10 @@ def test_msa_future_get_silent_without_warnings(
     assert caught == []
 
 
-@patch("openprotein.align.api.get_msa")
+@patch("openprotein.align.api._read_msa")
 @patch("openprotein.align.api.antibody_schema_get")
 def test_msa_future_get_skips_schema_for_other_methods(
-    mock_schema_get, mock_get_msa, msa_future: MSAFuture
+    mock_schema_get, mock_read_msa, msa_future: MSAFuture
 ):
     """Only AbNumber jobs have an antibody schema to read."""
     msa_future.get()
@@ -246,10 +247,10 @@ def test_msa_future_get_skips_schema_for_other_methods(
     mock_schema_get.assert_not_called()
 
 
-@patch("openprotein.align.api.get_msa")
+@patch("openprotein.align.api._read_msa")
 @patch("openprotein.align.api.antibody_schema_get")
 def test_msa_future_get_survives_unreachable_schema(
-    mock_schema_get, mock_get_msa, abnumber_future: MSAFuture
+    mock_schema_get, mock_read_msa, abnumber_future: MSAFuture
 ):
     """Results stay readable when the schema endpoint does not answer."""
     mock_schema_get.side_effect = APIError("no such endpoint")
@@ -259,4 +260,4 @@ def test_msa_future_get_survives_unreachable_schema(
         abnumber_future.get()
 
     assert caught == []
-    mock_get_msa.assert_called_once()
+    mock_read_msa.assert_called_once()

@@ -2,11 +2,13 @@
 
 import time
 
-import numpy as np
 import pytest
 
 from openprotein import OpenProtein
-from openprotein.clustering import HierarchicalClusteringFuture, HierarchicalClusteringResult, LinkageMethod, Metric
+from openprotein.clustering import (
+    HierarchicalClusteringFuture,
+    HierarchicalClusteringResult,
+)
 from openprotein.common.reduction import ReductionType
 from openprotein.data import AssayDataset
 from openprotein.errors import HTTPError, InvalidParameterError
@@ -267,4 +269,6 @@ def test_clustering_delete(
             break
         time.sleep(0.5)
     else:
-        pytest.fail(f"Expected deleted clustering job {clustering_id!r} to become unavailable")
+        pytest.fail(
+            f"Expected deleted clustering job {clustering_id!r} to become unavailable"
+        )

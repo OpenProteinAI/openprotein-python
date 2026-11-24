@@ -1,12 +1,19 @@
 """Predictor models for making predictions on new sequences."""
 
+from functools import cached_property
 from typing import TYPE_CHECKING
 
 from openprotein.base import APISession
 from openprotein.data import AssayDataset, DataAPI
-from openprotein.embeddings import EmbeddingModel, EmbeddingsAPI
+from openprotein.embeddings import EmbeddingModel
 from openprotein.errors import InvalidParameterError
 from openprotein.jobs import Future, JobsAPI, JobType
+from openprotein.models.kernels import (
+    TrainedKernel,
+    _GPHyperparameters,
+    _sole_hyperparameters,
+    _trained_kernel,
+)
 from openprotein.svd import SVDAPI, SVDModel
 
 from . import api
@@ -21,6 +28,8 @@ from .validate import CVResultFuture
 
 if TYPE_CHECKING:
     from openprotein.design import ModelCriterion
+
+__all__ = ["PredictorModel", "PredictorModelGroup"]
 
 
 class PredictorModel(Future):
@@ -46,8 +55,8 @@ class PredictorModel(Future):
         :meta private:
         """
         self._training_assay = None
+        self._hyperparameters: _GPHyperparameters | None = None
 
-        # initialize the predictor metadata
         if metadata is None:
             if job is None or job.job_id is None:
                 raise ValueError("Expected predictor metadata or job")
@@ -137,8 +146,22 @@ class PredictorModel(Future):
         return self._metadata.id
 
     @property
+    def name(self):
+        """The name of the predictor."""
+        return self._metadata.name
+
+    @property
+    def description(self):
+        """The description of the predictor."""
+        return self._metadata.description
+
+    def rename(self, name: str | None = None, description: str | None = None):
+        """Not supported: a predictor's name is set when it is trained."""
+        raise NotImplementedError("a predictor's name is set when it is trained")
+
+    @property
     def reduction(self):
-        """The reduction of th embeddings used to train the predictor, if any."""
+        """The reduction of the embeddings used to train the predictor, if any."""
         return (
             self._metadata.model_spec.features.reduction
             if self._metadata.model_spec.features is not None
@@ -219,11 +242,21 @@ class PredictorModel(Future):
         """
         data_api = getattr(self.session, "data", None)
         assert isinstance(data_api, DataAPI)
-        return data_api.get(assay_id=self._metadata.training_dataset.assay_id)
+        return data_api.Assay(id=self._metadata.training_dataset.assay_id)
 
     def crossvalidate(self, n_splits: int | None = None) -> CVResultFuture:
         """
         Run a crossvalidation on the trained predictor.
+
+        Parameters
+        ----------
+        n_splits : int, optional
+            Number of folds.
+
+        Returns
+        -------
+        CVResultFuture
+            Future for the crossvalidation job.
         """
         return CVResultFuture.create(
             session=self.session,
@@ -252,6 +285,73 @@ class PredictorModel(Future):
                 session=self.session, predictor_id=self.id, sequences=sequences
             ),
         )
+
+    def _get_hyperparameters(self) -> _GPHyperparameters:
+        if self._hyperparameters is None:
+            self._hyperparameters = _sole_hyperparameters(
+                api._predictor_get_hyperparameters(
+                    session=self.session, predictor_id=self.id
+                )
+            )
+        return self._hyperparameters
+
+    # IPython can evaluate this descriptor to complete the concrete kernel's fields.
+    @cached_property
+    def kernel(self) -> TrainedKernel:
+        """
+        The trained kernel of this GP predictor, in data space.
+
+        The first access, including runtime tab completion, may make a request.
+        Failed reads are retried on subsequent access.
+
+        Its class follows the kernel type and carries only the hyperparameters that
+        apply to it: every kernel has an ``outputscale``, every kernel but linear a
+        ``lengthscale``, periodic a ``period`` and rational quadratic an ``alpha``.
+
+        Raises
+        ------
+        HTTPError
+            404 for an ensemble, or a GP trained before hyperparameters were recorded.
+
+        Examples
+        --------
+        >>> predictor.kernel
+        PeriodicKernel(outputscale=1.92, lengthscale=0.83, period=2.31)
+        >>> predictor.kernel.lengthscale
+        0.83
+        """
+        hyperparameters = self._get_hyperparameters()
+        kernel_spec = self._metadata.model_spec.kernel
+        assert kernel_spec is not None
+        try:
+            return _trained_kernel(kernel_spec.type, hyperparameters)
+        except ValueError:
+            self._hyperparameters = None
+            raise
+
+    @property
+    def mean(self) -> float | None:
+        """
+        Constant mean of the GP prior, in the units of the trained property.
+
+        Raises
+        ------
+        HTTPError
+            404 for an ensemble, or a GP trained before hyperparameters were recorded.
+        """
+        return self._get_hyperparameters().mean
+
+    @property
+    def noise(self) -> float | None:
+        """
+        Observation noise variance, in the units of the trained property squared.
+
+        Raises
+        ------
+        HTTPError
+            404 for an ensemble, or a GP trained before hyperparameters were recorded.
+        """
+        return self._get_hyperparameters().noise
 
     def single_site(self, sequence: bytes | str) -> PredictionResultFuture:
         """

@@ -1,6 +1,5 @@
 """Test the schemas for the fold domain."""
 
-import json
 from datetime import datetime
 
 from openprotein.fold.schemas import FoldJob, FoldMetadata
@@ -8,7 +7,6 @@ from openprotein.jobs.schemas import BatchJob, Job, JobStatus, JobType
 
 
 def test_fold_metadata_creation():
-    """Test successful creation of FoldMetadata."""
     metadata = FoldMetadata(
         job_id="test_job_id", model_id="test_model_id", args={"param": "value"}
     )
@@ -18,7 +16,6 @@ def test_fold_metadata_creation():
 
 
 def test_fold_metadata_deserialization():
-    """Test successful deserialization of FoldMetadata from JSON."""
     json_data = {
         "job_id": "test_job_id",
         "model_id": "test_model_id",
@@ -31,7 +28,6 @@ def test_fold_metadata_deserialization():
 
 
 def test_fold_job_creation():
-    """Test successful creation of FoldJob."""
     now = datetime.now()
     job = FoldJob(
         job_id="test_job_id",

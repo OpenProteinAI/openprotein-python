@@ -1,7 +1,7 @@
 """Community-based Boltz models for complex structure prediction with ligands/dna/rna."""
 
 import warnings
-from typing import Mapping, Sequence
+from collections.abc import Mapping, Sequence
 
 from pydantic import BaseModel, TypeAdapter, model_validator
 
@@ -9,6 +9,8 @@ from openprotein.align import MSAFuture
 from openprotein.base import APISession
 from openprotein.common import ModelMetadata
 from openprotein.fold.common import (
+    FoldInput,
+    _as_entities,
     msa_future_to_complex,
     normalize_inputs,
     normalize_templates,
@@ -21,6 +23,21 @@ from openprotein.molecules.template import Template
 from . import api
 from .future import FoldResultFuture
 from .models import FoldModel
+
+__all__ = [
+    "AffinityProperty",
+    "Boltz1Model",
+    "Boltz1xModel",
+    "Boltz2Model",
+    "BoltzAffinity",
+    "BoltzConfidence",
+    "BoltzConstraint",
+    "BoltzModel",
+    "BoltzProperty",
+    "BondConstraint",
+    "ContactConstraint",
+    "PocketConstraint",
+]
 
 
 class BoltzModel(FoldModel):
@@ -40,13 +57,15 @@ class BoltzModel(FoldModel):
 
     def fold(
         self,
-        sequences: Sequence[Complex | Protein | str | bytes] | MSAFuture,
+        sequences: FoldInput | MSAFuture,
         diffusion_samples: int = 1,
         num_recycles: int = 3,
         num_steps: int = 200,
         step_scale: float = 1.638,
         use_potentials: bool = False,
         constraints: Sequence[Mapping] | None = None,
+        *,
+        seed: int | None = None,
         **kwargs,
     ) -> FoldResultFuture:
         """
@@ -54,8 +73,8 @@ class BoltzModel(FoldModel):
 
         Parameters
         ----------
-        sequences : Sequence[Complex | Protein | str | bytes] | MSAFuture
-            List of protein complexes to include in folded output. `Protein` objects must be tagged with an `msa`, which can be a `Protein.single_sequence_mode` for single sequence mode. Alternatively, supply an `MSAFuture` to use all query sequences as a multimer.
+        sequences : FoldInput | MSAFuture
+            Complexes to fold, or a lone complex/protein/sequence. `Protein` objects must be tagged with an `msa`, which can be a `Protein.single_sequence_mode` for single sequence mode. Alternatively, supply an `MSAFuture` to use all query sequences as a multimer.
         diffusion_samples: int
             Number of diffusion samples to use
         num_recycles : int
@@ -66,13 +85,17 @@ class BoltzModel(FoldModel):
             Scaling factor for diffusion steps.
         constraints : Optional[List[dict]]
             List of constraints.
+        seed : int | None
+            Seed for the prediction, from 0 to 2**31 - 1. None lets the model
+            pick its own, so every call is a fresh prediction. Folding the
+            same input with the same seed returns the same structures.
 
         Returns
         -------
         FoldResultFuture
             Future for the folding complex result.
         """
-        # migrate old parameter
+        # deprecated parameter names
         if (recycling_steps := kwargs.get("recycling_steps")) is not None:
             num_recycles = recycling_steps
             warnings.warn(
@@ -83,11 +106,9 @@ class BoltzModel(FoldModel):
             warnings.warn(
                 "`sampling_steps` has been updated to `num_steps`. The parameter will be auto-corrected for now but raise an exception in the future."
             )
-        # validate constraints
         if constraints is not None:
             TypeAdapter(list[BoltzConstraint]).validate_python(constraints)
 
-        # build the normalized_models from msa
         if isinstance(sequences, MSAFuture):
             normalized_complexes = [msa_future_to_complex(self.session, sequences)]
         else:
@@ -112,6 +133,7 @@ class BoltzModel(FoldModel):
                 step_scale=step_scale,
                 constraints=constraints,
                 use_potentials=use_potentials,
+                seed=seed,
                 **kwargs,
             ),
             complexes=normalized_complexes,
@@ -127,7 +149,7 @@ class Boltz2Model(BoltzModel, FoldModel):
 
     def fold(
         self,
-        sequences: Sequence[Complex | Protein | str | bytes] | MSAFuture,
+        sequences: FoldInput | MSAFuture,
         diffusion_samples: int = 1,
         num_recycles: int = 3,
         num_steps: int = 200,
@@ -137,6 +159,7 @@ class Boltz2Model(BoltzModel, FoldModel):
         templates: Sequence[Protein | Complex | Template] | None = None,
         properties: Sequence[Mapping] | None = None,
         method: str | None = None,
+        seed: int | None = None,
         **_,
     ) -> FoldResultFuture:
         """
@@ -144,8 +167,8 @@ class Boltz2Model(BoltzModel, FoldModel):
 
         Parameters
         ----------
-        sequences : Sequence[Complex | Protein | str | bytes] | MSAFuture
-            List of protein sequences to include in folded output. `Protein` objects must be tagged with an `msa`, which can be a `Protein.single_sequence_mode` for single sequence mode. Alternatively, supply an `MSAFuture` to use all query sequences as a multimer.
+        sequences : FoldInput | MSAFuture
+            Complexes to fold, or a lone complex/protein/sequence. `Protein` objects must be tagged with an `msa`, which can be a `Protein.single_sequence_mode` for single sequence mode. Alternatively, supply an `MSAFuture` to use all query sequences as a multimer.
         diffusion_samples: int
             Number of diffusion samples to use
         num_recycles : int
@@ -171,6 +194,10 @@ class Boltz2Model(BoltzModel, FoldModel):
             'FLUORESCENCE TRANSFER', 'EPR', 'THEORETICAL MODEL',
             'SOLUTION SCATTERING', 'OTHER', 'AFDB', 'BOLTZ-1'.
             View the documentation on Boltz for upstream details.
+        seed : int | None
+            Seed for the prediction, from 0 to 2**31 - 1. None lets the model
+            pick its own, so every call is a fresh prediction. Folding the
+            same input with the same seed returns the same structures.
 
         Returns
         -------
@@ -186,13 +213,12 @@ class Boltz2Model(BoltzModel, FoldModel):
             ),
         )
 
-        # validate properties
         if properties is not None:
             props = TypeAdapter(list[BoltzProperty]).validate_python(properties)
             # Only allow affinity for ligands, and check binder refers to a ligand chain_id (str, not list)
             ligand_chain_ids = set()
             if not isinstance(sequences, MSAFuture):
-                for protein in sequences:
+                for protein in _as_entities(sequences):
                     if isinstance(protein, Complex):
                         complex = protein
                         for chain_id, chain in complex.get_chains().items():
@@ -217,6 +243,7 @@ class Boltz2Model(BoltzModel, FoldModel):
             templates=template_dicts or None,
             properties=properties,
             method=method,
+            seed=seed,
         )
 
 
@@ -229,13 +256,14 @@ class Boltz1Model(BoltzModel, FoldModel):
 
     def fold(
         self,
-        sequences: Sequence[Complex | Protein | str | bytes] | MSAFuture,
+        sequences: FoldInput | MSAFuture,
         diffusion_samples: int = 1,
         num_recycles: int = 3,
         num_steps: int = 200,
         step_scale: float = 1.638,
         use_potentials: bool = False,
         constraints: Sequence[Mapping] | None = None,
+        seed: int | None = None,
         **_,
     ) -> FoldResultFuture:
         """
@@ -243,8 +271,8 @@ class Boltz1Model(BoltzModel, FoldModel):
 
         Parameters
         ----------
-        sequences : Sequence[Complex | Protein | str | bytes] | MSAFuture
-            List of protein sequences to include in folded output. `Protein` objects must be tagged with an `msa`, which can be a `Protein.single_sequence_mode` for single sequence mode. Alternatively, supply an `MSAFuture` to use all query sequences as a multimer.
+        sequences : FoldInput | MSAFuture
+            Complexes to fold, or a lone complex/protein/sequence. `Protein` objects must be tagged with an `msa`, which can be a `Protein.single_sequence_mode` for single sequence mode. Alternatively, supply an `MSAFuture` to use all query sequences as a multimer.
         diffusion_samples: int
             Number of diffusion samples to use
         num_recycles : int
@@ -257,6 +285,10 @@ class Boltz1Model(BoltzModel, FoldModel):
             Whether or not to use potentials.
         constraints : Optional[List[dict]]
             List of constraints.
+        seed : int | None
+            Seed for the prediction, from 0 to 2**31 - 1. None lets the model
+            pick its own, so every call is a fresh prediction. Folding the
+            same input with the same seed returns the same structures.
 
         Returns
         -------
@@ -289,6 +321,7 @@ class Boltz1Model(BoltzModel, FoldModel):
             step_scale=step_scale,
             use_potentials=use_potentials,
             constraints=constraints,
+            seed=seed,
         )
 
 
@@ -301,13 +334,14 @@ class Boltz1xModel(Boltz1Model, BoltzModel, FoldModel):
 
     def fold(
         self,
-        sequences: Sequence[Complex | Protein | str | bytes] | MSAFuture,
+        sequences: FoldInput | MSAFuture,
         diffusion_samples: int = 1,
         num_recycles: int = 3,
         num_steps: int = 200,
         step_scale: float = 1.638,
         use_potentials: bool = True,
         constraints: Sequence[Mapping] | None = None,
+        seed: int | None = None,
         **_,
     ) -> FoldResultFuture:
         """
@@ -315,8 +349,8 @@ class Boltz1xModel(Boltz1Model, BoltzModel, FoldModel):
 
         Parameters
         ----------
-        sequences : Sequence[Complex | Protein | str | bytes] | MSAFuture
-            List of protein sequences to include in folded output. `Protein` objects must be tagged with an `msa`, which can be a `Protein.single_sequence_mode` for single sequence mode. Alternatively, supply an `MSAFuture` to use all query sequences as a multimer.
+        sequences : FoldInput | MSAFuture
+            Complexes to fold, or a lone complex/protein/sequence. `Protein` objects must be tagged with an `msa`, which can be a `Protein.single_sequence_mode` for single sequence mode. Alternatively, supply an `MSAFuture` to use all query sequences as a multimer.
         diffusion_samples: int
             Number of diffusion samples to use
         num_recycles : int
@@ -327,6 +361,10 @@ class Boltz1xModel(Boltz1Model, BoltzModel, FoldModel):
             Scaling factor for diffusion steps.
         constraints : Optional[List[dict]]
             List of constraints.
+        seed : int | None
+            Seed for the prediction, from 0 to 2**31 - 1. None lets the model
+            pick its own, so every call is a fresh prediction. Folding the
+            same input with the same seed returns the same structures.
 
         Returns
         -------
@@ -344,6 +382,7 @@ class Boltz1xModel(Boltz1Model, BoltzModel, FoldModel):
             step_scale=step_scale,
             use_potentials=True,
             constraints=constraints,
+            seed=seed,
         )
 
 
@@ -452,7 +491,7 @@ class BoltzProperty(BaseModel):
         Affinity property specification.
     """
 
-    # TODO handle more than more property
+    # TODO handle more than one property
     affinity: AffinityProperty
 
 
@@ -520,4 +559,4 @@ class BoltzAffinity(BaseModel):
     affinity_probability_binary: float
 
     class Config:
-        extra = "allow"  # Allow extra fields
+        extra = "allow"

@@ -1,5 +1,7 @@
 from typing import Iterator, Sequence, overload
 
+__all__ = ["parse", "parse_stream"]
+
 
 @overload
 def parse_stream(
@@ -22,7 +24,7 @@ def parse_stream(
 
     for line in lines:
         if not line:
-            continue  # skip empty lines
+            continue
         if is_bytes := isinstance(line, bytes):
             line = line.decode()
         if line.startswith(comment):

@@ -1,16 +1,17 @@
 """Community-based ESMFold model."""
 
 import warnings
-from typing import Sequence
 
 from openprotein.base import APISession
 from openprotein.common import ModelMetadata
-from openprotein.fold.common import normalize_inputs, serialize_input
-from openprotein.molecules import DNA, RNA, Complex, Ligand, Protein
+from openprotein.fold.common import FoldInput, normalize_inputs, serialize_input
+from openprotein.molecules import DNA, RNA, Ligand
 
 from . import api
 from .future import FoldResultFuture
 from .models import FoldModel
+
+__all__ = ["ESMFoldModel"]
 
 
 class ESMFoldModel(FoldModel):
@@ -30,7 +31,7 @@ class ESMFoldModel(FoldModel):
 
     def fold(
         self,
-        sequences: Sequence[Complex | Protein | str | bytes],
+        sequences: FoldInput,
         num_recycles: int | None = None,
         **_,
     ) -> FoldResultFuture:
@@ -39,7 +40,7 @@ class ESMFoldModel(FoldModel):
 
         Parameters
         ----------
-        sequences : Sequence[Complex | Protein | str | bytes]
+        sequences : FoldInput
             sequences to fold
         num_recycles : int | None
             number of times to recycle models
@@ -51,13 +52,9 @@ class ESMFoldModel(FoldModel):
 
         for complex in normalized_complexes:
             for id, chain in complex.get_chains().items():
-                if (
-                    isinstance(chain, DNA)
-                    or isinstance(chain, RNA)
-                    or isinstance(chain, Ligand)
-                ):
+                if isinstance(chain, (DNA, RNA, Ligand)):
                     with warnings.catch_warnings():
-                        warnings.simplefilter("always")  # Force warning to always show
+                        warnings.simplefilter("always")
                         warnings.warn(
                             "ESMFold does not support ligand/DNA/RNA input. These extra chains will be ignored in the output."
                         )

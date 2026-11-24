@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 
 from openprotein import OpenProtein
-from openprotein.common import FeatureType
 from openprotein.common.reduction import ReductionType
 from openprotein.data import AssayDataset
 from openprotein.errors import HTTPError, InvalidParameterError
@@ -51,8 +50,7 @@ def test_predictor_training_single_model(
     reduction: ReductionType,
 ):
     """
-    Test training a GP predictor with different embedding models.
-    Validates training workflow and prediction output.
+    A GP predictor trains on each embedding model and predicts.
     """
     # Get the embedding model
     embedding_model = session.embedding.get_model(model_id)
@@ -66,9 +64,9 @@ def test_predictor_training_single_model(
     )
 
     # Wait for training to complete
-    assert predictor_future.wait(
-        timeout=TIMEOUT
-    ), f"Predictor training failed for {model_id}"
+    assert predictor_future.wait(timeout=TIMEOUT), (
+        f"Predictor training failed for {model_id}"
+    )
     predictor_model = predictor_future
 
     # Validate predictor metadata
@@ -87,8 +85,7 @@ def test_predictor_training_single_model(
 @pytest.mark.e2e
 def test_predictor_parallel_training(session: OpenProtein, assay_small: AssayDataset):
     """
-    Test training multiple predictors in parallel.
-    Validates that the backend can handle concurrent training jobs.
+    Concurrent training jobs all complete and predict.
     """
     property_name = assay_small.measurement_names[0]
 
@@ -119,9 +116,6 @@ def test_predictor_parallel_training(session: OpenProtein, assay_small: AssayDat
 def test_predictor_multitask(
     session: OpenProtein, assay_small: AssayDataset, num_properties: int
 ):
-    """
-    Test training a multitask predictor with multiple properties.
-    """
     # Get the first N measurement names
     properties = assay_small.measurement_names[:num_properties]
 
@@ -148,9 +142,6 @@ def test_predictor_multitask(
 def test_predictor_batch_prediction(
     session: OpenProtein, assay_small: AssayDataset, num_sequences: int
 ):
-    """
-    Test making predictions on batches of sequences.
-    """
     # Train a predictor
     embedding_model = session.embedding.esm2
     property_name = assay_small.measurement_names[0]
@@ -182,8 +173,7 @@ def test_predictor_different_dataset_sizes(
     session: OpenProtein, assay_fixture: str, request
 ):
     """
-    Test training predictors on datasets of different sizes.
-    Validates scalability and training time.
+    Predictors train on small, medium and large assay datasets.
     """
     # Get the fixture dynamically
     try:
@@ -201,9 +191,9 @@ def test_predictor_different_dataset_sizes(
 
     # Larger datasets may take longer
     timeout = TIMEOUT * (2 if "large" in assay_fixture else 1)
-    assert predictor_future.wait(
-        timeout=timeout
-    ), f"Training failed for {assay_fixture}"
+    assert predictor_future.wait(timeout=timeout), (
+        f"Training failed for {assay_fixture}"
+    )
 
     # Validate prediction works
     test_sequence = b"MSKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLV"
@@ -214,9 +204,6 @@ def test_predictor_different_dataset_sizes(
 
 @pytest.mark.e2e
 def test_predictor_retrieval_by_id(session: OpenProtein, assay_small: AssayDataset):
-    """
-    Test retrieving a trained predictor by ID.
-    """
     # Train a predictor
     embedding_model = session.embedding.esm2
     property_name = assay_small.measurement_names[0]
@@ -244,9 +231,6 @@ def test_predictor_retrieval_by_id(session: OpenProtein, assay_small: AssayDatas
 def test_predictor_error_handling_invalid_sequence(
     session: OpenProtein, assay_small: AssayDataset
 ):
-    """
-    Test error handling for invalid sequences in prediction.
-    """
     # Train a predictor
     embedding_model = session.embedding.esm2
     property_name = assay_small.measurement_names[0]
@@ -265,7 +249,8 @@ def test_predictor_error_handling_invalid_sequence(
     ]
 
     with pytest.raises(
-        HTTPError, match="Status code 400"  # TODO: surface the HTTP error
+        HTTPError,
+        match="Status code 400",  # TODO: surface the HTTP error
     ):  # Adjust exception type based on actual API behavior
         prediction_future = predictor_model.predict(sequences=[invalid_sequence])
         prediction_future.wait(timeout=TIMEOUT)
@@ -275,9 +260,6 @@ def test_predictor_error_handling_invalid_sequence(
 def test_predictor_error_handling_empty_sequence(
     session: OpenProtein, assay_small: AssayDataset
 ):
-    """
-    Test error handling for empty sequences in prediction.
-    """
     # Train a predictor
     embedding_model = session.embedding.esm2
     property_name = assay_small.measurement_names[0]
@@ -305,9 +287,6 @@ def test_predictor_error_handling_empty_sequence(
 
 @pytest.mark.e2e
 def test_predictor_list_and_pagination(session: OpenProtein):
-    """
-    Test listing predictors and basic offset pagination behavior.
-    """
     page_0 = session.predictor.list_predictors(limit=2, offset=0)
     page_1 = session.predictor.list_predictors(limit=2, offset=2)
 
@@ -326,8 +305,7 @@ def test_predictor_train_on_svd_embeddings(
     n_components: int,
 ):
     """
-    Test training a GP predictor on SVD-reduced embeddings.
-    This tests the full workflow: fit SVD -> train predictor on SVD embeddings.
+    Full workflow: fit SVD, then train a GP predictor on the SVD embeddings.
     """
     # Get the embedding model
     embedding_model = session.embedding.get_model(model_id)
@@ -342,9 +320,9 @@ def test_predictor_train_on_svd_embeddings(
     predictor_future = svd_model.fit_gp(assay=assay_small, properties=[property_name])
 
     # Wait for training to complete
-    assert predictor_future.wait(
-        timeout=TIMEOUT
-    ), f"Predictor training on SVD embeddings failed for {model_id}"
+    assert predictor_future.wait(timeout=TIMEOUT), (
+        f"Predictor training on SVD embeddings failed for {model_id}"
+    )
     predictor_model = predictor_future
 
     # Validate predictor metadata
@@ -368,9 +346,6 @@ def test_predictor_train_on_svd_embeddings(
 def test_predictor_parallel_svd_training(
     session: OpenProtein, assay_small: AssayDataset
 ):
-    """
-    Test training multiple predictors on different SVD models in parallel.
-    """
     property_name = assay_small.measurement_names[0]
 
     # First, fit SVD models in parallel
@@ -399,9 +374,9 @@ def test_predictor_parallel_svd_training(
 
     # Wait for all training jobs to complete
     for model_id, future in predictor_futures:
-        assert future.wait(
-            timeout=TIMEOUT
-        ), f"Training on SVD embeddings failed for {model_id}"
+        assert future.wait(timeout=TIMEOUT), (
+            f"Training on SVD embeddings failed for {model_id}"
+        )
 
     # Validate all predictors can make predictions
     seq_len = assay_small.sequence_length or 346
@@ -421,8 +396,7 @@ def test_predictor_svd_different_n_components(
     session: OpenProtein, assay_small: AssayDataset, n_components: int
 ):
     """
-    Test training predictors on SVD embeddings with different n_components.
-    Validates that predictor performance is consistent across different SVD dimensions.
+    Predictors train on SVD embeddings across a range of n_components.
     """
     embedding_model = session.embedding.esm2
     property_name = assay_small.measurement_names[0]
@@ -451,9 +425,6 @@ def test_predictor_svd_different_n_components(
 def test_predictor_svd_batch_prediction(
     session: OpenProtein, assay_small: AssayDataset
 ):
-    """
-    Test batch predictions using a predictor trained on SVD embeddings.
-    """
     embedding_model = session.embedding.esm2
     property_name = assay_small.measurement_names[0]
 
@@ -513,9 +484,9 @@ def test_predictor_training_kernels(
         **kernel_kwargs,
     )
 
-    assert predictor_future.wait(
-        timeout=TIMEOUT
-    ), f"Predictor training failed for kernel {kernel!r}"
+    assert predictor_future.wait(timeout=TIMEOUT), (
+        f"Predictor training failed for kernel {kernel!r}"
+    )
     predictor_model = predictor_future
 
     assert predictor_model.id is not None
@@ -527,6 +498,18 @@ def test_predictor_training_kernels(
     mus, vs = prediction_future.wait(timeout=TIMEOUT)
 
     _assert_prediction_arrays(mus=mus, vs=vs, rows=1, cols=1)
+
+    trained = predictor_model.kernel
+    assert trained.type == kernel
+    assert predictor_model.mean is not None
+    assert predictor_model.noise > 0
+    assert trained.outputscale > 0
+    if kernel == "linear":
+        assert not hasattr(trained, "lengthscale")
+    else:
+        assert trained.lengthscale > 0
+    assert hasattr(trained, "period") == (kernel == "periodic")
+    assert hasattr(trained, "alpha") == (kernel == "rational_quadratic")
 
 
 @pytest.mark.e2e
@@ -546,14 +529,61 @@ def test_predictor_training_kernel_enum(
         kernel=KernelType.MATERN52,
     )
 
-    assert predictor_future.wait(
-        timeout=TIMEOUT
-    ), "Predictor training failed for KernelType.MATERN52"
+    assert predictor_future.wait(timeout=TIMEOUT), (
+        "Predictor training failed for KernelType.MATERN52"
+    )
 
     seq_len = assay_small.sequence_length or 346
     test_sequence = random_sequence_fake(seq_len)
     mus, vs = predictor_future.predict(sequences=[test_sequence]).wait(timeout=TIMEOUT)
     _assert_prediction_arrays(mus=mus, vs=vs, rows=1, cols=1)
+
+
+# one linear and one GP kernel; every kernel's training is covered by
+# test_predictor_training_kernels.
+CROSSVALIDATE_KERNEL_CONFIGS = [
+    ("linear", {}),
+    ("rbf", {}),
+]
+
+
+@pytest.mark.e2e
+@pytest.mark.parametrize("kernel,kernel_kwargs", CROSSVALIDATE_KERNEL_CONFIGS)
+def test_predictor_crossvalidate_kernels(
+    session: OpenProtein,
+    assay_small: AssayDataset,
+    kernel: str,
+    kernel_kwargs: dict,
+):
+    """
+    Crossvalidate a GP predictor trained with each kernel family and confirm
+    the service returns a finite mean and non-negative variance for every
+    held-out row of the training assay.
+    """
+    embedding_model = session.embedding.esm2
+    property_name = assay_small.measurement_names[0]
+
+    predictor_future = embedding_model.fit_gp(
+        assay=assay_small,
+        properties=[property_name],
+        reduction=ReductionType.MEAN,
+        kernel=kernel,
+        **kernel_kwargs,
+    )
+    assert predictor_future.wait(timeout=TIMEOUT), (
+        f"Predictor training failed for kernel {kernel!r}"
+    )
+    predictor_model = predictor_future
+
+    cv_future = predictor_model.crossvalidate()
+    y, mus, variances = cv_future.wait(timeout=TIMEOUT)
+
+    assert len(y) > 0, f"Crossvalidate for kernel {kernel!r} returned no rows"
+    assert len(mus) == len(y)
+    assert len(variances) == len(y)
+    assert np.isfinite(mus.astype(float)).all()
+    assert np.isfinite(variances.astype(float)).all()
+    assert np.all(variances.astype(float) >= 0.0)
 
 
 @pytest.mark.e2e

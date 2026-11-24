@@ -1,35 +1,60 @@
 """Common utilities for creating fold jobs."""
 
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from openprotein.align import AlignAPI, MSAFuture
 from openprotein.base import APISession
+from openprotein.data.msa import MSA
+from openprotein.fold import _request as request
 from openprotein.fold.complex import id_generator
 from openprotein.molecules import DNA, RNA, Complex, Ligand, Protein
 from openprotein.molecules.template import Template
 from openprotein.prompt import PromptAPI
 
+__all__ = [
+    "FoldEntity",
+    "FoldInput",
+    "msa_future_to_complex",
+    "normalize_inputs",
+    "normalize_templates",
+    "resolve_templates",
+    "serialize_input",
+]
 
-def normalize_inputs(
-    proteins: Sequence[Complex | Protein | str | bytes],
-):
+
+FoldEntity = Complex | Protein | str | bytes
+
+FoldInput = Sequence[FoldEntity] | FoldEntity
+"""A batch of foldable entities, or a lone entity folded on its own."""
+
+
+def _as_entities(entities: FoldInput) -> Sequence[FoldEntity]:
+    """Wrap a lone entity into a one-element batch."""
+    if isinstance(entities, (Complex, Protein, str, bytes)):
+        return [entities]
+    return entities
+
+
+def normalize_inputs(proteins: FoldInput):
+    entities = _as_entities(proteins)
     normalized_complexes: list[Complex] = []
-    for protein in proteins:
-        if isinstance(protein, Complex):
-            normalized_complexes.append(protein)
-        elif isinstance(protein, Protein):
+    for entity in entities:
+        if isinstance(entity, Complex):
+            normalized_complexes.append(entity)
+        elif isinstance(entity, Protein):
             # a lone protein becomes a single-chain complex
             id_gen = id_generator()
-            normalized_complexes.append(Complex(chains={next(id_gen): protein}))
+            normalized_complexes.append(Complex(chains={next(id_gen): entity}))
         else:
-            if isinstance(protein, bytes):
-                protein = protein.decode()
+            if isinstance(entity, bytes):
+                entity = entity.decode()
             # a ':'-delimited string is one complex, one chain per split sequence.
             # chain ids only need to be unique within the complex, so use a fresh
             # generator per complex.
             id_gen = id_generator()
             chains: dict[str, Protein] = {}
-            for seq in protein.split(":"):
+            for seq in entity.split(":"):
                 chain = Protein(sequence=seq)
                 # protein strings default to null msa
                 chain.msa = Protein.NullMSA
@@ -52,25 +77,41 @@ def msa_future_to_complex(session: APISession, msa: MSAFuture) -> Complex:
     return Complex(chains=proteins)
 
 
+def _msa_id_of(msa: Any) -> str | None:
+    """The MSA id a protein's ``.msa`` sends, or None in single sequence mode."""
+    if msa is Protein.single_sequence_mode:
+        return None
+    if isinstance(msa, str):
+        return msa
+    if isinstance(msa, (MSAFuture, MSA)):
+        return msa.id
+    raise TypeError(
+        "`.msa` must be an MSA id, an MSAFuture, an `openprotein.data.MSA` or "
+        "`Protein.single_sequence_mode`, not "
+        f"{type(msa).__module__}.{type(msa).__qualname__}"
+    )
+
+
 def normalize_templates(
     session: APISession,
-    sequences: Sequence[Complex | Protein | str | bytes] | MSAFuture,
-    templates: Sequence[Protein | Complex | Template] | None = None,
+    sequences: FoldInput | MSAFuture,
+    templates: Sequence[Complex | Protein | Template] | None = None,
 ) -> list[Template]:
     """Normalize and validate template inputs for fold models."""
     normalized_templates: list[Template] = []
 
     # normalize templates attached to sequence/complex inputs
     if not isinstance(sequences, MSAFuture):
+        entities = _as_entities(sequences)
         first_chain_id_to_template = {}
-        for batch_idx, seq in enumerate(sequences):
-            if isinstance(seq, (str, bytes)):
-                seq = Protein(seq)
-            seq._assert_valid_templates()
-            if isinstance(seq, Protein):
-                complex = Complex({"A": seq})
+        for batch_idx, entity in enumerate(entities):
+            if isinstance(entity, (str, bytes)):
+                entity = normalize_inputs(entity)[0]
+            entity._assert_valid_templates()
+            if isinstance(entity, Protein):
+                complex = Complex({"A": entity})
             else:
-                complex = seq
+                complex = entity
 
             for chain_id, protein in complex.get_proteins().items():
                 if batch_idx == 0:
@@ -79,7 +120,9 @@ def normalize_templates(
                         normalized_templates.append(
                             Template.from_obj(template, chain_id=chain_id)
                         )
-                elif first_chain_id_to_template[chain_id] != protein.templates:
+                elif list(first_chain_id_to_template.get(chain_id, ())) != list(
+                    protein.templates
+                ):
                     raise ValueError(
                         "Expected same chain across batches to have the same templates"
                     )
@@ -93,27 +136,33 @@ def normalize_templates(
                     "Expected templates across complexes in batch to be the same"
                 )
 
+            for template in normalized_templates:
+                if template.index is None and template.index_intervals is None:
+                    template.validate_for_target(complex)
+
     # normalize method-level templates
     if templates is not None:
         if isinstance(sequences, MSAFuture):
-            validation_sequences: Sequence[Complex | Protein | str | bytes] = [
+            validation_sequences: Sequence[FoldEntity] = [
                 msa_future_to_complex(session=session, msa=sequences)
             ]
         else:
-            validation_sequences = sequences
+            validation_sequences = _as_entities(sequences)
         for template in templates:
             template = Template.from_obj(template)
-            for seq in validation_sequences:
-                if isinstance(seq, (str, bytes)):
-                    seq = Protein(seq)
-                template.validate_for_target(seq)
+            for entity in validation_sequences:
+                if isinstance(entity, (str, bytes)):
+                    entity = normalize_inputs(entity)[0]
+                if isinstance(entity, Protein):
+                    entity = Complex({"A": entity})
+                template.validate_for_target(entity)
             normalized_templates.append(template)
 
     return normalized_templates
 
 
 def resolve_templates(session: APISession, templates: Sequence[Template]) -> list[dict]:
-    """Resolve normalized ``Template`` objects into backend API payload dictionaries."""
+    """Resolve normalized ``Template`` objects into API payload dictionaries."""
     prompt_api = getattr(session, "prompt", None)
     assert isinstance(prompt_api, PromptAPI)
 
@@ -146,15 +195,17 @@ def resolve_templates(session: APISession, templates: Sequence[Template]) -> lis
 
 
 def serialize_input(session: APISession, complexes: list[Complex], needs_msa: bool):
-    # build the serialized input
+    """Return the ``complexes`` of a fold request, one validated ``MsaChain`` dump per chain.
+
+    ``msa_id`` is sent for every protein when ``needs_msa``, null in single
+    sequence mode, and left out otherwise.
+    """
     _models: list[list[dict[str, Any]]] = []
-    msa_to_seed: dict[str, set[str]] = dict()
     for complex in complexes:
         _complex: list[dict[str, Any]] = []
         for chain_id, chain in complex.get_chains().items():
             if isinstance(chain, Protein):
-                # add the protein in the unified format
-                p: dict = {
+                p: dict[str, Any] = {
                     "id": chain_id,
                     "sequence": chain.sequence.decode(),
                 }
@@ -165,48 +216,28 @@ def serialize_input(session: APISession, complexes: list[Complex], needs_msa: bo
                         raise ValueError(
                             "Expected all protein sequences to have `.msa` set with an `MSAFuture` or `Protein.single_sequence_mode` for single sequence mode."
                         )
-                    # convert to msa id or null for single sequence mode
-                    msa_id = (
-                        msa
-                        if isinstance(msa, str)
-                        else msa.id
-                        if isinstance(msa, MSAFuture)
-                        else None
-                    )
-                    # handle msa
-                    this_msas: set[str] = set()
-                    if msa_id is not None:
-                        this_msas.add(msa_id)
-                        if msa_id in msa_to_seed:
-                            seeds = msa_to_seed[msa_id]
-                        else:
-                            align_api = getattr(session, "align", None)
-                            assert isinstance(align_api, AlignAPI)
-                            seed = align_api.get_seed(job_id=msa_id)
-                            # need a counter so we can make sure later that the proteins make up the msa completely
-                            seeds = set(seed.split(":"))
-                            msa_to_seed[msa_id] = seeds
-                    # make sure we only have one msa
-                    # TODO: by my reading, this could never have size > 1 atm...
-                    if len(this_msas) > 1:
-                        raise ValueError("Expected only 1 unique msa")
+                    msa_id = _msa_id_of(msa)
                     p["msa_id"] = msa_id
-                _complex.append({"protein": p})
+                entry = request.MsaChain(protein=request.ProteinWithMSA(**p))
             elif isinstance(chain, Ligand):
-                ligand_payload: dict[str, Any] = {"id": chain_id}
-                if chain.smiles is not None:
-                    ligand_payload["smiles"] = chain.smiles
-                if chain.ccd is not None:
-                    ligand_payload["ccd"] = chain.ccd
-                _complex.append({"ligand": ligand_payload})
+                ligand = {"smiles": chain.smiles, "ccd": chain.ccd}
+                entry = request.MsaChain(
+                    ligand=request.Ligand(
+                        id=chain_id,
+                        **{k: v for k, v in ligand.items() if v is not None},
+                    )
+                )
             elif isinstance(chain, DNA):
-                d: dict[str, Any] = {"id": chain_id, "sequence": chain.sequence}
-                _complex.append({"dna": d})
+                entry = request.MsaChain(
+                    dna=request.DNA(id=chain_id, sequence=chain.sequence)
+                )
             elif isinstance(chain, RNA):
-                r: dict[str, Any] = {"id": chain_id, "sequence": chain.sequence}
-                _complex.append({"rna": r})
+                entry = request.MsaChain(
+                    rna=request.RNA(id=chain_id, sequence=chain.sequence)
+                )
             else:
                 raise ValueError(f"Unexpected chain type: {chain}")
+            _complex.append(entry.model_dump(mode="json", exclude_unset=True))
         _models.append(_complex)
 
     return _models

@@ -9,9 +9,23 @@ from pydantic import TypeAdapter
 from openprotein.base import APISession
 from openprotein.errors import APIError, InvalidParameterError
 
-from .schemas import FeatureType, UMAPEmbeddingsJob, UMAPFitJob, UMAPMetadata
+from .schemas import UMAPEmbeddingsJob, UMAPFitJob, UMAPMetadata
 
-PATH_PREFIX = "v1/umap"
+__all__ = [
+    "embed_batch_decode",
+    "embed_decode",
+    "embed_get_batch_result",
+    "embed_get_sequence_result",
+    "umap_delete",
+    "umap_embed_post",
+    "umap_fit_post",
+    "umap_get",
+    "umap_get_sequences",
+    "umap_list_get",
+]
+
+
+_PATH_PREFIX = "v1/umap"
 
 
 def umap_list_get(
@@ -20,7 +34,7 @@ def umap_list_get(
     offset: int | None = None,
 ) -> list[UMAPMetadata]:
     """Get UMAP job metadata for all UMAPs. Including UMAP dimension and sequence lengths."""
-    endpoint = PATH_PREFIX
+    endpoint = _PATH_PREFIX
     params = {}
     if limit is not None:
         params["limit"] = limit
@@ -32,7 +46,7 @@ def umap_list_get(
 
 def umap_get(session: APISession, umap_id: str) -> UMAPMetadata:
     """Get UMAP job metadata. Including UMAP dimension and sequence lengths."""
-    endpoint = PATH_PREFIX + f"/{umap_id}"
+    endpoint = _PATH_PREFIX + f"/{umap_id}"
     response = session.get(endpoint)
     return UMAPMetadata.model_validate(response.json())
 
@@ -52,7 +66,7 @@ def umap_get_sequences(session: APISession, umap_id: str) -> list[bytes]:
     -------
     sequences : List[bytes]
     """
-    endpoint = PATH_PREFIX + f"/{umap_id}/sequences"
+    endpoint = _PATH_PREFIX + f"/{umap_id}/sequences"
     response = session.get(endpoint)
     return TypeAdapter(list[bytes]).validate_python(response.json())
 
@@ -78,7 +92,7 @@ def embed_get_sequence_result(
     """
     if isinstance(sequence, bytes):
         sequence = sequence.decode()
-    endpoint = PATH_PREFIX + f"/embed/{job_id}/{sequence}"
+    endpoint = _PATH_PREFIX + f"/embed/{job_id}/{sequence}"
     response = session.get(endpoint)
     return response.content
 
@@ -98,7 +112,7 @@ def embed_get_batch_result(session: APISession, job_id: str) -> bytes:
     -------
     result : bytes
     """
-    endpoint = PATH_PREFIX + f"/embed/{job_id}/csv"
+    endpoint = _PATH_PREFIX + f"/embed/{job_id}/csv"
     response = session.get(endpoint)
     return response.content
 
@@ -121,15 +135,13 @@ def embed_decode(data: bytes) -> np.ndarray:
 
 def embed_batch_decode(data: bytes) -> np.ndarray:
     """
-    Decode prediction scores.
+    Decode batched UMAP embeddings.
 
     Args:
         data (bytes): raw bytes encoding the array received over the API
-        batched (bool): whether or not the result was batched. affects the retrieved csv format whether they contain additional columns and header rows.
 
     Returns:
-        mus (np.ndarray): decoded array of means
-        vars (np.ndarray): decoded array of variances
+        np.ndarray: decoded array of projected embeddings
     """
     s = io.BytesIO(data)
     # should contain header and sequence column
@@ -140,7 +152,7 @@ def embed_batch_decode(data: bytes) -> np.ndarray:
 
 def umap_delete(session: APISession, umap_id: str) -> bool:
     """
-    Delete and UMAP model.
+    Delete a UMAP model.
 
     Parameters
     ----------
@@ -154,7 +166,7 @@ def umap_delete(session: APISession, umap_id: str) -> bool:
     bool
     """
 
-    endpoint = PATH_PREFIX + f"/{umap_id}"
+    endpoint = _PATH_PREFIX + f"/{umap_id}"
     response = session.delete(endpoint)
     if 200 <= response.status_code < 300:
         return True
@@ -208,7 +220,7 @@ def umap_fit_post(
     UMAPFitJob
     """
 
-    endpoint = PATH_PREFIX
+    endpoint = _PATH_PREFIX
 
     body = {
         "model_id": model_id,
@@ -230,11 +242,9 @@ def umap_fit_post(
         if assay_id is None:
             raise InvalidParameterError("Expected either sequences or assay_id")
         body["assay_id"] = assay_id
-    # add kwargs for embeddings kwargs
     body.update(**kwargs)
 
     response = session.post(endpoint, json=body)
-    # return job for metadata
     return UMAPFitJob.model_validate(response.json())
 
 
@@ -260,7 +270,7 @@ def umap_embed_post(
     -------
     UMAPEmbeddingsJob
     """
-    endpoint = PATH_PREFIX + f"/{umap_id}/embed"
+    endpoint = _PATH_PREFIX + f"/{umap_id}/embed"
 
     sequences_unicode = [(s if isinstance(s, str) else s.decode()) for s in sequences]
     body = {

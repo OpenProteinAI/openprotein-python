@@ -1,9 +1,6 @@
 """Test the schemas for the design domain."""
 
-from unittest.mock import MagicMock
-
 import pytest
-from pydantic import ValidationError
 
 from openprotein.design.schemas import (
     Criteria,
@@ -16,7 +13,6 @@ from openprotein.design.schemas import (
 
 
 def test_model_criterion_operators():
-    """Test the overloaded operators for ModelCriterion."""
     mc = ModelCriterion(model_id="m1", measurement_name="p1")
 
     # Test weighting
@@ -40,7 +36,6 @@ def test_model_criterion_operators():
 
 
 def test_criterion_and_operator():
-    """Test the AND (&) operator for combining criteria."""
     mc1 = ModelCriterion(model_id="m1", measurement_name="p1") > 1
     mc2 = ModelCriterion(model_id="m2", measurement_name="p2") < 2
 
@@ -50,7 +45,6 @@ def test_criterion_and_operator():
 
 
 def test_criterion_and_rejects_mixed_types():
-    """Test that AND (&) rejects mixing model and n_mutations criteria."""
     mc = ModelCriterion(model_id="m1", measurement_name="p1") > 1
     nmc = n_mutations()
 
@@ -59,7 +53,6 @@ def test_criterion_and_rejects_mixed_types():
 
 
 def test_criteria_or_operator():
-    """Test the OR (|) operator for combining criteria."""
     c1 = ModelCriterion(model_id="m1", measurement_name="p1") > 1
     c2 = ModelCriterion(model_id="m2", measurement_name="p2") < 2
     c3 = NMutationCriterion()
@@ -71,7 +64,6 @@ def test_criteria_or_operator():
 
 
 def test_design_constraint():
-    """Test the DesignConstraint class."""
     sequence = "ACGT"
     dc = DesignConstraint(sequence)
 
@@ -100,3 +92,27 @@ def test_design_constraint():
         3: sorted(["G", "I"]),
         4: ["T"],
     }
+
+
+def test_design_constraint_multichain_omits_chain_breaks():
+    """Chain-break columns are absent and ':' is never an allowed token."""
+    dc = DesignConstraint("AC:GT")
+    assert dc.as_dict() == {1: ["A"], 2: ["C"], 4: ["G"], 5: ["T"]}
+
+    dc.allow(positions=[1, 4])
+    dc.allow(amino_acids="V")
+    result = {k: sorted(v) for k, v in dc.as_dict().items()}
+    assert result == {
+        1: sorted("ACGTV"),
+        2: ["C", "V"],
+        4: sorted("ACGTV"),
+        5: ["T", "V"],
+    }
+
+
+def test_design_constraint_multichain_rejects_chain_break():
+    dc = DesignConstraint("AC:GT")
+    with pytest.raises(ValueError):
+        dc.allow(amino_acids="V", positions=3)
+    with pytest.raises(ValueError):
+        dc.allow(amino_acids=":", positions=1)

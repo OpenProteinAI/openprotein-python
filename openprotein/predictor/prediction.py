@@ -13,6 +13,8 @@ from .schemas import (
     PredictSingleSiteJob,
 )
 
+__all__ = ["PredictionResultFuture"]
+
 
 class PredictionResultFuture(Future):
     """Prediction results represented as a future."""
@@ -48,9 +50,11 @@ class PredictionResultFuture(Future):
     def __keys__(self):
         return self.sequences
 
-    def get_item(self, sequence: bytes) -> tuple[np.ndarray, np.ndarray]:
+    def get_item(  # ty: ignore[invalid-method-override]
+        self, sequence: bytes
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
-        Get embedding results for specified sequence.
+        Get prediction results for specified sequence.
 
         Args:
             sequence (bytes): sequence to fetch results for
@@ -66,14 +70,14 @@ class PredictionResultFuture(Future):
 
     def _get(self, verbose: bool = False) -> tuple[np.ndarray, np.ndarray]:
         """
-        Get embedding results for specified sequence.
+        Get prediction results for all sequences.
 
         Args:
-            sequence (bytes): sequence to fetch results for
+            verbose: Unused; present to match the `Future._get` signature.
 
         Returns:
-            mu (np.ndarray): means of predictions
-            var (np.ndarray): variances of predictions
+            mu (np.ndarray): means of predictions, one per sequence
+            var (np.ndarray): variances of predictions, one per sequence
         """
         data = api.predictor_predict_get_batched_result(self.session, self.job.job_id)
         return api.decode_predict(data, batched=True)

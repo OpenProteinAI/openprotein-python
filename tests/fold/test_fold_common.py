@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import numpy as np
 
-import openprotein.common.residue_contants as RC
+import openprotein.common.residue_constants as RC
 from openprotein.fold.common import resolve_templates
 from openprotein.molecules.protein import Protein
 from openprotein.molecules.template import Template

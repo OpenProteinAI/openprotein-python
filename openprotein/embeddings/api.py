@@ -25,7 +25,27 @@ from .schemas import (
     ScoreSingleSiteJob,
 )
 
-PATH_PREFIX = "v1/embeddings"
+__all__ = [
+    "get_model",
+    "get_request_sequences",
+    "list_models",
+    "parse_framed_npy_stream",
+    "request_attn_post",
+    "request_generate_post",
+    "request_get_embeddings_stream",
+    "request_get_generate_result",
+    "request_get_score_result",
+    "request_get_sequence_result",
+    "request_logits_post",
+    "request_post",
+    "request_score_indel_post",
+    "request_score_post",
+    "request_score_single_site_post",
+    "result_decode",
+]
+
+
+_PATH_PREFIX = "v1/embeddings"
 
 
 def list_models(
@@ -42,7 +62,7 @@ def list_models(
         list[str] | list[ModelMetadata]: list of model names or metadata objects.
     """
 
-    endpoint = PATH_PREFIX + "/models"
+    endpoint = _PATH_PREFIX + "/models"
     params = {}
     if verbose:
         params["verbose"] = "true"
@@ -54,7 +74,7 @@ def list_models(
 
 
 def get_model(session: APISession, model_id: str) -> ModelMetadata:
-    endpoint = PATH_PREFIX + f"/models/{model_id}"
+    endpoint = _PATH_PREFIX + f"/models/{model_id}"
     response = session.get(endpoint)
     result = response.json()
     return ModelMetadata(**result)
@@ -77,7 +97,6 @@ def get_request_sequences(
     -------
     sequences : List[bytes]
     """
-    # NOTE - allow to handle svd/embed and umap/embed directly too instead of redirect
     path = "v1" + job_type.value
     endpoint = path + f"/{job_id}/sequences"
     response = session.get(endpoint)
@@ -106,7 +125,6 @@ def request_get_sequence_result(
     -------
     result : bytes
     """
-    # NOTE - allow to handle svd/embed and umap/embed directly too instead of redirect
     path = "v1" + job_type.value
     if isinstance(sequence, bytes):
         sequence = sequence.decode()
@@ -144,7 +162,7 @@ def request_get_score_result(session: APISession, job_id: str) -> Iterator[list[
     -------
     csv.reader
     """
-    endpoint = PATH_PREFIX + f"/{job_id}/scores"
+    endpoint = _PATH_PREFIX + f"/{job_id}/scores"
     response = session.get(endpoint, stream=True)
     return csv.parse_stream(response.iter_lines())
 
@@ -175,14 +193,13 @@ def request_get_embeddings_stream(
 
     Raises
     ------
-    requests.HTTPError
-        If the HTTP request returns a non‐2xx status code.
+    openprotein.errors.HTTPError
+        If the request is unsuccessful.
     ValueError
         If the framed stream is malformed (e.g. incomplete header or payload).
     """
-    endpoint = PATH_PREFIX + f"/{job_id}/stream"
+    endpoint = _PATH_PREFIX + f"/{job_id}/stream"
     response = session.get(endpoint, stream=True)
-    response.raise_for_status()
     response.raw.decode_content = True
     buffered = io.BufferedReader(response.raw)  # type: ignore
     for array in parse_framed_npy_stream(buffered):
@@ -255,7 +272,7 @@ def request_get_generate_result(
     -------
     csv.reader
     """
-    endpoint = PATH_PREFIX + f"/{job_id}/generate"
+    endpoint = _PATH_PREFIX + f"/{job_id}/generate"
     response = session.get(endpoint, stream=True)
     return csv.parse_stream(response.iter_lines())
 
@@ -288,7 +305,7 @@ def request_post(
     -------
     job : Job
     """
-    endpoint = PATH_PREFIX + f"/models/{model_id}/embed"
+    endpoint = _PATH_PREFIX + f"/models/{model_id}/embed"
 
     sequences_unicode = [(s if isinstance(s, str) else s.decode()) for s in sequences]
     body: dict = {
@@ -335,7 +352,7 @@ def request_logits_post(
     -------
     job : Job
     """
-    endpoint = PATH_PREFIX + f"/models/{model_id}/logits"
+    endpoint = _PATH_PREFIX + f"/models/{model_id}/logits"
 
     sequences_unicode = [(s if isinstance(s, str) else s.decode()) for s in sequences]
     body: dict = {
@@ -381,7 +398,7 @@ def request_attn_post(
     -------
     job : Job
     """
-    endpoint = PATH_PREFIX + f"/models/{model_id}/attn"
+    endpoint = _PATH_PREFIX + f"/models/{model_id}/attn"
 
     sequences_unicode = [(s if isinstance(s, str) else s.decode()) for s in sequences]
     body: dict = {
@@ -423,7 +440,7 @@ def request_score_post(
     -------
     job : Job
     """
-    endpoint = PATH_PREFIX + f"/models/{model_id}/score"
+    endpoint = _PATH_PREFIX + f"/models/{model_id}/score"
     sequences_unicode = [(s if isinstance(s, str) else s.decode()) for s in sequences]
     body: dict = {
         "sequences": sequences_unicode,
@@ -438,6 +455,8 @@ def request_score_post(
             ]
     if kwargs.get("decoder_type"):
         body["decoder_type"] = kwargs["decoder_type"]
+    if kwargs.get("seed") is not None:
+        body["seed"] = kwargs["seed"]
     response = session.post(endpoint, json=body)
     return ScoreJob.model_validate(response.json())
 
@@ -474,7 +493,7 @@ def request_score_indel_post(
     -------
     job : Job
     """
-    endpoint = PATH_PREFIX + f"/models/{model_id}/score/indel"
+    endpoint = _PATH_PREFIX + f"/models/{model_id}/score/indel"
 
     body: dict = {
         "base_sequence": (
@@ -518,8 +537,8 @@ def request_score_single_site_post(
         Session object for API communication.
     model_id : str
         model ID to request results from
-    sequences : List[bytes]
-        sequences to request results for
+    base_sequence : bytes or str
+        sequence whose single substitutions are scored
     **kwargs:
         Optional parameters for models, e.g. prompt_id for PoET
 
@@ -527,7 +546,7 @@ def request_score_single_site_post(
     -------
     job : Job
     """
-    endpoint = PATH_PREFIX + f"/models/{model_id}/score_single_site"
+    endpoint = _PATH_PREFIX + f"/models/{model_id}/score_single_site"
 
     body: dict = {
         "base_sequence": (
@@ -546,6 +565,8 @@ def request_score_single_site_post(
             ]
     if kwargs.get("decoder_type"):
         body["decoder_type"] = kwargs["decoder_type"]
+    if kwargs.get("seed") is not None:
+        body["seed"] = kwargs["seed"]
     response = session.post(endpoint, json=body)
     return ScoreSingleSiteJob.model_validate(response.json())
 
@@ -579,7 +600,7 @@ def request_generate_post(
     -------
     job : Job
     """
-    endpoint = PATH_PREFIX + f"/models/{model_id}/generate"
+    endpoint = _PATH_PREFIX + f"/models/{model_id}/generate"
 
     if not (0.1 <= temperature <= 2):
         raise InvalidParameterError("The 'temperature' must be between 0.1 and 2.")
@@ -617,14 +638,14 @@ def request_generate_post(
                 "use_query_structure_in_decoder"
             ]
     if (ensemble_weights := kwargs.get("ensemble_weights")) is not None:
-        assert (
-            model_id != "poet"
-        ), f"Model with id {model_id} does not support ensemble_weights parameter"
+        assert model_id != "poet", (
+            f"Model with id {model_id} does not support ensemble_weights parameter"
+        )
         body["ensemble_weights"] = list(ensemble_weights)
     if (ensemble_method := kwargs.get("ensemble_method")) is not None:
-        assert (
-            model_id != "poet"
-        ), f"Model with id {model_id} does not support ensemble_method parameter"
+        assert model_id != "poet", (
+            f"Model with id {model_id} does not support ensemble_method parameter"
+        )
         body["ensemble_method"] = ensemble_method
     response = session.post(endpoint, json=body)
     return GenerateJob.model_validate(response.json())

@@ -3,8 +3,8 @@
 * **PoET-2 generate**: fresh prompt_id (cache miss) + fixed seed -> genuine recompute
   that's still reproducible against a committed baseline.
 * **ESM-IF1 inverse folding**: native-sequence recovery is a *property of the output*
-  (holds whether fresh or cached), so it's a robust ground-truth check. Its prod
-  baseline is genuine only on the first call after a deploy / cache clear.
+  (holds whether fresh or cached), so it's a robust ground-truth check. Its
+  baseline is genuine only on the first call (cold cache).
 """
 
 from pathlib import Path
@@ -27,7 +27,7 @@ MIN_ESMIF_RECOVERY = 0.3
 
 
 def _esmif1(session: OpenProtein):
-    """Return the ESM-IF1 model or skip if the backend lacks it.
+    """Return the ESM-IF1 model or skip if the API lacks it.
 
     `session.models` eagerly constructs every foundation model (fetching metadata),
     so a missing esm-if1 raises HTTPError 404 on attribute access -- catch and skip.
@@ -35,14 +35,14 @@ def _esmif1(session: OpenProtein):
     try:
         return session.models.esmif1
     except HTTPError:
-        pytest.skip("esmif1 not available in this backend")
+        pytest.skip("esmif1 not available")
 
 
 def _load_backbone() -> Protein:
     if not STRUCTURE.exists():
         pytest.skip(f"missing {STRUCTURE}")
     protein = Protein.from_filepath(path=STRUCTURE, chain_id="A")
-    return protein[len(SDN_LINKER):]
+    return protein[len(SDN_LINKER) :]
 
 
 def _native_str(backbone: Protein) -> str:
@@ -77,15 +77,12 @@ def test_poet2_generate_deterministic(session: OpenProtein):
     assert seqs1 == seqs2
 
 
-# NOTE: no prod-baseline on generated scores. Generation is seeded sampling whose
-# RNG/impl differs across worker versions, so a generate score is not comparable
-# prod-vs-staging (it diverged by ~5-50 cross-env). Within-env determinism (above) and
-# native-recovery ground-truth (below) are the meaningful generate checks.
+# No baseline on generated scores: generation is seeded sampling whose RNG and
+# implementation differ across model versions, so a generate score is not
+# comparable over time. Determinism (above) and native-recovery ground-truth
+# (below) are the meaningful generate checks.
 
-
-# --------------------------------------------------------------------------- #
 # ESM-IF1 inverse folding: property-based ground-truth (+ cold-cache baseline).
-# --------------------------------------------------------------------------- #
 
 
 @pytest.mark.e2e
@@ -99,35 +96,45 @@ def test_esmif1_recovers_native_at_low_temperature(session: OpenProtein):
     backbone = _load_backbone()
     native = _native_str(backbone)
 
-    future = model.generate(query=backbone, num_samples=4, temperature=0.1, seed=0)
+    future = model.generate(
+        query=backbone, num_samples=4, temperature=0.1, random_seed=0
+    )
     assert future.wait_until_done(timeout=GENERATE_TIMEOUT)
-    designs = [r.sequence for r in future.get()]
+    designs = future.get(output="sequences")
 
     recoveries = [
         metrics.sequence_recovery(d, native) for d in designs if len(d) == len(native)
     ]
     assert recoveries, "no design matched the native length"
-    assert max(recoveries) >= MIN_ESMIF_RECOVERY, f"best recovery {max(recoveries):.3f} too low"
+    assert max(recoveries) >= MIN_ESMIF_RECOVERY, (
+        f"best recovery {max(recoveries):.3f} too low"
+    )
 
 
 @pytest.mark.e2e
 @pytest.mark.correctness
 @pytest.mark.differential
-def test_esmif1_recovery_matches_prod_baseline(session: OpenProtein, baseline):
-    """Mean native-recovery on the 8bo9 backbone tracks the prod baseline.
+def test_esmif1_recovery_matches_baseline(session: OpenProtein, baseline):
+    """Mean native-recovery on the 8bo9 backbone tracks the baseline.
 
     COLD-CACHE CAVEAT: ESM-IF1 has no prompt lever; genuine only on the first call
-    after a deploy / cache clear.
+    after a cache clear.
     """
     model = _esmif1(session)
     backbone = _load_backbone()
     native = _native_str(backbone)
 
     def produce():
-        future = model.generate(query=backbone, num_samples=4, temperature=0.1, seed=0)
+        future = model.generate(
+            query=backbone, num_samples=4, temperature=0.1, random_seed=0
+        )
         assert future.wait_until_done(timeout=GENERATE_TIMEOUT)
-        designs = [r.sequence for r in future.get()]
-        recoveries = [metrics.sequence_recovery(d, native) for d in designs if len(d) == len(native)]
+        designs = future.get(output="sequences")
+        recoveries = [
+            metrics.sequence_recovery(d, native)
+            for d in designs
+            if len(d) == len(native)
+        ]
         return float(np.mean(recoveries))
 
     baseline.check_scalar(("esmif1", None, "8bo9_A", "native_recovery_mean"), produce)

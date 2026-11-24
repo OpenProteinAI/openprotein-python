@@ -26,6 +26,27 @@ from openprotein.design import DesignAPI
 from openprotein.jobs import Future
 from openprotein.base import APISession
 
+__all__ = [
+    "SVDAPI",
+    "UMAPAPI",
+    "APISession",
+    "AlignAPI",
+    "ClusteringAPI",
+    "DataAPI",
+    "DeprecationError",
+    "DesignAPI",
+    "EmbeddingsAPI",
+    "FoldAPI",
+    "Future",
+    "JobsAPI",
+    "ModelsAPI",
+    "OpenProtein",
+    "PredictorAPI",
+    "PromptAPI",
+    "__version__",
+    "connect",
+]
+
 
 class OpenProtein(APISession):
     """
@@ -102,9 +123,7 @@ class OpenProtein(APISession):
 
     @property
     def svd(self) -> SVDAPI:
-        """
-        The embedding submodule gives access to protein embedding models and their inference endpoints.
-        """
+        """Fit and apply SVD projections through the SVD API."""
         if self._svd is None:
             self._svd = SVDAPI(
                 session=self,
@@ -113,9 +132,7 @@ class OpenProtein(APISession):
 
     @property
     def umap(self) -> UMAPAPI:
-        """
-        The embedding submodule gives access to protein embedding models and their inference endpoints.
-        """
+        """Fit and apply UMAP projections through the UMAP API."""
         if self._umap is None:
             self._umap = UMAPAPI(
                 session=self,

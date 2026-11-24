@@ -11,7 +11,6 @@ from openprotein.umap.schemas import UMAPEmbeddingsJob, UMAPFitJob, UMAPMetadata
 
 
 def test_umap_metadata_is_done():
-    """Test the is_done() method on UMAPMetadata."""
     metadata_done = UMAPMetadata(
         id="umap-1",
         status=JobStatus.SUCCESS,
@@ -36,7 +35,6 @@ def test_umap_metadata_is_done():
     ],
 )
 def test_job_schemas_job_type(job_class, expected_job_type):
-    """Test that each job schema has the correct job_type."""
     job_data = {
         "job_id": "job-123",
         "status": JobStatus.SUCCESS,
@@ -48,7 +46,6 @@ def test_job_schemas_job_type(job_class, expected_job_type):
 
 
 def test_umap_job_schema_invalid_job_type():
-    """Test that validation fails for an incorrect job_type."""
     job_data = {
         "job_id": "job-123",
         "status": JobStatus.SUCCESS,
@@ -56,4 +53,4 @@ def test_umap_job_schema_invalid_job_type():
         "job_type": "some_other_type",
     }
     with pytest.raises(ValidationError):
-        UMAPFitJob(**job_data)
+        UMAPFitJob.model_validate(job_data)

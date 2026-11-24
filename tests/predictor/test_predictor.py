@@ -1,25 +1,20 @@
 """L2 integration tests for the predictor domain."""
 
-from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from openprotein import OpenProtein
-from openprotein.base import APISession
 from openprotein.common import FeatureType
 from openprotein.data.data import DataAPI
 from openprotein.errors import InvalidParameterError
-from openprotein.jobs import JobStatus, JobType
+from openprotein.jobs import JobType
 from openprotein.predictor.predictor import PredictorAPI
 from openprotein.svd.models import SVDModel
-from openprotein.svd.schemas import SVDMetadata
 from openprotein.svd.svd import SVDAPI
 
 
 @pytest.fixture
 def predictor_api(mock_session: MagicMock):
-    """Fixture to create a PredictorAPI instance with a mocked session."""
     return PredictorAPI(mock_session)
 
 
@@ -27,10 +22,6 @@ def predictor_api(mock_session: MagicMock):
 def test_fit_gp_with_svd_model(
     mock_fit_gp_post: MagicMock, predictor_api: PredictorAPI, mock_session: MagicMock
 ):
-    """
-    Test the integration of fit_gp when using an SVD model.
-    """
-    # 1. Setup
     # The final call in the chain is predictor_fit_gp_post
     mock_session.post.return_value.json.return_value = {
         "job_id": "job-123",
@@ -56,16 +47,14 @@ def test_fit_gp_with_svd_model(
     predictor_api.session.svd = MagicMock(spec=SVDAPI)
     predictor_api.session.svd.get_svd.return_value = mock_svd_model
     predictor_api.session.data = MagicMock(spec=DataAPI)
-    predictor_api.session.data.get.return_value.measurement_names = ["p1"]
+    predictor_api.session.data.Assay.return_value.measurement_names = ["p1"]
 
-    # 2. Execution
     predictor_api.fit_gp(
         assay="assay-1",
         properties=["p1"],
         model="svd-1",
         feature_type=FeatureType.SVD,
     )
-    # 3. Verification
     predictor_api.session.svd.get_svd.assert_called_once_with("svd-1")
     mock_fit_gp_post.assert_called_once()
 
@@ -73,14 +62,16 @@ def test_fit_gp_with_svd_model(
 def test_fit_gp_kernel_validation(predictor_api: PredictorAPI, mock_session: MagicMock):
     """Client-side fail-fast validation of kernel hyperparameters."""
     predictor_api.session.data = MagicMock(spec=DataAPI)
-    predictor_api.session.data.get.return_value.measurement_names = ["p1"]
+    predictor_api.session.data.Assay.return_value.measurement_names = ["p1"]
     bad = [
-        dict(kernel="rbf", period=2.0),               # period on non-periodic
-        dict(kernel="periodic", alpha=2.0),           # alpha on non-rq
-        dict(kernel="periodic", period=0),            # period must be > 0
+        dict(kernel="rbf", period=2.0),  # period on non-periodic
+        dict(kernel="periodic", alpha=2.0),  # alpha on non-rq
+        dict(kernel="periodic", period=0),  # period must be > 0
         dict(kernel="rational_quadratic", alpha=-1),  # alpha must be > 0
-        dict(kernel="bogus"),                         # unknown kernel
+        dict(kernel="bogus"),  # unknown kernel
     ]
     for kw in bad:
         with pytest.raises(InvalidParameterError):
-            predictor_api.fit_gp("assay-1", ["p1"], "m1", feature_type="PLM", reduction="MEAN", **kw)
+            predictor_api.fit_gp(
+                "assay-1", ["p1"], "m1", feature_type="PLM", reduction="MEAN", **kw
+            )

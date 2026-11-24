@@ -10,7 +10,19 @@ from openprotein.errors import APIError, InvalidParameterError
 
 from .schemas import SVDEmbeddingsJob, SVDFitJob, SVDMetadata
 
-PATH_PREFIX = "v1/embeddings/svd"
+__all__ = [
+    "embed_decode",
+    "embed_get_sequence_result",
+    "svd_delete",
+    "svd_embed_post",
+    "svd_fit_post",
+    "svd_get",
+    "svd_get_sequences",
+    "svd_list_get",
+]
+
+
+_PATH_PREFIX = "v1/embeddings/svd"
 
 
 def svd_list_get(
@@ -19,7 +31,7 @@ def svd_list_get(
     offset: int | None = None,
 ) -> list[SVDMetadata]:
     """Get SVD job metadata for all SVDs. Including SVD dimension and sequence lengths."""
-    endpoint = PATH_PREFIX
+    endpoint = _PATH_PREFIX
     params = {}
     if limit is not None:
         params["limit"] = limit
@@ -31,7 +43,7 @@ def svd_list_get(
 
 def svd_get(session: APISession, svd_id: str) -> SVDMetadata:
     """Get SVD job metadata. Including SVD dimension and sequence lengths."""
-    endpoint = PATH_PREFIX + f"/{svd_id}"
+    endpoint = _PATH_PREFIX + f"/{svd_id}"
     response = session.get(endpoint)
     return SVDMetadata.model_validate(response.json())
 
@@ -51,7 +63,7 @@ def svd_get_sequences(session: APISession, svd_id: str) -> list[bytes]:
     -------
     sequences : List[bytes]
     """
-    endpoint = PATH_PREFIX + f"/{svd_id}/sequences"
+    endpoint = _PATH_PREFIX + f"/{svd_id}/sequences"
     response = session.get(endpoint)
     return TypeAdapter(list[bytes]).validate_python(response.json())
 
@@ -77,7 +89,7 @@ def embed_get_sequence_result(
     """
     if isinstance(sequence, bytes):
         sequence = sequence.decode()
-    endpoint = PATH_PREFIX + f"/embed/{job_id}/{sequence}"
+    endpoint = _PATH_PREFIX + f"/embed/{job_id}/{sequence}"
     response = session.get(endpoint)
     return response.content
 
@@ -98,7 +110,7 @@ def embed_decode(data: bytes) -> np.ndarray:
 
 def svd_delete(session: APISession, svd_id: str):
     """
-    Delete and SVD model.
+    Delete an SVD model.
 
     Parameters
     ----------
@@ -112,7 +124,7 @@ def svd_delete(session: APISession, svd_id: str):
     bool
     """
 
-    endpoint = PATH_PREFIX + f"/{svd_id}"
+    endpoint = _PATH_PREFIX + f"/{svd_id}"
     response = session.delete(endpoint)
     if 200 <= response.status_code < 300:
         return True
@@ -158,7 +170,7 @@ def svd_fit_post(
     Job
     """
 
-    endpoint = PATH_PREFIX
+    endpoint = _PATH_PREFIX
 
     body: dict = {
         "model_id": model_id,
@@ -177,11 +189,9 @@ def svd_fit_post(
         if assay_id is None:
             raise InvalidParameterError("Expected either sequences or assay_id")
         body["assay_id"] = assay_id
-    # add kwargs for embeddings kwargs
     body.update(**kwargs)
 
     response = session.post(endpoint, json=body)
-    # return job for metadata
     return SVDFitJob.model_validate(response.json())
 
 
@@ -207,7 +217,7 @@ def svd_embed_post(
     -------
     Job
     """
-    endpoint = PATH_PREFIX + f"/{svd_id}/embed"
+    endpoint = _PATH_PREFIX + f"/{svd_id}/embed"
 
     sequences_unicode = [(s if isinstance(s, str) else s.decode()) for s in sequences]
     body = {

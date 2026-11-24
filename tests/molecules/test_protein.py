@@ -9,7 +9,7 @@ import pytest
 
 import gemmi
 
-import openprotein.common.residue_contants as RC
+import openprotein.common.residue_constants as RC
 from openprotein.molecules import Protein, Binding
 from openprotein.molecules.protein import _ATOM_TYPES, _SIDE_CHAIN_ATOM_IDXS
 
@@ -219,9 +219,9 @@ def test_can_parse_boltzgen_entity_one_letter_missing_residues():
         "tests/data/boltzgen_entity_one_letter_missing_residues.cif", chain_id="B"
     )
     assert len(protein_b) == 127 - 1  # last label_seq is 127, missing residue 1
-    assert (
-        b"X" not in protein_b.sequence
-    ), "missing residues in _atom_site should be inferred form _entity_poly_seq"
+    assert b"X" not in protein_b.sequence, (
+        "missing residues in _atom_site should be inferred form _entity_poly_seq"
+    )
 
 
 def test_can_parse_9bkq_assembly2():
@@ -273,18 +273,14 @@ def assert_proteins_equal(x: Protein, y: Protein):
 def test_partially_masked_sequence(structure_path: str):
     protein = Protein.from_filepath(structure_path, chain_id="A")
     protein.sequence = "AXXMX"
-    new_protein = Protein.from_string(
-        protein.make_cif_string(), format="cif", chain_id="A"
-    )
+    new_protein = Protein.from_string(protein.to_string(), format="cif", chain_id="A")
     assert_proteins_equal(protein, new_protein)
 
 
 def test_fully_masked_sequence(structure_path: str):
     protein = Protein.from_filepath(structure_path, chain_id="A")
     protein.sequence = "X" * len(protein.sequence)
-    new_protein = Protein.from_string(
-        protein.make_cif_string(), format="cif", chain_id="A"
-    )
+    new_protein = Protein.from_string(protein.to_string(), format="cif", chain_id="A")
     assert_proteins_equal(protein, new_protein)
 
 
@@ -293,18 +289,14 @@ def test_partially_masked_plddt(structure_path: str):
     _plddt = protein.plddt.copy()
     _plddt[[0, 1]] = np.nan
     protein._plddt = _plddt.copy()
-    new_protein = Protein.from_string(
-        protein.make_cif_string(), format="cif", chain_id="A"
-    )
+    new_protein = Protein.from_string(protein.to_string(), format="cif", chain_id="A")
     assert_proteins_equal(protein, new_protein)
 
 
 def test_fully_masked_plddt(structure_path: str):
     protein = Protein.from_filepath(structure_path, chain_id="A")
     protein._plddt = np.full_like(protein.plddt, np.nan)
-    new_protein = Protein.from_string(
-        protein.make_cif_string(), format="cif", chain_id="A"
-    )
+    new_protein = Protein.from_string(protein.to_string(), format="cif", chain_id="A")
     assert_proteins_equal(protein, new_protein)
 
 
@@ -315,9 +307,7 @@ def test_partially_masked_coordinates(structure_path: str):
     _coordinates[[0, 2, 3]], _plddt[[0, 2, 3]] = np.nan, np.nan
     protein = protein._set_coordinates(_coordinates)
     protein._plddt = _plddt.copy()
-    new_protein = Protein.from_string(
-        protein.make_cif_string(), format="cif", chain_id="A"
-    )
+    new_protein = Protein.from_string(protein.to_string(), format="cif", chain_id="A")
     assert_proteins_equal(protein, new_protein)
 
 
@@ -327,9 +317,7 @@ def test_partially_masked_coordinates_non_ca_atom_only(structure_path: str):
     _coordinates = protein.coordinates.copy()
     _coordinates[[1, 4], 0] = np.nan
     protein = protein._set_coordinates(_coordinates)
-    new_protein = Protein.from_string(
-        protein.make_cif_string(), format="cif", chain_id="A"
-    )
+    new_protein = Protein.from_string(protein.to_string(), format="cif", chain_id="A")
     assert_proteins_equal(protein, new_protein)
 
 
@@ -340,7 +328,7 @@ def test_partially_masked_coordinates_ca_atom_only(structure_path: str):
     _coordinates[[1, 4], 1] = np.nan
     protein = protein._set_coordinates(_coordinates)
     with pytest.raises(AssertionError):
-        protein.make_cif_string()
+        protein.to_string()
 
 
 def test_mixed_partial_masking(structure_path: str):
@@ -351,10 +339,28 @@ def test_mixed_partial_masking(structure_path: str):
     _coordinates[[1, 4], 0], _plddt[[0, 1]] = np.nan, np.nan
     protein = protein._set_coordinates(_coordinates)
     protein._plddt = _plddt.copy()
-    new_protein = Protein.from_string(
-        protein.make_cif_string(), format="cif", chain_id="A"
-    )
+    new_protein = Protein.from_string(protein.to_string(), format="cif", chain_id="A")
     assert_proteins_equal(protein, new_protein)
+
+
+def _random_protein(rng: np.random.Generator) -> Protein:
+    coordinates = rng.normal(scale=10.0, size=(5, 37, 3)).astype(np.float32)
+    return Protein(sequence=TEST_SEQUENCE)._set_coordinates(coordinates)
+
+
+def test_rmsd_to_itself_is_zero():
+    protein = _random_protein(np.random.default_rng(0))
+    assert protein.rmsd(protein.copy()) == pytest.approx(0.0, abs=1e-5)
+
+
+def test_rmsd_ignores_rigid_motion():
+    rng = np.random.default_rng(0)
+    protein = _random_protein(rng)
+    rotation, _ = np.linalg.qr(rng.normal(size=(3, 3)))
+    if np.linalg.det(rotation) < 0:
+        rotation[:, 0] *= -1
+    moved = protein.copy().transform(R=rotation, t=np.array([5.0, -3.0, 2.0]))
+    assert protein.rmsd(moved) == pytest.approx(0.0, abs=1e-4)
 
 
 def main():

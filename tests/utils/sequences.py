@@ -23,9 +23,9 @@ def mutate_sequence(
     """
     Return a copy of ``sequence`` with random substitutions applied.
 
-    Substitution-only (no insertions or deletions) so antibody variable domains
-    keep a valid length and numbering. Used to make each test run produce a
-    unique sequence and bust server-side caches.
+    Substitution-only, so antibody variable domains keep a valid length and
+    numbering, and each test run produces a unique sequence that busts
+    server-side caches.
 
     When ``ensure_mutation`` is True, at least one residue is guaranteed to be
     substituted, so callers can rely on the result differing from the input.
@@ -55,82 +55,79 @@ def random_sequence_fake(length: int) -> str:
     return "".join(random.choice(amino_acids) for _ in range(length))
 
 
+# Window sources for `random_sequence_real`. Real, full-length, reviewed
+# sequences: a signal-peptide-bearing transcription factor, human insulin
+# preproprotein, human haemoglobin alpha, human serum albumin, and E. coli
+# beta-galactosidase. The last is 1024 residues, so every length the tests ask
+# for can be windowed without reaching the network.
+WINDOW_SOURCE_PROTEINS = [
+    "MKTVRQERLKSIVRILERSKEPVSGAQLAEELSVSRQVIVQDIAYLRSLGYNIVATPRGYVLAGG",
+    "MALWMRLLPLLALLALWGPDPAAAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN",
+    "MVLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR",
+    "MKWVTFISLLFLFSSAYSRGVFRRDAHKSEVAHRFKDLGEENFKALVLIAFAQYLQQCPFEDHVKLVNEVTEFAKTCVADESAENCDKSLHTLFGDKLCTVATLRETYGEMADCCAKQEPERNECFLQHKDDNPNLPRLVRPEVDVMCTAFHDNEETFLKKYLYEIARRHPYFYAPELLFFAKRYKAAFTECCQAADKAACLLPKLDELRDEGKASSAKQRLKCASLQKFGERAFKAWAVARLSQRFPKAEFAEVSKLVTDLTKVHTECCHGDLLECADDRADLAKYICENQDSISSKLKECCEKPLLEKSHCIAEVENDEMPADLPSLAADFVESKDVCKNYAEAKDVFLGMFLYEYARRHPDYSVVLLLRLAKTYETTLEKCCAAADPHECYAKVFDEFKPLVEEPQNLIKQNCELFEQLGEYKFQNALLVRYTKKVPQVSTPTLVEVSRNLGKVGSKCCKHPEAKRMPCAEDYLSVVLNQLCVLHEKTPVSDRVTKCCTESLVNRRPCFSALEVDETYVPKEFNAETFTFHADICTLSEKERQIKKQTALVELVKHKPKATKEQLKAVMDDFAAFVEKCCKADDKETCFAEEGKKLVAASQAALGL",
+    "MTMITDSLAVVLQRRDWENPGVTQLNRLAAHPPFASWRNSEEARTDRPSQQLRSLNGEWRFAWFPAPEAVPESWLECDLPEADTVVVPSNWQMHGYDAPIYTNVTYPITVNPPFVPTENPTGCYSLTFNVDESWLQEGQTRIIFDGVNSAFHLWCNGRWVGYGQDSRLPSEFDLSAFLRAGENRLAVMVLRWSDGSYLEDQDMWRMSGIFRDVSLLHKPTTQISDFHVATRFNDDFSRAVLEAEVQMCGELRDYLRVTVSLWQGETQVASGTAPFGGEIIDERGGYADRVTLRLNVENPKLWSAEIPNLYRAVVELHTADGTLIEAEACDVGFREVRIENGLLLLNGKPLLIRGVNRHEHHPLHGQVMDEQTMVQDILLMKQNNFNAVRCSHYPNHPLWYTLCDRYGLYVVDEANIETHGMVPMNRLTDDPRWLPAMSERVTRMVQRDRNHPSVIIWSLGNESGHGANHDALYRWIKSVDPSRPVQYEGGGADTTATDIICPMYARVDEDQPFPAVPKWSIKKWLSLPGETRPLILCEYAHAMGNSLGGFAKYWQAFRQYPRLQGGFVWDWVDQSLIKYDENGNPWSAYGGDFGDTPNDRQFCMNGLVFADRTPHPALTEAKHQQQFFQFRLSGQTIEVTSEYLFRHSDNELLHWMVALDGKPLASGEVPLDVAPQGKQLIELPELPQPESAGQLWLTVRVVQPNATAWSEAGHISAWQQWRLAENLSVTLPAASHAIPHLTTSEMDFCIELGNKRWQFNRQSGFLSQMWIGDKKQLLTPLRDQFTRAPLDNDIGVSEATRIDPNAWVERWKAAGHYQAEAALLQCTADTLADAVLITTAHAWQHQGKTLFISRKTYRIDGSGQMAITVDVEVASDTPHPARIGLNCQLAQVAERVNWLGLGPQENYPDRLTAACFDRWDLPLSDMYTPYVFPSENGLRCGTRELNYGPHQWRGDFQFNISRYSQQQLMETSHRHLLHAEEGTWLNIDGFHMGIGGDDSWSPSVSAEFQLSAGRYHYQLVWCQK",
+]
+
+_UNIPROT_SEARCH = "https://rest.uniprot.org/uniprotkb/search"
+_fetched_sources: list[str] = []
+
+
+def _fetch_window_sources(min_length: int, size: int = 25) -> list[str]:
+    """Reviewed UniProt sequences of at least ``min_length`` residues."""
+    import urllib.parse
+    import urllib.request
+
+    query = f"reviewed:true AND length:[{min_length} TO {min_length * 3}]"
+    url = f"{_UNIPROT_SEARCH}?" + urllib.parse.urlencode(
+        {"query": query, "format": "fasta", "size": size}
+    )
+    with urllib.request.urlopen(url, timeout=30) as response:
+        fasta = response.read().decode()
+    return [
+        "".join(record.splitlines()[1:])
+        for record in fasta.split(">")
+        if record.strip()
+    ]
+
+
+def _window_sources(length: int) -> list[str]:
+    """Proteins long enough to yield a ``length``-residue window.
+
+    The bundled set covers the shorter lengths without a network call. Anything
+    longer is drawn from UniProt once and reused for the rest of the session.
+    """
+    usable = [p for p in WINDOW_SOURCE_PROTEINS + _fetched_sources if len(p) >= length]
+    if usable:
+        return usable
+    _fetched_sources.extend(_fetch_window_sources(length))
+    usable = [p for p in _fetched_sources if len(p) >= length]
+    if not usable:
+        raise RuntimeError(
+            f"no source protein of at least {length} residues is available"
+        )
+    return usable
+
+
 def random_sequence_real(length: int, real_proteins: list[str] | None = None) -> str:
     """
-    Generate a realistic protein sequence by combining snippets from real proteins
-    and filling gaps with biologically probable amino acids.
+    Return a contiguous window of one real protein sequence.
+
+    A window of a single protein keeps the homology a search needs to find:
+    stitching snippets of unrelated proteins together, or padding with random
+    residues, yields a sequence with no relatives in any database.
     """
     if length < 0:
         raise ValueError("length must be non-negative")
-
-    # Default set of real protein sequences (you can expand this)
-    if real_proteins is None:
-        real_proteins = [
-            "MKTVRQERLKSIVRILERSKEPVSGAQLAEELSVSRQVIVQDIAYLRSLGYNIVATPRGYVLAGG",
-            "MALWMRLLPLLALLALWGPDPAAAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN",
-            "MVLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR",
-            "MKWVTFISLLFLFSSAYSRGVFRRDAHKSEVAHRFKDLGEENFKALVLIAFAQYLQQCPFEDHVKLVNEVTEFAKTCVADESAENCDKSLHTLFGDKLCTVATLRETYGEMADCCAKQEPERNECFLQHKDDNPNLPRLVRPEVDVMCTAFHDNEETFLKKYLYEIARRHPYFYAPELLFFAKRYKAAFTECCQAADKAACLLPKLDELRDEGKASSAKQRLKCASLQKFGERAFKAWAVARLSQRFPKAEFAEVSKLVTDLTKVHTECCHGDLLECADDRADLAKYICENQDSISSKLKECCEKPLLEKSHCIAEVENDEMPADLPSLAADFVESKDVCKNYAEAKDVFLGMFLYEYARRHPDYSVVLLLRLAKTYETTLEKCCAAADPHECYAKVFDEFKPLVEEPQNLIKQNCELFEQLGEYKFQNALLVRYTKKVPQVSTPTLVEVSRNLGKVGSKCCKHPEAKRMPCAEDYLSVVLNQLCVLHEKTPVSDRVTKCCTESLVNRRPCFSALEVDETYVPKEFNAETFTFHADICTLSEKERQIKKQTALVELVKHKPKATKEQLKAVMDDFAAFVEKCCKADDKETCFAEEGKKLVAASQAALGL",
-        ]
-
-    # Amino acid frequencies based on natural proteins (approximate)
-    aa_weights = {
-        "A": 8.25,
-        "R": 5.53,
-        "N": 4.06,
-        "D": 5.45,
-        "C": 1.37,
-        "Q": 3.93,
-        "E": 6.75,
-        "G": 7.07,
-        "H": 2.27,
-        "I": 5.96,
-        "L": 9.66,
-        "K": 5.84,
-        "M": 2.42,
-        "F": 3.86,
-        "P": 4.70,
-        "S": 6.56,
-        "T": 5.34,
-        "W": 1.08,
-        "Y": 2.92,
-        "V": 6.87,
-    }
-
-    amino_acids = list(aa_weights.keys())
-    weights = list(aa_weights.values())
-
-    def weighted_random_aa():
-        return random.choices(amino_acids, weights=weights)[0]
-
     if length == 0:
         return ""
 
-    sequence = ""
-
-    while len(sequence) < length:
-        remaining = length - len(sequence)
-
-        # Choose a random protein and extract a snippet
-        protein = random.choice(real_proteins)
-
-        # Random snippet length (3-15 residues, but not more than remaining)
-        snippet_length = min(random.randint(3, 15), remaining, len(protein))
-
-        if snippet_length > 0:
-            # Random starting position
-            start_pos = random.randint(0, len(protein) - snippet_length)
-            snippet = protein[start_pos : start_pos + snippet_length]
-            sequence += snippet
-
-        # Fill remaining space with weighted random amino acids
-        remaining = length - len(sequence)
-        if remaining > 0:
-            # Add 1-5 random amino acids (or whatever fits)
-            fill_length = min(random.randint(1, 5), remaining)
-            for _ in range(fill_length):
-                sequence += weighted_random_aa()
-
-    return sequence[:length]  # Ensure exact length
+    sources = real_proteins or _window_sources(length)
+    candidates = [p for p in sources if len(p) >= length]
+    if not candidates:
+        raise ValueError(f"no supplied protein is at least {length} residues long")
+    protein = random.choice(candidates)
+    start = random.randint(0, len(protein) - length)
+    return protein[start : start + length]
 
 
 def mutated_antibody_sequences(
@@ -139,12 +136,10 @@ def mutated_antibody_sequences(
     """
     Generate unique antibody sequences via substitution-only mutation.
 
-    Returns the base sequence plus mutated copies. Unlike
-    ``random_mutated_sequences``, this never inserts or deletes residues, so the
-    variable-domain length and framing stay intact and every sequence remains a
-    valid antibody that AbNumber/ANARCI can number. Used to make each test run
-    unique and bust server-side caches without producing un-numberable
-    sequences.
+    Returns the base sequence plus mutated copies. Substitution keeps the
+    variable-domain length and framing intact, so every sequence stays a valid
+    antibody that AbNumber/ANARCI can number, while making each test run unique
+    to bust server-side caches.
     """
     sequences = {base_seq}
     while len(sequences) < num_sequences:
@@ -181,8 +176,7 @@ def random_mutated_sequences(
                     mutated_seq_list.append(random.choice(AMINO_ACIDS))
                     mutated_seq_list.append(base_seq[i])  # keep the original
 
-                # For 'delete', we simply do not append the current residue,
-                # effectively deleting it.
+                # "delete" appends nothing, dropping the residue.
 
             else:  # No mutation
                 mutated_seq_list.append(base_seq[i])

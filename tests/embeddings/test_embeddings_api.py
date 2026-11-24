@@ -1,6 +1,6 @@
 """Test the api for the embeddings domain."""
 
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
@@ -10,7 +10,6 @@ from openprotein.jobs import JobStatus, JobType
 
 
 def test_list_models(mock_session: MagicMock):
-    """Test the list_models API function."""
     mock_session.get.return_value.json.return_value = ["model1", "model2"]
     result = api.list_models(mock_session)
     mock_session.get.assert_called_once_with("v1/embeddings/models", params={})
@@ -18,7 +17,6 @@ def test_list_models(mock_session: MagicMock):
 
 
 def test_list_models_verbose(mock_session: MagicMock):
-    """Test the list_models API function with verbose=True returns ModelMetadata."""
     mock_session.get.return_value.json.return_value = [
         {
             "model_id": "model1",
@@ -48,7 +46,6 @@ def test_list_models_verbose(mock_session: MagicMock):
 
 
 def test_get_model(mock_session: MagicMock):
-    """Test the get_model API function."""
     mock_session.get.return_value.json.return_value = {
         "model_id": "model1",
         "description": {"summary": "A test model"},
@@ -62,7 +59,6 @@ def test_get_model(mock_session: MagicMock):
 
 
 def test_get_request_sequences(mock_session: MagicMock):
-    """Test get_request_sequences."""
     job_id = "job_123"
     job_type = JobType.embeddings_embed
     expected_sequences = [b"seq1", b"seq2"]
@@ -77,7 +73,6 @@ def test_get_request_sequences(mock_session: MagicMock):
 
 
 def test_request_get_sequence_result(mock_session: MagicMock):
-    """Test request_get_sequence_result."""
     job_id = "job_123"
     sequence = b"seq1"
     job_type = JobType.embeddings_embed
@@ -93,7 +88,6 @@ def test_request_get_sequence_result(mock_session: MagicMock):
 
 
 def test_result_decode():
-    """Test result_decode."""
     arr = np.array([1.0, 2.0, 3.0])
     encoded = arr.tobytes()
     with pytest.raises(ValueError):
@@ -112,7 +106,6 @@ def test_result_decode():
 def test_embedding_request_posts(
     mock_session: MagicMock, api_func, schema_class, job_type
 ):
-    """Test POST requests for various embedding-related jobs."""
     model_id = "test_model"
     sequences = ["ACGT"]
     job_id = "job-123"
@@ -135,7 +128,6 @@ def test_embedding_request_posts(
 
 
 def test_request_generate_post_with_query_id_list(mock_session: MagicMock):
-    """Test generation POST body when query_id is provided as a list."""
     mock_session.post.return_value.json.return_value = {
         "job_id": "job-123",
         "status": JobStatus.SUCCESS,

@@ -194,9 +194,9 @@ def test_serde_multiple_models():
         != structure[0].get_protein(chain_id="A").coordinates
     ).all(), "coordinates of first and second complex should be different"
     new_structure = Structure.from_string(structure.to_string(), format="cif")
-    assert len(new_structure) == len(
-        structure
-    ), "new structure should have same number of complexes"
+    assert len(new_structure) == len(structure), (
+        "new structure should have same number of complexes"
+    )
     assert (
         new_structure[1].get_protein(chain_id="A").coordinates
         != new_structure[0].get_protein(chain_id="A").coordinates

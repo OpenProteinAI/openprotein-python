@@ -19,6 +19,8 @@ if TYPE_CHECKING:
     from openprotein.predictor import PredictorModel
     from openprotein.umap import UMAPModel
 
+__all__ = ["SVDEmbeddingsResultFuture", "SVDModel"]
+
 
 class SVDModel(Future):
     """
@@ -36,7 +38,6 @@ class SVDModel(Future):
         metadata: SVDMetadata | None = None,
     ):
         """Construct the SVD model using either job get or svd metadata get."""
-        # initialize the metadata
         if metadata is None:
             # use job to fetch metadata
             if job is None:
@@ -155,24 +156,25 @@ class SVDModel(Future):
         **kwargs,
     ) -> "UMAPModel":
         """
-        Fit an UMAP on the embedding results of this model. 
-
-        This function will create an UMAPModel based on the embeddings from this model \
-            as well as the hyperparameters specified in the args.  
+        Fit an UMAP on the embedding results of this model.
 
         Parameters
         ----------
-        sequences : List[bytes] 
-            sequences to UMAP
-        n_components: int 
-            number of components in UMAP. Will determine output shapes
-        reduction: ReductionType | None
-            embeddings reduction to use (e.g. mean)
+        sequences : list[bytes] | list[str] | None, optional
+            Sequences to fit the UMAP on. Provide either this or ``assay``.
+        assay : AssayDataset | None, optional
+            Assay whose sequences to fit the UMAP on. Provide either this or
+            ``sequences``.
+        n_components : int, optional
+            Number of components in the UMAP, which determines the output shape.
+            Defaults to 2.
+        **kwargs
+            Additional keyword arguments passed to the UMAP fit.
 
         Returns
         -------
         UMAPModel
-            UMAP model fitted on the reduced embeddings from provided sequences or assay.    
+            UMAP model fitted on the reduced embeddings from provided sequences or assay.
         """
         # local import for cyclic dep
         from openprotein.umap import UMAPAPI
@@ -180,7 +182,6 @@ class SVDModel(Future):
         umap_api = getattr(self.session, "umap", None)
         assert isinstance(umap_api, UMAPAPI)
 
-        # Ensure either or
         if (assay is None and sequences is None) or (
             assay is not None and sequences is not None
         ):
@@ -238,8 +239,7 @@ class SVDModel(Future):
         predictor_api = getattr(self.session, "predictor", None)
         assert isinstance(predictor_api, PredictorAPI)
 
-        # get assay if str
-        assay = data_api.get(assay_id=assay) if isinstance(assay, str) else assay
+        assay = data_api.Assay(id=assay) if isinstance(assay, str) else assay
         if (
             self.sequence_length is not None
             and assay.sequence_length != self.sequence_length

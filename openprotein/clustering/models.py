@@ -4,7 +4,13 @@ from openprotein.base import APISession
 from openprotein.jobs import Future, JobsAPI
 
 from . import api
-from .schemas import ClusteringMetadata, HierarchicalClusteringResult, HierarchicalFitJob
+from .schemas import (
+    ClusteringMetadata,
+    HierarchicalClusteringResult,
+    HierarchicalFitJob,
+)
+
+__all__ = ["HierarchicalClusteringFuture"]
 
 
 class HierarchicalClusteringFuture(Future["HierarchicalClusteringResult"]):
@@ -27,9 +33,7 @@ class HierarchicalClusteringFuture(Future["HierarchicalClusteringResult"]):
         if job is None:
             jobs_api = getattr(session, "jobs", None)
             assert isinstance(jobs_api, JobsAPI)
-            job = HierarchicalFitJob.create(
-                jobs_api.get_job(job_id=metadata.id)
-            )
+            job = HierarchicalFitJob.create(jobs_api.get_job(job_id=metadata.id))
         self._sequences: list[bytes] | None = None
         super().__init__(session, job)
 
@@ -52,7 +56,7 @@ class HierarchicalClusteringFuture(Future["HierarchicalClusteringResult"]):
 
     @property
     def sequences(self) -> list[bytes]:
-        """Input sequences used to fit the clustering job (cached)."""
+        """Input sequences used to fit the clustering job."""
         if self._sequences is None:
             self._sequences = api.clustering_get_sequences(
                 session=self.session, clustering_id=self.id
@@ -60,7 +64,7 @@ class HierarchicalClusteringFuture(Future["HierarchicalClusteringResult"]):
         return self._sequences
 
     def _get(self, verbose: bool = False) -> HierarchicalClusteringResult:
-        """Fetch the clustering result. Called by Future.get after SUCCESS."""
+        """Fetch the clustering result."""
         result = api.clustering_get_result(self.session, self.id)
         result.sequences = self.sequences
         return result
@@ -70,6 +74,6 @@ class HierarchicalClusteringFuture(Future["HierarchicalClusteringResult"]):
         return api.clustering_delete(self.session, self.id)
 
     def redispatch(self) -> "HierarchicalClusteringFuture":
-        """Redispatch this clustering job."""
+        """Resubmit this clustering job."""
         job = api.clustering_redispatch_post(self.session, self.id)
         return HierarchicalClusteringFuture(session=self.session, job=job)

@@ -3,11 +3,11 @@
 Encoders (esm2/esmc) can't be forced to recompute a fixed sequence (the cache is
 keyed by sequence, with no prompt_id lever), so the invariant/relational checks
 feed a freshly mutated sequence each run -> a cache miss -> a genuine recompute.
-The encoder prod-baseline differential must use a fixed sequence to match the
+The encoder baseline differential must use a fixed sequence to match the
 committed baseline, so it is cache-robust (genuine on a cold cache). PoET
 (poet/poet-2) cache-busts via a fresh prompt_id, so it carries the genuine
-determinism, batch-invariance, and prod-baseline differential coverage.
-Differential tolerances are relaxed to absorb accepted cross-environment jitter.
+determinism, batch-invariance, and baseline differential coverage.
+Differential tolerances are relaxed to absorb accepted numerical jitter.
 """
 
 import numpy as np
@@ -24,7 +24,7 @@ from tests.e2e.correctness.support import (
 from tests.utils.sequences import mutate_sequence, random_sequence_fake
 
 TIMEOUT = scaled_timeout(1.0)
-# PoET ops are heavier/slower than encoder embeds on prod; give them more headroom.
+# PoET ops are heavier/slower than encoder embeds; give them more headroom.
 POET_TIMEOUT = scaled_timeout(3.0)
 ENCODER_MODELS = ["esm2_t33_650M_UR50D", "esmc-300m"]
 POET_MODELS = ["poet", "poet-2"]
@@ -32,7 +32,7 @@ POET_MODELS = ["poet", "poet-2"]
 
 def _embed_one(model, seq: bytes, reduction):
     # Callers pass a freshly mutated sequence (cache miss) for a genuine recompute;
-    # the prod-baseline differential keeps a fixed sequence and is cache-robust.
+    # the baseline differential keeps a fixed sequence and is cache-robust.
     ((returned, arr),) = model.embed(sequences=[seq], reduction=reduction).wait(
         timeout=TIMEOUT
     )
@@ -60,7 +60,7 @@ def test_mean_reduction_equals_mean_of_residues(session: OpenProtein, model_id: 
     """MEAN reduction equals the mean over the per-residue (reduction=None) embedding.
 
     A freshly mutated sequence each run cache-misses, so both the MEAN and the
-    per-residue embeddings genuinely recompute on the current workers.
+    per-residue embeddings genuinely recompute on every call.
     """
     model = require_embedding_model(session, model_id)
     seq = mutate_sequence(well_known.UBIQUITIN).encode()
@@ -70,9 +70,7 @@ def test_mean_reduction_equals_mean_of_residues(session: OpenProtein, model_id: 
 
     assert per_residue.ndim == 2
     recomputed = per_residue.mean(axis=0)
-    # Looser tol: the server may exclude special tokens from the mean. If this
-    # fails, inspect whether per-residue includes BOS/EOS and adjust the axis-0
-    # slice accordingly (documented follow-up, not a silent pass).
+    # Looser tol: the server may exclude special tokens from the mean.
     metrics.assert_close(mean_reduced, recomputed, rtol=1e-2, atol=1e-2)
 
 
@@ -98,29 +96,26 @@ def test_embedding_semantic_similarity(session: OpenProtein, model_id: str):
     assert metrics.cosine(e_wt, e_mut) > metrics.cosine(e_wt, e_unrel)
 
 
-# --------------------------------------------------------------------------- #
-# Encoders (esm2/esmc): prod-baseline differential.
-#
+# Encoders (esm2/esmc): baseline differential.
 # A fixed sequence is required to match the committed baseline, so this is
 # cache-robust rather than a forced recompute -- genuine on a cold cache, and a
-# systematic cross-worker difference still surfaces here. Genuine determinism and
+# systematic difference still surfaces here. Genuine determinism and
 # batch-invariance are carried by PoET below (its fresh prompt_id busts the cache
 # on fixed content); raw-sequence encoders have no equivalent lever.
-# --------------------------------------------------------------------------- #
 
 
 @pytest.mark.e2e
 @pytest.mark.correctness
 @pytest.mark.differential
 @pytest.mark.parametrize("model_id", ENCODER_MODELS)
-def test_encoder_embedding_matches_prod_baseline(
+def test_encoder_embedding_matches_baseline(
     session: OpenProtein, model_id: str, baseline
 ):
-    """MEAN embedding of ubiquitin matches the captured prod baseline.
+    """MEAN embedding of ubiquitin matches the captured baseline.
 
-    Fixed sequence (to match the committed baseline), so this is cache-robust: the
-    staging value is genuine on a cold cache, and a systematic cross-worker
-    difference still surfaces. Tolerance absorbs accepted cross-env jitter.
+    Fixed sequence (to match the committed baseline), so this is cache-robust:
+    genuine on a cold cache, and a systematic difference still surfaces. The
+    tolerance absorbs small numerical jitter.
     """
     model = require_embedding_model(session, model_id)
     seq = well_known.UBIQUITIN.encode()
@@ -190,13 +185,11 @@ def test_poet_embedding_batch_invariance(session: OpenProtein, model_id: str):
 @pytest.mark.correctness
 @pytest.mark.differential
 @pytest.mark.parametrize("model_id", POET_MODELS)
-def test_poet_embedding_matches_prod_baseline(
-    session: OpenProtein, model_id: str, baseline
-):
-    """PoET embedding of the fixed query matches the prod baseline -- genuine every run.
+def test_poet_embedding_matches_baseline(session: OpenProtein, model_id: str, baseline):
+    """PoET embedding of the fixed query matches the baseline -- genuine every run.
 
-    Each call mints a fresh prompt_id (cache miss), so both the prod capture and the
-    staging assert truly recompute on their respective workers.
+    Each call mints a fresh prompt_id (cache miss), so both the capture and the
+    assert truly recompute.
     """
     model = require_embedding_model(session, model_id)
     query = well_known.POET_QUERY.encode()
@@ -205,8 +198,8 @@ def test_poet_embedding_matches_prod_baseline(
         prompt = fresh_prompt(session, well_known.POET_CONTEXT, timeout=POET_TIMEOUT)
         return _poet_embed(model, query, prompt)
 
-    # PoET genuinely recomputes (fresh prompt) on both envs; accept small cross-env
-    # numerical jitter (prod vs new workers) per the accepted-jitter decision.
+    # PoET genuinely recomputes (fresh prompt); the tolerance accepts small
+    # numerical jitter between the capture and the assert.
     baseline.check_array(
         (model_id, None, "ubiquitin@poetctx", "embed"), produce, atol=0.05, rtol=0.05
     )

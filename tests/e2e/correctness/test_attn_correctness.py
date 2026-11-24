@@ -2,8 +2,8 @@
 
 Attention is an encoder-only output (esm2/esmc); PoET raises NotImplementedError.
 The shape/trim/non-negativity invariants feed a freshly mutated sequence each run
-(cache miss -> genuine recompute on the current workers); the per-head summary
-prod-baseline keeps a fixed sequence to match the committed baseline and is
+(cache miss -> genuine recompute on every call); the per-head summary
+baseline keeps a fixed sequence to match the committed baseline and is
 cache-robust (genuine on a cold cache).
 """
 
@@ -22,7 +22,7 @@ ENCODER_MODELS = ["esm2_t33_650M_UR50D", "esmc-300m"]
 
 def _attn_one(model, seq: bytes) -> np.ndarray:
     # Callers pass a freshly mutated sequence (cache miss) for a genuine recompute;
-    # the prod-baseline differential keeps a fixed sequence and is cache-robust.
+    # the baseline differential keeps a fixed sequence and is cache-robust.
     ((returned, arr),) = model.attn(sequences=[seq]).wait(timeout=TIMEOUT)
     assert returned == seq
     return np.asarray(arr)
@@ -35,7 +35,7 @@ def test_attn_shape_and_finite(session: OpenProtein, model_id: str):
     """Attention is finite and square on its two trailing (length) axes.
 
     A freshly mutated sequence each run cache-misses, so the attention genuinely
-    recomputes on the current workers.
+    recomputes on every call.
     """
     model = require_embedding_model(session, model_id)
     a = _attn_one(model, mutate_sequence(well_known.UBIQUITIN).encode())
@@ -48,13 +48,11 @@ def test_attn_shape_and_finite(session: OpenProtein, model_id: str):
 @pytest.mark.correctness
 @pytest.mark.parametrize("model_id", ENCODER_MODELS)
 def test_attn_trimmed_on_length_axes_not_heads(session: OpenProtein, model_id: str):
-    """Two sequences of different lengths trim the trailing length axes, not the head axis.
+    """The length mask applies to the two trailing (L, L) axes only.
 
-    Directly guards the 4D-trim regression class: the length mask must apply to the
-    two trailing (L, L) axes; the leading (head) axes must be identical across
-    sequences of different length. A freshly mutated base each run (short is its
-    prefix) keeps the two sequences distinct -> distinct cache keys -> genuine
-    recompute.
+    The leading (head) axes must be identical across sequences of different length.
+    A freshly mutated base each run (short is its prefix) keeps the two sequences
+    distinct -> distinct cache keys -> genuine recompute.
     """
     model = require_embedding_model(session, model_id)
     base = mutate_sequence(well_known.UBIQUITIN)
@@ -89,7 +87,7 @@ def test_attn_weights_nonnegative(session: OpenProtein, model_id: str):
     normalization invariant that holds robustly across encoder models.
 
     A freshly mutated sequence each run cache-misses, so the attention genuinely
-    recomputes on the current workers.
+    recomputes on every call.
     """
     model = require_embedding_model(session, model_id)
     a = _attn_one(model, mutate_sequence(well_known.UBIQUITIN).encode())
@@ -100,12 +98,12 @@ def test_attn_weights_nonnegative(session: OpenProtein, model_id: str):
 @pytest.mark.correctness
 @pytest.mark.differential
 @pytest.mark.parametrize("model_id", ENCODER_MODELS)
-def test_attn_summary_matches_prod(session: OpenProtein, model_id: str, baseline):
-    """Per-head mean attention (a compact summary) matches the prod baseline.
+def test_attn_summary_matches_baseline(session: OpenProtein, model_id: str, baseline):
+    """Per-head mean attention (a compact summary) matches the baseline.
 
     Fixed sequence (to match the committed baseline), so this is cache-robust:
     genuine on a cold cache, and a systematic difference (e.g. a different attention
-    special-token trim) still surfaces here. Relaxed tolerance absorbs cross-env
+    special-token trim) still surfaces here. Relaxed tolerance absorbs numerical
     jitter.
     """
     model = require_embedding_model(session, model_id)

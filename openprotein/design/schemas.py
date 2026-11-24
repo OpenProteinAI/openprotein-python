@@ -1,6 +1,5 @@
 """Schemas for the OpenProtein design system."""
 
-from collections import namedtuple
 from datetime import datetime
 from enum import Enum
 from typing import Any, Literal, NamedTuple
@@ -9,6 +8,22 @@ import numpy as np
 from pydantic import BaseModel, ConfigDict, Field, RootModel, model_serializer
 
 from openprotein.jobs import Job, JobStatus, JobType
+from openprotein.utils.sequence import CHAIN_BREAK
+
+__all__ = [
+    "Criteria",
+    "Criterion",
+    "CriterionType",
+    "Design",
+    "DesignAlgorithm",
+    "DesignConstraint",
+    "DesignJob",
+    "DesignResult",
+    "ModelCriterion",
+    "NMutationCriterion",
+    "Subcriterion",
+    "n_mutations",
+]
 
 
 class CriterionType(str, Enum):
@@ -410,6 +425,9 @@ class DesignConstraint:
     """
     Class for managing design constraints on a sequence.
 
+    Positions are 1-indexed over the full sequence, including any ``:`` chain
+    breaks. Chain-break positions are fixed and cannot be constrained.
+
     Attributes
     ----------
     sequence : str
@@ -444,7 +462,33 @@ class DesignConstraint:
         dict of int to set of str
             Allowed amino acids at each position.
         """
-        return {i: {aa} for i, aa in enumerate(sequence, start=1)}
+        return {i: {aa} for i, aa in enumerate(sequence, start=1) if aa != CHAIN_BREAK}
+
+    def _resolve(
+        self,
+        amino_acids: list[str] | str | None,
+        positions: int | list[int] | None,
+    ) -> tuple[list[str], list[int]]:
+        if isinstance(positions, int):
+            positions = [positions]
+        elif positions is None:
+            positions = [
+                i for i, aa in enumerate(self.sequence, start=1) if aa != CHAIN_BREAK
+            ]
+        if isinstance(amino_acids, str):
+            amino_acids = list(amino_acids)
+        elif amino_acids is None:
+            amino_acids = sorted(set(self.sequence) - {CHAIN_BREAK})
+
+        if CHAIN_BREAK in amino_acids:
+            raise ValueError(f"'{CHAIN_BREAK}' cannot be an allowed token")
+        for position in positions:
+            if (
+                1 <= position <= len(self.sequence)
+                and self.sequence[position - 1] == CHAIN_BREAK
+            ):
+                raise ValueError(f"position {position} is a chain break")
+        return amino_acids, positions
 
     def allow(
         self,
@@ -461,14 +505,7 @@ class DesignConstraint:
         positions : int or list of int or None, optional
             Positions to allow amino acids at. If None, allows at all positions.
         """
-        if isinstance(positions, int):
-            positions = [positions]
-        elif positions is None:
-            positions = [i + 1 for i in range(len(self.sequence))]
-        if isinstance(amino_acids, str):
-            amino_acids = list(amino_acids)
-        elif amino_acids is None:
-            amino_acids = list(self.sequence)
+        amino_acids, positions = self._resolve(amino_acids, positions)
 
         for position in positions:
             if position in self.mutations:
@@ -492,14 +529,7 @@ class DesignConstraint:
         positions : int or list of int or None, optional
             Positions to remove amino acids from. If None, removes from all positions.
         """
-        if isinstance(positions, int):
-            positions = [positions]
-        elif positions is None:
-            positions = [i + 1 for i in range(len(self.sequence))]
-        if isinstance(amino_acids, str):
-            amino_acids = list(amino_acids)
-        elif amino_acids is None:
-            amino_acids = list(self.sequence)
+        amino_acids, positions = self._resolve(amino_acids, positions)
 
         for position in positions:
             if position in self.mutations:
@@ -605,7 +635,7 @@ class DesignJob(Job):
     Attributes
     ----------
     job_type : Literal[JobType.designer]
-        The type of the job (always 'designer').
+        Discriminator identifying a design job.
     """
 
     job_type: Literal[JobType.designer]
