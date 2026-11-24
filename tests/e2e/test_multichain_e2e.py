@@ -17,6 +17,9 @@ Coverage:
   * genetic-algorithm design driven by a multi-chain GP (on-SVD and
     with-reduction): every designed sequence preserves the ":" layout (same
     length, ":" frozen at its column, never introduced elsewhere).
+  * genetic-algorithm design constrained by a ``DesignConstraint`` built from a
+    multi-chain parent: the constraint submits, and designed sequences mutate
+    only at the allowed positions of each chain.
   * alignment jobs (mafft / clustalo / abnumber) on multi-chain inputs: each
     chain is aligned independently and rejoined with a single ":" column, and
     gap-stripping each chain recovers the input chains. Chain order is
@@ -27,8 +30,9 @@ Coverage:
     type fail the job.
   * prompt sampling from a multi-chain MSA: sampling scores residue columns, so
     the ":" break is dropped from the encoded MSA and restored in the sampled
-    rows. Every context entry comes back as a Complex with the seed's chain
-    layout, across the sequence and residue budgets, ensemble replicates,
+    rows. Every context entry carries the seed's chain layout (a Complex from
+    an MSAFuture; its chains joined by ":" when read through
+    ``session.data.Prompt``), across the sequence and residue budgets, ensemble replicates,
     similarity bounds, and seed inclusion. Covers both a search-built MSA and
     one a user uploads directly (the non-a3m reader), including that reader's
     validation of a misaligned chain break.
@@ -44,8 +48,6 @@ Coverage:
 
 from __future__ import annotations
 
-import io
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -57,8 +59,10 @@ from openprotein.align.schemas import (
     UnnumberedPolicy,
 )
 from openprotein.common.reduction import ReductionType
-from openprotein.design import ModelCriterion
+from openprotein.data.msa import MSA
+from openprotein.design import DesignConstraint, ModelCriterion
 from openprotein.errors import HTTPError, InvalidParameterError
+from openprotein.jobs import JobStatus
 from openprotein.molecules import Complex
 
 from tests.e2e.config import scaled_timeout
@@ -86,8 +90,6 @@ pytestmark = pytest.mark.e2e
 # --------------------------------------------------------------------------- #
 # Helpers
 # --------------------------------------------------------------------------- #
-
-
 def _generic_chains() -> tuple[str, str]:
     """Two unrelated real-ish chains for general-purpose models."""
     return random_sequence_real(64), random_sequence_real(48)
@@ -140,7 +142,7 @@ def _make_assay(session: OpenProtein, sequences: list[str]):
             "property": [float(s.count("A")) for s in sequences],
         }
     )
-    return session.data.create(
+    return session.data.Assay.create(
         table=df,
         name=f"E2E_MultiChain_{random_string(8)}",
         description="Multi-chain E2E assay",
@@ -171,10 +173,9 @@ def _assert_single_site_preserves_delimiter(predictor, base: str) -> None:
 # --------------------------------------------------------------------------- #
 # Embeddings: multi-chain per-residue output length
 # --------------------------------------------------------------------------- #
-
-# Linker-mean models: the backend replaces ":" with a linker and mean-pools it
-# into one column, so the multi-chain per-residue length is the single-chain
-# (same residues) length + one column per delimiter. The model's BOS/EOS offset
+# Linker-mean models represent each ":" as one mean-pooled linker column, so
+# the multi-chain per-residue length is the single-chain (same residues) length
+# + one column per delimiter. The model's BOS/EOS offset
 # cancels in this differential. (model_id, needs_prompt)
 _DIFFERENTIAL_LENGTH_MODELS = [
     ("esm2_t33_650M_UR50D", False),
@@ -234,8 +235,6 @@ def test_multichain_embedding_length_ablang2(session: OpenProtein):
 # --------------------------------------------------------------------------- #
 # Scoring: score + single-site on multi-chain sequences (PoET / PoET-2)
 # --------------------------------------------------------------------------- #
-
-
 @pytest.mark.parametrize("model_id", SCORE_MODELS)
 def test_multichain_score(session: OpenProtein, model_id: str):
     """score() accepts a multi-chain sequence and returns a finite score."""
@@ -280,8 +279,6 @@ def test_multichain_single_site_score(session: OpenProtein, model_id: str):
 # --------------------------------------------------------------------------- #
 # SVD on multi-chain sequences
 # --------------------------------------------------------------------------- #
-
-
 @pytest.mark.parametrize("model_id", SVD_GP_MODELS)
 def test_multichain_svd_fit_and_embed(session: OpenProtein, model_id: str):
     """Fit an SVD on same-length multi-chain sequences, then embed multi-chain
@@ -397,13 +394,23 @@ def _assert_design_preserves_delimiter(results, base: str) -> None:
         )
 
 
-def _run_multichain_design(session: OpenProtein, assay, property_name: str, predictor):
+def _run_multichain_design(
+    session: OpenProtein,
+    assay,
+    property_name: str,
+    predictor,
+    allowed_tokens: DesignConstraint | None = None,
+):
     """Build a maximize criterion against ``predictor`` and run a tiny GA design."""
     criterion = (
         ModelCriterion(model_id=predictor.id, measurement_name=property_name) > 0
     )
     design = session.design.create_genetic_algorithm_design(
-        assay=assay, criteria=criterion, num_steps=2, pop_size=4
+        assay=assay,
+        criteria=criterion,
+        num_steps=2,
+        pop_size=4,
+        allowed_tokens=allowed_tokens or {},
     )
     assert design.wait_until_done(timeout=DESIGN_TIMEOUT), "multi-chain design failed"
     return design.get()
@@ -446,10 +453,47 @@ def test_multichain_ga_design_gp_with_reduction(session: OpenProtein):
     _assert_design_preserves_delimiter(results, seqs[0])
 
 
-# --------------------------------------------------------------------------- #
-# Alignment jobs on multi-chain sequences (mafft / clustalo / abnumber)
-# --------------------------------------------------------------------------- #
-#
+def test_multichain_ga_design_with_constraint(session: OpenProtein):
+    """GA design constrained by a ``DesignConstraint`` over a multi-chain parent
+    mutates only the allowed positions of each chain."""
+    model = require_embedding_model(session, DESIGN_MODEL)
+    heavy0, light0 = _generic_chains()
+    parent = f"{heavy0}:{light0}"
+    # 1-indexed over the full sequence, three positions in each chain
+    allowed = [26, 27, 28, len(heavy0) + 2, len(heavy0) + 3, len(heavy0) + 4]
+
+    constraint = DesignConstraint(parent)
+    constraint.allow(positions=allowed)
+    allowed_tokens = constraint.as_dict()
+
+    rng = np.random.default_rng()
+    seqs = [parent]
+    for _ in range(39):
+        seq = list(parent)
+        for p in rng.choice(allowed, size=2, replace=False):
+            seq[p - 1] = str(rng.choice(allowed_tokens[p]))
+        seqs.append("".join(seq))
+    assay = _make_assay(session, seqs)
+    property_name = assay.measurement_names[0]
+
+    predictor = model.fit_gp(
+        assay=assay, properties=[property_name], reduction=ReductionType.MEAN
+    )
+    assert predictor.wait(timeout=PRED_TIMEOUT), "GP-with-reduction training failed"
+
+    results = _run_multichain_design(
+        session, assay, property_name, predictor, allowed_tokens=constraint
+    )
+    _assert_design_preserves_delimiter(results, parent)
+    for r in results:
+        for i, aa in enumerate(r.sequence, start=1):
+            if aa != ":":
+                assert aa in allowed_tokens[i], (
+                    f"design placed {aa!r} at constrained position {i}: {r.sequence!r}"
+                )
+
+
+# Alignment jobs (mafft / clustalo / abnumber) on multi-chain sequences.
 # Submitting ":"-delimited sequences to the alignment endpoints exercises the
 # split / align-each-chain / rejoin path: every chain position is aligned
 # independently, then rejoined with a single ":" column.
@@ -710,7 +754,8 @@ def test_multichain_abnumber_mixed_chain_types_rejected(session: OpenProtein):
 #
 # Sampling scores residue columns, so the ":" break is dropped from the encoded
 # MSA and restored in the sampled rows. Every sampled context entry therefore
-# carries the seed's chain layout and comes back as a Complex.
+# carries the seed's chain layout. An entry read through ``session.data.Prompt``
+# comes back as its chains joined by ":".
 
 PROMPT_TIMEOUT = scaled_timeout(4.0)
 PROMPT_CONTEXT_SIZE = 8
@@ -721,16 +766,14 @@ def _multichain_msa(session: OpenProtein, chain_a: str, chain_b: str) -> MSAFutu
     return session.align.create_msa(seed=f"{chain_a}:{chain_b}".encode())
 
 
-def _uploaded_multichain_msa(
-    session: OpenProtein, query: str, rows: list[str]
-) -> MSAFuture:
-    """A ready-made multi-chain MSA a user uploads directly, bypassing homology
+def _uploaded_multichain_msa(session: OpenProtein, query: str, rows: list[str]) -> MSA:
+    """A ready-made multi-chain MSA a user stores directly, bypassing homology
     search. This is the non-a3m path: a plain FASTA block, no insertions."""
     records = [f">query\n{query}"] + [
         f">homolog_{i}\n{row}" for i, row in enumerate(rows)
     ]
     fasta = ("\n".join(records) + "\n").encode()
-    return session.align.upload_msa(io.BytesIO(fasta))
+    return session.data.MSA.create(fasta, format="fasta")
 
 
 def _assert_multichain_prompt(replicates, n_chains: int = 2) -> None:
@@ -752,6 +795,18 @@ def _assert_multichain_prompt(replicates, n_chains: int = 2) -> None:
             )
             for chain in proteins.values():
                 assert b":" not in chain.sequence, f"chain retains a break: {chain!r}"
+
+
+def _assert_two_chain_complexes(replicates: list[list[str]]) -> None:
+    """Every replicate is non-empty and every entry is two non-empty chains
+    joined by a single ":"."""
+    assert replicates, "prompt returned no replicates"
+    for entries in replicates:
+        assert entries, "prompt replicate has no context entries"
+        for entry in entries:
+            chains = entry.split(":")
+            assert len(chains) == 2, f"expected 2 chains, got {len(chains)}: {entry!r}"
+            assert all(chains), f"empty chain in entry: {entry!r}"
 
 
 def _sample(msa: MSAFuture, **kwargs):
@@ -843,32 +898,30 @@ def test_multichain_prompt_sampling_includes_seed(session: OpenProtein):
 
 
 def test_multichain_prompt_sampling_from_uploaded_msa(session: OpenProtein):
-    """A user-uploaded MSA has no homology-search a3m behind it -- it hits the
-    worker's plain-FASTA/CSV reader, which has to drop the chain break itself
-    just like the a3m reader does."""
+    """Prompt sampling drops the chain break from a user-stored MSA, as it
+    does for a homology-search MSA."""
     chain_a, chain_b = _generic_chains()
     query = f"{chain_a}:{chain_b}"
     homologs = _multichain_same_length_dataset(10, chain_a, chain_b)
     msa = _uploaded_multichain_msa(session, query, homologs)
 
-    _assert_multichain_prompt(_sample(msa, num_sequences=PROMPT_CONTEXT_SIZE))
+    prompt = msa.sample_prompt(max_msa_sequences=PROMPT_CONTEXT_SIZE)
+    prompt.wait(verbose=True, timeout=PROMPT_TIMEOUT)
+    assert prompt.status == JobStatus.SUCCESS
+    _assert_two_chain_complexes(list(prompt))
 
 
 def test_multichain_prompt_uploaded_msa_misaligned_break_fails(session: OpenProtein):
-    """Every row of an uploaded MSA has to place its break at the query's column.
-    A homolog whose break lands one column early (same total width, wrong chain
-    boundary) fails the prompt job instead of sampling on a silently misaligned
-    complex."""
+    """A homolog whose break lands one column early (same width, wrong chain
+    boundary) is refused when the MSA is stored, instead of sampling on a
+    silently misaligned complex."""
     chain_a, chain_b = _generic_chains()
     query = f"{chain_a}:{chain_b}"
     good = _multichain_same_length_dataset(5, chain_a, chain_b)
     misaligned = f"{chain_a[:-1]}:{chain_a[-1]}{chain_b}"
-    msa = _uploaded_multichain_msa(session, query, good + [misaligned])
 
-    prompt = msa.sample_prompt(num_sequences=PROMPT_CONTEXT_SIZE)
-    prompt.wait_until_done(verbose=True, timeout=PROMPT_TIMEOUT)
-
-    assert prompt.status == "FAILURE"
+    with pytest.raises(HTTPError, match="Status code 400"):
+        _uploaded_multichain_msa(session, query, good + [misaligned])
 
 
 def test_multichain_prompt_empty_chain_round_trips(session: OpenProtein):

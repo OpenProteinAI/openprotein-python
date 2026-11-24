@@ -15,6 +15,8 @@ from . import api
 from .models import PredictorModel
 from .schemas import KernelType
 
+__all__ = ["PredictorAPI"]
+
 
 class PredictorAPI:
     """Predictor API providing the interface to train and predict predictors."""
@@ -170,13 +172,13 @@ class PredictorAPI:
         data_api = getattr(self.session, "data", None)
         assert isinstance(data_api, DataAPI)
         # 1. Check assay data input
-        # get assay if str
-        assay = data_api.get(assay_id=assay) if isinstance(assay, str) else assay
-        # extract assay_id
+        assay = data_api.Assay(id=assay) if isinstance(assay, str) else assay
         assay_id = (
             assay.assay_id
             if isinstance(assay, AssayMetadata)
-            else assay.id if isinstance(assay, AssayDataset) else assay
+            else assay.id
+            if isinstance(assay, AssayDataset)
+            else assay
         )
         if len(properties) == 0:
             raise InvalidParameterError("Expected (at-least) 1 property to train")
@@ -199,26 +201,30 @@ class PredictorAPI:
                 ) from e
         if period is not None:
             if kernel != KernelType.PERIODIC:
-                raise InvalidParameterError("`period` is only valid for the 'periodic' kernel")
+                raise InvalidParameterError(
+                    "`period` is only valid for the 'periodic' kernel"
+                )
             if period <= 0:
                 raise InvalidParameterError("`period` must be > 0")
         if alpha is not None:
             if kernel != KernelType.RATIONAL_QUADRATIC:
-                raise InvalidParameterError("`alpha` is only valid for the 'rational_quadratic' kernel")
+                raise InvalidParameterError(
+                    "`alpha` is only valid for the 'rational_quadratic' kernel"
+                )
             if alpha <= 0:
                 raise InvalidParameterError("`alpha` must be > 0")
         # 2. Check features input
-        # extract feature type
         feature_type = (
             FeatureType.PLM
             if isinstance(model, EmbeddingModel)
-            else FeatureType.SVD if isinstance(model, SVDModel) else feature_type
+            else FeatureType.SVD
+            if isinstance(model, SVDModel)
+            else feature_type
         )
         if feature_type is None:
             raise InvalidParameterError(
                 "Expected feature_type to be provided if passing str model_id as model"
             )
-        # runtime check on value
         if isinstance(feature_type, str):
             feature_type = FeatureType(feature_type)
 
@@ -227,7 +233,6 @@ class PredictorAPI:
             reduction = ReductionType(reduction)
             reduction = reduction.value
 
-        # get model if model_id
         if feature_type == FeatureType.PLM:
             if reduction is None:
                 raise InvalidParameterError(

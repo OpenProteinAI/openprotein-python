@@ -12,7 +12,6 @@ from openprotein.jobs import JobsAPI, JobStatus, JobType
 
 @pytest.fixture
 def mock_design_metadata():
-    """Fixture for a valid Design instance."""
     return Design(
         id="design-123",
         status=JobStatus.SUCCESS,
@@ -34,7 +33,6 @@ def mock_design_metadata():
 
 @pytest.fixture
 def mock_design_job():
-    """Fixture for a valid DesignJob instance."""
     return DesignJob(
         job_id="design-123",
         status=JobStatus.SUCCESS,
@@ -44,7 +42,6 @@ def mock_design_job():
 
 
 def test_design_future_init(mock_session, mock_design_metadata, mock_design_job):
-    """Test DesignFuture initialization with metadata."""
     mock_session.jobs = MagicMock(spec=JobsAPI)
     mock_session.jobs.get_job.return_value = mock_design_job
     future = DesignFuture(session=mock_session, metadata=mock_design_metadata)
@@ -53,7 +50,6 @@ def test_design_future_init(mock_session, mock_design_metadata, mock_design_job)
 
 
 def test_design_future_stream(mock_session, mock_design_metadata, mock_design_job):
-    """Test the stream method of DesignFuture."""
     mock_session.jobs = MagicMock(spec=JobsAPI)
     mock_session.jobs.get_job.return_value = mock_design_job
     future = DesignFuture(session=mock_session, metadata=mock_design_metadata)

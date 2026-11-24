@@ -6,6 +6,11 @@ import pytest
 
 from openprotein.common import FeatureType
 from openprotein.jobs import JobStatus, JobType
+from openprotein.models.kernels import (
+    LinearKernel,
+    _GPHyperparameters,
+    _trained_kernel,
+)
 from openprotein.predictor.schemas import (
     Dataset,
     Features,
@@ -19,8 +24,34 @@ from openprotein.predictor.schemas import (
 )
 
 
+@pytest.mark.parametrize(
+    "kernel,served",
+    [
+        ("linear", {"outputscale": [2.0, 3.0]}),
+        ("linear", {"lengthscale": [None, 0.8]}),
+        ("linear", {"alpha": [None, 1.2]}),
+        ("rbf", {"lengthscale": [0.8], "period": [2.0, 3.0]}),
+        ("rbf", {"lengthscale": [0.8, 0.9]}),
+        ("rbf", {"lengthscale": []}),
+    ],
+)
+def test_trained_kernel_takes_exactly_one_kernel(kernel, served):
+    hyperparameters = _GPHyperparameters(**({"outputscale": [2.0]} | served))
+
+    with pytest.raises(ValueError, match="expected one"):
+        _trained_kernel(kernel, hyperparameters)
+
+
+@pytest.mark.parametrize(
+    "served", [{}, {"lengthscale": [None], "period": [None], "alpha": [None]}]
+)
+def test_inapplicable_hyperparameters_may_be_empty_or_null(served):
+    hyperparameters = _GPHyperparameters(outputscale=[2.0], **served)
+
+    assert _trained_kernel("linear", hyperparameters) == LinearKernel(outputscale=2.0)
+
+
 def test_predictor_metadata_is_done():
-    """Test the is_done() method on PredictorMetadata."""
     spec = ModelSpec(type=PredictorType.GP)
     dataset = Dataset(assay_id="a1", properties=["p1"])
     metadata_done = PredictorMetadata(
@@ -46,7 +77,6 @@ def test_predictor_metadata_is_done():
     ],
 )
 def test_job_schemas_job_type(job_class, expected_job_type):
-    """Test that each job schema has the correct job_type."""
     job_data = {
         "job_id": "job-123",
         "status": JobStatus.SUCCESS,
@@ -58,7 +88,6 @@ def test_job_schemas_job_type(job_class, expected_job_type):
 
 
 def test_features_schema():
-    """Test the Features schema validation."""
     # This should pass
     Features(type=FeatureType.PLM, model_id="model-1", reduction="mean")
     Features(type=FeatureType.SVD, model_id="model-1", reduction="mean")

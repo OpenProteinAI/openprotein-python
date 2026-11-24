@@ -28,6 +28,9 @@ dependencies = [
 ]
 requires-python = ">=3.10,<3.15"
 
+[project.optional-dependencies]
+msa = ["pyarrow>=14"]
+
 [dependency-groups]
 dev = [
   "pip>=24.2",
@@ -43,6 +46,7 @@ dev = [
   "seaborn>=0.13.2",
   "jupyterlab>=4.4.1",
   "torch>=2.2.0,<3",
+  "jsonschema>=4.26",
 ]
 
 [tool.uv.sources]
@@ -97,8 +101,8 @@ markers = [
   "e2e: End-to-end tests that require API credentials",
   "slow: Slow-running tests",
   "integration: Integration tests",
-  "correctness: Correctness tests (invariants, ground-truth, prod-baseline)",
-  "differential: Correctness tests that compare against a captured prod baseline",
+  "correctness: Correctness tests (invariants, ground-truth, baseline)",
+  "differential: Correctness tests that compare against a committed baseline",
 ]
 addopts = "-v --strict-markers --tb=short --disable-warnings -m 'not e2e'"
 timeout = 1200

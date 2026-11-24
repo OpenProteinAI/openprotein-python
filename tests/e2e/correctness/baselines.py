@@ -46,8 +46,8 @@ class BaselineRecord:
     mismatch_fraction: float = 0.0
     array: np.ndarray | None = None
     # numpy dtype name of the array as produced over the wire (e.g. "float16"),
-    # captured before the float64 coercion used for value comparison. None for
-    # baselines recorded before dtype tracking was added (dtype assert skipped).
+    # captured before the float64 coercion used for value comparison. None means
+    # the baseline carries no dtype and the dtype assert is skipped.
     dtype: str | None = None
     provenance: dict | None = None
 
@@ -102,7 +102,7 @@ class BaselineStore:
             "provenance": provenance,
         }
         # The wire dtype (e.g. "float16") is recorded separately from the float64
-        # value store so re-runs can assert dtype parity against prod.
+        # value store so re-runs can assert dtype parity.
         if dtype is not None:
             entry["dtype"] = dtype
         data[_key_str(key)] = entry
@@ -111,7 +111,9 @@ class BaselineStore:
         arrays[_key_str(key)] = array
         self._write_npz(key, arrays)
 
-    def save_scalar(self, key: Key, value: float, *, atol: float, rtol: float, provenance: dict) -> None:
+    def save_scalar(
+        self, key: Key, value: float, *, atol: float, rtol: float, provenance: dict
+    ) -> None:
         data = self._read_json(key)
         data[_key_str(key)] = {
             "kind": "scalar",
@@ -122,7 +124,9 @@ class BaselineStore:
         }
         self._write_json(key, data)
 
-    def save_tokens(self, key: Key, tokens, *, mismatch_fraction: float, provenance: dict) -> None:
+    def save_tokens(
+        self, key: Key, tokens, *, mismatch_fraction: float, provenance: dict
+    ) -> None:
         data = self._read_json(key)
         data[_key_str(key)] = {
             "kind": "tokens",
@@ -169,7 +173,9 @@ class BaselineStore:
 class Comparator:
     """Runs a value-producing thunk in capture or assert mode against a BaselineStore."""
 
-    def __init__(self, *, store: BaselineStore, mode: str, repeats: int, provenance: dict):
+    def __init__(
+        self, *, store: BaselineStore, mode: str, repeats: int, provenance: dict
+    ):
         if mode not in ("capture", "assert"):
             raise ValueError(f"mode must be 'capture' or 'assert', got {mode!r}")
         self.store = store
@@ -177,10 +183,12 @@ class Comparator:
         self.repeats = repeats
         self.provenance = provenance
 
-    def check_array(self, key: Key, produce, *, atol: float | None = None, rtol: float | None = None) -> None:
+    def check_array(
+        self, key: Key, produce, *, atol: float | None = None, rtol: float | None = None
+    ) -> None:
         """Capture or assert an array. In assert mode, `atol`/`rtol` override the
         baseline's stored (jitter-derived) tolerance -- use this to absorb accepted
-        cross-environment jitter on a genuinely-recomputed output (e.g. PoET)."""
+        numerical jitter on a genuinely-recomputed output (e.g. PoET)."""
         if self.mode == "capture":
             # Capture the wire dtype before coercing to float64 for averaging.
             # All repeats hit the same endpoint, so they share a dtype; record
@@ -203,11 +211,9 @@ class Comparator:
             return
         rec = self.store.load(key)
         if rec is None:
-            pytest.skip(f"no baseline for {key}; run --update-baselines against prod")
+            pytest.skip(f"no baseline for {key}; run --update-baselines")
         raw = np.asarray(produce())
-        # Assert wire dtype parity before the value comparison. Skipped when the
-        # baseline predates dtype tracking (rec.dtype is None) so existing
-        # baselines keep working until re-captured against prod.
+        # A baseline with no recorded dtype asserts values only.
         if rec.dtype is not None and raw.dtype.name != rec.dtype:
             raise AssertionError(
                 f"dtype mismatch for {_key_str(key)}: "
@@ -220,7 +226,9 @@ class Comparator:
             atol=atol if atol is not None else rec.atol,
         )
 
-    def check_scalar(self, key: Key, produce, *, atol: float | None = None, rtol: float | None = None) -> None:
+    def check_scalar(
+        self, key: Key, produce, *, atol: float | None = None, rtol: float | None = None
+    ) -> None:
         """Capture or assert a scalar. `atol`/`rtol` override the stored tolerance in
         assert mode (see `check_array`)."""
         if self.mode == "capture":
@@ -229,11 +237,13 @@ class Comparator:
             d_atol, d_rtol = metrics.derive_tolerance(
                 samples, safety=SAFETY, atol_floor=ATOL_FLOOR, rtol_floor=RTOL_FLOOR
             )
-            self.store.save_scalar(key, value, atol=d_atol, rtol=d_rtol, provenance=self.provenance)
+            self.store.save_scalar(
+                key, value, atol=d_atol, rtol=d_rtol, provenance=self.provenance
+            )
             return
         rec = self.store.load(key)
         if rec is None:
-            pytest.skip(f"no baseline for {key}; run --update-baselines against prod")
+            pytest.skip(f"no baseline for {key}; run --update-baselines")
         actual = float(produce())
         metrics.assert_close(
             np.asarray([actual]),
@@ -244,20 +254,31 @@ class Comparator:
 
     def check_tokens(self, key: Key, produce) -> None:
         if self.mode == "capture":
-            samples = [np.asarray(produce()).astype(int).ravel() for _ in range(self.repeats)]
+            samples = [
+                np.asarray(produce()).astype(int).ravel() for _ in range(self.repeats)
+            ]
             value = samples[0]
             mismatch = 0.0
             for s in samples[1:]:
-                mismatch = max(mismatch, 1.0 - metrics.argmax_match_fraction_tokens(value, s))
-            self.store.save_tokens(key, value.tolist(), mismatch_fraction=mismatch, provenance=self.provenance)
+                mismatch = max(
+                    mismatch, 1.0 - metrics.argmax_match_fraction_tokens(value, s)
+                )
+            self.store.save_tokens(
+                key,
+                value.tolist(),
+                mismatch_fraction=mismatch,
+                provenance=self.provenance,
+            )
             return
         rec = self.store.load(key)
         if rec is None:
-            pytest.skip(f"no baseline for {key}; run --update-baselines against prod")
+            pytest.skip(f"no baseline for {key}; run --update-baselines")
         actual = np.asarray(produce()).astype(int).ravel()
         baseline = np.asarray(rec.tokens, dtype=int)
         if actual.shape != baseline.shape:
-            raise AssertionError(f"token length mismatch: {actual.shape} vs {baseline.shape}")
+            raise AssertionError(
+                f"token length mismatch: {actual.shape} vs {baseline.shape}"
+            )
         mismatch = 1.0 - metrics.argmax_match_fraction_tokens(actual, baseline)
         allowed = max(rec.mismatch_fraction, 0.0)
         if mismatch > allowed + 1e-9:

@@ -8,10 +8,9 @@ from pydantic import TypeAdapter
 
 from openprotein.base import APISession
 from openprotein.errors import APIError
-from openprotein.jobs import Job
+from openprotein.models.kernels import _GPHyperparameters
 
 from .schemas import (
-    Job,
     PredictJob,
     PredictMultiJob,
     PredictMultiSingleSiteJob,
@@ -21,7 +20,27 @@ from .schemas import (
     PredictSingleSiteJob,
 )
 
-PATH_PREFIX = "v1/predictor"
+__all__ = [
+    "decode_crossvalidate",
+    "decode_predict",
+    "predictor_crossvalidate_get",
+    "predictor_crossvalidate_post",
+    "predictor_delete",
+    "predictor_ensemble",
+    "predictor_fit_gp_post",
+    "predictor_get",
+    "predictor_list",
+    "predictor_predict_get_batched_result",
+    "predictor_predict_get_sequence_result",
+    "predictor_predict_get_sequences",
+    "predictor_predict_multi_post",
+    "predictor_predict_multi_single_site_post",
+    "predictor_predict_post",
+    "predictor_predict_single_site_post",
+]
+
+
+_PATH_PREFIX = "v1/predictor"
 
 
 def predictor_list(
@@ -52,7 +71,7 @@ def predictor_list(
     list[PredictorMetadata]
         List of predictors
     """
-    endpoint = PATH_PREFIX
+    endpoint = _PATH_PREFIX
     response = session.get(
         endpoint,
         params={
@@ -89,7 +108,7 @@ def predictor_get(
     PredictorMetadata
         Metadata of the requested predictor.
     """
-    endpoint = PATH_PREFIX + f"/{predictor_id}"
+    endpoint = _PATH_PREFIX + f"/{predictor_id}"
     response = session.get(
         endpoint,
         params={
@@ -98,6 +117,29 @@ def predictor_get(
         },
     )
     return TypeAdapter(PredictorMetadata).validate_python(response.json())
+
+
+def _predictor_get_hyperparameters(
+    session: APISession, predictor_id: str
+) -> dict[str, _GPHyperparameters]:
+    """
+    Get the trained hyperparameters of a GP predictor.
+
+    Parameters
+    ----------
+    session : APISession
+        Session object for API communication.
+    predictor_id : str
+        Unique identifier of the predictor.
+
+    Returns
+    -------
+    dict of str to _GPHyperparameters
+        Trained hyperparameters, keyed by trained property.
+    """
+    endpoint = _PATH_PREFIX + f"/{predictor_id}/hyperparameters"
+    response = session.get(endpoint, timeout=session.timeout)
+    return TypeAdapter(dict[str, _GPHyperparameters]).validate_python(response.json())
 
 
 def predictor_fit_gp_post(
@@ -150,7 +192,7 @@ def predictor_fit_gp_post(
     PredictorTrainJob
         Train job that can be tracked for progress.
     """
-    endpoint = PATH_PREFIX + "/gp"
+    endpoint = _PATH_PREFIX + "/gp"
 
     kernel_spec: dict = {"type": kernel}
     if period is not None:
@@ -175,7 +217,6 @@ def predictor_fit_gp_post(
         body["name"] = name
     if description is not None:
         body["description"] = description
-    # add kwargs for embeddings kwargs to features
     body["features"].update(kwargs)
 
     response = session.post(endpoint, json=body)
@@ -185,7 +226,7 @@ def predictor_fit_gp_post(
 def predictor_ensemble(
     session: APISession, predictor_ids: list[str]
 ) -> PredictorMetadata:
-    endpoint = PATH_PREFIX + f"/ensemble"
+    endpoint = _PATH_PREFIX + f"/ensemble"
 
     body = {
         "model_ids": predictor_ids,
@@ -196,7 +237,7 @@ def predictor_ensemble(
 
 
 def predictor_delete(session: APISession, predictor_id: str):
-    endpoint = PATH_PREFIX + f"/{predictor_id}"
+    endpoint = _PATH_PREFIX + f"/{predictor_id}"
     response = session.delete(endpoint)
     if 200 <= response.status_code < 300:
         return True
@@ -207,7 +248,7 @@ def predictor_delete(session: APISession, predictor_id: str):
 def predictor_crossvalidate_post(
     session: APISession, predictor_id: str, n_splits: int | None = None
 ):
-    endpoint = PATH_PREFIX + f"/{predictor_id}/crossvalidate"
+    endpoint = _PATH_PREFIX + f"/{predictor_id}/crossvalidate"
 
     params = {}
     if n_splits is not None:
@@ -218,7 +259,7 @@ def predictor_crossvalidate_post(
 
 
 def predictor_crossvalidate_get(session: APISession, crossvalidate_job_id: str):
-    endpoint = PATH_PREFIX + f"/crossvalidate/{crossvalidate_job_id}"
+    endpoint = _PATH_PREFIX + f"/crossvalidate/{crossvalidate_job_id}"
 
     response = session.get(endpoint)
     return response.content
@@ -227,7 +268,7 @@ def predictor_crossvalidate_get(session: APISession, crossvalidate_job_id: str):
 def predictor_predict_post(
     session: APISession, predictor_id: str, sequences: list[bytes] | list[str]
 ):
-    endpoint = PATH_PREFIX + f"/{predictor_id}/predict"
+    endpoint = _PATH_PREFIX + f"/{predictor_id}/predict"
 
     sequences_unicode = [(s if isinstance(s, str) else s.decode()) for s in sequences]
     body = {
@@ -241,7 +282,7 @@ def predictor_predict_post(
 def predictor_predict_multi_post(
     session: APISession, predictor_ids: list[str], sequences: list[bytes] | list[str]
 ):
-    endpoint = PATH_PREFIX + f"/predict"
+    endpoint = _PATH_PREFIX + f"/predict"
 
     sequences_unicode = [(s if isinstance(s, str) else s.decode()) for s in sequences]
     body = {
@@ -258,7 +299,7 @@ def predictor_predict_single_site_post(
     predictor_id: str,
     base_sequence: bytes | str,
 ):
-    endpoint = PATH_PREFIX + f"/{predictor_id}/predict_single_site"
+    endpoint = _PATH_PREFIX + f"/{predictor_id}/predict_single_site"
 
     base_sequence = (
         base_sequence.decode() if isinstance(base_sequence, bytes) else base_sequence
@@ -276,7 +317,7 @@ def predictor_predict_multi_single_site_post(
     predictor_ids: list[str],
     base_sequence: bytes | str,
 ):
-    endpoint = PATH_PREFIX + f"/predict_single_site"
+    endpoint = _PATH_PREFIX + f"/predict_single_site"
 
     base_sequence = (
         base_sequence.decode() if isinstance(base_sequence, bytes) else base_sequence
@@ -293,7 +334,7 @@ def predictor_predict_multi_single_site_post(
 def predictor_predict_get_sequences(
     session: APISession, prediction_job_id: str
 ) -> list[bytes]:
-    endpoint = PATH_PREFIX + f"/predict/{prediction_job_id}/sequences"
+    endpoint = _PATH_PREFIX + f"/predict/{prediction_job_id}/sequences"
 
     response = session.get(endpoint)
     return TypeAdapter(list[bytes]).validate_python(response.json())
@@ -320,7 +361,7 @@ def predictor_predict_get_sequence_result(
     """
     if isinstance(sequence, bytes):
         sequence = sequence.decode()
-    endpoint = PATH_PREFIX + f"/predict/{prediction_job_id}/{sequence}"
+    endpoint = _PATH_PREFIX + f"/predict/{prediction_job_id}/{sequence}"
     response = session.get(endpoint)
     return response.content
 
@@ -344,7 +385,7 @@ def predictor_predict_get_batched_result(
     -------
     result : bytes
     """
-    endpoint = PATH_PREFIX + f"/predict/{prediction_job_id}"
+    endpoint = _PATH_PREFIX + f"/predict/{prediction_job_id}"
     response = session.get(endpoint)
     return response.content
 
@@ -379,19 +420,18 @@ def decode_crossvalidate(data: bytes) -> tuple[np.ndarray, np.ndarray, np.ndarra
     """
     Decode crossvalidate scores.
 
-    Args:
-        data (bytes): raw bytes encoding the array received over the API
+    Parameters
+    ----------
+    data : bytes
+        Raw bytes of the crossvalidation csv received over the API.
 
-    Returns:
-        mus (np.ndarray): decoded array of means
-        vars (np.ndarray): decoded array of variances
+    Returns
+    -------
+    tuple of np.ndarray
+        The observed ``y`` and the cross-validated ``y_mu`` and ``y_var`` of each
+        evaluated row.
     """
-    s = io.BytesIO(data)
-    # should contain header and sequence column
-    df = pd.read_csv(s)
+    df = pd.read_csv(io.BytesIO(data))
     scores = df.values
     # row_num, seq, measurement_name, y, y_mu, y_var
-    y = scores[:, 3]
-    mus = scores[:, 4]
-    vars = scores[:, 5]
-    return y, mus, vars
+    return scores[:, 3], scores[:, 4], scores[:, 5]

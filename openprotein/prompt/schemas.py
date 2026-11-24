@@ -1,23 +1,27 @@
+from collections.abc import Sequence
 from datetime import datetime
-from typing import Literal, Sequence
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
 from openprotein.jobs import Job, JobStatus, JobType
 from openprotein.molecules import Complex, Protein
 
+__all__ = ["Context", "PromptJob", "PromptMetadata", "QueryMetadata"]
+
+
 Context = Sequence[bytes | str | Protein | Complex]
 
 
 class PromptJob(Job):
-    """A representation of a prompt job."""
+    """A prompt sampling job."""
 
-    job_type: Literal[JobType.align_prompt]
+    job_type: Literal[JobType.align_prompt, "/prompt/sample_msa"]
 
     @property
-    def msa_id(self):
-        """ID of the underlying MSA."""
-        return self.msa_id
+    def msa_id(self) -> str | None:
+        """ID of the underlying MSA, or None if the job doesn't carry it."""
+        return (self.model_extra or {}).get("msa_id")
 
     @property
     def prompt_id(self):

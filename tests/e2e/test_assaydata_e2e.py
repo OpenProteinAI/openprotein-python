@@ -8,6 +8,7 @@ import pytest
 
 from openprotein import OpenProtein
 from openprotein.data import AssayDataset
+from openprotein.errors import APIError
 from tests.utils.strings import random_string
 
 TEST_ASSAY_DATA_DIR = "tests/data"
@@ -26,11 +27,7 @@ TEST_ASSAY_MEASUREMENT_NAMES = [
 @pytest.mark.e2e
 def test_assaydata_workflow_e2e(session: OpenProtein):
     """
-    Tests an assaydata E2E workflow:
-    1. Connect to the session using fixture.
-    2. Reads a CSV using pandas.
-    3. Uploads it to platform.
-    4. Fetch the metadata and data and validate its structure.
+    Upload a CSV as an assay, then read its metadata and data back.
     """
     # 1. Session is already connected via the session fixture.
 
@@ -40,7 +37,9 @@ def test_assaydata_workflow_e2e(session: OpenProtein):
     # 3. Upload to platform
     assay_name = f"Test {random_string(10)}"
     assay_description = f"This is a test description: {random_string(50)}"
-    data = session.data.create(table=df, name=assay_name, description=assay_description)
+    data = session.data.Assay.create(
+        table=df, name=assay_name, description=assay_description
+    )
     assert isinstance(data, AssayDataset)
 
     # 4. Validate metadata
@@ -65,13 +64,14 @@ def test_assaydata_workflow_e2e(session: OpenProtein):
 @pytest.mark.e2e
 def test_assaydata_with_nan_values(session: OpenProtein):
     """
-    Test uploading assay data with NaN values.
-    Validates proper handling of missing measurements.
+    Missing measurements survive the upload as NaN.
     """
     df = pd.read_csv(TEST_ASSAY_DATA_FILEPATH)
 
     assay_name = f"Test_NaN_{random_string(10)}"
-    data = session.data.create(table=df, name=assay_name, description="Test with NaN")
+    data = session.data.Assay.create(
+        table=df, name=assay_name, description="Test with NaN"
+    )
 
     # Verify NaN values are preserved
     out_df = data.get_slice(0, data.metadata.num_rows)
@@ -82,11 +82,8 @@ def test_assaydata_with_nan_values(session: OpenProtein):
 
 @pytest.mark.e2e
 def test_assaydata_retrieval_by_id(session: OpenProtein, assay_small: AssayDataset):
-    """
-    Test retrieving an assay dataset by ID.
-    """
     # Retrieve by ID
-    retrieved = session.data.get(assay_small.id)
+    retrieved = session.data.Assay(id=assay_small.id)
 
     assert retrieved.id == assay_small.id
     assert retrieved.name == assay_small.name
@@ -96,9 +93,6 @@ def test_assaydata_retrieval_by_id(session: OpenProtein, assay_small: AssayDatas
 
 @pytest.mark.e2e
 def test_assaydata_slice_boundaries(session: OpenProtein, assay_small: AssayDataset):
-    """
-    Test edge cases for data slicing.
-    """
     # Get first row
     df_first = assay_small.get_slice(0, 1)
     assert len(df_first) == 1
@@ -116,9 +110,6 @@ def test_assaydata_slice_boundaries(session: OpenProtein, assay_small: AssayData
 @pytest.mark.e2e
 @pytest.mark.skip("todo: reject invalid slices")
 def test_assaydata_invalid_slice(session: OpenProtein, assay_small: AssayDataset):
-    """
-    Test error handling for invalid slice parameters.
-    """
     # Out of bounds slice
     with pytest.raises(Exception):
         assay_small.get_slice(0, assay_small.metadata.num_rows + 100)
@@ -135,8 +126,7 @@ def test_assaydata_invalid_slice(session: OpenProtein, assay_small: AssayDataset
 )
 def test_assaydata_different_sizes(session: OpenProtein, assay_fixture: str, request):
     """
-    Test assay datasets of different sizes.
-    Validates scalability across small, medium, and large datasets.
+    Small, medium and large assay datasets all upload and read back.
     """
     # Get the fixture dynamically
     try:
@@ -160,10 +150,7 @@ def test_assaydata_different_sizes(session: OpenProtein, assay_fixture: str, req
 
 @pytest.mark.e2e
 def test_assaydata_list_datasets(session: OpenProtein):
-    """
-    Test listing all available datasets.
-    """
-    datasets = session.data.list()
+    datasets = session.data.Assay.list()
     assert isinstance(datasets, list)
     # Should have at least the fixtures we created
     assert len(datasets) > 0
@@ -173,11 +160,8 @@ def test_assaydata_list_datasets(session: OpenProtein):
 def test_assaydata_metadata_consistency(
     session: OpenProtein, assay_small: AssayDataset
 ):
-    """
-    Test that metadata remains consistent across retrievals.
-    """
     # Get the same dataset again
-    retrieved = session.data.get(assay_small.id)
+    retrieved = session.data.Assay(id=assay_small.id)
 
     # Metadata should match
     assert retrieved.metadata.num_entries == assay_small.metadata.num_entries
@@ -200,7 +184,7 @@ def test_assaydata_has_name_column(session: OpenProtein, with_name_column: bool)
         table.insert(0, "name", ["s1", "s2", "s3"])
 
     assay_name = f"Test_name_col_{with_name_column}_{random_string(10)}"
-    data = session.data.create(
+    data = session.data.Assay.create(
         table=table, name=assay_name, description="name col test"
     )
 
@@ -209,13 +193,99 @@ def test_assaydata_has_name_column(session: OpenProtein, with_name_column: bool)
 
 @pytest.mark.e2e
 def test_assaydata_sequence_validation(session: OpenProtein, assay_small: AssayDataset):
-    """
-    Test that all sequences in the dataset have the expected length.
-    """
     df = assay_small.get_slice(0, assay_small.metadata.num_rows)
 
     for seq in df.sequence:
         assert len(seq) == assay_small.sequence_length, (
             f"Sequence length mismatch: expected {assay_small.sequence_length}, "
             f"got {len(seq)}"
+        )
+
+
+NOTES_TABLE = pd.DataFrame(
+    {
+        "name": ["s1", "s2", "s3"],
+        "sequence": ["AAAA", "CCCC", "GGGG"],
+        "activity": [0.1, None, 0.3],
+        "notes": ["007", None, 'run 2, "rerun"\nsee lab book'],
+        "run": ["1.0", "r2", "NA"],
+    }
+)
+
+
+@pytest.mark.e2e
+def test_assaydata_metadata_columns_e2e(session: OpenProtein):
+    """Metadata columns are stored verbatim per row and kept out of the measurements."""
+    data = session.data.Assay.create(
+        table=NOTES_TABLE.copy(),
+        name=f"Test_metadata_{random_string(10)}",
+        description="metadata columns",
+        metadata_columns=["notes", "run"],
+    )
+
+    assert data.measurement_names == ["activity"]
+    assert data.metadata_names == ["notes", "run"]
+    assert data.metadata.num_entries == 2
+    assert data.metadata.num_rows == 3
+
+    out = data.get_slice(0, 3, include_metadata=True)
+    assert list(out.columns) == ["sequence", "activity", "notes", "run"]
+    assert out["sequence"].tolist() == ["AAAA", "CCCC", "GGGG"]
+    assert out["notes"].tolist() == ["007", None, 'run 2, "rerun"\nsee lab book']
+    assert out["run"].tolist() == ["1.0", "r2", "NA"]
+
+    plain = data.get_slice(0, 3)
+    assert list(plain.columns) == ["sequence", "activity"]
+
+    retrieved = session.data.Assay(id=data.id)
+    assert retrieved.metadata_names == ["notes", "run"]
+    assert retrieved.measurement_names == ["activity"]
+
+
+@pytest.mark.e2e
+def test_assaydata_metadata_columns_empty_list_e2e(session: OpenProtein):
+    """An empty metadata_columns list uploads like a plain assay."""
+    data = session.data.Assay.create(
+        table=NOTES_TABLE[["sequence", "activity"]].copy(),
+        name=f"Test_metadata_empty_{random_string(10)}",
+        metadata_columns=[],
+    )
+
+    assert data.metadata_names == []
+    assert data.measurement_names == ["activity"]
+
+
+@pytest.mark.e2e
+def test_assaydata_text_column_requires_metadata_columns_e2e(session: OpenProtein):
+    """A text column is rejected as a measurement unless declared as metadata."""
+    with pytest.raises(APIError, match="cannot be converted to float"):
+        session.data.Assay.create(
+            table=NOTES_TABLE.copy(),
+            name=f"Test_metadata_undeclared_{random_string(10)}",
+        )
+
+
+@pytest.mark.e2e
+@pytest.mark.parametrize(
+    ("metadata_columns", "error"),
+    [
+        (["missing"], "not found"),
+        (["sequence"], "reserved"),
+        (["name"], "reserved"),
+        (["Sequence"], "reserved"),
+        (["NAME"], "reserved"),
+    ],
+)
+def test_assaydata_invalid_metadata_columns_e2e(
+    session: OpenProtein, metadata_columns: list[str], error: str
+):
+    """Missing or reserved metadata columns are rejected."""
+    table = NOTES_TABLE.rename(
+        columns={c.lower(): c for c in metadata_columns if c.lower() in NOTES_TABLE}
+    )
+    with pytest.raises(APIError, match=error):
+        session.data.Assay.create(
+            table=table,
+            name=f"Test_metadata_invalid_{random_string(10)}",
+            metadata_columns=metadata_columns,
         )

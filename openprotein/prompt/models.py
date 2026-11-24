@@ -1,15 +1,23 @@
 from openprotein import config
 from openprotein.base import APISession
 from openprotein.errors import InvalidParameterError
-from openprotein.jobs import Future, JobsAPI
+from openprotein.jobs import Future, Job, JobsAPI
 from openprotein.molecules import Complex, Protein
 
 from . import api
 from .schemas import PromptJob, PromptMetadata, QueryMetadata
 
+__all__ = ["Prompt", "Query"]
+
 
 class Prompt(Future):
-    """Prompt which contains a set of sequences and/or structures used to condition the PoET models."""
+    """Prompt which contains a set of sequences and/or structures used to condition the PoET models.
+
+    See Also
+    --------
+    openprotein.data.Prompt : A stored prompt. ``session.data.Prompt`` uploads,
+        lists and loads prompts.
+    """
 
     metadata: PromptMetadata
     session: APISession
@@ -71,7 +79,14 @@ class Prompt(Future):
         return str(self.metadata)
 
     def __repr__(self) -> str:
-        return repr(self.metadata)
+        fields = ", ".join(f"{name}={value!r}" for name, value in self.metadata)
+        return f"Prompt({fields})"
+
+    def _refresh_job(self, timeout: float | None = None) -> Job:
+        """Refresh the job, and the status the metadata reports with it."""
+        job = super()._refresh_job(timeout=timeout)
+        self.metadata = self.metadata.model_copy(update={"status": job.status})
+        return job
 
     def _get(self, verbose: bool = False, **kwargs) -> list[list[Protein | Complex]]:
         """
@@ -159,6 +174,10 @@ class Prompt(Future):
         """The timestamp when the prompt was created."""
         return self.metadata.created_date
 
+    def rename(self, name: str | None = None, description: str | None = None):
+        """Not supported: a prompt's name is set when it is created."""
+        raise NotImplementedError("a prompt's name is set when it is created")
+
     @property
     def num_replicates(self):
         """The number of replicates in the prompt for an ensemble prompt."""
@@ -178,7 +197,7 @@ class Query:
 
     Create a query with a masked sequence using :py:meth:`~openprotein.molecules.Protein.mask_sequence_at` for :py:class:`~openprotein.embeddings.PoET2Model` to run inverse folding.
 
-    Create a query with a masked structure using :py:meth:`~openprotein.molecules.Protein.mask_structure_at` for :py:class:`~openprotein.models.RFdiffusionModel` to run inverse folding.
+    Create a query with a masked structure using :py:meth:`~openprotein.molecules.Protein.mask_structure_at` for :py:class:`~openprotein.models.RFdiffusion` to run inverse folding.
     """
 
     metadata: QueryMetadata
@@ -222,13 +241,11 @@ class Query:
         """
         Retrieve the query as a :py:class:`Complex`.
 
-        A single-chain :py:class:`Protein` result is wrapped as
-        ``Complex({"A": protein})`` so the return type is uniform.
+        An mmCIF or PDB query returns the parsed Complex with chain ids taken from the
+        file. A FASTA query has no chain id, so a single-chain result is
+        wrapped as ``Complex({"A": protein})``.
         """
-        query = api.get_query(session=self.session, query_id=str(self.id))
-        if isinstance(query, Protein):
-            return Complex({"A": query}, name=query.name)
-        return query
+        return api._get_query_as_complex(session=self.session, query_id=str(self.id))
 
     def get_as_protein(self) -> Protein:
         """

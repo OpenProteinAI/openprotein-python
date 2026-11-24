@@ -1,6 +1,9 @@
 import re
 import string
 
+__all__ = ["id_generator", "is_valid_id", "valid_id_pattern"]
+
+
 valid_id_pattern = re.compile(r"^[A-Z]{1,5}$|^\d{1,5}$")
 
 
@@ -21,9 +24,8 @@ def id_generator(used_ids: list[str] | None = None, max_alpha_len=5, max_numeric
     used = set(tuple(used_ids or []))
     letters = list(string.ascii_uppercase)
 
-    # --- Alphabetic IDs ---
     curr_len = 1
-    curr_indices = [0] * curr_len  # start at 'A'
+    curr_indices = [0] * curr_len
 
     def bump_indices():
         # lexicographically increment curr_indices; return False on overflow
@@ -47,7 +49,6 @@ def id_generator(used_ids: list[str] | None = None, max_alpha_len=5, max_numeric
                 break
             curr_indices = [0] * curr_len
 
-    # --- Numeric IDs ---
     num = 1
     while num <= max_numeric:
         candidate = str(num)

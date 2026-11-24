@@ -104,7 +104,9 @@ def test_assert_close_nan_aware():
 
 def test_derive_tolerance_zero_jitter_uses_floors():
     samples = [np.array([1.0, 2.0, 3.0]) for _ in range(3)]
-    atol, rtol = metrics.derive_tolerance(samples, safety=4.0, atol_floor=1e-5, rtol_floor=1e-4)
+    atol, rtol = metrics.derive_tolerance(
+        samples, safety=4.0, atol_floor=1e-5, rtol_floor=1e-4
+    )
     assert atol == pytest.approx(1e-5)
     assert rtol == pytest.approx(1e-4)
 
@@ -112,6 +114,8 @@ def test_derive_tolerance_zero_jitter_uses_floors():
 def test_derive_tolerance_scales_with_jitter():
     base = np.array([10.0, 10.0])
     samples = [base, base + 0.1, base - 0.1]  # max abs dev from mean = 0.1
-    atol, rtol = metrics.derive_tolerance(samples, safety=4.0, atol_floor=1e-5, rtol_floor=1e-4)
+    atol, rtol = metrics.derive_tolerance(
+        samples, safety=4.0, atol_floor=1e-5, rtol_floor=1e-4
+    )
     assert atol == pytest.approx(0.4, rel=1e-6)
     assert rtol == pytest.approx(0.04, rel=1e-6)

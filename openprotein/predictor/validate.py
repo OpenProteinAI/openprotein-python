@@ -2,11 +2,12 @@
 
 import numpy as np
 
-from openprotein.base import APISession
 from openprotein.jobs import Future
 
 from . import api
 from .schemas import PredictorCVJob
+
+__all__ = ["CVResultFuture"]
 
 
 class CVResultFuture(Future):
@@ -14,27 +15,24 @@ class CVResultFuture(Future):
 
     job: PredictorCVJob
 
-    def __init__(
-        self,
-        session: APISession,
-        job: PredictorCVJob,
-    ):
-        super().__init__(session, job)
-
     @property
     def id(self):
         return self.job.job_id
 
     def _get(self, verbose: bool = False) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
-        Get embedding results for specified sequence.
+        Get the cross-validation results for this job.
 
-        Args:
-            sequence (bytes): sequence to fetch results for
+        Parameters
+        ----------
+        verbose : bool, optional
+            Flag to enable verbose output, by default False.
 
-        Returns:
-            mu (np.ndarray): means of predictions
-            var (np.ndarray): variances of predictions
+        Returns
+        -------
+        tuple of np.ndarray
+            The observed ``y`` and the cross-validated ``y_mu`` and ``y_var`` of
+            each evaluated row.
         """
         data = api.predictor_crossvalidate_get(self.session, self.job.job_id)
         return api.decode_crossvalidate(data)

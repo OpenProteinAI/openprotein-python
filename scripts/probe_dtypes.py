@@ -1,6 +1,7 @@
-"""One-off probe: capture the wire dtype of model outputs from the live backend,
-for the models the differential tests cover. Not a committed test — used to record
-the ground-truth dtype matrix. Run: `uv run python scripts/probe_dtypes.py`.
+"""Print the wire dtype of model outputs returned by the API, for the models
+the differential tests cover.
+
+Run: `uv run python scripts/probe_dtypes.py`.
 """
 
 from __future__ import annotations

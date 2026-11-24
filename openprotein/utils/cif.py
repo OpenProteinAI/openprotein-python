@@ -6,6 +6,12 @@ from typing import Literal, Mapping, cast
 import gemmi
 import numpy as np
 
+__all__ = [
+    "StructureCIFBlock",
+    "init_loops",
+    "parse_full_sequences_from_entity_poly_seq",
+]
+
 
 class StructureCIFBlock:
     """
@@ -33,7 +39,7 @@ class StructureCIFBlock:
         where full_sequence is a list of residue names and start_residue_number
         is the 1-indexed residue number corresponding to full_sequence[0].
 
-        Only polymer entities are considered for now. Entities for which a full sequence
+        Only polymer entities are considered. Entities for which a full sequence
         cannot be determined are omitted.
 
         Sequence determination follows this fallback order:
@@ -45,7 +51,7 @@ class StructureCIFBlock:
                and the start_residue_number is set to the minimum residue number
                observed.
         When reconstructing from `_entity_poly_seq`, no validation is performed to
-        ensure consistency with the entity's subchains (at least for now).
+        ensure consistency with the entity's subchains.
         """
         full_sequences: dict[str, tuple[Sequence[str], int]] = {}
         entities_to_impute: list[gemmi.Entity] = []

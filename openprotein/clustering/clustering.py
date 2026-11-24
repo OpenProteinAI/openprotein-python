@@ -13,6 +13,8 @@ from . import api
 from .models import HierarchicalClusteringFuture
 from .schemas import LinkageMethod, Metric
 
+__all__ = ["ClusteringAPI"]
+
 
 class ClusteringAPI:
     """Top-level clustering API. Use `session.clustering.hierarchical(...)` to
@@ -60,11 +62,12 @@ class ClusteringAPI:
     ) -> HierarchicalClusteringFuture:
         """Fit a hierarchical clustering on sequences, returning a future
         that resolves to a HierarchicalClusteringResult (scipy linkage + leaf order)."""
-        # resolve assay_id
         assay_id = (
             assay.assay_id
             if isinstance(assay, AssayMetadata)
-            else assay.id if isinstance(assay, AssayDataset) else assay
+            else assay.id
+            if isinstance(assay, AssayDataset)
+            else assay
         )
         if sequences is not None and assay_id is not None:
             raise InvalidParameterError(
@@ -80,11 +83,12 @@ class ClusteringAPI:
                 raise InvalidParameterError(
                     f"clustering size cap exceeded: N={n} > 10000"
                 )
-        # infer feature_type from model type
         feature_type = (
             FeatureType.PLM
             if isinstance(model, EmbeddingModel)
-            else FeatureType.SVD if isinstance(model, SVDModel) else feature_type
+            else FeatureType.SVD
+            if isinstance(model, SVDModel)
+            else feature_type
         )
         if feature_type is None:
             raise InvalidParameterError(
@@ -94,7 +98,6 @@ class ClusteringAPI:
             feature_type = FeatureType(feature_type)
         if isinstance(reduction, str):
             reduction = ReductionType(reduction)
-        # combo validation — mirrors the Go server rule
         _WARD_ONLY_METRICS = {"ward", "centroid", "median"}
         lm_val = (
             linkage_method.value
@@ -106,7 +109,6 @@ class ClusteringAPI:
             raise InvalidParameterError(
                 f"linkage_method={lm_val!r} requires metric='euclidean', got {m_val!r}"
             )
-        # resolve model_id and svd_id
         svd_id: str | None = None
         if feature_type == FeatureType.PLM:
             if reduction is None:
@@ -160,8 +162,6 @@ class ClusteringAPI:
 
     def get(self, clustering_id: str) -> HierarchicalClusteringFuture:
         """Fetch a clustering job by ID."""
-        # Single-method dispatch today; when new methods are added,
-        # branch on metadata.method to pick the concrete future type.
         metadata = api.clustering_get(self.session, clustering_id)
         return HierarchicalClusteringFuture(session=self.session, metadata=metadata)
 
@@ -171,12 +171,7 @@ class ClusteringAPI:
         limit: int | None = None,
         offset: int | None = None,
     ) -> list[HierarchicalClusteringFuture]:
-        """List clustering jobs, optionally filtering by method.
-
-        Pass `limit` / `offset` to paginate (the clustering list endpoint
-        uses `limit`/`offset`, unlike the `jobs` endpoint's page_size/page_offset)."""
-        # Single-method dispatch today; when new methods are added,
-        # branch on metadata.method to pick the concrete future type.
+        """List clustering jobs, optionally filtering by method."""
         return [
             HierarchicalClusteringFuture(session=self.session, metadata=md)
             for md in api.clustering_list_get(

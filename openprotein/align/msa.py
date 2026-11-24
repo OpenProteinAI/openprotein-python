@@ -1,11 +1,11 @@
 """MSA results represented as a future."""
 
 import warnings
-from typing import Iterator
+from collections.abc import Iterator
 
 from openprotein import config
 from openprotein.base import APISession
-from openprotein.jobs import Future, JobType
+from openprotein.jobs import Future
 from openprotein.prompt import Prompt
 
 from . import api
@@ -19,11 +19,18 @@ from .schemas import (
     MSASamplingMethod,
 )
 
+__all__ = ["MSAFuture"]
 
-# TODO - AbNumber should probably be  different subclass, because it supports an additional `get` API for the antibody numbering
+
+# TODO - AbNumber should be a separate subclass, since it supports an extra `get` API for antibody numbering
 class MSAFuture(AlignFuture, Future):
     """
     Represents a future for MSA (Multiple Sequence Alignment) results.
+
+    See Also
+    --------
+    openprotein.data.MSA : A stored MSA. ``session.data.MSA`` uploads, lists and
+        loads MSAs.
     """
 
     job: MSAJob | MafftJob | ClustalOJob | AbNumberJob
@@ -63,7 +70,11 @@ class MSAFuture(AlignFuture, Future):
             An iterator over names and sequences of the MSA data.
         """
         self._warn_once()
-        return api.get_msa(session=self.session, job_id=self.job.job_id)
+        return api._read_msa(
+            session=self.session,
+            msa_id=self.job.msa_id,
+            format=api._msa_format(self.job.job_type),
+        )
 
     def _warn_once(self) -> None:
         """Surface what the job reported about its own output, once."""
@@ -73,7 +84,7 @@ class MSAFuture(AlignFuture, Future):
         try:
             job_warnings = self.get_warnings()
         except Exception:
-            # reading the results cannot depend on the schema endpoint answering
+            # warnings are best-effort and never block reading results
             return
         for job_warning in job_warnings:
             warnings.warn(f"{job_warning.code}: {job_warning.message}")
@@ -159,7 +170,7 @@ class MSAFuture(AlignFuture, Future):
             A Prompt instance for the created prompt job.
         """
         msa_id = self.msa_id
-        job = api.prompt_post(
+        metadata = api._sample_prompt(
             self.session,
             msa_id=msa_id,
             num_sequences=num_sequences,
@@ -172,7 +183,4 @@ class MSAFuture(AlignFuture, Future):
             num_ensemble_prompts=num_ensemble_prompts,
             random_seed=random_seed,
         )
-        future = Prompt.create(
-            session=self.session, job=job, num_replicates=num_ensemble_prompts
-        )
-        return future
+        return Prompt(session=self.session, metadata=metadata)

@@ -10,6 +10,14 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from openprotein.common import FeatureType
 from openprotein.jobs import Job, JobStatus, JobType
 
+__all__ = [
+    "ClusteringMetadata",
+    "HierarchicalClusteringResult",
+    "HierarchicalFitJob",
+    "LinkageMethod",
+    "Metric",
+]
+
 
 class LinkageMethod(str, Enum):
     """Hierarchical clustering linkage methods (scipy.cluster.hierarchy)."""
@@ -64,10 +72,9 @@ class HierarchicalClusteringResult(BaseModel):
 
     `linkage` is the scipy linkage matrix with shape (N-1, 4); pass it
     directly to `scipy.cluster.hierarchy.dendrogram` or `fcluster`.
-    `sequences` is filled by `HierarchicalClusteringFuture._get` after the API fetch.
 
-    Note: `linkage` is a numpy array, so this model is not JSON-serializable via
-    `model_dump_json()` (use `linkage.tolist()` first if you need to serialize).
+    `linkage` is a numpy array, so `model_dump_json()` will not serialize this
+    model; convert it with `linkage.tolist()` first.
     """
 
     n_leaves: int

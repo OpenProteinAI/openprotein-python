@@ -9,11 +9,12 @@ from .esmfold import ESMFoldModel
 from .esmfold2 import ESMFold2FastModel, ESMFold2Model
 from .future import FoldResultFuture
 from .minifold import MiniFoldModel
-from .models import (
-    FoldModel,
-)
+from .models import FoldModel
+from .opendde import OpenDDEAbagModel, OpenDDEModel
 from .protenix import ProtenixModel, ProtenixV2Model
 from .rosettafold3 import RosettaFold3Model
+
+__all__ = ["FoldAPI"]
 
 
 class FoldAPI:
@@ -44,6 +45,10 @@ class FoldAPI:
     esmfold2_fast: ESMFold2FastModel
     #: MiniFold model
     minifold: MiniFoldModel
+    #: OpenDDE model
+    opendde: OpenDDEModel
+    #: OpenDDE antibody-antigen model
+    opendde_abag: OpenDDEAbagModel
     #: Protenix model
     protenix: ProtenixModel
     #: Protenix-v2 model
@@ -54,12 +59,10 @@ class FoldAPI:
         self._load_models()
 
     def _load_models(self):
-        # Dynamically add model instances as attributes - precludes any drift
         models = self.list_models()
         for model in models:
-            model_name = model.id.replace("-", "_")  # hyphens out
+            model_name = model.id.replace("-", "_")
             setattr(self, model_name, model)
-        # Setup aliases safely
         if getattr(self, "alphafold2", None):
             self.af2 = self.alphafold2
         if getattr(self, "rosettafold_3", None):

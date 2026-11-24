@@ -4,10 +4,10 @@ import pytest
 from pydantic import ValidationError
 
 from openprotein.data.schemas import AssayDataPage, AssayDataRow, AssayMetadata
+from openprotein.jobs.schemas import JobStatus
 
 
 def test_assay_metadata_schema_valid() -> None:
-    """Test AssayMetadata schema with valid data."""
     data = {
         "assay_name": "Test Assay",
         "assay_description": "A test assay",
@@ -25,7 +25,6 @@ def test_assay_metadata_schema_valid() -> None:
 
 
 def test_assay_metadata_schema_optional_fields() -> None:
-    """Test AssayMetadata with optional sequence_length."""
     data = {
         "assay_name": "Test Assay",
         "assay_description": "A test assay",
@@ -44,7 +43,6 @@ def test_assay_metadata_schema_optional_fields() -> None:
 
 @pytest.mark.parametrize("has_name_column", [True, False])
 def test_assay_metadata_schema_has_name_column(has_name_column: bool) -> None:
-    """Test AssayMetadata round-trips the has_name_column flag from the server."""
     data = {
         "assay_name": "Test Assay",
         "assay_description": "A test assay",
@@ -61,7 +59,6 @@ def test_assay_metadata_schema_has_name_column(has_name_column: bool) -> None:
 
 
 def test_assay_metadata_schema_invalid_data() -> None:
-    """Test AssayMetadata with invalid data types."""
     with pytest.raises(ValidationError):
         AssayMetadata(
             assay_name="Test Assay",
@@ -76,7 +73,6 @@ def test_assay_metadata_schema_invalid_data() -> None:
 
 
 def test_assay_data_row_schema_valid() -> None:
-    """Test AssayDataRow schema with valid data."""
     data = {"mut_sequence": "SEQ", "measurement_values": [1.0, 2.5, None]}
     assay_data_row = AssayDataRow(**data)
     assert assay_data_row.mut_sequence == "SEQ"
@@ -84,13 +80,11 @@ def test_assay_data_row_schema_valid() -> None:
 
 
 def test_assay_data_row_schema_invalid() -> None:
-    """Test AssayDataRow with invalid data."""
     with pytest.raises(ValidationError):
         AssayDataRow(mut_sequence="SEQ", measurement_values=["not-a-float"])  # type: ignore - testing invalid type
 
 
 def test_assay_data_page_schema_valid() -> None:
-    """Test AssayDataPage schema with nested valid data."""
     metadata_data = {
         "assay_name": "Test Assay",
         "assay_description": "A test assay",
@@ -115,3 +109,48 @@ def test_assay_data_page_schema_valid() -> None:
     assert len(page.assaydata) == 1
     assert isinstance(page.assaydata[0], AssayDataRow)
     assert page.assaydata[0].mut_sequence == "SEQ"
+
+
+_BASE_METADATA = {
+    "assay_name": "Test Assay",
+    "assay_description": "A test assay",
+    "assay_id": "assay123",
+    "original_filename": "data.csv",
+    "created_date": "2023-01-01T00:00:00",
+    "num_rows": 100,
+    "num_entries": 200,
+    "measurement_names": ["activity"],
+}
+
+
+def test_assay_metadata_null_status_reads_success_with_no_job() -> None:
+    metadata = AssayMetadata(**_BASE_METADATA, status=None)
+    assert metadata.status == JobStatus.SUCCESS
+    assert metadata.align_job_id is None
+
+
+def test_assay_metadata_without_status_reads_success_with_no_job() -> None:
+    metadata = AssayMetadata(**_BASE_METADATA)
+    assert metadata.status == JobStatus.SUCCESS
+    assert metadata.align_job_id is None
+
+
+def test_assay_metadata_parses_a_pending_dataset() -> None:
+    metadata = AssayMetadata(
+        **{
+            **_BASE_METADATA,
+            "num_rows": 0,
+            "num_entries": 0,
+            "measurement_names": [],
+            "status": "RUNNING",
+            "align_job_id": "job1",
+        }
+    )
+    assert metadata.status == JobStatus.RUNNING
+    assert metadata.align_job_id == "job1"
+    assert metadata.measurement_names == []
+
+
+@pytest.mark.parametrize("status", ["FAILURE", "CANCELED"])
+def test_assay_metadata_parses_terminal_job_statuses(status: str) -> None:
+    assert AssayMetadata(**_BASE_METADATA, status=status).status == JobStatus(status)

@@ -4,13 +4,12 @@ from typing import TYPE_CHECKING
 
 from openprotein.base import APISession
 from openprotein.common import (
-    Feature,
     FeatureType,
     ModelMetadata,
     Reduction,
     ReductionType,
 )
-from openprotein.data import AssayDataset, AssayMetadata, DataAPI
+from openprotein.data import AssayDataset, AssayMetadata
 from openprotein.errors import InvalidParameterError
 
 from . import api
@@ -21,6 +20,8 @@ if TYPE_CHECKING:
     from openprotein.predictor import PredictorModel
     from openprotein.svd import SVDModel
     from openprotein.umap import UMAPModel
+
+__all__ = ["AttnModel", "EmbeddingModel"]
 
 
 class EmbeddingModel:
@@ -104,19 +105,19 @@ class EmbeddingModel:
         ValueError
             If no suitable EmbeddingModel subclass is found and no default is provided.
         """
-        # Dynamically discover all subclasses of EmbeddingModel
         model_classes = EmbeddingModel.__subclasses__()
 
-        # Find the EmbeddingModel class that matches the model_id
         for model_class in model_classes:
             if model_id in model_class.get_model():
-                return model_class(session=session, model_id=model_id, metadata=metadata, **kwargs)
-        # default to ProtembedModel
+                return model_class(
+                    session=session, model_id=model_id, metadata=metadata, **kwargs
+                )
         if default is not None:
             try:
-                return default(session=session, model_id=model_id, metadata=metadata, **kwargs)
+                return default(
+                    session=session, model_id=model_id, metadata=metadata, **kwargs
+                )
             except:
-                # continue to throw error as unsupported
                 pass
         raise ValueError(f"Unsupported model_id type: {model_id}")
 
@@ -251,7 +252,6 @@ class EmbeddingModel:
         # local import for cyclic dep
         from openprotein.svd import SVDAPI
 
-        # runtime check on value
         if isinstance(reduction, str):
             reduction = ReductionType(reduction)
             reduction = reduction.value
@@ -259,7 +259,6 @@ class EmbeddingModel:
         svd_api = getattr(self.session, "svd", None)
         assert isinstance(svd_api, SVDAPI)
 
-        # Ensure either or
         if (assay is None and sequences is None) or (
             assay is not None and sequences is not None
         ):
@@ -320,7 +319,6 @@ class EmbeddingModel:
                 "Expected reduction if using EmbeddingModel to fit UMAP"
             )
 
-        # runtime check on value
         if isinstance(reduction, str):
             reduction = ReductionType(reduction)
             reduction = reduction.value
@@ -328,14 +326,12 @@ class EmbeddingModel:
         umap_api = getattr(self.session, "umap", None)
         assert isinstance(umap_api, UMAPAPI)
 
-        # Ensure either or
         if (assay is None and sequences is None) or (
             assay is not None and sequences is not None
         ):
             raise InvalidParameterError(
                 "Expected either assay or sequences to fit UMAP on!"
             )
-        # get assay_id
         return umap_api.fit_umap(
             model=self,
             reduction=reduction,
@@ -400,7 +396,6 @@ class EmbeddingModel:
         predictor_api = getattr(self.session, "predictor", None)
         assert isinstance(predictor_api, PredictorAPI)
 
-        # inject into predictor api
         return predictor_api.fit_gp(
             assay=assay,
             properties=properties,

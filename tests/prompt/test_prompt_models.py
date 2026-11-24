@@ -1,18 +1,16 @@
-from openprotein.jobs import JobsAPI
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from openprotein.errors import InvalidParameterError
-from openprotein.jobs import JobStatus, JobType
+from openprotein.jobs import Future, Job, JobsAPI, JobStatus, JobType
 from openprotein.molecules import Complex, Protein
 from openprotein.prompt import Prompt, PromptJob, PromptMetadata, Query, QueryMetadata
 
 
 @pytest.fixture
 def mock_session(prompt_job):
-    """Fixture to create a mock APISession."""
     session = MagicMock()
     session.jobs = MagicMock(spec=JobsAPI)
     session.jobs.get_job.return_value = prompt_job
@@ -21,7 +19,6 @@ def mock_session(prompt_job):
 
 @pytest.fixture
 def prompt_metadata():
-    """Fixture for PromptMetadata."""
     return PromptMetadata(
         id="prompt-123",
         name="Test Prompt",
@@ -35,7 +32,6 @@ def prompt_metadata():
 
 @pytest.fixture
 def prompt_job():
-    """Fixture for PromptJob."""
     return PromptJob(
         job_id="job-123",
         job_type=JobType.align_prompt,
@@ -46,7 +42,6 @@ def prompt_job():
 
 @pytest.fixture
 def query_metadata():
-    """Fixture for QueryMetadata."""
     return QueryMetadata(
         id="query-123",
         created_date=datetime.now(),
@@ -54,7 +49,6 @@ def query_metadata():
 
 
 def test_prompt_initialization_with_metadata(mock_session, prompt_metadata, prompt_job):
-    """Test Prompt initialization using PromptMetadata."""
     mock_session.jobs.get_job.return_value = prompt_job
     prompt = Prompt(session=mock_session, metadata=prompt_metadata)
     assert prompt.id == "prompt-123"
@@ -63,7 +57,6 @@ def test_prompt_initialization_with_metadata(mock_session, prompt_metadata, prom
 
 
 def test_prompt_initialization_with_job(mock_session, prompt_job, prompt_metadata):
-    """Test Prompt initialization using a PromptJob."""
     with patch(
         "openprotein.prompt.api.get_prompt_metadata", return_value=prompt_metadata
     ):
@@ -74,7 +67,6 @@ def test_prompt_initialization_with_job(mock_session, prompt_job, prompt_metadat
 
 @patch("openprotein.prompt.api.get_prompt")
 def test_prompt_get(mock_get_prompt, mock_session, prompt_metadata):
-    """Test the get method of the Prompt class."""
     mock_get_prompt.return_value = "Prompt Content"
     prompt = Prompt(session=mock_session, metadata=prompt_metadata)
     content = prompt.get()
@@ -82,23 +74,69 @@ def test_prompt_get(mock_get_prompt, mock_session, prompt_metadata):
     assert content == "Prompt Content"
 
 
+def test_an_align_prompt_job_loads_as_a_prompt(mock_session, prompt_metadata):
+    payload = {
+        "job_id": "job-123",
+        "job_type": "/align/prompt",
+        "status": "SUCCESS",
+        "created_date": datetime.now().isoformat(),
+    }
+    mock_session.get.return_value.json.return_value = payload
+    mock_session.jobs.get_job.return_value = Job.create(payload)
+
+    with patch(
+        "openprotein.prompt.api.get_prompt_metadata", return_value=prompt_metadata
+    ):
+        future = Future.create(session=mock_session, job_id="job-123")
+
+    assert isinstance(future, Prompt)
+    assert isinstance(future.job, PromptJob)
+
+
+@pytest.mark.parametrize("update", ["refresh", "wait_until_done"])
+def test_the_metadata_reports_the_status_of_the_refreshed_job(
+    mock_session, prompt_metadata, prompt_job, update
+):
+    mock_session.jobs.get_job.return_value = prompt_job.model_copy(
+        update={"status": JobStatus.PENDING}
+    )
+    prompt = Prompt(
+        session=mock_session,
+        metadata=prompt_metadata.model_copy(update={"status": JobStatus.PENDING}),
+    )
+    mock_session.get.return_value.json.return_value = prompt_job.model_dump(mode="json")
+
+    getattr(prompt, update)()
+
+    assert prompt.status == JobStatus.SUCCESS
+    assert prompt.metadata.status == JobStatus.SUCCESS
+    assert repr(prompt).startswith("Prompt(id='prompt-123'")
+    assert "SUCCESS" in repr(prompt)
+
+
+def test_a_prompt_refresh_passes_its_timeout_to_the_poll(
+    mock_session, prompt_metadata, prompt_job
+):
+    prompt = Prompt(session=mock_session, metadata=prompt_metadata)
+    mock_session.get.return_value.json.return_value = prompt_job.model_dump(mode="json")
+
+    prompt._refresh_job(timeout=2)
+
+    assert mock_session.get.call_args.kwargs == {"timeout": 2}
+
+
 def test_query_initialization(mock_session, query_metadata):
-    """Test Query initialization."""
     query = Query(session=mock_session, metadata=query_metadata)
     assert query.id == "query-123"
 
 
 @patch("openprotein.prompt.api.get_query")
 def test_query_get(mock_get_query, mock_session, query_metadata):
-    """Test the get method of the Query class."""
     mock_get_query.return_value = "Query Content"
     query = Query(session=mock_session, metadata=query_metadata)
     content = query.get()
     mock_get_query.assert_called_with(session=mock_session, query_id="query-123")
     assert content == "Query Content"
-
-
-# ---------- multichain typed accessors ----------
 
 
 @patch("openprotein.prompt.api.get_prompt")
@@ -139,23 +177,27 @@ def test_prompt_get_as_proteins_passthrough_when_all_single(
     assert result == [[p]]
 
 
-@patch("openprotein.prompt.api.get_query")
+@patch("openprotein.prompt.api._get_query_as_complex")
 def test_query_get_as_complex_wraps_protein(
-    mock_get_query, mock_session, query_metadata
+    mock_get_query_as_complex, mock_session, query_metadata
 ):
-    """A Protein result is wrapped as Complex."""
-    p = Protein(name="q", sequence=b"ACDE")
-    mock_get_query.return_value = p
+    """Delegates to api._get_query_as_complex."""
+    c = Complex({"A": Protein(name="q", sequence=b"ACDE")})
+    mock_get_query_as_complex.return_value = c
     query = Query(session=mock_session, metadata=query_metadata)
     result = query.get_as_complex()
-    assert isinstance(result, Complex)
-    assert len(result.get_proteins()) == 1
+    assert result is c
+    mock_get_query_as_complex.assert_called_with(
+        session=mock_session, query_id="query-123"
+    )
 
 
-@patch("openprotein.prompt.api.get_query")
-def test_query_get_as_complex_passthrough(mock_get_query, mock_session, query_metadata):
+@patch("openprotein.prompt.api._get_query_as_complex")
+def test_query_get_as_complex_passthrough(
+    mock_get_query_as_complex, mock_session, query_metadata
+):
     c = Complex({"A": Protein(sequence=b"ACDE"), "B": Protein(sequence=b"GHIK")})
-    mock_get_query.return_value = c
+    mock_get_query_as_complex.return_value = c
     query = Query(session=mock_session, metadata=query_metadata)
     assert query.get_as_complex() is c
 
@@ -177,3 +219,25 @@ def test_query_get_as_protein_passthrough(mock_get_query, mock_session, query_me
     mock_get_query.return_value = p
     query = Query(session=mock_session, metadata=query_metadata)
     assert query.get_as_protein() is p
+
+
+@pytest.fixture
+def uploaded_prompt(mock_session, prompt_metadata):
+    return Prompt(
+        session=mock_session,
+        metadata=prompt_metadata.model_copy(update={"job_id": None}),
+    )
+
+
+def test_a_prompt_does_not_rename(mock_session, prompt_metadata):
+    prompt = Prompt(session=mock_session, metadata=prompt_metadata)
+
+    with pytest.raises(NotImplementedError, match="set when it is created"):
+        prompt.rename(name="other")
+    mock_session.put.assert_not_called()
+
+
+def test_an_uploaded_prompt_does_not_rename(mock_session, uploaded_prompt):
+    with pytest.raises(NotImplementedError, match="set when it is created"):
+        uploaded_prompt.rename(name="other")
+    mock_session.put.assert_not_called()

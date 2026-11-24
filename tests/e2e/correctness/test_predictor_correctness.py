@@ -7,7 +7,7 @@ reproducible and comparable to a committed baseline.
 
 Ground-truth (L2/L4): the predictor must recover real signal from the AMIE deep
 mutational scan -- held-out Spearman above a floor. Differential (L3): that Spearman
-and the held-out prediction means also track the prod baseline.
+and the held-out prediction means also track the baseline.
 """
 
 from pathlib import Path
@@ -45,7 +45,7 @@ def _amie_split() -> tuple[pd.DataFrame, pd.DataFrame]:
 @pytest.mark.correctness
 @pytest.mark.differential
 def test_predictor_recovers_amie_signal(session: OpenProtein, baseline):
-    """GP trained on AMIE recovers held-out fitness; Spearman + means track prod baseline."""
+    """GP trained on AMIE recovers held-out fitness; Spearman + means track baseline."""
     if not AMIE_PATH.exists():
         pytest.skip("AMIE DMS table not present")
     train_df, test_df = _amie_split()
@@ -55,12 +55,14 @@ def test_predictor_recovers_amie_signal(session: OpenProtein, baseline):
     model = require_embedding_model(session, MODEL_ID)
 
     # Fresh assay -> fresh embeddings_id -> genuinely retrained predictor every run.
-    assay = session.data.create(
+    assay = session.data.Assay.create(
         table=train_df,
         name=f"AMIE_corr_{random_string(8)}",
         description="AMIE train split for predictor correctness",
     )
-    predictor = model.fit_gp(assay=assay, properties=[PROPERTY], reduction=ReductionType.MEAN)
+    predictor = model.fit_gp(
+        assay=assay, properties=[PROPERTY], reduction=ReductionType.MEAN
+    )
     assert predictor.wait(timeout=PRED_TIMEOUT), "GP training failed"
 
     test_seqs = [s.encode() for s in test_df["sequence"].tolist()]
@@ -74,12 +76,15 @@ def test_predictor_recovers_amie_signal(session: OpenProtein, baseline):
     # L4 ground-truth: must recover real signal.
     assert rho >= MIN_PREDICTOR_SPEARMAN, f"held-out Spearman {rho:.3f} below floor"
 
-    # L3 differential: Spearman and the held-out prediction means track prod, with
-    # generous tolerance -- the GP recompute over fresh embeddings drifts slightly
-    # vs prod and that's accepted (accepted-jitter decision).
+    # L3 differential: Spearman and the held-out prediction means track the
+    # baseline, with a generous tolerance -- the GP recompute over fresh
+    # embeddings drifts slightly.
     baseline.check_scalar(
         (MODEL_ID, None, "amie_split", "heldout_spearman"), lambda: rho, atol=0.05
     )
     baseline.check_array(
-        (MODEL_ID, None, "amie_split", "heldout_mu"), lambda: mus[:, 0], atol=0.1, rtol=0.1
+        (MODEL_ID, None, "amie_split", "heldout_mu"),
+        lambda: mus[:, 0],
+        atol=0.1,
+        rtol=0.1,
     )

@@ -56,9 +56,7 @@ def test_update_rejects_overlapping_chain_ids():
 
 
 def test_clear_drops_chains_and_templates():
-    complex = Complex({"A": Protein.from_expr(6)}).set_templates(
-        [Protein.from_expr(8)]
-    )
+    complex = Complex({"A": Protein.from_expr(6)}).set_templates([Protein.from_expr(8)])
     complex.clear()
     assert len(complex) == 0
     assert complex.templates == ()
@@ -99,7 +97,5 @@ def test_protein_operators_build_a_two_chain_complex():
     reason="Complex.copy() returns a Complex with no templates, so combining drops them"
 )
 def test_templates_survive_combining():
-    complex = Complex({"A": Protein.from_expr(6)}).set_templates(
-        [Protein.from_expr(8)]
-    )
+    complex = Complex({"A": Protein.from_expr(6)}).set_templates([Protein.from_expr(8)])
     assert len((complex | Protein.from_expr(7)).templates) == 1

@@ -1,6 +1,9 @@
 import re
 import string
 
+__all__ = ["id_generator", "is_valid_id", "valid_id_pattern"]
+
+
 valid_id_pattern = re.compile(r"^[A-Za-z0-9]{1,5}$")
 
 
@@ -24,7 +27,6 @@ def id_generator(
     used = set(used_list)
     letters = list(string.ascii_uppercase)
 
-    # --- Alphabetic IDs ---
     curr_len = 1
     curr_indices = [0] * curr_len  # start at 'A'
 
@@ -50,7 +52,6 @@ def id_generator(
                 break
             curr_indices = [0] * curr_len
 
-    # --- Numeric IDs ---
     num = 1
     while num <= max_numeric:
         candidate = str(num)

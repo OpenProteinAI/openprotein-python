@@ -3,12 +3,13 @@
 from typing import Literal
 
 from openprotein.base import APISession
-from openprotein.common import ReductionType
 from openprotein.data import AssayDataset, AssayMetadata
 from openprotein.embeddings import EmbeddingModel, EmbeddingsAPI
 
 from . import api
 from .models import SVDModel
+
+__all__ = ["SVDAPI"]
 
 
 class SVDAPI:
@@ -61,11 +62,12 @@ class SVDAPI:
         assert isinstance(embeddings_api, EmbeddingsAPI)
         model = embeddings_api.get_model(model) if isinstance(model, str) else model
         assert isinstance(model, EmbeddingModel), "Expected EmbeddingModel"
-        # get assay_id
         assay_id = (
             assay.assay_id
             if isinstance(assay, AssayMetadata)
-            else assay.id if isinstance(assay, AssayDataset) else assay
+            else assay.id
+            if isinstance(assay, AssayDataset)
+            else assay
         )
         return SVDModel(
             session=self.session,

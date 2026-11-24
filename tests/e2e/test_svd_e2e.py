@@ -5,7 +5,6 @@ import pytest
 
 from openprotein import OpenProtein
 from openprotein.common.reduction import ReductionType
-from openprotein.data import AssayDataset
 from openprotein.errors import HTTPError
 from openprotein.svd.models import SVDModel
 from tests.e2e.config import scaled_timeout
@@ -31,10 +30,6 @@ def test_svd_single_model(
     expected_base_dim: int,
     n_components: int,
 ):
-    """
-    Test fitting SVD models with different embedding models and n_components.
-    Validates SVD workflow and reduced embedding output.
-    """
     # Get the embedding model
     embedding_model = session.embedding.get_model(model_id)
 
@@ -45,15 +40,17 @@ def test_svd_single_model(
 
     # Wait for the model to be ready
     svd_model = svd_future.wait(timeout=TIMEOUT)
-    assert isinstance(
-        svd_model, SVDModel
-    ), f"SVD model fitting failed for {model_id} with {n_components} components"
+    assert isinstance(svd_model, SVDModel), (
+        f"SVD model fitting failed for {model_id} with {n_components} components"
+    )
     assert svd_model.n_components == n_components
     assert svd_model.n_components <= expected_base_dim
 
     # Use the SVD model to embed a sequence
     embedding_future = svd_model.embed(sequences=[test_sequences_same_length[0]])
-    assert embedding_future.wait_until_done(timeout=TIMEOUT), f"SVD embed failed for {model_id}"
+    assert embedding_future.wait_until_done(timeout=TIMEOUT), (
+        f"SVD embed failed for {model_id}"
+    )
     results = embedding_future.get()
 
     # Validate the output
@@ -62,9 +59,9 @@ def test_svd_single_model(
     seq, embedding = results[0]
     assert seq == test_sequences_same_length[0]
     assert isinstance(embedding, np.ndarray)
-    assert embedding.shape == (
-        n_components,
-    ), f"Expected SVD embedding shape of ({n_components},), but got {embedding.shape} for {model_id}"
+    assert embedding.shape == (n_components,), (
+        f"Expected SVD embedding shape of ({n_components},), but got {embedding.shape} for {model_id}"
+    )
     assert np.isfinite(embedding).all()
 
 
@@ -72,10 +69,6 @@ def test_svd_single_model(
 def test_svd_parallel_models(
     session: OpenProtein, test_sequences_same_length: list[bytes]
 ):
-    """
-    Test fitting multiple SVD models in parallel.
-    Validates that the backend can handle concurrent SVD fitting jobs.
-    """
     n_components = 32
 
     # Submit SVD fitting jobs for multiple models in parallel
@@ -112,9 +105,6 @@ def test_svd_parallel_models(
 def test_svd_reduction_types(
     session: OpenProtein, test_sequences_varied: list[bytes], reduction: ReductionType
 ):
-    """
-    Test SVD with different reduction types for variable-length sequences.
-    """
     embedding_model = session.embedding.esm2
     n_components = 32
 
@@ -143,9 +133,6 @@ def test_svd_batch_embedding_same_length(
     test_sequences_same_length: list[bytes],
     num_sequences: int,
 ):
-    """
-    Test SVD embedding with different batch sizes (same-length sequences).
-    """
     embedding_model = session.embedding.esm2
     n_components = 32
 
@@ -178,9 +165,6 @@ def test_svd_batch_embedding_same_length(
     ["assay_small", "assay_medium"],
 )
 def test_svd_from_assay(session: OpenProtein, assay_fixture: str, request):
-    """
-    Test fitting SVD from assay datasets of different sizes.
-    """
     # Get the fixture dynamically
     try:
         assay = request.getfixturevalue(assay_fixture)
@@ -215,9 +199,6 @@ def test_svd_from_assay(session: OpenProtein, assay_fixture: str, request):
 def test_svd_retrieval_by_id(
     session: OpenProtein, test_sequences_same_length: list[bytes]
 ):
-    """
-    Test retrieving an SVD model by ID.
-    """
     embedding_model = session.embedding.esm2
     n_components = 32
 
@@ -249,9 +230,7 @@ def test_svd_edge_case_n_components_large(
     test_sequences_same_length: list[bytes],
 ):
     """
-    Test SVD with n_components exceeding the number of sequences.
-    The backend should reduce n_components to min(M, N) where M is the number
-    of sequences and N is the embedding dimension.
+    n_components is reduced to min(num_sequences, embedding_dim).
     """
     embedding_model = session.embedding.esm2
     # Use n_components larger than number of sequences
@@ -271,7 +250,7 @@ def test_svd_edge_case_n_components_large(
         f"Expected n_components to be reduced to {num_sequences}, "
         f"but got {svd_model.n_components}"
     )
-    
+
     # Verify embedding works with the reduced components
     embedding_future = svd_model.embed(sequences=[test_sequences_same_length[0]])
     results = embedding_future.wait(timeout=TIMEOUT)
@@ -287,9 +266,6 @@ def test_svd_edge_case_small_n_components(
     session: OpenProtein,
     test_sequences_same_length: list[bytes],
 ):
-    """
-    Test SVD with very small n_components (e.g., 2).
-    """
     embedding_model = session.embedding.esm2
     n_components = 2
 
@@ -312,16 +288,13 @@ def test_svd_edge_case_small_n_components(
     assert np.isfinite(embedding).all()
 
 
-
 @pytest.mark.e2e
 def test_svd_edge_case_n_components_exceeds_embedding_dim(
     session: OpenProtein,
     test_sequences_same_length: list[bytes],
 ):
     """
-    Test SVD with n_components exceeding the embedding dimension.
-    The backend should reduce n_components to min(M, N) where M is the number
-    of sequences and N is the embedding dimension.
+    n_components is reduced to min(num_sequences, embedding_dim).
     """
     embedding_model = session.embedding.esm2
     # ESM2 has 1280 dimensions, use more than that
@@ -342,7 +315,7 @@ def test_svd_edge_case_n_components_exceeds_embedding_dim(
         f"Expected n_components to be reduced to {expected_components}, "
         f"but got {svd_model.n_components}"
     )
-    
+
     # Verify embedding works with the reduced components
     embedding_future = svd_model.embed(sequences=[test_sequences_same_length[0]])
     results = embedding_future.wait(timeout=TIMEOUT)
@@ -352,14 +325,14 @@ def test_svd_edge_case_n_components_exceeds_embedding_dim(
     assert embedding.shape == (expected_components,)
     assert np.isfinite(embedding).all()
 
+
 @pytest.mark.e2e
 def test_svd_error_different_length_sequences_no_reduction(
     session: OpenProtein, test_sequences_varied: list[bytes]
 ):
     """
-    Test that SVD raises an error when fitting on different-length sequences
-    without reduction. SVD requires same-length embeddings, which means
-    same-length sequences when no reduction is applied.
+    SVD requires same-length embeddings, so without a reduction the sequences
+    must all be the same length.
     """
     embedding_model = session.embedding.esm2
     n_components = 32
@@ -377,8 +350,7 @@ def test_svd_different_length_sequences_with_reduction(
     session: OpenProtein, test_sequences_varied: list[bytes]
 ):
     """
-    Test that SVD works with different-length sequences when reduction is used.
-    Reduction (MEAN/SUM) produces fixed-size embeddings regardless of sequence length.
+    A MEAN/SUM reduction produces fixed-size embeddings, so sequence lengths may vary.
     """
     embedding_model = session.embedding.esm2
     n_components = 32

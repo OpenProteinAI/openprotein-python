@@ -75,15 +75,25 @@ result = future.get(verbose=True)  # get the result from a finished job
 ## Jobs Interface
 
 ### Listing Jobs
-To view all jobs associated with each session, the following method is available, providing an option to filter results by date, job type, or status.
+To view all jobs associated with each session, the following method is available, providing an option to filter results by date, job type, status, or name.
 ```
 session.jobs.list() 
+session.jobs.list(name="my-run")  # filter to jobs with an exact name match
 ```
 
 ### Retrieving Specific Job
 For detailed information about a particular job, use the following command with the corresponding job ID:
 ``` 
 session.jobs.get(JOB_ID)  # Replace JOB_ID with the ID of the specific job to be retrieved
+```
+
+### Naming Jobs
+A job can be given a name and description once it's created, to make it easier to find:
+```
+session.jobs.update(JOB_ID, name="my-run", description="baseline model")
+
+# equivalent, from a Future
+future.rename(name="my-run", description="baseline model")
 ```
 
 ### Resuming Jobs

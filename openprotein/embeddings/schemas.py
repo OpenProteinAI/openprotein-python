@@ -7,6 +7,17 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from openprotein.jobs import BatchJob, Job, JobType
 
+__all__ = [
+    "AttnJob",
+    "EmbeddedSequence",
+    "EmbeddingsJob",
+    "GenerateJob",
+    "LogitsJob",
+    "ScoreIndelJob",
+    "ScoreJob",
+    "ScoreSingleSiteJob",
+]
+
 
 class EmbeddedSequence(BaseModel):
     """
@@ -36,45 +47,38 @@ class EmbeddedSequence(BaseModel):
 
 
 class EmbeddingsJob(Job, BatchJob):
-
     job_type: Literal[JobType.embeddings_embed, JobType.embeddings_embed_reduced] = (
         Field(default=JobType.embeddings_embed)
     )
 
 
 class AttnJob(Job, BatchJob):
-
     job_type: Literal[JobType.embeddings_attn] = Field(default=JobType.embeddings_attn)
 
 
 class LogitsJob(Job, BatchJob):
-
     job_type: Literal[JobType.embeddings_logits] = Field(
         default=JobType.embeddings_logits
     )
 
 
 class ScoreJob(Job, BatchJob):
-
     job_type: Literal[JobType.poet_score] = Field(default=JobType.poet_score)
 
 
 class ScoreIndelJob(Job, BatchJob):
-
     job_type: Literal[JobType.poet_score_indel] = Field(
         default=JobType.poet_score_indel
     )
 
 
 class ScoreSingleSiteJob(Job, BatchJob):
-
     job_type: Literal[JobType.poet_single_site] = Field(
         default=JobType.poet_single_site
     )
 
 
 class GenerateJob(Job, BatchJob):
-
     job_type: Literal[JobType.poet_generate, JobType.embeddings_generate] = Field(
         default=JobType.poet_generate
     )

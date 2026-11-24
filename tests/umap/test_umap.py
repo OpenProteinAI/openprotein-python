@@ -5,23 +5,19 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from openprotein.common import FeatureType
 from openprotein.embeddings.models import EmbeddingModel
 from openprotein.jobs import JobsAPI, JobStatus, JobType
-from openprotein.umap.models import UMAPModel
 from openprotein.umap.schemas import UMAPFitJob
 from openprotein.umap.umap import UMAPAPI
 
 
 @pytest.fixture
 def umap_api(mock_session: MagicMock):
-    """Fixture to create a UMAPAPI instance."""
     return UMAPAPI(mock_session)
 
 
 @pytest.fixture
 def mock_umap_fit_job():
-    """Fixture for a valid UMAPFitJob instance."""
     return UMAPFitJob(
         job_id="umap-123",
         status=JobStatus.SUCCESS,
@@ -31,7 +27,6 @@ def mock_umap_fit_job():
 
 
 def test_list_umap(umap_api: UMAPAPI, mock_umap_fit_job):
-    """Test the list_umap method."""
     umap_api.session.jobs = MagicMock(spec=JobsAPI)  # type: ignore
     umap_api.session.jobs.get_job.return_value = mock_umap_fit_job  # type: ignore
     with patch("openprotein.umap.api.umap_list_get", return_value=[MagicMock()]):
@@ -40,7 +35,6 @@ def test_list_umap(umap_api: UMAPAPI, mock_umap_fit_job):
 
 
 def test_get_umap(umap_api: UMAPAPI, mock_umap_fit_job, mock_session: MagicMock):
-    """Test the get_umap method."""
     umap_id = "umap-123"
     umap_api.session = mock_session
     umap_api.session.jobs = MagicMock(spec=JobsAPI)
@@ -52,7 +46,6 @@ def test_get_umap(umap_api: UMAPAPI, mock_umap_fit_job, mock_session: MagicMock)
 
 
 def test_fit_umap(umap_api: UMAPAPI, mock_session: MagicMock):
-    """Test the fit_umap method."""
     model = MagicMock(spec=EmbeddingModel)
     model.id = "model-1"
 

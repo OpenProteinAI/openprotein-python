@@ -1,22 +1,24 @@
 """Community-based ESMFold2 models for complex structure prediction."""
 
-from collections.abc import Sequence
-
 from pydantic import BaseModel
 
 from openprotein.align import MSAFuture
 from openprotein.base import APISession
 from openprotein.common import ModelMetadata
 from openprotein.fold.common import (
+    FoldInput,
+    _msa_id_of,
     msa_future_to_complex,
     normalize_inputs,
     serialize_input,
 )
-from openprotein.molecules import Complex, Protein
+from openprotein.molecules import Complex
 
 from . import api
 from .future import FoldResultFuture
 from .models import FoldModel
+
+__all__ = ["ESMFold2Confidence", "ESMFold2FastModel", "ESMFold2Model"]
 
 
 class ESMFold2Confidence(BaseModel):
@@ -49,8 +51,7 @@ def _assert_no_protein_msa(complexes: list[Complex]) -> None:
     """Raise if any protein chain carries an MSA reference."""
     for complex in complexes:
         for chain_id, protein in complex.get_proteins().items():
-            msa = protein.msa
-            if isinstance(msa, (str, MSAFuture)):
+            if protein.msa is not None and _msa_id_of(protein.msa) is not None:
                 raise ValueError(
                     f"ESMFold2-Fast is a single-sequence variant and does not "
                     f"accept MSAs; chain {chain_id!r} has an MSA attached. "
@@ -61,7 +62,7 @@ def _assert_no_protein_msa(complexes: list[Complex]) -> None:
 def _esmfold2_fold(
     session: APISession,
     model_id: str,
-    sequences: Sequence[Complex | Protein | str | bytes] | MSAFuture,
+    sequences: FoldInput | MSAFuture,
     diffusion_samples: int | None,
     num_recycles: int | None,
     num_steps: int | None,
@@ -121,7 +122,7 @@ class ESMFold2Model(FoldModel):
 
     def fold(
         self,
-        sequences: Sequence[Complex | Protein | str | bytes] | MSAFuture,
+        sequences: FoldInput | MSAFuture,
         diffusion_samples: int = 1,
         num_recycles: int = 3,
         num_steps: int = 100,
@@ -133,7 +134,7 @@ class ESMFold2Model(FoldModel):
 
         Parameters
         ----------
-        sequences : Sequence[Complex | Protein | str | bytes] | MSAFuture
+        sequences : FoldInput | MSAFuture
             List of complexes to fold. `Protein` objects must be tagged with
             an `msa`, which can be `Protein.single_sequence_mode` for single
             sequence mode. Alternatively, supply an `MSAFuture` to use all
@@ -183,7 +184,7 @@ class ESMFold2FastModel(FoldModel):
 
     def fold(
         self,
-        sequences: Sequence[Complex | Protein | str | bytes],
+        sequences: FoldInput,
         diffusion_samples: int = 1,
         num_recycles: int = 3,
         num_steps: int = 100,
@@ -198,7 +199,7 @@ class ESMFold2FastModel(FoldModel):
 
         Parameters
         ----------
-        sequences : Sequence[Complex | Protein | str | bytes]
+        sequences : FoldInput
             List of complexes to fold. `Protein` objects must be tagged with
             `Protein.single_sequence_mode`.
         diffusion_samples : int

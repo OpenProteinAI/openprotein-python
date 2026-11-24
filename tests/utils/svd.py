@@ -1,11 +1,5 @@
 """Decomposition using PyTorch."""
 
-import gc
-from abc import ABC, abstractmethod
-from functools import wraps
-from typing import Optional, Union
-
-import numpy as np
 
 # NOTE disabled since torch isnt even a dependency
 

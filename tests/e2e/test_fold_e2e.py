@@ -1,18 +1,19 @@
 """End-to-end tests for the fold domain."""
 
+from collections.abc import Callable
 from copy import deepcopy
 from pathlib import Path
-from typing import Callable, List, Tuple
 
 import numpy as np
 import pytest
+from pydantic import ValidationError
+
 from openprotein import OpenProtein
 from openprotein.align.msa import MSAFuture
 from openprotein.errors import APIError, HTTPError
 from openprotein.fold.future import FoldResultFuture
 from openprotein.molecules import Complex, Ligand, Protein, Structure
 from openprotein.molecules.template import Template
-
 from tests.e2e.config import scaled_timeout
 
 E2E_TIMEOUT = scaled_timeout(1.5)
@@ -62,7 +63,6 @@ def fold_complex(protein_complex_with_msa: tuple[Complex, MSAFuture]) -> Complex
 
 @pytest.mark.e2e
 def test_e2e_list_models(session: OpenProtein):
-    """Test listing all available fold models."""
     models = session.fold.list_models()
     assert models
     assert len(models) > 0
@@ -89,7 +89,6 @@ def test_e2e_fold_rejects_total_sequence_length_above_model_max(
     model_id: str,
     uses_multichain_entity: bool,
 ):
-    """Test fold API rejects sequence/entity lengths above the model metadata max."""
     available_model_ids = {model.id for model in session.fold.list_models()}
     if model_id not in available_model_ids:
         pytest.skip(f"{model_id} is not available in this backend")
@@ -134,18 +133,19 @@ def test_e2e_fold_rejects_total_sequence_length_above_model_max(
 
 @pytest.mark.e2e
 @pytest.mark.parametrize(
-    "invalid_chain_id",
+    "invalid_chain_id,error,match",
     [
-        "a",  # chain IDs should be uppercase
-        "A B",  # spaces are invalid
-        "A*",  # symbols are invalid
+        ("a", HTTPError, "Status code"),  # chain IDs should be uppercase
+        ("A B", ValidationError, "invalid chain id"),  # spaces are invalid
+        ("A*", ValidationError, "invalid chain id"),  # symbols are invalid
     ],
 )
 def test_e2e_fold_rejects_invalid_chain_ids(
     session: OpenProtein,
     invalid_chain_id: str,
+    error: type[Exception],
+    match: str,
 ):
-    """Test fold API rejects entities containing invalid chain IDs."""
     model = session.fold.boltz1
 
     invalid_chain = Protein("A" * 16)
@@ -154,15 +154,12 @@ def test_e2e_fold_rejects_invalid_chain_ids(
     valid_chain.msa = Protein.single_sequence_mode
     complex_input = Complex(chains={invalid_chain_id: invalid_chain, "B": valid_chain})
 
-    with pytest.raises(HTTPError, match="Status code"):
+    with pytest.raises(error, match=match):
         model.fold(sequences=[complex_input])
 
 
-# Oseltamivir phosphate as a user actually submitted it. The phosphate carries
-# one oxygen too many, leaving P with valence 6, so RDKit refuses to parse it.
-# It reached a protenix worker, where RDKit returned None and the resulting
-# Boost.Python error could not be pickled, taking the LitServe worker process
-# down with it. Validation has to reject this at submission.
+# Oseltamivir phosphate whose phosphate carries one oxygen too many, leaving P
+# with valence 6, so RDKit refuses to parse it.
 UNPARSEABLE_LIGAND_SMILES = "CCOC(=O)C1=CC(C(CC1NC(=O)C)OC(CC)CC)N.OP(=O)(O)(O)O"
 
 MALFORMED_LIGAND_SMILES = [
@@ -175,7 +172,7 @@ MALFORMED_LIGAND_SMILES = [
 # The same molecule written correctly: a two-fragment salt.
 OSELTAMIVIR_PHOSPHATE = "CCOC(=O)C1=CC(C(CC1NC(=O)C)OC(CC)CC)N.OP(=O)(O)O"
 
-# Models whose workers accept ligand chains, and which therefore validate them.
+# Models that accept ligand chains, and which therefore validate them.
 LIGAND_MODEL_IDS = [
     "boltz-1",
     "boltz-1x",
@@ -224,8 +221,7 @@ def test_e2e_fold_rejects_unparseable_ligand_smiles(
 
     with pytest.raises(HTTPError, match="Status code") as exc_info:
         model.fold(sequences=[fold_complex])
-    # Pin the reason: a fold rejected for some unrelated reason would otherwise
-    # satisfy this test and hide the fact that ligands went unchecked.
+    # Pin the reason so a rejection for an unrelated cause cannot satisfy the test.
     assert "ligand" in exc_info.value.text.lower()
 
 
@@ -236,7 +232,7 @@ def test_e2e_fold_rejects_malformed_ligand_smiles(
     fold_complex: Complex,
     smiles: str,
 ):
-    """Malformed SMILES are rejected in several shapes, not just the prod one."""
+    """Malformed SMILES are rejected in every shape they can take."""
     model = _require_model(session, "boltz-2")
     fold_complex.set_chain("D", Ligand(smiles=smiles))
 
@@ -299,7 +295,6 @@ def test_e2e_fold_with_esmfold(
     session: OpenProtein,
     mutated_sequences: Callable[..., list[str]],
 ):
-    """Test folding a single chain with ESMFold."""
     sequence = mutated_sequences(num_sequences=2)[1]
     future = session.fold.esmfold.fold(sequences=[sequence])
     assert isinstance(future, FoldResultFuture)
@@ -317,7 +312,6 @@ def test_e2e_fold_with_esmfold2(
     session: OpenProtein,
     fold_complex: Complex,
 ):
-    """Test folding a multi-chain complex with ESMFold2."""
     available_model_ids = {model.id for model in session.fold.list_models()}
     if "esmfold2" not in available_model_ids:
         pytest.skip("esmfold2 is not available in this backend")
@@ -338,7 +332,6 @@ def test_e2e_fold_with_esmfold2_custom_params(
     session: OpenProtein,
     fold_complex: Complex,
 ):
-    """Test folding with ESMFold2 using custom runtime parameters."""
     available_model_ids = {model.id for model in session.fold.list_models()}
     if "esmfold2" not in available_model_ids:
         pytest.skip("esmfold2 is not available in this backend")
@@ -365,7 +358,6 @@ def test_e2e_fold_with_esmfold2_with_ligand(
     session: OpenProtein,
     fold_complex: Complex,
 ):
-    """Test folding a complex with a ligand chain using ESMFold2."""
     available_model_ids = {model.id for model in session.fold.list_models()}
     if "esmfold2" not in available_model_ids:
         pytest.skip("esmfold2 is not available in this backend")
@@ -405,7 +397,6 @@ def test_e2e_fold_with_esmfold2_with_msa(
     session: OpenProtein,
     fold_complex: Complex,
 ):
-    """Test ESMFold2 conditioned on a real MSA from the fixture."""
     available_model_ids = {model.id for model in session.fold.list_models()}
     if "esmfold2" not in available_model_ids:
         pytest.skip("esmfold2 is not available in this backend")
@@ -524,7 +515,6 @@ def test_e2e_fold_with_esmfold2_fast(
     session: OpenProtein,
     mutated_sequences: Callable[..., list[str]],
 ):
-    """Test folding a single chain with ESMFold2-Fast."""
     available_model_ids = {model.id for model in session.fold.list_models()}
     if "esmfold2-fast" not in available_model_ids:
         pytest.skip("esmfold2-fast is not available in this backend")
@@ -546,7 +536,6 @@ def test_e2e_fold_with_alphafold2_complex(
     session: OpenProtein,
     fold_complex: Complex,
 ):
-    """Test folding a multi-chain complex with AlphaFold2."""
     future = session.fold.alphafold2.fold(sequences=[fold_complex])
     assert isinstance(future, FoldResultFuture)
     # The MSA is already waited on in the fixture, so we just wait for the fold
@@ -564,7 +553,6 @@ def test_e2e_fold_with_alphafold2_complex_with_num_models(
     session: OpenProtein,
     fold_complex: Complex,
 ):
-    """Test folding a multi-chain complex with num_models > 1 with AlphaFold2."""
     future = session.fold.alphafold2.fold(sequences=[fold_complex], num_models=2)
     assert isinstance(future, FoldResultFuture)
     # The MSA is already waited on in the fixture, so we just wait for the fold
@@ -621,7 +609,6 @@ def test_e2e_fold_with_boltz_cyclic_protein(
     session: OpenProtein,
     fold_complex: Complex,
 ):
-    """Test folding with a Boltz model and a cyclic protein."""
     fold_complex.get_protein("A").cyclic = True  # set first to cyclic
 
     future = session.fold.boltz1.fold(sequences=[fold_complex])
@@ -640,7 +627,6 @@ def test_e2e_fold_with_boltz_bond_constraint(
     session: OpenProtein,
     fold_complex: Complex,
 ):
-    """Test folding with a Boltz model using a 'bond' constraint."""
     constraints = [{"bond": {"atom1": ["A", 10, "CA"], "atom2": ["B", 20, "CA"]}}]
     future = session.fold.boltz1.fold(sequences=[fold_complex], constraints=constraints)
     assert isinstance(future, FoldResultFuture)
@@ -658,7 +644,6 @@ def test_e2e_fold_with_boltz_pocket_constraint(
     session: OpenProtein,
     fold_complex: Complex,
 ):
-    """Test folding with a Boltz model using a 'pocket' constraint."""
     ligand = Ligand(smiles="CCO")
     constraints = [
         {
@@ -686,7 +671,6 @@ def test_e2e_fold_with_boltz_contact_constraint(
     session: OpenProtein,
     fold_complex: Complex,
 ):
-    """Test folding with a Boltz-1 model using a 'contact' constraint."""
     constraints = [
         {"contact": {"token1": ["A", 10], "token2": ["B", 20], "max_distance": 15.0}}
     ]
@@ -728,7 +712,6 @@ def test_e2e_fold_with_boltz2_with_affinity(
     session: OpenProtein,
     fold_complex: Complex,
 ):
-    """Test folding with Boltz-2 and requesting the affinity property."""
     ligand = Ligand(smiles="CCO")  # Use a different chain ID
     properties = [{"affinity": {"binder": "D"}}]
     constraints = [
@@ -760,7 +743,6 @@ def test_e2e_fold_with_protenix(
     session: OpenProtein,
     fold_complex: Complex,
 ):
-    """Test folding a multi-chain complex with Protenix."""
     future = session.fold.protenix.fold(sequences=[fold_complex])
     assert isinstance(future, FoldResultFuture)
     assert future.wait_until_done(timeout=E2E_TIMEOUT)
@@ -856,7 +838,6 @@ def test_e2e_fold_with_protenix_custom_params(
     session: OpenProtein,
     fold_complex: Complex,
 ):
-    """Test folding with Protenix using custom diffusion/recycle/step parameters."""
     future = session.fold.protenix.fold(
         sequences=[fold_complex],
         diffusion_samples=2,
@@ -1118,9 +1099,6 @@ def test_e2e_fold_with_templates(
     sdn_linker = b"MHHHHHHSDN"
     template_protein = template_protein[len(sdn_linker) :]
 
-    # Wrap as Complex so the Template mapping="A" form is valid.
-    # A standalone Protein target rejects any explicit mapping per
-    # Template.validate_for_target.
     fold_chain = Protein(sequence=template_protein.sequence)
     fold_chain.msa = Protein.single_sequence_mode
     fold_input = Complex(chains={"A": fold_chain})
@@ -1133,3 +1111,22 @@ def test_e2e_fold_with_templates(
     structure = results[0]
     assert structure
     assert isinstance(structure, Structure)
+
+
+@pytest.mark.e2e
+def test_e2e_protenix_folds_each_unseeded_call_afresh(
+    session: OpenProtein,
+    fold_complex: Complex,
+):
+    first = session.fold.protenix_v2.fold(sequences=[fold_complex])
+    second = session.fold.protenix_v2.fold(sequences=[deepcopy(fold_complex)])
+    assert first.wait_until_done(timeout=E2E_TIMEOUT)
+    assert second.wait_until_done(timeout=E2E_TIMEOUT)
+    (a,) = first.get()
+    (b,) = second.get()
+    for chain_id, protein in a[0].get_proteins().items():
+        assert not np.allclose(
+            protein.coordinates,
+            b[0].get_proteins()[chain_id].coordinates,
+            equal_nan=True,
+        )

@@ -1,16 +1,12 @@
 """Test the api for the predictor domain."""
+
 from unittest.mock import MagicMock
 
-import pytest
-
-from openprotein.common import FeatureType
 from openprotein.jobs import JobType
 from openprotein.predictor import api
-from openprotein.predictor.schemas import PredictorMetadata
 
 
 def test_predictor_list(mock_session: MagicMock):
-    """Test predictor_list."""
     mock_session.get.return_value.json.return_value = []
     api.predictor_list(mock_session, limit=50, offset=5)
     mock_session.get.assert_called_once_with(
@@ -20,7 +16,6 @@ def test_predictor_list(mock_session: MagicMock):
 
 
 def test_predictor_get(mock_session: MagicMock):
-    """Test predictor_get."""
     mock_session.get.return_value.json.return_value = {
         "id": "p1",
         "name": "p1",
@@ -35,8 +30,30 @@ def test_predictor_get(mock_session: MagicMock):
     )
 
 
+def test_predictor_get_hyperparameters(mock_session: MagicMock):
+    mock_session.timeout = 7
+    mock_session.get.return_value.json.return_value = {
+        "p1": {
+            "mean": 0.5,
+            "noise": 0.1,
+            "lengthscale": [0.8],
+            "outputscale": [2.0],
+            "period": [None],
+            "alpha": [None],
+        }
+    }
+    out = api._predictor_get_hyperparameters(mock_session, "p1")
+    mock_session.get.assert_called_once_with(
+        "v1/predictor/p1/hyperparameters", timeout=7
+    )
+    assert out["p1"].mean == 0.5
+    assert out["p1"].noise == 0.1
+    assert out["p1"].lengthscale == [0.8]
+    assert out["p1"].outputscale == [2.0]
+    assert out["p1"].period == [None]
+
+
 def test_predictor_fit_gp_post(mock_session: MagicMock):
-    """Test predictor_fit_gp_post."""
     mock_session.post.return_value.json.return_value = {
         "job_id": "job1",
         "status": "SUCCESS",
@@ -69,6 +86,14 @@ def test_predictor_fit_gp_post_kernel(mock_session: MagicMock):
     api.predictor_fit_gp_post(mock_session, **common)
     assert mock_session.post.call_args.kwargs["json"]["kernel"] == {"type": "rbf"}
     api.predictor_fit_gp_post(mock_session, kernel="periodic", period=2.0, **common)
-    assert mock_session.post.call_args.kwargs["json"]["kernel"] == {"type": "periodic", "period": 2.0}
-    api.predictor_fit_gp_post(mock_session, kernel="rational_quadratic", alpha=3.0, **common)
-    assert mock_session.post.call_args.kwargs["json"]["kernel"] == {"type": "rational_quadratic", "alpha": 3.0}
+    assert mock_session.post.call_args.kwargs["json"]["kernel"] == {
+        "type": "periodic",
+        "period": 2.0,
+    }
+    api.predictor_fit_gp_post(
+        mock_session, kernel="rational_quadratic", alpha=3.0, **common
+    )
+    assert mock_session.post.call_args.kwargs["json"]["kernel"] == {
+        "type": "rational_quadratic",
+        "alpha": 3.0,
+    }

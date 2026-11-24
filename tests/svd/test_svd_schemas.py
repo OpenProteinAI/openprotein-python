@@ -10,7 +10,6 @@ from openprotein.svd.schemas import SVDEmbeddingsJob, SVDFitJob, SVDMetadata
 
 
 def test_svd_metadata_is_done():
-    """Test the is_done() method on SVDMetadata."""
     metadata_done = SVDMetadata(
         id="svd-1",
         status=JobStatus.SUCCESS,
@@ -35,7 +34,6 @@ def test_svd_metadata_is_done():
     ],
 )
 def test_job_schemas_job_type(job_class, expected_job_type):
-    """Test that each job schema has the correct job_type."""
     job_data = {
         "job_id": "job-123",
         "status": JobStatus.SUCCESS,
@@ -47,7 +45,6 @@ def test_job_schemas_job_type(job_class, expected_job_type):
 
 
 def test_svd_job_schema_invalid_job_type():
-    """Test that validation fails for an incorrect job_type."""
     job_data = {
         "job_id": "job-123",
         "status": JobStatus.SUCCESS,
@@ -55,4 +52,4 @@ def test_svd_job_schema_invalid_job_type():
         "job_type": "some_other_type",  # Invalid job type
     }
     with pytest.raises(ValidationError):
-        SVDFitJob(**job_data)
+        SVDFitJob.model_validate(job_data)

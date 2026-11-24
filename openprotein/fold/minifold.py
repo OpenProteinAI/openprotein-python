@@ -1,15 +1,14 @@
 """Community-based MiniFold model."""
 
-from typing import Sequence
-
 from openprotein.base import APISession
 from openprotein.common import ModelMetadata
-from openprotein.fold.common import normalize_inputs, serialize_input
-from openprotein.molecules import Complex, Protein
+from openprotein.fold.common import FoldInput, normalize_inputs, serialize_input
 
 from . import api
 from .future import FoldResultFuture
 from .models import FoldModel
+
+__all__ = ["MiniFoldModel"]
 
 
 class MiniFoldModel(FoldModel):
@@ -29,7 +28,8 @@ class MiniFoldModel(FoldModel):
 
     def fold(
         self,
-        sequences: Sequence[Complex | Protein | str | bytes],
+        # NOTE: ideally we type constrain away Complex but this breaks LSP
+        sequences: FoldInput,
         num_recycles: int | None = None,
         **_,
     ) -> FoldResultFuture:
@@ -38,7 +38,7 @@ class MiniFoldModel(FoldModel):
 
         Parameters
         ----------
-        sequences : Sequence[bytes | str]
+        sequences : FoldInput
             sequences to fold
         num_recycles : int | None
             number of times to recycle models

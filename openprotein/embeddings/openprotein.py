@@ -2,6 +2,8 @@
 
 from .models import AttnModel, EmbeddingModel
 
+__all__ = ["OpenProteinModel"]
+
 
 class OpenProteinModel(AttnModel, EmbeddingModel):
     """
@@ -18,4 +20,4 @@ class OpenProteinModel(AttnModel, EmbeddingModel):
         >>> session.embedding.prot_seq?
     """
 
-    model_id = ["prot-seq", "rotaprot-large-uniref50w", "rotaprot_large_uniref90_ft"]
+    model_id = ["prot-seq", "rotaprot-large-uniref50w", "rotaprot-large-uniref90-ft"]

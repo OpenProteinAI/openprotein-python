@@ -18,7 +18,6 @@ from openprotein.jobs import JobStatus, JobType
 
 
 def test_embedded_sequence_behavior():
-    """Test the tuple-like behavior of EmbeddedSequence."""
     sequence = b"ACGT"
     embedding = np.array([1.0, 2.0, 3.0])
     embedded_sequence = EmbeddedSequence(sequence=sequence, embedding=embedding)
@@ -37,7 +36,6 @@ def test_embedded_sequence_behavior():
 
 
 def test_embedded_sequence_with_invalid_index():
-    """Test that IndexError is raised for out-of-bounds access."""
     embedded_sequence = EmbeddedSequence(
         sequence=b"ACGT", embedding=np.array([1.0, 2.0])
     )
@@ -58,7 +56,6 @@ def test_embedded_sequence_with_invalid_index():
     ],
 )
 def test_job_schemas_job_type(job_class, expected_job_type):
-    """Test that each job schema has the correct default job_type."""
     job_data = {
         "job_id": "job-123",
         "status": JobStatus.SUCCESS,
@@ -69,7 +66,6 @@ def test_job_schemas_job_type(job_class, expected_job_type):
 
 
 def test_embeddings_job_with_reduced_type():
-    """Test that EmbeddingsJob can handle the reduced embedding job type."""
     job_data = {
         "job_id": "job-123",
         "status": JobStatus.SUCCESS,
@@ -81,7 +77,6 @@ def test_embeddings_job_with_reduced_type():
 
 
 def test_job_schemas_invalid_job_type():
-    """Test that validation fails for an incorrect job_type."""
     job_data = {
         "job_id": "job-123",
         "status": JobStatus.SUCCESS,

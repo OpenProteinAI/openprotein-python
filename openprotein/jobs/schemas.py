@@ -1,11 +1,21 @@
 import logging
 from datetime import datetime
 from enum import Enum
-from typing import Union
+from types import UnionType
+from typing import Any, Literal, Union, get_args, get_origin
 
-from pydantic import BaseModel, ConfigDict, TypeAdapter
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    TypeAdapter,
+    ValidationError,
+    model_validator,
+)
 from requests import Response
 from typing_extensions import Self
+
+__all__ = ["BatchJob", "Job", "JobStatus", "JobType"]
+
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +24,10 @@ class JobType(str, Enum):
     """
     Type of job.
 
-    Describes the types of jobs that can be done.
+    The job types this client has names for. ``Job.job_type`` is a plain string
+    and the server adds types on its own release cycle, so this is a vocabulary
+    for readability, for filtering, and for the ``Literal`` discriminators on
+    typed ``Job`` subclasses. Membership is not a validity check.
     """
 
     stub = "stub"
@@ -69,8 +82,11 @@ class JobType(str, Enum):
     # designer
     designer = "/design"
 
+    models = "/models"
+
 
 class JobStatus(str, Enum):
+    CREATED = "CREATED"
     PENDING = "PENDING"
     RUNNING = "RUNNING"
     SUCCESS = "SUCCESS"
@@ -81,7 +97,7 @@ class JobStatus(str, Enum):
     def done(self):
         return (
             (self is self.SUCCESS) or (self is self.FAILURE) or (self is self.CANCELED)
-        )  # noqa: E501
+        )
 
     def cancelled(self):
         return self is self.CANCELED
@@ -89,7 +105,6 @@ class JobStatus(str, Enum):
 
 class Job(BaseModel):
     job_id: str
-    # new emb service get doesnt have job_type
     job_type: str
     status: JobStatus
     created_date: datetime
@@ -100,22 +115,53 @@ class Job(BaseModel):
     progress_counter: int | None = None
     sequence_length: int | None = None
     failure_message: str | None = None
+    name: str | None = None
+    description: str | None = None
+    metadata: dict[str, Any] | None = None
+
+    @classmethod
+    def _typed_job_types(cls) -> set[str]:
+        """Job type values that a typed subclass declares a ``Literal`` for."""
+        claimed: set[str] = set()
+        for sub in Job.__subclasses__():
+            field = sub.model_fields.get("job_type")
+            if field is None:
+                continue
+            annotation = field.annotation
+            members = (
+                get_args(annotation)
+                if get_origin(annotation) in (Union, UnionType)
+                else (annotation,)
+            )
+            for member in members:
+                if get_origin(member) is Literal:
+                    claimed.update(
+                        arg.value if isinstance(arg, Enum) else str(arg)
+                        for arg in get_args(member)
+                    )
+        return claimed
 
     @classmethod
     def create(cls, obj: "Job | Response | dict", **kwargs) -> Self:
-        # parse specific child Job from base Job or Response
+        d = (
+            obj.json()
+            if isinstance(obj, Response)
+            else obj.model_dump()
+            if isinstance(obj, Job)
+            else obj
+        )
+        payload = d | kwargs
+        job_classes = Job.__subclasses__()
         try:
-            # try to parse as subclass job
-            # get dict form
-            d = (
-                obj.json()
-                if isinstance(obj, Response)
-                else obj.model_dump() if isinstance(obj, Job) else obj
-            )
-            job_classes = Job.__subclasses__()
-            job = TypeAdapter(Union[tuple(job_classes)]).validate_python(d | kwargs)  # type: ignore
-        except Exception as e:
-            job = Job.model_validate(d | kwargs)
+            job = TypeAdapter(Union[tuple(job_classes)]).validate_python(payload)  # noqa: UP007
+        except ValidationError:
+            # A subclass declaring this job type means the payload disagrees with
+            # a schema this client has, which is a bug worth surfacing. Any other
+            # type is one the server added, and parses as a plain job.
+            if payload.get("job_type") in cls._typed_job_types():
+                raise
+            logger.info("no typed schema for job type %s", payload.get("job_type"))
+            job = Job.model_validate(payload)
         return job  # type: ignore - static checker cannot know runtime type
 
     # hide extra allowed fields
@@ -137,3 +183,38 @@ class Job(BaseModel):
 
 class BatchJob(BaseModel):
     num_records: int | None = None
+
+
+_UNIT_STATUS_ALIASES = {"FAILED": "FAILURE", "READY": "PENDING"}
+
+
+class _UnitRecord(BaseModel):
+    """A unit's position, identity, status and error, as one unit read returns them.
+
+    The status comes from the record's ``status`` key when it has a value, else
+    its ``state`` key, in the vocabulary of `JobStatus`: ``FAILED`` reads as
+    ``FAILURE`` and a unit ready to run reads as ``PENDING``. Other keys are
+    ignored.
+    """
+
+    position: int
+    unit_id: str
+    status: JobStatus
+    error: dict[str, Any] | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _read_status(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        status = data.get("status")
+        if status is None:
+            status = data.get("state")
+        if isinstance(status, str):
+            status = _UNIT_STATUS_ALIASES.get(status, status)
+        return {
+            "position": data.get("position"),
+            "unit_id": data.get("unit_id"),
+            "status": status,
+            "error": data.get("error"),
+        }

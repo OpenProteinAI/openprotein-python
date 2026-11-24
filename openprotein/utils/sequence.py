@@ -4,8 +4,18 @@ import re
 from dataclasses import dataclass
 from typing import Literal
 
+__all__ = [
+    "AMINO_ACIDS",
+    "CHAIN_BREAK",
+    "EXTRA_TOKENS",
+    "SequenceExpr",
+    "SequenceSegment",
+]
+
+
 AMINO_ACIDS = "ARNDCQEGHILKMFPSTWYV"
 EXTRA_TOKENS = "XOUBZ-?"
+CHAIN_BREAK = ":"
 
 
 @dataclass
@@ -175,10 +185,12 @@ class SequenceExpr:
         Parse a sequence expression.
 
         Args:
-            expr: Sequence expression string
+            expr: Expression built from fixed residues (uppercase letters),
+                design counts (digits) and ranges (`start..end`), e.g. "3..5C6C3".
 
         Returns:
-            Parsed SequenceExpression object
+            The parsed expression, with `segments` holding one entry per
+            fixed, design or range term.
 
         Examples:
             >>> SequenceExpr.parse("15..20")

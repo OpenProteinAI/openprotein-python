@@ -8,8 +8,6 @@ def _get_hatch_version():
     """Compute the most up-to-date version number in a development environment.
 
     Returns `None` if Hatchling is not installed, e.g. in a production environment.
-
-    For more details, see <https://github.com/maresb/hatch-vcs-footgun-example/>.
     """
     import os
 

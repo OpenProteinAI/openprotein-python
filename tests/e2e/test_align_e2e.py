@@ -13,6 +13,8 @@ from tests.e2e.config import scaled_timeout
 from tests.utils.sequences import mutated_antibody_sequences, random_sequence_real
 
 E2E_TIMEOUT = scaled_timeout(1.0)
+# The sample wait covers the MSA search and the sampling after it.
+E2E_SAMPLE_TIMEOUT = scaled_timeout(2.0)
 
 
 def _strip_alignment_gaps(sequence: str) -> str:
@@ -21,9 +23,6 @@ def _strip_alignment_gaps(sequence: str) -> str:
 
 @pytest.mark.e2e
 def test_e2e_msa_workflow(session: OpenProtein, msa_seed_sequence_length: int):
-    """
-    Tests the full MMSeqs MSA search workflow.
-    """
     # 1. Generate unique seed sequence for this test run
     seed_sequence = random_sequence_real(msa_seed_sequence_length)
 
@@ -39,9 +38,9 @@ def test_e2e_msa_workflow(session: OpenProtein, msa_seed_sequence_length: int):
     msa_iterator = msa_future.get()
     msa_data = list(msa_iterator)
     # returns list of (name, sequence) tuples
-    assert (
-        msa_data[0][1] == seed_sequence
-    ), "Expected seed sequence to be first returned sequence"
+    assert msa_data[0][1] == seed_sequence, (
+        "Expected seed sequence to be first returned sequence"
+    )
 
 
 @pytest.mark.e2e
@@ -49,9 +48,8 @@ def test_e2e_msa_get_before_complete_returns_clear_error(
     session: OpenProtein, msa_seed_sequence_length: int
 ):
     """
-    Fetching MSA results before the job has completed should return a 409 with a
-    message that says the job hasn't produced results yet, instead of the old
-    misleading 404 "Requested align not found". Regression test for #529.
+    Fetching a stored MSA before its job has completed raises an HTTPError with
+    status 409 whose text names the MSA id.
     """
     seed_sequence = random_sequence_real(msa_seed_sequence_length)
 
@@ -66,14 +64,11 @@ def test_e2e_msa_get_before_complete_returns_clear_error(
         list(msa_future.get())
 
     assert excinfo.value.status_code == 409
-    assert "has not produced results yet" in excinfo.value.text
+    assert msa_future.id in excinfo.value.text
 
 
 @pytest.mark.e2e
 def test_e2e_msa_caching(session: OpenProtein, msa_seed_sequence_length: int):
-    """
-    Tests the full MMSeqs MSA search workflow.
-    """
     # Use a static seed sequence for this test
     seed_sequence = random_sequence_real(msa_seed_sequence_length)
 
@@ -92,9 +87,6 @@ def test_e2e_msa_caching(session: OpenProtein, msa_seed_sequence_length: int):
 
 @pytest.mark.e2e
 def test_e2e_msa_sample_workflow(session: OpenProtein, msa_seed_sequence_length: int):
-    """
-    Tests the full MMSeqs MSA search and sample workflow.
-    """
     # 1. Generate unique seed sequence for this test run
     seed_sequence = random_sequence_real(msa_seed_sequence_length)
 
@@ -105,7 +97,7 @@ def test_e2e_msa_sample_workflow(session: OpenProtein, msa_seed_sequence_length:
     prompt_future = msa_future.sample_prompt(num_ensemble_prompts=3)
 
     # 4. Wait for completion
-    prompt_future.wait_until_done(verbose=True, timeout=E2E_TIMEOUT)
+    prompt_future.wait_until_done(verbose=True, timeout=E2E_SAMPLE_TIMEOUT)
 
     # 5. Assert status and get results
     assert prompt_future.status == "SUCCESS"
@@ -123,10 +115,7 @@ def test_e2e_mafft_workflow(
     mutated_sequences: Callable[..., list[str]],
 ):
     """
-    Tests the full MAFFT alignment workflow:
-    1. Starts a MAFFT job with dynamically generated sequences to avoid caching.
-    2. Waits for it to complete.
-    3. Fetches and validates the resulting MSA.
+    Sequences are generated per run so the job is never served from cache.
     """
     # 1. Generate unique sequences for this test run
     generated_sequences = mutated_sequences(num_sequences=3, mutation_rate=0.05)
@@ -144,9 +133,9 @@ def test_e2e_mafft_workflow(
     msa_proteins = list(msa_iterator)
 
     # The number of rows should be the number of sequences
-    assert len(msa_proteins) == len(
-        generated_sequences
-    ), "MSA data should contain a row for each sequence"
+    assert len(msa_proteins) == len(generated_sequences), (
+        "MSA data should contain a row for each sequence"
+    )
 
     # Verify that the original sequences can be recovered by removing gaps from the data rows
     original_sequences_from_msa = {row[1].replace("-", "") for row in msa_proteins}
@@ -156,8 +145,8 @@ def test_e2e_mafft_workflow(
 @pytest.mark.e2e
 def test_e2e_mafft_caching(session: OpenProtein, base_sequence: str):
     """
-    Tests that submitting an identical job soon after the first one completes
-    returns a cached result almost instantly.
+    Submitting an identical job soon after the first completes returns the
+    cached result.
     """
     # Use a static, non-random set of sequences for this test
     static_sequences = [
@@ -179,13 +168,29 @@ def test_e2e_mafft_caching(session: OpenProtein, base_sequence: str):
 
 
 @pytest.mark.e2e
+def test_e2e_mafft_keeps_the_names_it_was_given(
+    session: OpenProtein,
+    mutated_sequences: Callable[..., list[str]],
+):
+    """Supplied row labels come back on the aligned rows, in input order."""
+    generated_sequences = mutated_sequences(num_sequences=3, mutation_rate=0.05)
+    names = [f"row{i}" for i in range(len(generated_sequences))]
+
+    align_future = session.align.mafft(sequences=generated_sequences, names=names)
+    align_future.wait_until_done(verbose=True, timeout=E2E_TIMEOUT)
+    assert align_future.status == "SUCCESS"
+
+    msa_data = list(align_future.get())
+    assert [row[0] for row in msa_data] == names
+    # names are positional, so each label must still sit on its own sequence
+    assert [row[1].replace("-", "") for row in msa_data] == generated_sequences
+
+
+@pytest.mark.e2e
 def test_e2e_clustalo_workflow(
     session: OpenProtein,
     mutated_sequences: Callable[..., list[str]],
 ):
-    """
-    Tests the full ClustalO alignment workflow.
-    """
     # 1. Generate unique sequences for this test run
     generated_sequences = mutated_sequences(num_sequences=3, mutation_rate=0.05)
 
@@ -202,9 +207,9 @@ def test_e2e_clustalo_workflow(
     msa_data = list(msa_iterator)
 
     # Verify that the original sequences can be recovered by removing gaps
-    assert len(msa_data) == len(
-        generated_sequences
-    ), "MSA data should contain a row for each sequence"
+    assert len(msa_data) == len(generated_sequences), (
+        "MSA data should contain a row for each sequence"
+    )
     original_sequences_from_msa = {row[1].replace("-", "") for row in msa_data}
     assert set(generated_sequences) == original_sequences_from_msa
 
@@ -214,13 +219,8 @@ def test_e2e_abnumber_workflow(
     session: OpenProtein,
     test_antibody_sequence: str,
 ):
-    """
-    Tests the full antibody numbering workflow.
-    """
-    # 1. Generate unique antibody sequences for this test run. Use
-    # substitution-only mutation so the variable-domain framing stays intact and
-    # every sequence remains numberable by AbNumber (indels would shift the
-    # frame and break numbering / round-trip recovery).
+    # Substitution-only mutation keeps the variable-domain framing intact so every
+    # sequence stays numberable by AbNumber.
     generated_sequences = mutated_antibody_sequences(
         test_antibody_sequence, num_sequences=3, mutation_rate=0.02
     )
@@ -240,8 +240,8 @@ def test_e2e_abnumber_workflow(
     msa_data = list(msa_iterator)
 
     # Verify that the original sequences can be recovered
-    assert len(msa_data) == len(
-        generated_sequences
-    ), "MSA data should contain a row for each sequence"
+    assert len(msa_data) == len(generated_sequences), (
+        "MSA data should contain a row for each sequence"
+    )
     original_sequences_from_msa = {_strip_alignment_gaps(row[1]) for row in msa_data}
     assert set(generated_sequences) == original_sequences_from_msa

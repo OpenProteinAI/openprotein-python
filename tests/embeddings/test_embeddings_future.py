@@ -9,9 +9,6 @@ from openprotein.embeddings.future import (
 )
 
 
-# --- Generate ---
-
-
 def test_embeddings_generate_future_stream_without_query_id_column(mock_session):
     job = MagicMock()
     job.job_id = "job-123"
@@ -84,9 +81,6 @@ def test_embeddings_generate_future_stream_with_empty_query_id(mock_session):
     assert results[0].query_id is None
 
 
-# --- Score ---
-
-
 def test_embeddings_score_future_stream_without_query_id(mock_session):
     job = MagicMock()
     job.job_id = "job-123"
@@ -157,9 +151,6 @@ def test_embeddings_score_future_stream_with_empty_query_id(mock_session):
 
     assert len(results) == 1
     assert results[0].query_id is None
-
-
-# --- SingleSite ---
 
 
 def test_embeddings_single_site_future_stream_without_query_id(mock_session):

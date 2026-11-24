@@ -12,7 +12,6 @@ from openprotein.svd.schemas import SVDEmbeddingsJob, SVDFitJob, SVDMetadata
 
 @pytest.fixture
 def mock_svd_metadata():
-    """Fixture for SVDMetadata."""
     return SVDMetadata(
         id="svd-123",
         status=JobStatus.SUCCESS,
@@ -23,7 +22,6 @@ def mock_svd_metadata():
 
 @pytest.fixture
 def mock_svd_fit_job():
-    """Fixture for a valid SVDFitJob instance."""
     return SVDFitJob(
         job_id="svd-123",
         status=JobStatus.SUCCESS,
@@ -35,7 +33,6 @@ def mock_svd_fit_job():
 def test_svd_model_init_with_metadata(
     mock_session: MagicMock, mock_svd_metadata, mock_svd_fit_job
 ):
-    """Test SVDModel initialization with metadata."""
     mock_session.jobs = MagicMock(spec=JobsAPI)  # type: ignore
     mock_session.jobs.get_job.return_value = mock_svd_fit_job  # type: ignore
     model = SVDModel(session=mock_session, metadata=mock_svd_metadata)
@@ -46,7 +43,6 @@ def test_svd_model_init_with_metadata(
 def test_svd_model_init_with_job(
     mock_session: MagicMock, mock_svd_fit_job, mock_svd_metadata
 ):
-    """Test SVDModel initialization with a job object."""
     with patch(
         "openprotein.svd.api.svd_get", return_value=mock_svd_metadata
     ) as mock_api_get:
@@ -58,7 +54,6 @@ def test_svd_model_init_with_job(
 
 
 def test_svd_model_embed(mock_session: MagicMock, mock_svd_metadata, mock_svd_fit_job):
-    """Test the embed method of SVDModel."""
     mock_session.jobs = MagicMock(spec=JobsAPI)  # type: ignore
     mock_session.jobs.get_job.return_value = mock_svd_fit_job  # type: ignore
     model = SVDModel(session=mock_session, metadata=mock_svd_metadata)
@@ -84,7 +79,6 @@ def test_svd_model_embed(mock_session: MagicMock, mock_svd_metadata, mock_svd_fi
 
 
 def test_svd_embedding_result_future_get_item(mock_session: MagicMock):
-    """Test the get_item override in SVDEmbeddingResultFuture."""
     mock_job = MagicMock(spec=SVDEmbeddingsJob)
     mock_job.job_id = "job-456"
     future = SVDEmbeddingsResultFuture(session=mock_session, job=mock_job)

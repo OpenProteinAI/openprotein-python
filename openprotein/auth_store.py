@@ -6,6 +6,8 @@ from pathlib import Path
 from filelock import FileLock
 from pydantic import BaseModel, ValidationError
 
+__all__ = ["TokenRecord", "TokenStore"]
+
 
 class TokenRecord(BaseModel):
     """A persisted auth record for one identity."""
@@ -40,8 +42,7 @@ class TokenStore:
         return self._lock
 
     def _read_all(self) -> dict:
-        # Caller must hold self._lock: this is the read half of the
-        # read-modify-write critical section in load()/save().
+        # Caller must hold self._lock.
         try:
             return json.loads(self.path.read_text())
         except (OSError, json.JSONDecodeError):

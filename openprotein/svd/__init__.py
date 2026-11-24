@@ -7,3 +7,12 @@ isort:skip_file
 from .schemas import SVDMetadata, SVDFitJob, SVDEmbeddingsJob
 from .models import SVDModel, SVDEmbeddingsResultFuture
 from .svd import SVDAPI
+
+__all__ = [
+    "SVDAPI",
+    "SVDEmbeddingsJob",
+    "SVDEmbeddingsResultFuture",
+    "SVDFitJob",
+    "SVDMetadata",
+    "SVDModel",
+]

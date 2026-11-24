@@ -10,6 +10,15 @@ from . import api
 from .models import Prompt, Query
 from .schemas import Context
 
+__all__ = [
+    "HUMAN_ANTIBODY_VH_V1",
+    "HUMAN_ANTIBODY_VH_VL_V1",
+    "HUMAN_ANTIBODY_VL_V1",
+    "HUMAN_ANTIBODY_VL_VH_V1",
+    "PromptAPI",
+]
+
+
 HUMAN_ANTIBODY_VH_V1 = "c044b1b9-9842-536a-83e0-e81400199f67"
 HUMAN_ANTIBODY_VH_VL_V1 = "0ddde5dc-d140-5d53-bebf-e69fff5a05c5"
 HUMAN_ANTIBODY_VL_V1 = "3da24801-7032-5b79-a0b9-6e687581de60"
@@ -37,10 +46,9 @@ class PromptAPI:
             Context or list of contexts. Each context is a sequence of entries
             where each entry is a raw sequence (``bytes``/``str``, optionally with
             ``:`` chain breaks for multichain), :py:class:`Protein`, or
-            :py:class:`Complex`. Currently only protein chains are accepted;
-            passing a Complex with DNA, RNA, or Ligand chains raises
-            :py:class:`InvalidParameterError`. This restriction may be relaxed
-            in the future.
+            :py:class:`Complex`. Only protein chains are accepted; passing a
+            Complex with DNA, RNA, or Ligand chains raises
+            :py:class:`InvalidParameterError`.
         name : str
             Name of the prompt.
         description : Optional[str]
@@ -106,10 +114,9 @@ class PromptAPI:
         ----------
         query : bytes or str or Protein or Complex
             A query protein or complex. Raw ``bytes``/``str`` inputs may include
-            ``:`` chain breaks to denote a multichain protein. Currently only
-            protein chains are accepted; passing a Complex with DNA, RNA, or
-            Ligand chains raises :py:class:`InvalidParameterError`. This
-            restriction may be relaxed in the future.
+            ``:`` chain breaks to denote a multichain protein. Only protein
+            chains are accepted; passing a Complex with DNA, RNA, or Ligand
+            chains raises :py:class:`InvalidParameterError`.
         force_structure : bool, optional
             Optionally force a query to be interpreted with a structure.
             Useful for creating structure prediction queries which can have
@@ -258,14 +265,11 @@ class PromptAPI:
                 self._resolve_query(query=q, force_structure=force_structure)
                 for q in query
             ]
-        elif (
-            isinstance(query, Protein)
-            or isinstance(query, Complex)
-            or isinstance(query, bytes)
-            or (isinstance(query, str) and not uuid.is_valid_uuid(query))
-        ):
+        elif (known_id := uuid._as_id(query)) is not None:
+            query_id = known_id
+        elif isinstance(query, (Protein, Complex, bytes, str)):
             query_ = self.create_query(query=query, force_structure=force_structure)
             query_id = query_.id
         else:
-            query_id = query if isinstance(query, str) else query.id
+            query_id = query.id
         return query_id

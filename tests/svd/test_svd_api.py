@@ -12,7 +12,6 @@ from openprotein.svd.schemas import SVDMetadata
 
 
 def test_svd_list_get(mock_session: MagicMock):
-    """Test svd_list_get."""
     mock_session.get.return_value.json.return_value = [
         {
             "id": "svd-1",
@@ -28,7 +27,6 @@ def test_svd_list_get(mock_session: MagicMock):
 
 
 def test_svd_list_get_with_pagination(mock_session: MagicMock):
-    """Test svd_list_get with limit and offset."""
     mock_session.get.return_value.json.return_value = [
         {
             "id": "svd-1",
@@ -46,7 +44,6 @@ def test_svd_list_get_with_pagination(mock_session: MagicMock):
 
 
 def test_svd_get(mock_session: MagicMock):
-    """Test svd_get."""
     mock_session.get.return_value.json.return_value = {
         "id": "svd-1",
         "status": "SUCCESS",
@@ -59,7 +56,6 @@ def test_svd_get(mock_session: MagicMock):
 
 
 def test_svd_delete(mock_session: MagicMock):
-    """Test svd_delete."""
     mock_session.delete.return_value.status_code = 200
     result = api.svd_delete(mock_session, "svd-1")
     mock_session.delete.assert_called_once_with("v1/embeddings/svd/svd-1")
@@ -67,7 +63,6 @@ def test_svd_delete(mock_session: MagicMock):
 
 
 def test_svd_fit_post_with_sequences(mock_session: MagicMock):
-    """Test svd_fit_post with sequences."""
     mock_session.post.return_value.json.return_value = {
         "job_id": "job-123",
         "job_type": JobType.svd_fit.value,
@@ -82,7 +77,6 @@ def test_svd_fit_post_with_sequences(mock_session: MagicMock):
 
 
 def test_svd_fit_post_with_assay_id(mock_session: MagicMock):
-    """Test svd_fit_post with an assay_id."""
     mock_session.post.return_value.json.return_value = {
         "job_id": "job-123",
         "job_type": JobType.svd_fit.value,
@@ -97,7 +91,6 @@ def test_svd_fit_post_with_assay_id(mock_session: MagicMock):
 
 
 def test_svd_fit_post_invalid_params(mock_session: MagicMock):
-    """Test svd_fit_post with invalid parameters."""
     with pytest.raises(InvalidParameterError):
         api.svd_fit_post(mock_session, "model-1")  # Neither sequences nor assay_id
     with pytest.raises(InvalidParameterError):
@@ -107,7 +100,6 @@ def test_svd_fit_post_invalid_params(mock_session: MagicMock):
 
 
 def test_embed_decode():
-    """Test embed_decode."""
     arr = np.array([1.0, 2.0, 3.0])
     # The api uses np.save, which includes a header.
     # We need to create the bytes in the same way.

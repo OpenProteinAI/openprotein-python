@@ -11,7 +11,18 @@ from .schemas import (
     HierarchicalFitJob,
 )
 
-PATH_PREFIX = "v1/clustering"
+__all__ = [
+    "clustering_delete",
+    "clustering_get",
+    "clustering_get_result",
+    "clustering_get_sequences",
+    "clustering_hierarchical_post",
+    "clustering_list_get",
+    "clustering_redispatch_post",
+]
+
+
+_PATH_PREFIX = "v1/clustering"
 
 
 def clustering_list_get(
@@ -28,35 +39,33 @@ def clustering_list_get(
         params["limit"] = limit
     if offset is not None:
         params["offset"] = offset
-    response = session.get(PATH_PREFIX, params=params or None)
+    response = session.get(_PATH_PREFIX, params=params or None)
     return TypeAdapter(list[ClusteringMetadata]).validate_python(response.json())
 
 
 def clustering_get(session: APISession, clustering_id: str) -> ClusteringMetadata:
     """Fetch clustering job metadata."""
-    response = session.get(f"{PATH_PREFIX}/{clustering_id}")
+    response = session.get(f"{_PATH_PREFIX}/{clustering_id}")
     return ClusteringMetadata.model_validate(response.json())
 
 
 def clustering_get_result(
     session: APISession, clustering_id: str
 ) -> HierarchicalClusteringResult:
-    """Fetch the clustering result (linkage + leaf_order). Sequences are NOT
-    filled by this function — callers that need them should call
-    `clustering_get_sequences` and assign to `.sequences`."""
-    response = session.get(f"{PATH_PREFIX}/{clustering_id}/result")
+    """Fetch the clustering result (linkage + leaf_order)."""
+    response = session.get(f"{_PATH_PREFIX}/{clustering_id}/result")
     return HierarchicalClusteringResult.model_validate(response.json())
 
 
 def clustering_get_sequences(session: APISession, clustering_id: str) -> list[bytes]:
     """Fetch the input sequences used for the clustering job."""
-    response = session.get(f"{PATH_PREFIX}/{clustering_id}/sequences")
+    response = session.get(f"{_PATH_PREFIX}/{clustering_id}/sequences")
     return TypeAdapter(list[bytes]).validate_python(response.json())
 
 
 def clustering_delete(session: APISession, clustering_id: str) -> bool:
     """Delete a clustering job."""
-    response = session.delete(f"{PATH_PREFIX}/{clustering_id}")
+    response = session.delete(f"{_PATH_PREFIX}/{clustering_id}")
     if 200 <= response.status_code < 300:
         return True
     raise APIError(response.text)
@@ -65,8 +74,8 @@ def clustering_delete(session: APISession, clustering_id: str) -> bool:
 def clustering_redispatch_post(
     session: APISession, clustering_id: str
 ) -> HierarchicalFitJob:
-    """Redispatch a clustering job."""
-    response = session.post(f"{PATH_PREFIX}/{clustering_id}/redispatch")
+    """Resubmit a clustering job."""
+    response = session.post(f"{_PATH_PREFIX}/{clustering_id}/redispatch")
     return HierarchicalFitJob.model_validate(response.json())
 
 
@@ -105,5 +114,5 @@ def clustering_hierarchical_post(
         body["assay_id"] = assay_id
     body.update(**kwargs)
 
-    response = session.post(f"{PATH_PREFIX}/hierarchical", json=body)
+    response = session.post(f"{_PATH_PREFIX}/hierarchical", json=body)
     return HierarchicalFitJob.model_validate(response.json())

@@ -8,6 +8,8 @@ import numpy as np
 from openprotein.base import APISession
 from openprotein.common import ModelMetadata, ReductionType
 from openprotein.data import AssayDataset, AssayMetadata
+from openprotein.data.prompts import Prompt as StoredPrompt
+from openprotein.errors import InvalidParameterError
 from openprotein.molecules import Complex, Protein
 from openprotein.prompt import Prompt, PromptAPI, Query
 
@@ -21,11 +23,20 @@ from .models import EmbeddingModel
 from .poet import PoETModel
 
 if TYPE_CHECKING:
-    from openprotein.predictor.schemas import KernelType
     from openprotein.models.structure_generation import StructureGenerationFuture
     from openprotein.predictor import PredictorModel
+    from openprotein.predictor.schemas import KernelType
     from openprotein.svd import SVDModel
     from openprotein.umap import UMAPModel
+
+__all__ = ["PoET2Model"]
+
+
+def _reject_mlm_decoder(decoder_type: str | None) -> None:
+    if decoder_type == "mlm":
+        raise InvalidParameterError(
+            "`decoder_type` cannot be `mlm` for scoring; PoET-2 scores with the `clm` decoder"
+        )
 
 
 class PoET2Model(PoETModel, EmbeddingModel):
@@ -38,8 +49,6 @@ class PoET2Model(PoETModel, EmbeddingModel):
     --------
     View specific model details (including supported tokens) with the `?` operator.
 
-    Examples
-    --------
     .. code-block:: ipython3
 
         >>> import openprotein
@@ -62,7 +71,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
         self,
         sequences: list[bytes] | list[str],
         reduction: ReductionType | None = ReductionType.MEAN,
-        prompt: str | Prompt | None = None,
+        prompt: str | Prompt | StoredPrompt | None = None,
         query: str | bytes | Protein | Complex | Query | None = None,
         use_query_structure_in_decoder: bool = True,
         decoder_type: Literal["mlm", "clm"] | None = None,
@@ -115,7 +124,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
     def logits(
         self,
         sequences: list[bytes] | list[str],
-        prompt: str | Prompt | None = None,
+        prompt: str | Prompt | StoredPrompt | None = None,
         query: str | bytes | Protein | Complex | Query | None = None,
         use_query_structure_in_decoder: bool = True,
         decoder_type: Literal["mlm", "clm"] | None = None,
@@ -165,10 +174,10 @@ class PoET2Model(PoETModel, EmbeddingModel):
     def score(
         self,
         sequences: list[bytes],
-        prompt: str | Prompt | None = None,
+        prompt: str | Prompt | StoredPrompt | None = None,
         query: str | bytes | Protein | Complex | Query | None = None,
         use_query_structure_in_decoder: bool = True,
-        decoder_type: Literal["mlm", "clm"] | None = None,
+        decoder_type: Literal["clm"] | None = None,
         **kwargs,
     ) -> EmbeddingsScoreFuture:
         """
@@ -184,8 +193,8 @@ class PoET2Model(PoETModel, EmbeddingModel):
             Query to use with prompt.
         use_query_structure_in_decoder : bool, optional
             Whether to use query structure in decoder. Default is True.
-        decoder_type : {'mlm', 'clm'} or None, optional
-            Decoder type. Default is None.
+        decoder_type : {'clm'} or None, optional
+            Decoder type. Scoring runs on the `clm` decoder. Default is None.
         **kwargs
             Additional keyword arguments.
 
@@ -194,6 +203,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
         EmbeddingsScoreFuture
             A future object that returns the scores of the submitted sequences.
         """
+        _reject_mlm_decoder(decoder_type)
         prompt_api = getattr(self.session, "prompt", None)
         assert isinstance(prompt_api, PromptAPI)
         query_id = prompt_api._resolve_query(query=query)
@@ -209,10 +219,10 @@ class PoET2Model(PoETModel, EmbeddingModel):
     def indel(
         self,
         sequence: bytes,
-        prompt: str | Prompt | None = None,
+        prompt: str | Prompt | StoredPrompt | None = None,
         query: str | bytes | Protein | Complex | Query | None = None,
         use_query_structure_in_decoder: bool = True,
-        decoder_type: Literal["mlm", "clm"] | None = None,
+        decoder_type: Literal["clm"] | None = None,
         insert: str | None = None,
         delete: list[int] | None = None,
         **kwargs,
@@ -230,8 +240,8 @@ class PoET2Model(PoETModel, EmbeddingModel):
             Query to use with prompt.
         use_query_structure_in_decoder : bool, optional
             Whether to use query structure in decoder. Default is True.
-        decoder_type : {'mlm', 'clm'} or None, optional
-            Decoder type. Default is None.
+        decoder_type : {'clm'} or None, optional
+            Decoder type. Scoring runs on the `clm` decoder. Default is None.
         insert : str or None, optional
             Insertion fragment at each site.
         delete : list of int or None, optional
@@ -249,6 +259,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
         ValueError
             If neither insert nor delete is provided.
         """
+        _reject_mlm_decoder(decoder_type)
         prompt_api = getattr(self.session, "prompt", None)
         assert isinstance(prompt_api, PromptAPI)
         query_id = prompt_api._resolve_query(query=query)
@@ -266,10 +277,10 @@ class PoET2Model(PoETModel, EmbeddingModel):
     def single_site(
         self,
         sequence: bytes,
-        prompt: str | Prompt | None = None,
+        prompt: str | Prompt | StoredPrompt | None = None,
         query: str | bytes | Protein | Complex | Query | None = None,
         use_query_structure_in_decoder: bool = True,
-        decoder_type: Literal["mlm", "clm"] | None = None,
+        decoder_type: Literal["clm"] | None = None,
         **kwargs,
     ) -> EmbeddingsScoreSingleSiteFuture:
         """
@@ -285,8 +296,8 @@ class PoET2Model(PoETModel, EmbeddingModel):
             Query to use with prompt.
         use_query_structure_in_decoder : bool, optional
             Whether to use query structure in decoder. Default is True.
-        decoder_type : {'mlm', 'clm'} or None, optional
-            Decoder type. Default is None.
+        decoder_type : {'clm'} or None, optional
+            Decoder type. Scoring runs on the `clm` decoder. Default is None.
         **kwargs
             Additional keyword arguments.
 
@@ -295,6 +306,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
         EmbeddingsScoreFuture
             A future object that returns the scores of the mutated sequence.
         """
+        _reject_mlm_decoder(decoder_type)
         prompt_api = getattr(self.session, "prompt", None)
         assert isinstance(prompt_api, PromptAPI)
         query_id = prompt_api._resolve_query(query=query)
@@ -309,7 +321,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
 
     def generate(
         self,
-        prompt: str | Prompt | None,
+        prompt: str | Prompt | StoredPrompt | None,
         query: (
             str
             | bytes
@@ -414,7 +426,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
         assay: AssayDataset | None = None,
         n_components: int = 1024,
         reduction: ReductionType | None = None,
-        prompt: str | Prompt | None = None,
+        prompt: str | Prompt | StoredPrompt | None = None,
         query: str | bytes | Protein | Complex | Query | None = None,
         use_query_structure_in_decoder: bool = True,
         decoder_type: Literal["mlm", "clm"] | None = None,
@@ -473,7 +485,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
         assay: AssayDataset | None = None,
         n_components: int = 2,
         reduction: ReductionType = ReductionType.MEAN,
-        prompt: str | Prompt | None = None,
+        prompt: str | Prompt | StoredPrompt | None = None,
         query: str | bytes | Protein | Complex | Query | None = None,
         use_query_structure_in_decoder: bool = True,
         decoder_type: Literal["mlm", "clm"] | None = None,
@@ -530,7 +542,7 @@ class PoET2Model(PoETModel, EmbeddingModel):
         self,
         assay: AssayMetadata | AssayDataset | str,
         properties: list[str],
-        prompt: str | Prompt | None = None,
+        prompt: str | Prompt | StoredPrompt | None = None,
         query: str | bytes | Protein | Complex | Query | None = None,
         use_query_structure_in_decoder: bool = True,
         decoder_type: Literal["mlm", "clm"] | None = None,

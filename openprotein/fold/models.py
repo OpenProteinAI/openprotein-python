@@ -1,16 +1,42 @@
 """Fold model representations which can be used directly for creating structure predictions."""
 
-from typing import Sequence
+from collections.abc import Iterator
 
 from openprotein.base import APISession
 from openprotein.common import ModelMetadata
 from openprotein.molecules import Complex, Protein
 
 from . import api
+from .common import FoldInput, _as_entities, normalize_inputs, serialize_input
 from .future import FoldResultFuture
+
+__all__ = ["FoldModel"]
+
+
+def _attaches_msa(sequences: FoldInput) -> bool:
+    """Whether any given protein has an MSA or single sequence mode attached."""
+    for entity in _as_entities(sequences):
+        if isinstance(entity, Complex):
+            proteins = list(entity.get_proteins().values())
+        elif isinstance(entity, Protein):
+            proteins = [entity]
+        else:
+            continue
+        if any(protein.msa is not None for protein in proteins):
+            return True
+    return False
+
+
+def _subclasses(cls: type) -> Iterator[type]:
+    """Every subclass of ``cls``, at any depth. ``__subclasses__`` is direct only."""
+    for sub in cls.__subclasses__():
+        yield sub
+        yield from _subclasses(sub)
 
 
 class FoldModel:
+    """A fold model that predicts a structure from sequences."""
+
     # overridden by subclasses
     # used to get correct fold model
     model_id: list[str] | str
@@ -41,13 +67,18 @@ class FoldModel:
         list of str
             List of model_id strings associated with this class.
         """
-        if isinstance(cls.model_id, str):
-            return [cls.model_id]
-        return cls.model_id
+        model_id = cls.model_id
+        if isinstance(model_id, str):
+            return [model_id]
+        if isinstance(model_id, list):
+            return model_id
+        # No id declared, so this class serves nothing.
+        return []
 
     @property
     def model_id(self) -> str:
-        return model_id if isinstance(model_id := self.model_id, str) else model_id[0]
+        # self.id, not self.model_id - that would call this property again.
+        return self.id
 
     @classmethod
     def create(
@@ -58,7 +89,7 @@ class FoldModel:
         **kwargs,
     ):
         """
-        Create and return an instance of the appropriate FoldModel subclass based on the model_id.
+        Create and return an instance of the subclass serving ``model_id``.
 
         Parameters
         ----------
@@ -81,14 +112,9 @@ class FoldModel:
         ValueError
             If no suitable FoldModel subclass is found and no default is provided.
         """
-        # Dynamically discover all subclasses of FoldModel
-        model_classes = FoldModel.__subclasses__()
-
-        # Find the FoldModel class that matches the model_id
-        for model_class in model_classes:
+        for model_class in _subclasses(FoldModel):
             if model_id in model_class.get_model():
                 return model_class(session=session, model_id=model_id, **kwargs)
-        # default to FoldModel
         if default is not None:
             try:
                 return default(session=session, model_id=model_id, **kwargs)
@@ -118,16 +144,19 @@ class FoldModel:
 
     def fold(
         self,
-        sequences: Sequence[Complex | Protein | str | bytes],
+        sequences: FoldInput,
         **kwargs,
     ) -> FoldResultFuture:
         """
-        Fold a sequence using this model.
+        Fold sequences using this model.
 
         Parameters
         ----------
-        sequences : Sequence[Complex | Protein | str | bytes]
-            sequences to fold
+        sequences : FoldInput
+            Sequences, proteins or complexes to fold. Every protein is sent
+            with an ``msa_id`` when any of them has an MSA or
+            ``Protein.single_sequence_mode`` attached. An empty list sends no
+            sequences, for models whose inputs are other parameters.
         **kwargs : dict, optional
             Additional keyword arguments to pass to the underlying
             `fold` request.
@@ -137,11 +166,19 @@ class FoldModel:
         FoldResultFuture
             Future object representing the fold result.
         """
+        complexes = normalize_inputs(sequences)
+        serialized = (
+            serialize_input(self.session, complexes, needs_msa=_attaches_msa(sequences))
+            if complexes
+            else None
+        )
         return FoldResultFuture.create(
             session=self.session,
             job=api.fold_models_post(
                 session=self.session,
                 model_id=self.model_id,
+                sequences=serialized,
                 **kwargs,
             ),
+            complexes=complexes or None,
         )

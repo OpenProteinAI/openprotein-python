@@ -10,7 +10,9 @@ def test_store_array_roundtrip(tmp_path):
     store = bl.BaselineStore(tmp_path)
     key = ("esm2", None, "ubiquitin", "embed_mean")
     arr = np.arange(6, dtype=float).reshape(2, 3)
-    store.save_array(key, arr, atol=1e-3, rtol=1e-4, provenance={"backend": "prod"})
+    store.save_array(
+        key, arr, atol=1e-3, rtol=1e-4, provenance={"backend": "reference"}
+    )
 
     fresh = bl.BaselineStore(tmp_path)  # reload from disk
     rec = fresh.load(key)
@@ -24,7 +26,9 @@ def test_store_array_roundtrip(tmp_path):
 def test_store_scalar_roundtrip(tmp_path):
     store = bl.BaselineStore(tmp_path)
     key = ("poet", None, "amie", "variant_effect_spearman")
-    store.save_scalar(key, 0.42, atol=0.05, rtol=0.0, provenance={"backend": "prod"})
+    store.save_scalar(
+        key, 0.42, atol=0.05, rtol=0.0, provenance={"backend": "reference"}
+    )
     rec = bl.BaselineStore(tmp_path).load(key)
     assert rec.kind == "scalar"
     assert rec.value == pytest.approx(0.42)
@@ -57,7 +61,9 @@ def test_two_keys_same_model_coexist(tmp_path):
 
 def _make_comparator(tmp_path, mode, repeats=1):
     store = bl.BaselineStore(tmp_path)
-    return bl.Comparator(store=store, mode=mode, repeats=repeats, provenance={"backend": "test"})
+    return bl.Comparator(
+        store=store, mode=mode, repeats=repeats, provenance={"backend": "test"}
+    )
 
 
 def test_comparator_capture_then_assert_array(tmp_path):
@@ -110,9 +116,6 @@ def test_comparator_tokens_exact_match(tmp_path):
         asr.check_tokens(key, lambda: np.array([3, 1, 4, 1, 9]))  # one differs
 
 
-# --- dtype parity (records + asserts the wire dtype, not just values) --------
-
-
 def test_store_array_records_and_loads_dtype(tmp_path):
     store = bl.BaselineStore(tmp_path)
     key = ("poet-2", None, "ubiquitin", "embed")
@@ -157,7 +160,9 @@ def test_comparator_assert_passes_on_dtype_match(tmp_path):
     cap = _make_comparator(tmp_path, "capture", repeats=1)
     cap.check_array(key, lambda: np.array([1.0, 2.0, 3.0], dtype=np.float16))
     asr = _make_comparator(tmp_path, "assert")
-    asr.check_array(key, lambda: np.array([1.0, 2.0, 3.0], dtype=np.float16))  # no raise
+    asr.check_array(
+        key, lambda: np.array([1.0, 2.0, 3.0], dtype=np.float16)
+    )  # no raise
 
 
 def test_comparator_assert_skips_dtype_when_baseline_legacy(tmp_path):
@@ -168,4 +173,6 @@ def test_comparator_assert_skips_dtype_when_baseline_legacy(tmp_path):
         key, np.array([1.0, 2.0, 3.0]), atol=1e-3, rtol=1e-4, provenance={}
     )
     asr = _make_comparator(tmp_path, "assert")
-    asr.check_array(key, lambda: np.array([1.0, 2.0, 3.0], dtype=np.float16))  # no raise
+    asr.check_array(
+        key, lambda: np.array([1.0, 2.0, 3.0], dtype=np.float16)
+    )  # no raise

@@ -1,7 +1,7 @@
 """Correctness tests for sequence scoring / variant effects.
 
 PoET-only (poet/poet-2). Every probe mints a fresh prompt_id from FIXED content,
-so it genuinely recomputes on the current workers while staying comparable to a
+so it genuinely recomputes on every call while staying comparable to a
 committed baseline.
 """
 
@@ -98,12 +98,12 @@ def test_variant_effect_correlates_with_amie(
     rho = metrics.spearman(np.array(predicted), np.array(measured))
 
     # L2 floor: zero-shot variant effect must clear a minimum quality bar.
-    assert (
-        rho >= MIN_VARIANT_EFFECT_SPEARMAN
-    ), f"variant-effect Spearman {rho:.3f} too low"
+    assert rho >= MIN_VARIANT_EFFECT_SPEARMAN, (
+        f"variant-effect Spearman {rho:.3f} too low"
+    )
 
-    # L3: the correlation tracks the captured prod baseline within a generous band
-    # (small cross-env drift accepted; single_site is conditioned on a fresh prompt).
+    # L3: the correlation tracks the committed baseline within a generous band
+    # (small numerical jitter accepted; single_site is conditioned on a fresh prompt).
     baseline.check_scalar(
         (model_id, None, "amie", "variant_effect_spearman"), lambda: rho, atol=0.02
     )

@@ -1,6 +1,7 @@
 """Prompt REST API interface for making HTTP calls to the prompt backend."""
 
 import io
+import re
 import zipfile
 from typing import BinaryIO, Sequence, cast
 
@@ -9,6 +10,18 @@ from openprotein.errors import APIError, InvalidParameterError, RawAPIError
 from openprotein.molecules import Complex, Protein
 
 from .schemas import Context, PromptMetadata, QueryMetadata
+
+__all__ = [
+    "create_prompt",
+    "create_query",
+    "get_prompt",
+    "get_prompt_metadata",
+    "get_query",
+    "get_query_metadata",
+    "list_prompts",
+    "unzip_prompt",
+    "zip_prompt",
+]
 
 
 def _coerce_sequence(
@@ -308,6 +321,12 @@ def zip_prompt(
     return context_zip_files
 
 
+def _context_position(file_name: str) -> tuple[int, int]:
+    """Sort key for archive members: ``context-<n>.zip`` by ``n``, then the rest."""
+    match = re.fullmatch(r"context-(\d+)\.zip", file_name)
+    return (0, int(match.group(1))) if match else (1, 0)
+
+
 def unzip_prompt(prompt_zip: BinaryIO) -> list[list[Protein | Complex]]:
     """
     Unzip a prompt zip file retrieved from the prompt API.
@@ -324,16 +343,19 @@ def unzip_prompt(prompt_zip: BinaryIO) -> list[list[Protein | Complex]]:
     Returns
     -------
     list of list of Protein or Complex
-        List of context entry lists, where each inner list represents a context group.
+        List of context entry lists, where each inner list represents a context
+        group, in the order of the number in ``context-<n>.zip``.
     """
     context_zip_files = []
     with zipfile.ZipFile(prompt_zip, "r") as zip_file:
-        file_names = zip_file.namelist()
+        file_names = sorted(
+            (name for name in zip_file.namelist() if name.startswith("context-")),
+            key=_context_position,
+        )
 
         for file_name in file_names:
-            if file_name.startswith("context-"):
-                context_zip_file = io.BytesIO(zip_file.read(file_name))
-                context_zip_files.append(context_zip_file)
+            context_zip_file = io.BytesIO(zip_file.read(file_name))
+            context_zip_files.append(context_zip_file)
     context = __parse_prompt(context_files=context_zip_files)
 
     return context
@@ -477,9 +499,7 @@ def create_query(
                 "text/x-fasta",
             )
     else:
-        raise InvalidParameterError(
-            f"unexpected query type: {type(query).__name__}"
-        )
+        raise InvalidParameterError(f"unexpected query type: {type(query).__name__}")
 
     response = session.post(endpoint, files={"query": (filename, io.BytesIO(qf), typ)})
 
@@ -531,6 +551,65 @@ def get_query_metadata(session: APISession, query_id: str) -> QueryMetadata:
         raise APIError(f"Unexpected response status code: {response.status_code}")
 
 
+def _fetch_query(session: APISession, query_id: str) -> Protein | Complex:
+    """Fetch and parse the query content for a given query ID.
+
+    An mmCIF or PDB query always parses as a :py:class:`Complex`, with chain ids
+    taken from the file; a FASTA query has no chain id and parses as a
+    :py:class:`Protein` (or a :py:class:`Complex` with auto-assigned chain ids
+    if it has ``:`` chain breaks).
+    """
+    endpoint = f"v1/prompt/query/{query_id}/content"
+    response = session.get(endpoint, stream=True)
+
+    if response.status_code == 401:
+        error = RawAPIError.model_validate(response.json())
+        raise APIError(error.detail)
+    elif response.status_code == 404:
+        error = RawAPIError.model_validate(response.json())
+        raise APIError(error.detail)
+    elif response.status_code != 200:
+        raise APIError(f"Unexpected response status code: {response.status_code}")
+
+    filename = response.headers.get("Content-Disposition", "query")
+    media_type = response.headers.get("Content-Type", "text/plain")
+    is_mmcif = filename.endswith(".cif") or media_type == "chemical/x-mmcif"
+    is_pdb = filename.endswith(".pdb") or media_type == "chemical/x-pdb"
+    is_fasta = filename.endswith(".fasta") or media_type == "text/x-fasta"
+
+    query = None
+    if is_mmcif:
+        query = Complex.from_string(
+            filestring=response.content, format="cif", verbose=False
+        )
+
+    elif is_pdb:
+        query = Complex.from_string(
+            filestring=response.content, format="pdb", verbose=False
+        )
+
+    elif is_fasta:
+        # Process FASTA file - take only the first sequence
+        import io
+
+        from openprotein import fasta
+
+        fasta_stream = io.BytesIO(response.content)
+        for name, sequence in fasta.parse_stream(fasta_stream):
+            entry_name = name.decode() if isinstance(name, bytes) else name
+            query = _coerce_sequence(name=entry_name, sequence=sequence)
+            break  # Only take the first sequence
+    else:
+        raise APIError(
+            f"Unexpected file returned with filename {filename} and type {media_type}"
+        )
+
+    if query is None:
+        raise APIError(f"Invalid query file returned from API {response.content[:10]}")
+
+    return query
+
+
 def get_query(session: APISession, query_id: str) -> Protein | Complex:
     """
     Get the query content for a given query ID.
@@ -553,51 +632,40 @@ def get_query(session: APISession, query_id: str) -> Protein | Complex:
     APIError
         If the API returns an error or the file format is unexpected.
     """
-    endpoint = f"v1/prompt/query/{query_id}/content"
-    response = session.get(endpoint, stream=True)
+    query = _fetch_query(session=session, query_id=query_id)
+    if isinstance(query, Complex):
+        proteins = query.get_proteins()
+        if len(proteins) == 1 and len(query.get_chains()) == 1:
+            return next(iter(proteins.values()))
+    return query
 
-    if response.status_code == 401:
-        error = RawAPIError.model_validate(response.json())
-        raise APIError(error.detail)
-    elif response.status_code == 404:
-        error = RawAPIError.model_validate(response.json())
-        raise APIError(error.detail)
-    elif response.status_code != 200:
-        raise APIError(f"Unexpected response status code: {response.status_code}")
 
-    filename = response.headers.get("Content-Disposition", "query")
-    media_type = response.headers.get("Content-Type", "text/plain")
-    is_mmcif = filename.endswith(".cif") or media_type == "chemical/x-mmcif"
-    is_fasta = filename.endswith(".fasta") or media_type == "text/x-fasta"
+def _get_query_as_complex(session: APISession, query_id: str) -> Complex:
+    """
+    Get the query content for a given query ID as a :py:class:`Complex`.
 
-    query = None
-    if is_mmcif:
-        complex_ = Complex.from_string(
-            filestring=response.content, format="cif", verbose=False
-        )
-        proteins = complex_.get_proteins()
-        if len(proteins) == 1 and len(complex_.get_chains()) == 1:
-            query = next(iter(proteins.values()))
-        else:
-            query = complex_
+    An mmCIF or PDB query returns the parsed Complex with chain ids taken from the
+    file. A FASTA query has no chain id, so a single-chain result is wrapped
+    as ``Complex({"A": protein})``.
 
-    elif is_fasta:
-        # Process FASTA file - take only the first sequence
-        import io
+    Parameters
+    ----------
+    session : APISession
+        The API session.
+    query_id : str
+        The query ID.
 
-        from openprotein import fasta
+    Returns
+    -------
+    Complex
+        The query content as a Complex.
 
-        fasta_stream = io.BytesIO(response.content)
-        for name, sequence in fasta.parse_stream(fasta_stream):
-            entry_name = name.decode() if isinstance(name, bytes) else name
-            query = _coerce_sequence(name=entry_name, sequence=sequence)
-            break  # Only take the first sequence
-    else:
-        raise APIError(
-            f"Unexpected file returned with filename {filename} and type {media_type}"
-        )
-
-    if query is None:
-        raise APIError(f"Invalid query file returned from API {response.content[:10]}")
-
+    Raises
+    ------
+    APIError
+        If the API returns an error or the file format is unexpected.
+    """
+    query = _fetch_query(session=session, query_id=query_id)
+    if isinstance(query, Protein):
+        return Complex({"A": query}, name=query.name)
     return query

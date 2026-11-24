@@ -1,21 +1,23 @@
 """Community-based AlphaFold 2 model running using ColabFold."""
 
 import warnings
-from typing import Sequence
 
 from openprotein.align import MSAFuture
 from openprotein.base import APISession
 from openprotein.common import ModelMetadata
 from openprotein.fold.common import (
+    FoldInput,
     msa_future_to_complex,
     normalize_inputs,
     serialize_input,
 )
-from openprotein.molecules import DNA, RNA, Complex, Ligand, Protein
+from openprotein.molecules import DNA, RNA, Ligand
 
 from . import api
 from .future import FoldResultFuture
 from .models import FoldModel
+
+__all__ = ["AlphaFold2Model"]
 
 
 class AlphaFold2Model(FoldModel):
@@ -35,7 +37,7 @@ class AlphaFold2Model(FoldModel):
 
     def fold(
         self,
-        sequences: Sequence[Complex | Protein | str | bytes] | MSAFuture,
+        sequences: FoldInput | MSAFuture,
         num_recycles: int | None = None,
         num_models: int = 1,
         num_relax: int = 0,
@@ -46,8 +48,8 @@ class AlphaFold2Model(FoldModel):
 
         Parameters
         ----------
-        sequences : Sequence[Complex | Protein | str | bytes] | MSAFuture
-            List of protein sequences to include in folded output. `Protein` objects must be tagged with an `msa`, which can be a `Protein.single_sequence_mode` for single sequence mode. Alternatively, supply an `MSAFuture` to use all query sequences as a multimer.
+        sequences : FoldInput | MSAFuture
+            Complexes to fold, or a lone complex/protein/sequence. `Protein` objects must be tagged with an `msa`, which can be a `Protein.single_sequence_mode` for single sequence mode. Alternatively, supply an `MSAFuture` to use all query sequences as a multimer.
         num_recycles : int
             number of times to recycle models
         num_models : int
@@ -70,7 +72,6 @@ class AlphaFold2Model(FoldModel):
         if sequences is None:
             raise TypeError("Expected 'proteins' argument")
 
-        # build the normalized_models from msa
         if isinstance(sequences, MSAFuture):
             normalized_complexes = [msa_future_to_complex(self.session, sequences)]
 
@@ -85,7 +86,7 @@ class AlphaFold2Model(FoldModel):
                     or isinstance(chain, Ligand)
                 ):
                     with warnings.catch_warnings():
-                        warnings.simplefilter("always")  # Force warning to always show
+                        warnings.simplefilter("always")
                         warnings.warn(
                             "AlphaFold-2 does not support ligand/DNA/RNA input. These extra chains will be ignored in the output."
                         )

@@ -33,10 +33,6 @@ def test_umap_single_model(
     expected_base_dim: int,
     n_components: int,
 ):
-    """
-    Test fitting UMAP models with different embedding models and n_components.
-    Validates UMAP workflow and projected embedding output.
-    """
     # Get the embedding model
     embedding_model = session.embedding.get_model(model_id)
 
@@ -46,14 +42,18 @@ def test_umap_single_model(
     )
 
     # Wait for the model to be ready
-    assert umap_future.wait_until_done(timeout=E2E_TIMEOUT), f"UMAP model fitting failed for {model_id}"
+    assert umap_future.wait_until_done(timeout=E2E_TIMEOUT), (
+        f"UMAP model fitting failed for {model_id}"
+    )
     umap_model = umap_future
     assert isinstance(umap_model, UMAPModel)
     assert umap_model.n_components == n_components
 
     # Use the UMAP model to embed a sequence
     embedding_future = umap_model.embed(sequences=[test_sequences_same_length[0]])
-    assert embedding_future.wait_until_done(timeout=E2E_TIMEOUT), f"UMAP embed failed for {model_id}"
+    assert embedding_future.wait_until_done(timeout=E2E_TIMEOUT), (
+        f"UMAP embed failed for {model_id}"
+    )
     results = embedding_future.get()
 
     # Validate the output
@@ -61,19 +61,15 @@ def test_umap_single_model(
     assert len(results) == 1
     seq, embedding = results[0]
     assert isinstance(embedding, np.ndarray)
-    assert embedding.shape == (
-        n_components,
-    ), f"Expected UMAP embedding shape of ({n_components},), but got {embedding.shape} for {model_id}"
+    assert embedding.shape == (n_components,), (
+        f"Expected UMAP embedding shape of ({n_components},), but got {embedding.shape} for {model_id}"
+    )
 
 
 @pytest.mark.e2e
 def test_umap_parallel_models(
     session: OpenProtein, test_sequences_same_length: list[bytes]
 ):
-    """
-    Test fitting multiple UMAP models in parallel.
-    Validates that the backend can handle concurrent UMAP fitting jobs.
-    """
     n_components = 3
 
     # Submit UMAP fitting jobs for multiple models in parallel
@@ -88,7 +84,9 @@ def test_umap_parallel_models(
     # Wait for all UMAP fitting jobs to complete
     umap_models = []
     for model_id, future in futures:
-        assert future.wait_until_done(timeout=E2E_TIMEOUT), f"UMAP fitting failed for {model_id}"
+        assert future.wait_until_done(timeout=E2E_TIMEOUT), (
+            f"UMAP fitting failed for {model_id}"
+        )
         umap_model = future
         assert isinstance(umap_model, UMAPModel)
         assert umap_model.n_components == n_components
@@ -101,9 +99,9 @@ def test_umap_parallel_models(
         results = embedding_future.wait(timeout=E2E_TIMEOUT)
         assert len(results) == 1
         seq, embedding = results[0]
-        assert embedding.shape == (
-            n_components,
-        ), f"Model {model_id}: unexpected UMAP embedding shape"
+        assert embedding.shape == (n_components,), (
+            f"Model {model_id}: unexpected UMAP embedding shape"
+        )
 
 
 @pytest.mark.e2e
@@ -111,9 +109,6 @@ def test_umap_parallel_models(
 def test_umap_reduction_types(
     session: OpenProtein, test_sequences_varied: list[bytes], reduction: ReductionType
 ):
-    """
-    Test UMAP with different reduction types for variable-length sequences.
-    """
     embedding_model = session.embedding.esm2
     n_components = 3
 
@@ -150,9 +145,6 @@ def test_umap_hyperparameters(
     n_neighbors: int,
     min_dist: float,
 ):
-    """
-    Test UMAP with different hyperparameter combinations.
-    """
     embedding_model = session.embedding.esm2
     n_components = 2
 
@@ -186,9 +178,6 @@ def test_umap_batch_embedding(
     test_sequences_same_length: list[bytes],
     num_sequences: int,
 ):
-    """
-    Test UMAP embedding with different batch sizes.
-    """
     embedding_model = session.embedding.esm2
     n_components = 3
 
@@ -224,9 +213,6 @@ def test_umap_from_assay(
     assay_fixture: str,
     fixture_lookup,
 ):
-    """
-    Test fitting UMAP from assay datasets of different sizes.
-    """
     # Get the fixture dynamically
     assay: AssayDataset = fixture_lookup(assay_fixture)
 
@@ -257,9 +243,6 @@ def test_umap_from_assay(
 def test_umap_retrieval_by_id(
     session: OpenProtein, test_sequences_same_length: list[bytes]
 ):
-    """
-    Test retrieving a UMAP model by ID.
-    """
     embedding_model = session.embedding.esm2
     n_components = 3
 
@@ -287,8 +270,7 @@ def test_umap_retrieval_by_id(
 @pytest.mark.e2e
 def test_umap_edge_case_small_dataset(session: OpenProtein):
     """
-    Test UMAP with a very small dataset (minimum viable, same-length sequences).
-    UMAP typically requires at least n_neighbors + 1 sequences.
+    UMAP requires at least n_neighbors + 1 sequences.
     """
     embedding_model = session.embedding.esm2
     n_components = 2
@@ -327,9 +309,6 @@ def test_umap_edge_case_high_dimensions(
     session: OpenProtein,
     test_sequences_same_length: list[bytes],
 ):
-    """
-    Test UMAP with higher dimensional output (e.g., 50 components).
-    """
     embedding_model = session.embedding.esm2
     n_components = 50
 
@@ -356,9 +335,8 @@ def test_umap_error_different_length_sequences_no_reduction(
     session: OpenProtein, test_sequences_varied: list[bytes]
 ):
     """
-    Test that UMAP raises an error when fitting on different-length sequences
-    without reduction. UMAP requires same-length embeddings, which means
-    same-length sequences when no reduction is applied.
+    UMAP requires same-length embeddings, so without a reduction the sequences
+    must all be the same length.
     """
     embedding_model = session.embedding.esm2
     n_components = 3
@@ -381,8 +359,7 @@ def test_umap_different_length_sequences_with_reduction(
     session: OpenProtein, test_sequences_varied: list[bytes]
 ):
     """
-    Test that UMAP works with different-length sequences when reduction is used.
-    Reduction (MEAN/SUM) produces fixed-size embeddings regardless of sequence length.
+    A MEAN/SUM reduction produces fixed-size embeddings, so sequence lengths may vary.
     """
     embedding_model = session.embedding.esm2
     n_components = 3
@@ -413,8 +390,7 @@ def test_umap_with_svd_features(
     session: OpenProtein, test_sequences_same_length: list[bytes]
 ):
     """
-    Test UMAP using SVD-reduced embeddings as features.
-    When using SVD features, reduction must be None.
+    SVD features are already reduced, so reduction must be None.
     """
     embedding_model = session.embedding.esm2
     svd_n_components = 32
@@ -452,8 +428,7 @@ def test_umap_error_svd_with_reduction(
     session: OpenProtein, test_sequences_same_length: list[bytes]
 ):
     """
-    Test that UMAP raises an error when trying to use reduction with SVD features.
-    SVD features are already reduced, so reduction should not be specified.
+    SVD features are already reduced, so specifying a reduction is an error.
     """
     embedding_model = session.embedding.esm2
     svd_n_components = 32
@@ -483,8 +458,7 @@ def test_umap_edge_case_n_neighbors_large(
     session: OpenProtein, test_sequences_same_length: list[bytes]
 ):
     """
-    Test UMAP with n_neighbors close to the dataset size.
-    UMAP should handle this gracefully or adjust n_neighbors.
+    n_neighbors close to the dataset size is handled or adjusted by UMAP.
     """
     embedding_model = session.embedding.esm2
     n_components = 2
@@ -518,9 +492,6 @@ def test_umap_extreme_min_dist(
     test_sequences_same_length: list[bytes],
     min_dist: float,
 ):
-    """
-    Test UMAP with extreme min_dist values (0.0 to 1.0).
-    """
     embedding_model = session.embedding.esm2
     n_components = 2
 
@@ -548,17 +519,14 @@ def test_umap_extreme_min_dist(
 def test_umap_sequence_length_property(
     session: OpenProtein, test_sequences_same_length: list[bytes]
 ):
-    """
-    Test that the sequence_length property is set correctly for same-length sequences.
-    """
     embedding_model = session.embedding.esm2
     n_components = 2
 
     # All sequences should be the same length
     expected_length = len(test_sequences_same_length[0])
-    assert all(
-        len(seq) == expected_length for seq in test_sequences_same_length
-    ), "Test sequences should all be the same length"
+    assert all(len(seq) == expected_length for seq in test_sequences_same_length), (
+        "Test sequences should all be the same length"
+    )
 
     # Fit UMAP with same-length sequences (no reduction needed)
     umap_future = embedding_model.fit_umap(
@@ -577,9 +545,6 @@ def test_umap_sequence_length_property(
 def test_umap_get_embeddings(
     session: OpenProtein, test_sequences_same_length: list[bytes]
 ):
-    """
-    Test retrieving the projected embeddings from a fitted UMAP model.
-    """
     embedding_model = session.embedding.esm2
     n_components = 2
     num_sequences = 10
@@ -606,9 +571,6 @@ def test_umap_get_embeddings(
 
 @pytest.mark.e2e
 def test_umap_get_model(session: OpenProtein, test_sequences_same_length: list[bytes]):
-    """
-    Test retrieving the base embedding model from a UMAP model.
-    """
     embedding_model = session.embedding.esm2
     n_components = 2
 
@@ -628,9 +590,6 @@ def test_umap_get_model(session: OpenProtein, test_sequences_same_length: list[b
 
 @pytest.mark.e2e
 def test_umap_delete(session: OpenProtein, test_sequences_same_length: list[bytes]):
-    """
-    Test deleting a UMAP model.
-    """
     embedding_model = session.embedding.esm2
     n_components = 2
 

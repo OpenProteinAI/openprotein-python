@@ -6,3 +6,5 @@ isort:skip_file
 
 from .msa import MSAFuture
 from .align import AlignAPI
+
+__all__ = ["AlignAPI", "MSAFuture"]

@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 from openprotein import OpenProtein
 from openprotein.common.reduction import ReductionType
-from openprotein.data import AssayDataset
 from openprotein.errors import HTTPError
 
 from tests.e2e.config import scaled_timeout
@@ -41,9 +40,6 @@ def _build_paired_chain_sequence(seq_len: int) -> bytes:
 
 
 # Model configurations: (model_id, expected_dimension, sequence_builder).
-# Once the upcoming dev rollout lets every model accept ':' separators, every
-# model can use _build_paired_chain_sequence and the per-model entry can
-# collapse back to (model_id, expected_dimension).
 EMBEDDING_MODELS = [
     ("esm2_t33_650M_UR50D", 1280, _build_single_chain_sequence),
     ("esmc-300m", None, _build_single_chain_sequence),
@@ -82,8 +78,7 @@ def test_embedding_single_model(
     build_sequence,
 ):
     """
-    Test embedding workflow for a single model.
-    Validates model metadata and embedding output shape.
+    A single model reports metadata and returns embeddings of the expected shape.
     """
     if model_id not in {m.id for m in session.embedding.list_models()}:
         pytest.skip(f"{model_id} is not available in this backend")
@@ -120,7 +115,6 @@ def test_embedding_single_model(
 def test_embedding_reduction_types(
     session: OpenProtein, reduction: ReductionType, model_id: str
 ):
-    """Test different reduction types for embeddings."""
     if not _supports_model(session, model_id):
         pytest.skip(f"{model_id} model is not available in this backend")
     model = session.embedding.get_model(model_id)
@@ -139,8 +133,7 @@ def test_embedding_reduction_types(
 @pytest.mark.e2e
 def test_embedding_parallel_models(session: OpenProtein):
     """
-    Test submitting embedding jobs to multiple models in parallel.
-    Validates that the backend can handle concurrent jobs.
+    Concurrent embedding jobs across models all complete.
 
     Uses a per-model sequence builder so each model gets sequences in its
     accepted format (e.g. ablang2 needs paired heavy:light).
@@ -177,8 +170,7 @@ def test_embedding_parallel_models(session: OpenProtein):
 @pytest.mark.parametrize("num_seqs", [1, 10, 100])
 def test_embedding_batch_sizes(session: OpenProtein, num_seqs: int, model_id: str):
     """
-    Test embedding with different batch sizes.
-    Validates scalability and batch processing.
+    Embedding works across a range of batch sizes.
     """
     if not _supports_model(session, model_id):
         pytest.skip(f"{model_id} model is not available in this backend")
@@ -201,8 +193,7 @@ def test_embedding_varied_sequence_lengths(
     session: OpenProtein, test_sequences_varied, model_id: str
 ):
     """
-    Test embedding sequences of varying lengths.
-    Validates handling of short, medium, long, and very long sequences.
+    Embedding works for short, medium, long, and very long sequences.
     """
     if not _supports_model(session, model_id):
         pytest.skip(f"{model_id} model is not available in this backend")
@@ -221,7 +212,6 @@ def test_embedding_varied_sequence_lengths(
 @pytest.mark.e2e
 @pytest.mark.parametrize("model_id", PER_MODEL_TEST_IDS)
 def test_embedding_empty_sequence_handling(session: OpenProtein, model_id: str):
-    """Test error handling for edge cases like empty sequences."""
     if not _supports_model(session, model_id):
         pytest.skip(f"{model_id} model is not available in this backend")
     model = session.embedding.get_model(model_id)
@@ -234,7 +224,6 @@ def test_embedding_empty_sequence_handling(session: OpenProtein, model_id: str):
 @pytest.mark.e2e
 @pytest.mark.parametrize("model_id", PER_MODEL_TEST_IDS)
 def test_embedding_invalid_amino_acids(session: OpenProtein, model_id: str):
-    """Test error handling for sequences with invalid amino acids."""
     if not _supports_model(session, model_id):
         pytest.skip(f"{model_id} model is not available in this backend")
     model = session.embedding.get_model(model_id)
@@ -327,6 +316,166 @@ def test_e2e_poet2_score_single_site_and_indel(session: OpenProtein):
         assert isinstance(row.score, np.ndarray)
         assert row.score.size > 0
         assert np.isfinite(row.score).all()
+
+
+def _single_site_scores(model, sequence: str) -> tuple[list[float], dict[str, float]]:
+    """Return the wild-type scores and the substitution scores by mut_code."""
+    wild_type: list[float] = []
+    substitutions: dict[str, float] = {}
+    for row in model.single_site(sequence=sequence).wait(timeout=TIMEOUT):
+        score = float(np.asarray(row.score).item())
+        if row.mut_code == "WT":
+            wild_type.append(score)
+        else:
+            substitutions[row.mut_code] = score
+    return wild_type, substitutions
+
+
+@pytest.mark.e2e
+def test_e2e_ablang2_single_site(session: OpenProtein):
+    """AbLang2 scans both chains of a paired base, skipping ':' and gap columns,
+    and a gapped base scores each substitution like its ungapped form."""
+    if not _supports_model(session, "ablang2"):
+        pytest.skip("ablang2 model is not available in this backend")
+
+    model = session.embedding.ablang2
+    heavy = mutate_sequence(ANTIBODY_HEAVY_SEQUENCE, mutation_rate=0.02)
+    light = mutate_sequence(ANTIBODY_LIGHT_SEQUENCE, mutation_rate=0.02)
+    plain = f"{heavy}:{light}"
+    gapped = f"{heavy[:20]}-{heavy[20:]}:{light[:40]}-{light[40:]}"
+
+    plain_wild_type, plain_scores = _single_site_scores(model, plain)
+    gapped_wild_type, gapped_scores = _single_site_scores(model, gapped)
+
+    residues = len(heavy) + len(light)
+    for base, wild_type, scores in [
+        (plain, plain_wild_type, plain_scores),
+        (gapped, gapped_wild_type, gapped_scores),
+    ]:
+        assert len(wild_type) == residues
+        assert all(score == 0.0 for score in wild_type)
+        assert len(scores) == 19 * residues
+        assert np.isfinite(list(scores.values())).all()
+        for code in scores:
+            ref, position, alt = code[0], int(code[1:-1]), code[-1]
+            assert base[position - 1] == ref and ref not in ":-" and alt != ref
+
+    # Dropping the gaps maps each gapped column onto the plain base, so the
+    # codes shift but the scores must not.
+    gapped_to_plain = [i for i, c in enumerate(gapped) if c != "-"]
+    for code, score in gapped_scores.items():
+        position = int(code[1:-1]) - 1
+        plain_code = f"{code[0]}{gapped_to_plain.index(position) + 1}{code[-1]}"
+        assert score == pytest.approx(plain_scores[plain_code], abs=1e-4), code
+    assert any(int(code[1:-1]) > len(heavy) + 1 for code in plain_scores)
+
+
+@pytest.mark.e2e
+def test_e2e_esmc_score_single_site(session: OpenProtein):
+    """ESM-C scores every substitution at every position against the wild type."""
+    if not _supports_model(session, "esmc-300m"):
+        pytest.skip("esmc-300m model is not available in this backend")
+
+    base_sequence = b"ACDEFGHIKLMNPQRSTVWY"
+    rows = session.embedding.esmc_300m.single_site(sequence=base_sequence).wait(
+        timeout=TIMEOUT
+    )
+
+    assert len(rows) == 20 * len(base_sequence)
+    wild_type = [row for row in rows if row.mut_code == "WT"]
+    assert len(wild_type) == len(base_sequence)
+    for row in rows:
+        assert isinstance(row.score, np.ndarray)
+        assert row.score.size == 1
+        assert np.isfinite(row.score).all()
+    assert all(row.score[0] == 0.0 for row in wild_type)
+
+
+ESM2_SCORE_MODEL = "esm2_t6_8M_UR50D"
+SUBSTITUTIONS = "ARNDCQEGHILKMFPSTWYV"
+
+
+def _scores_by_code(rows) -> dict[str, float]:
+    return {row.mut_code: float(row.score[0]) for row in rows if row.mut_code != "WT"}
+
+
+@pytest.mark.e2e
+def test_e2e_esm2_score_single_site(session: OpenProtein):
+    """ESM2 scores every substitution at every position against the wild type."""
+    if not _supports_model(session, ESM2_SCORE_MODEL):
+        pytest.skip(f"{ESM2_SCORE_MODEL} model is not available in this backend")
+
+    base_sequence = random_sequence_fake(30)
+    model = session.embedding.get_model(ESM2_SCORE_MODEL)
+    rows = model.single_site(sequence=base_sequence).wait(timeout=TIMEOUT)
+
+    assert len(rows) == 20 * len(base_sequence)
+    wild_type = [row for row in rows if row.mut_code == "WT"]
+    assert len(wild_type) == len(base_sequence)
+    for row in rows:
+        assert row.score.size == 1
+        assert np.isfinite(row.score).all()
+    assert all(row.score[0] == 0.0 for row in wild_type)
+    expected = {
+        f"{wt}{position}{mutant}"
+        for position, wt in enumerate(base_sequence, start=1)
+        for mutant in SUBSTITUTIONS
+        if mutant != wt
+    }
+    assert set(_scores_by_code(rows)) == expected
+
+
+@pytest.mark.e2e
+def test_e2e_esm2_score_single_site_on_a_gapped_base(session: OpenProtein):
+    """Gap positions are not scanned, and the rest score as they do without the gaps."""
+    if not _supports_model(session, ESM2_SCORE_MODEL):
+        pytest.skip(f"{ESM2_SCORE_MODEL} model is not available in this backend")
+
+    left, right = random_sequence_fake(10), random_sequence_fake(10)
+    model = session.embedding.get_model(ESM2_SCORE_MODEL)
+    gapped = model.single_site(sequence=f"{left}--{right}").wait(timeout=TIMEOUT)
+    plain = model.single_site(sequence=left + right).wait(timeout=TIMEOUT)
+
+    assert len(gapped) == len(plain) == 20 * 20
+    gapped_scores = _scores_by_code(gapped)
+    assert not any(code[1:-1] in ("11", "12") for code in gapped_scores)
+    shifted = {}
+    for code, score in gapped_scores.items():
+        position = int(code[1:-1])
+        if position > 12:
+            position -= 2
+        shifted[f"{code[0]}{position}{code[-1]}"] = score
+    plain_scores = _scores_by_code(plain)
+    assert shifted.keys() == plain_scores.keys()
+    for code, score in plain_scores.items():
+        assert shifted[code] == pytest.approx(score, abs=1e-2)
+
+
+@pytest.mark.e2e
+def test_e2e_esm2_score_single_site_through_models(session: OpenProtein):
+    """The models API returns the embeddings API's scan, by site then substitution."""
+    if not _supports_model(session, ESM2_SCORE_MODEL):
+        pytest.skip(f"{ESM2_SCORE_MODEL} model is not available in this backend")
+
+    base_sequence = random_sequence_fake(20)
+    scores = (
+        session.models.get_model(ESM2_SCORE_MODEL)
+        .single_site(base_sequence=base_sequence)
+        .wait(timeout=TIMEOUT)
+    )
+    rows = (
+        session.embedding.get_model(ESM2_SCORE_MODEL)
+        .single_site(sequence=base_sequence)
+        .wait(timeout=TIMEOUT)
+    )
+
+    by_code = _scores_by_code(rows)
+    expected = [
+        0.0 if mutant == wt else by_code[f"{wt}{position}{mutant}"]
+        for position, wt in enumerate(base_sequence, start=1)
+        for mutant in SUBSTITUTIONS
+    ]
+    assert list(scores) == pytest.approx(expected, abs=1e-6)
 
 
 @pytest.mark.e2e

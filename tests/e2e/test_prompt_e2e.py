@@ -9,7 +9,6 @@ from tests.utils.strings import random_string
 
 @pytest.mark.e2e
 def test_prompt_e2e(session: OpenProtein) -> None:
-    """End-to-end test for the prompt feature."""
     # 1. Create a prompt
     prompt_name = f"test-prompt-{random_string()}"
     context = ["ACDEFGHIKLMNPQRSTVWY"]
@@ -42,7 +41,6 @@ def test_prompt_e2e(session: OpenProtein) -> None:
 
 @pytest.mark.e2e
 def test_prompt_editing_e2e(session: OpenProtein) -> None:
-    """End-to-end test for editing prompts and queries."""
     # 1. Create an initial prompt (context)
     prompt_name_1 = f"test-prompt-edit-1-{random_string()}"
     context_1 = ["ACDEFGHIKLMNPQRSTVWY"]

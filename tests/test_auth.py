@@ -51,17 +51,19 @@ def test_corrupt_file_treated_as_no_record(store, tmp_path):
 
 
 def test_identity_scoping_is_independent(store):
-    dev = store.identity("https://dev/", "user@x.com")
-    prod = store.identity("https://prod/", "user@x.com")
+    first = store.identity("https://first/", "user@x.com")
+    second = store.identity("https://second/", "user@x.com")
     store.save(
-        dev, TokenRecord(access_token="dev-a", refresh_token="dev-r", expires_at=1.0)
+        first,
+        TokenRecord(access_token="first-a", refresh_token="first-r", expires_at=1.0),
     )
     store.save(
-        prod, TokenRecord(access_token="prod-a", refresh_token="prod-r", expires_at=2.0)
+        second,
+        TokenRecord(access_token="second-a", refresh_token="second-r", expires_at=2.0),
     )
 
-    assert store.load(dev).access_token == "dev-a"
-    assert store.load(prod).access_token == "prod-a"
+    assert store.load(first).access_token == "first-a"
+    assert store.load(second).access_token == "second-a"
 
 
 def test_save_preserves_other_identities(store, tmp_path):
@@ -81,9 +83,7 @@ def test_lock_is_reentrant(store):
             pass
 
 
-# ---------------------------------------------------------------------------
 # APISession login behavior tests
-# ---------------------------------------------------------------------------
 
 BACKEND = "https://test-backend/"
 
@@ -203,11 +203,7 @@ def test_login_non404_error_raises_autherror(isolated_store):
             APISession("user@x.com", "pw", backend=BACKEND)
 
 
-# ---------------------------------------------------------------------------
 # Session init adoption tests
-# ---------------------------------------------------------------------------
-
-
 def test_init_adopts_stored_record_without_login(isolated_store):
     # Seed the store with a valid record for this identity.
     TokenStore(dir=isolated_store).save(
@@ -250,9 +246,7 @@ def test_init_logs_in_when_stored_record_has_no_refresh_token(isolated_store):
     assert session.auth._token == "fresh-access"
 
 
-# ---------------------------------------------------------------------------
 # _refresh / _relogin tests
-# ---------------------------------------------------------------------------
 
 
 def _logged_in_session(
@@ -353,7 +347,7 @@ def test_refresh_relogin_failure_raises_autherror(isolated_store):
 
 
 def test_refresh_403_triggers_relogin(isolated_store):
-    # Some Keycloak deployments return 403 (not 401) for an expired session.
+    # Some identity providers answer an expired session with 403 rather than 401.
     session = _logged_in_session(isolated_store)
     relogin_resp = _resp(
         json_body={
@@ -374,9 +368,8 @@ def test_refresh_403_triggers_relogin(isolated_store):
 
 
 def test_refresh_404_triggers_relogin(isolated_store):
-    # A backend that issued a refresh token but no longer exposes /auth/refresh
-    # (e.g. mid-rollback) returns 404; recover by re-logging-in rather than
-    # surfacing a raw 404. Re-login itself drops to legacy mode if needed.
+    # A backend that issued a refresh token but does not serve /auth/refresh
+    # answers 404; recover by re-logging in, dropping to legacy mode if needed.
     session = _logged_in_session(isolated_store)
     relogin_resp = _resp(
         json_body={
@@ -425,9 +418,7 @@ def test_refresh_without_refresh_token_falls_back_to_relogin(isolated_store):
     assert session.auth._token == "relogin-access"
 
 
-# ---------------------------------------------------------------------------
 # request() proactive + reactive refresh tests
-# ---------------------------------------------------------------------------
 
 
 def test_proactive_refresh_fires_within_skew(isolated_store):

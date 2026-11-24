@@ -4,21 +4,21 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+
 from openprotein import OpenProtein
 from openprotein.molecules import Complex, Protein, Template
-
 from tests.e2e.config import scaled_timeout
 
 GENERATE_TIMEOUT = scaled_timeout(2.0)
 
 
-def _assert_generated_sequences(results: list, expected_count: int) -> None:
-    assert isinstance(results, list)
-    assert len(results) == expected_count
-    for entry in results:
-        assert isinstance(entry.sequence, str)
-        assert len(entry.sequence) > 0
-        assert isinstance(entry.score, np.ndarray)
+def _assert_generated_sequences(future, expected_count: int) -> None:
+    sequences = future.get(output="sequences")
+    loglikelihoods = future.get(output="loglikelihood")
+    assert len(sequences) == len(loglikelihoods) == expected_count
+    for sequence in sequences:
+        assert isinstance(sequence, str)
+        assert len(sequence) > 0
 
 
 @pytest.mark.e2e
@@ -33,11 +33,14 @@ def test_e2e_structure_generate_then_sequence_generate_with_design(
     """
     n_designs = 1
     n_sequences = 2
-    design_future = session.models.rfdiffusion.generate(contigs=60, N=n_designs)
+    design_future = session.models.rfdiffusion.generate(
+        query=Protein.from_expr(60), num_samples=n_designs
+    )
     assert design_future.wait_until_done(timeout=GENERATE_TIMEOUT)
 
     designs = design_future.get()
     assert len(designs) == n_designs
+    assert isinstance(designs[0], Complex)
 
     seq_future = session.models.proteinmpnn.generate(
         design=design_future,
@@ -45,8 +48,7 @@ def test_e2e_structure_generate_then_sequence_generate_with_design(
         temperature=0.1,
     )
     assert seq_future.wait_until_done(timeout=GENERATE_TIMEOUT)
-    results = seq_future.get()
-    _assert_generated_sequences(results=results, expected_count=n_designs * n_sequences)
+    _assert_generated_sequences(seq_future, expected_count=n_designs * n_sequences)
 
 
 @pytest.mark.e2e
@@ -92,41 +94,85 @@ def test_e2e_proteinmpnn_generate_with_query_fanout(session: OpenProtein):
         temperature=0.1,
     )
     assert future.wait_until_done(timeout=GENERATE_TIMEOUT)
-    results = future.get()
-    _assert_generated_sequences(
-        results=results,
-        expected_count=num_queries * n_sequences,
+    _assert_generated_sequences(future, expected_count=num_queries * n_sequences)
+
+
+@pytest.mark.e2e
+@pytest.mark.parametrize("model_id", ["proteinmpnn", "solublempnn"])
+def test_e2e_proteinmpnn_embed_multichain(session: OpenProtein, model_id: str):
+    """Per-residue rows line up with the sequence: NaN at each `:`, zero where
+    the structure has no residue."""
+    structure_filepath = Path("tests/data/8bo9.cif")
+    if not structure_filepath.exists():
+        pytest.skip(f"Missing test structure file: {structure_filepath}")
+
+    structure = Complex(chains=Complex.from_filepath(structure_filepath).get_proteins())
+    proteins = list(structure.get_proteins().values())
+    query = session.prompt.create_query(query=structure)
+    sequence = ":".join(protein.sequence.decode() for protein in proteins)
+    is_break = np.array([residue == ":" for residue in sequence])
+    unresolved = np.zeros(len(sequence), dtype=bool)
+    unresolved[~is_break] = np.concatenate(
+        [protein.get_structure_mask() for protein in proteins]
+    )
+    model = getattr(session.models, model_id)
+    dimension = model.metadata.dimension
+
+    [per_residue] = model.embed(sequences=[sequence], query=query, reduction=None).wait(
+        timeout=GENERATE_TIMEOUT
     )
 
-
-@pytest.mark.e2e
-def test_e2e_proteinmpnn_score_not_implemented(session: OpenProtein):
-    with pytest.raises(NotImplementedError, match="Score not yet implemented"):
-        session.models.proteinmpnn.score(
-            sequences=[b"ACDEFGHIKLMNPQRSTVWY"],
-            query=b"ACDEFGHIKLMNPQRSTVWY",
-        )
+    assert per_residue.shape == (len(sequence), dimension)
+    assert np.isnan(per_residue[is_break]).all()
+    assert np.isfinite(per_residue[~is_break]).all()
+    assert (per_residue[unresolved] == 0).all()
 
 
 @pytest.mark.e2e
-def test_e2e_proteinmpnn_indel_not_implemented(session: OpenProtein):
-    with pytest.raises(NotImplementedError, match="Score indel not yet implemented"):
-        session.models.proteinmpnn.indel(
-            sequence=b"ACDEFGHIKLMNPQRSTVWY",
-            query=b"ACDEFGHIKLMNPQRSTVWY",
-            insert="A",
-        )
+def test_e2e_proteinmpnn_score_native_against_structure(session: OpenProtein):
+    """ProteinMPNN scores the native sequence against its backbone, the same
+    way every time."""
+    structure_filepath = Path("tests/data/8bo9.cif")
+    if not structure_filepath.exists():
+        pytest.skip(f"Missing test structure file: {structure_filepath}")
+
+    query_protein = Protein.from_filepath(path=structure_filepath, chain_id="A")
+
+    future = session.models.proteinmpnn.score(
+        sequences=[query_protein.sequence, query_protein.sequence],
+        query=query_protein,
+    )
+    assert future.wait_until_done(timeout=GENERATE_TIMEOUT)
+    first, second = future.get()
+
+    assert first == second
+    per_residue_ll = first / len(query_protein.sequence)
+    assert -4.0 <= per_residue_ll <= 0.0
 
 
 @pytest.mark.e2e
-def test_e2e_proteinmpnn_single_site_not_implemented(session: OpenProtein):
-    with pytest.raises(
-        NotImplementedError, match="Score single site not yet implemented"
-    ):
-        session.models.proteinmpnn.single_site(
-            sequence=b"ACDEFGHIKLMNPQRSTVWY",
-            query=b"ACDEFGHIKLMNPQRSTVWY",
-        )
+def test_e2e_proteinmpnn_has_no_indel(session: OpenProtein):
+    with pytest.raises(ValueError, match="has no indel"):
+        session.models.proteinmpnn.indel(b"ACDEFGHIKLMNPQRSTVWY", insert="A")
+
+
+@pytest.mark.e2e
+def test_e2e_proteinmpnn_single_site_against_structure(session: OpenProtein):
+    """ProteinMPNN scores every substitution of a resolved window, and every
+    unmutated row scores the same."""
+    structure_filepath = Path("tests/data/8bo9.cif")
+    if not structure_filepath.exists():
+        pytest.skip(f"Missing test structure file: {structure_filepath}")
+
+    window = Protein.from_filepath(path=structure_filepath, chain_id="A")[10:40]
+    assert not window.get_structure_mask().any()
+
+    future = session.models.proteinmpnn.single_site(window.sequence, query=window)
+    assert future.wait_until_done(timeout=GENERATE_TIMEOUT)
+    scores = np.array(future.get(), dtype=float)
+
+    assert len(scores) == 20 * len(window.sequence)
+    assert np.isfinite(scores).all()
 
 
 @pytest.mark.e2e
@@ -143,11 +189,10 @@ def test_e2e_esmif1_generate_basic(session: OpenProtein):
         query=query_protein,
         num_samples=n_sequences,
         temperature=1.0,
-        seed=42,
+        random_seed=42,
     )
     assert future.wait_until_done(timeout=GENERATE_TIMEOUT)
-    results = future.get()
-    _assert_generated_sequences(results=results, expected_count=n_sequences)
+    _assert_generated_sequences(future, expected_count=n_sequences)
     # Note: samples are not asserted to be distinct. With a fixed seed (and on a
     # well-determined backbone) ESM-IF1 can legitimately return identical samples,
     # so sequence diversity is not a reliable invariant here.
@@ -167,34 +212,35 @@ def test_e2e_esmif1_score_native_against_structure(session: OpenProtein):
         query=query_protein,
     )
     assert future.wait_until_done(timeout=GENERATE_TIMEOUT)
-    results = future.get()
+    [score] = future.get()
 
-    assert len(results) == 1
-    [row] = results
-    assert isinstance(row.sequence, str)
-    assert isinstance(row.score, np.ndarray)
-    assert row.score.shape == (1,)
     # ESM-IF1 returns ll_fullseq: the summed log-likelihood over the sequence,
     # which scales with length. Normalize to a per-residue average before
     # bounding. Natural proteins score ~[-2.5, -1.0] per residue; allow [-4, 0].
-    per_residue_ll = float(row.score[0]) / len(row.sequence)
+    per_residue_ll = float(score) / len(query_protein.sequence)
     assert -4.0 <= per_residue_ll <= 0.0
 
 
 @pytest.mark.e2e
 def test_e2e_rfdiffusion_generate_basic(session: OpenProtein):
-    """Standalone smoke test: rfdiffusion generates a structure from `contigs` only."""
+    """Standalone smoke test: rfdiffusion designs a structure de novo from a fully masked query."""
     n_designs = 1
-    future = session.models.rfdiffusion.generate(contigs=60, N=n_designs)
+    future = session.models.rfdiffusion.generate(
+        query=Protein.from_expr(60), num_samples=n_designs
+    )
     assert future.wait_until_done(timeout=GENERATE_TIMEOUT)
 
     designs = future.get()
     assert len(designs) == n_designs
+    assert isinstance(designs[0], Complex)
 
 
 @pytest.mark.e2e
 def test_e2e_rfdiffusion_query_with_mask_structure(session: OpenProtein):
-    """rfdiffusion fills in a partially-masked structure passed via `query`."""
+    """rfdiffusion fills in a partially-masked structure passed via `query`.
+
+    RFdiffusion ignores sequence, so a position without structure has no sequence.
+    """
     structure_filepath = Path("tests/data/8bo9.cif")
     if not structure_filepath.exists():
         pytest.skip(f"Missing test structure file: {structure_filepath}")
@@ -208,12 +254,17 @@ def test_e2e_rfdiffusion_query_with_mask_structure(session: OpenProtein):
 
     rng = np.random.default_rng(1)
     kept_positions = np.sort(rng.choice(structured_positions, size=16, replace=False))
-    masked = base.copy().mask_structure_except_at(kept_positions)
+    masked = (
+        base.copy()
+        .mask_structure_except_at(kept_positions)
+        .mask_sequence_except_at(kept_positions)
+    )
 
-    future = session.models.rfdiffusion.generate(query=masked, N=1)
+    future = session.models.rfdiffusion.generate(query=masked, num_samples=1)
     assert future.wait_until_done(timeout=GENERATE_TIMEOUT)
     designs = future.get()
     assert len(designs) == 1
+    assert isinstance(designs[0], Complex)
 
 
 @pytest.mark.e2e
@@ -234,24 +285,11 @@ def test_e2e_boltzgen_query_with_mask_structure(session: OpenProtein):
     kept_positions = np.sort(rng.choice(structured_positions, size=16, replace=False))
     masked = base.copy().mask_structure_except_at(kept_positions)
 
-    future = session.models.boltzgen.generate(query=masked, N=1)
+    future = session.models.boltzgen.generate(query=masked, num_samples=1)
     assert future.wait_until_done(timeout=GENERATE_TIMEOUT)
     designs = future.get()
     assert len(designs) == 1
-
-
-@pytest.mark.e2e
-def test_e2e_boltzgen_generate_basic(session: OpenProtein):
-    """Standalone smoke test: boltzgen accepts a minimal design_spec."""
-    design_spec = {
-        "entities": [
-            {"protein": {"id": "A", "sequence": "ACDEFGHIKLMNPQRSTVWY"}},
-        ],
-    }
-    future = session.models.boltzgen.generate(design_spec=design_spec, N=1)
-    assert future.wait_until_done(timeout=GENERATE_TIMEOUT)
-    designs = future.get()
-    assert len(designs) == 1
+    assert isinstance(designs[0], Complex)
 
 
 @pytest.mark.e2e
@@ -285,9 +323,11 @@ def test_e2e_binder_design_full_flow_with_template(
     # structure). RFdiffusion designs the unstructured chain conditioned on
     # the structured one.
     query_complex = Complex(chains={"A": target, "B": Protein.from_expr(binder_len)})
-    rfdiff_future = session.models.rfdiffusion.generate(query=query_complex, N=1)
+    rfdiff_future = session.models.rfdiffusion.generate(
+        query=query_complex, num_samples=1
+    )
     assert rfdiff_future.wait_until_done(timeout=GENERATE_TIMEOUT)
-    rfdiff_designs = rfdiff_future.get()
+    rfdiff_designs = rfdiff_future.get(output="structures")
     assert len(rfdiff_designs) == 1
     rfdiff_complex = rfdiff_designs[0]
     assert isinstance(rfdiff_complex, Complex)
@@ -298,9 +338,9 @@ def test_e2e_binder_design_full_flow_with_template(
         temperature=0.1,
     )
     assert seq_future.wait_until_done(timeout=GENERATE_TIMEOUT)
-    seq_results = seq_future.get()
+    seq_results = seq_future.get(output="sequences")
     assert len(seq_results) == 1
-    binder_sequence = seq_results[0].sequence.split(":")[1].encode()
+    binder_sequence = seq_results[0].split(":")[1].encode()
 
     binder_protein = Protein(sequence=binder_sequence)
     # The fold call requires every input Protein to have an msa attached or

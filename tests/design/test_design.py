@@ -1,4 +1,5 @@
 """L2 integration tests for the design domain."""
+
 from unittest.mock import MagicMock
 
 import pytest
@@ -6,17 +7,15 @@ import pytest
 from openprotein.design.design import DesignAPI
 from openprotein.design.future import DesignFuture
 from openprotein.design.schemas import Criteria, Criterion, ModelCriterion
-from openprotein.jobs import JobStatus, JobType
+from openprotein.jobs import JobType
 
 
 @pytest.fixture
 def design_api(mock_session: MagicMock) -> DesignAPI:
-    """Fixture for a DesignAPI instance."""
     return DesignAPI(mock_session)
 
 
 def test_create_design(design_api: DesignAPI, mock_session: MagicMock):
-    """Test the create_genetic_algorithm_design method."""
     # Mock for the POST call that creates the design
     mock_session.post.return_value.status_code = 200
     mock_session.post.return_value.json.return_value = {

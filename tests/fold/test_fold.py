@@ -12,7 +12,6 @@ from openprotein.jobs.schemas import Job, JobStatus, JobType
 
 
 def test_fold_api_init(mock_session: MagicMock):
-    """Test FoldAPI initialization by mocking the underlying session call."""
     # Configure the mock to return a list of models first, then model metadata
     mock_session.get.return_value.json.side_effect = [
         ["esmfold", "alphafold2", "boltz-1", "protenix"],  # First call for list_models
@@ -35,9 +34,6 @@ def test_fold_api_init(mock_session: MagicMock):
 
 
 def test_get_results(mock_session: MagicMock):
-    """
-    Test FoldAPI.get_results integration.
-    """
     # Configure mock responses for the sequence of API calls
     try:
         mock_session.get.return_value.json.side_effect = [

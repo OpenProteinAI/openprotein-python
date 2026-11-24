@@ -12,4 +12,3 @@ def scaled_timeout(multiplier: float = 1.0) -> int:
     if multiplier <= 0:
         raise ValueError(f"multiplier must be > 0, got {multiplier}")
     return max(1, int(BASE_TIMEOUT * multiplier))
-

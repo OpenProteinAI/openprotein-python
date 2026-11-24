@@ -7,6 +7,20 @@ from pydantic import BaseModel, Field
 
 from openprotein.jobs import Job, JobType
 
+__all__ = [
+    "AbNumberJob",
+    "AbNumberScheme",
+    "AlignType",
+    "ClustalOJob",
+    "JobWarning",
+    "MSAJob",
+    "MSASamplingMethod",
+    "MafftJob",
+    "Pairing",
+    "PromptPostParams",
+    "UnnumberedPolicy",
+]
+
 
 class AlignType(str, Enum):
     """
@@ -50,6 +64,27 @@ class MSASamplingMethod(str, Enum):
     NEIGHBORS_NO_LIMIT = "NEIGHBORS_NO_LIMIT"
     NEIGHBORS_NONGAP_NORM_NO_LIMIT = "NEIGHBORS_NONGAP_NORM_NO_LIMIT"
     TOP = "TOP"
+
+
+class Pairing(str, Enum):
+    """
+    Cross-chain pairing strategy for a complex (multi-chain) MSA search.
+
+    Has no effect on a single-chain query.
+
+    Attributes
+    ----------
+    UNPAIRED : str
+        Search each chain independently.
+    PAIRED : str
+        Keep only cross-chain paired hits.
+    BOTH : str
+        Return both paired and unpaired hits (the default).
+    """
+
+    UNPAIRED = "unpaired"
+    PAIRED = "paired"
+    BOTH = "both"
 
 
 class PromptPostParams(BaseModel):
@@ -99,7 +134,7 @@ class MSAJob(Job):
     Attributes
     ----------
     job_type : Literal[JobType.align_align]
-        The type of job (must be JobType.align_align).
+        Discriminator identifying a generic alignment job.
     """
 
     job_type: Literal[JobType.align_align]
@@ -107,14 +142,14 @@ class MSAJob(Job):
     @property
     def msa_id(self):
         """
-        Returns the MSA identifier for this job.
+        The MSA identifier for this job.
 
         Returns
         -------
         str
-            The MSA identifier.
+            Identifier of the MSA this job produced, used to fetch its results.
         """
-        return self.msa_id
+        return (self.model_extra or {}).get("msa_id") or self.job_id
 
 
 class MafftJob(MSAJob, Job):
@@ -124,7 +159,7 @@ class MafftJob(MSAJob, Job):
     Attributes
     ----------
     job_type : Literal[JobType.mafft]
-        The type of job (must be JobType.mafft).
+        Discriminator identifying a MAFFT alignment job.
     """
 
     job_type: Literal[JobType.mafft]
@@ -137,7 +172,7 @@ class ClustalOJob(MSAJob, Job):
     Attributes
     ----------
     job_type : Literal[JobType.clustalo]
-        The type of job (must be JobType.clustalo).
+        Discriminator identifying a Clustal Omega alignment job.
     """
 
     job_type: Literal[JobType.clustalo]
@@ -150,7 +185,7 @@ class AbNumberJob(MSAJob, Job):
     Attributes
     ----------
     job_type : Literal[JobType.abnumber]
-        The type of job (must be JobType.abnumber).
+        Discriminator identifying an AbNumber antibody-numbering job.
     """
 
     job_type: Literal[JobType.abnumber]

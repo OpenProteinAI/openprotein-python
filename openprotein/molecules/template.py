@@ -5,6 +5,9 @@ from types import NoneType
 from .complex import Complex
 from .protein import Protein
 
+__all__ = ["ChainMapping", "TargetMolecule", "Template", "TemplateSource"]
+
+
 TemplateSource = Protein | Complex
 TargetMolecule = Protein | Complex
 ChainMapping = Mapping[str, str] | str | None
@@ -31,16 +34,15 @@ class Template:
               chain(s) this template applies to.
         index (Sequence[int] | None): Restrict this template to specific sequence
             positions in the batched fold job. The default (``None``) applies the
-            template to every sequence — matching the passthrough behavior callers
-            see today. Populate to scope a template to a subset, e.g. in a
-            binder-design refold where structure ``M[k]`` templates only sequences
-            ``[k*N, k*N+N)``.
+            template to every sequence. Populate to scope a template to a subset,
+            e.g. in a binder-design refold where structure ``M[k]`` templates only
+            sequences ``[k*N, k*N+N)``.
         index_intervals (Sequence[tuple[int, int]] | None): Range-form alternative
             to ``index`` for scoping the template to contiguous spans of sequence
             positions. Each tuple is a half-open ``[start, end)`` range. Useful
             when the subset is large and contiguous (e.g. ``[(0, 1000)]`` instead
-            of ``list(range(1000))``). May be combined with ``index``; the server
-            unions the two.
+            of ``list(range(1000))``). May be combined with ``index``; the two are
+            unioned.
     """
 
     template: TemplateSource

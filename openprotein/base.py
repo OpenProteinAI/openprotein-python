@@ -1,23 +1,151 @@
+import contextvars
+import re
 import sys
 import threading
 import time
 import warnings
-from typing import Mapping, Sequence
+from collections.abc import Generator, Mapping, Sequence
+from contextlib import contextmanager
 from urllib.parse import urljoin
 
 import requests
 import requests.auth
 from requests.adapters import HTTPAdapter
+from requests.models import complexjson
 from requests.packages.urllib3.util.retry import Retry  # type: ignore
 
 from openprotein._version import __version__
 from openprotein.auth_store import TokenRecord, TokenStore
 from openprotein.errors import AuthError, HTTPError
 
-# Refresh the access token this many seconds before it actually expires,
-# to absorb clock skew and request latency. 30s is a conservative buffer for
-# typical clock drift plus a round-trip against a ~15-minute access token.
-SKEW_SECONDS = 30
+__all__ = [
+    "APISession",
+    "BearerAuth",
+    "CloudFrontError",
+    "TimeoutError",
+]
+
+
+class _NoReplayRetry(Retry):
+    """Resend a POST only when it failed to connect, so it was never sent.
+
+    urllib3 retries an unclassified error such as a TLS failure for every
+    method, after the server may already have received the request.
+    """
+
+    def increment(
+        self,
+        method=None,
+        url=None,
+        response=None,
+        error=None,
+        _pool=None,
+        _stacktrace=None,
+    ):
+        if (
+            (method or "").upper() == "POST"
+            and error is not None
+            and not self._is_connection_error(error)
+        ):
+            raise error.with_traceback(_stacktrace)
+        return super().increment(method, url, response, error, _pool, _stacktrace)
+
+
+class _ModelSubmissionRetry(_NoReplayRetry):
+    """Retry model POSTs on 503 or a failure to establish a connection."""
+
+    def is_retry(self, method, status_code, has_retry_after=False):
+        if method.upper() == "POST":
+            return status_code == 503
+        return super().is_retry(method, status_code, has_retry_after)
+
+
+# Each POST to these creates a new sampling job, so a resend samples twice.
+_SAMPLING_PATHS = (
+    "v1/data/prompts/sample_msa",
+    "v1/prompt/sample_msa",
+    "v1/align/prompt",
+)
+
+
+# Refresh the access token this many seconds before it expires, to absorb
+# clock skew and request latency.
+_SKEW_SECONDS = 30
+_IDEMPOTENCY_KEY_HEADER = "Idempotency-Key"
+
+
+def _freeze_idempotent_json(kwargs: dict) -> None:
+    """Make a keyed JSON request's body stable across session-level retries.
+
+    urllib3 retries one prepared request, but the reactive authentication retry
+    below prepares a request again. Supplying the already encoded bytes for both
+    paths keeps the body byte-for-byte identical while leaving ordinary SDK
+    requests on the existing ``json=`` path.
+    """
+    headers = kwargs.get("headers")
+    if not isinstance(headers, Mapping) or "json" not in kwargs:
+        return
+    if not any(
+        isinstance(name, str) and name.lower() == _IDEMPOTENCY_KEY_HEADER.lower()
+        for name in headers
+    ):
+        return
+    if "data" in kwargs and kwargs["data"] is not None:
+        return
+    if kwargs["json"] is None:
+        return
+
+    kwargs["data"] = complexjson.dumps(kwargs["json"], allow_nan=False).encode("utf-8")
+    request_headers = dict(headers)
+    if not any(
+        isinstance(name, str) and name.lower() == "content-type"
+        for name in request_headers
+    ):
+        request_headers["Content-Type"] = "application/json"
+    kwargs["headers"] = request_headers
+
+
+# `299 <agent> "<text>"`: a persistent warning, which the API sends on deprecated calls
+_SERVER_WARNING = re.compile(r'299\s+\S+\s+"(?P<text>[^"]*)"')
+
+
+_server_warnings_silenced: contextvars.ContextVar[bool] = contextvars.ContextVar(
+    "server_warnings_silenced", default=False
+)
+
+
+@contextmanager
+def _silence_server_warnings() -> Generator[None]:
+    """Drop the server's `Warning: 299` header on requests made in this block.
+
+    For SDK functions that emit their own versioned deprecation warning.
+    """
+    token = _server_warnings_silenced.set(True)
+    try:
+        yield
+    finally:
+        _server_warnings_silenced.reset(token)
+
+
+@contextmanager
+def _surface_server_warnings() -> Generator[None]:
+    """Keep the server's `Warning: 299` header on requests made in this block,
+    inside a call that silences it for its own request.
+    """
+    token = _server_warnings_silenced.set(False)
+    try:
+        yield
+    finally:
+        _server_warnings_silenced.reset(token)
+
+
+def _warn_from_server(response: requests.Response) -> None:
+    """Surface a response's `Warning: 299` header as a `FutureWarning`."""
+    if _server_warnings_silenced.get():
+        return
+    match = _SERVER_WARNING.match(response.headers.get("Warning", ""))
+    if match is not None:
+        warnings.warn(match["text"], FutureWarning, stacklevel=2)
 
 
 class BearerAuth(requests.auth.AuthBase):
@@ -57,22 +185,7 @@ class APISession(requests.Session):
             raise AuthError(
                 "Expected username and password. Or use environment variables `OPENPROTEIN_USERNAME` and `OPENPROTEIN_PASSWORD`. Or provide these variables (`username` and `password`) in ~/.openprotein/config.toml."
             )
-        super().__init__()
-        self.backend = backend
-        self.verify = True
-        self.timeout = timeout
-
-        # Custom retry strategies
-        # auto retry for pesky connection reset errors and others
-        # 503 will catch if BE is refreshing
-        retry = Retry(
-            total=4,
-            backoff_factor=3,  # 0,1,4,13s
-            status_forcelist=[500, 502, 503, 504, 101, 104],
-        )
-        adapter = HTTPAdapter(max_retries=retry)
-        self.mount("https://", adapter)
-        self.headers["User-Agent"] = f"openprotein-python/{__version__}"
+        self._init_transport(backend, timeout)
 
         # Auth / refresh state. Initialised before any network call so that
         # request() can read _refreshing / _legacy_mode safely.
@@ -92,6 +205,40 @@ class APISession(requests.Session):
         self._legacy_mode: bool = False
 
         self._init_auth()
+
+    def _init_transport(self, backend: str, timeout: float) -> None:
+        """Configure the HTTP transport: retry policy, adapters, and headers."""
+        super().__init__()
+        self.backend = backend
+        self.verify = True
+        self.timeout = timeout
+
+        retry = Retry(
+            total=4,
+            backoff_factor=3,  # 0,1,4,13s
+            status_forcelist=[500, 502, 503, 504, 101, 104],
+            raise_on_status=False,
+        )
+        adapter = HTTPAdapter(max_retries=retry)
+        for scheme in ("https://", "http://"):
+            self.mount(scheme, adapter)
+        model_retry = _ModelSubmissionRetry(
+            total=retry.total,
+            backoff_factor=retry.backoff_factor,
+            status_forcelist=retry.status_forcelist,
+            allowed_methods=frozenset({"GET"}),
+            raise_on_status=False,
+        )
+        self.mount(urljoin(backend, "v1/models/"), HTTPAdapter(max_retries=model_retry))
+        sampling_retry = _NoReplayRetry(
+            total=retry.total,
+            backoff_factor=retry.backoff_factor,
+            status_forcelist=retry.status_forcelist,
+            raise_on_status=False,
+        )
+        for path in _SAMPLING_PATHS:
+            self.mount(urljoin(backend, path), HTTPAdapter(max_retries=sampling_retry))
+        self.headers["User-Agent"] = f"openprotein-python/{__version__}"
 
     @property
     def _refreshing(self) -> bool:
@@ -138,7 +285,6 @@ class APISession(requests.Session):
         password: str
             password
         """
-        # unset the auth first
         self.auth = None
         self._get_auth_token(username, password)
 
@@ -165,7 +311,7 @@ class APISession(requests.Session):
             )
         except HTTPError as e:
             if e.status_code == 404:
-                # Backend not yet upgraded -> use the legacy endpoint.
+                # Older servers have no token endpoint; use the legacy login.
                 return self._legacy_login(username, password)
             raise AuthError(
                 "Authentication failed. Please check your credentials and connection."
@@ -199,7 +345,7 @@ class APISession(requests.Session):
             raise AuthError("Unable to authenticate with given credentials.")
         refresh_token = result.get("refresh_token")
         if refresh_token is None:
-            # Cookie-mode / pre-rotation backend -> no refresh available.
+            # No refresh token issued, so refresh is unavailable.
             self._legacy_mode = True
             self._refresh_token = None
             self._expires_at = 0.0
@@ -245,7 +391,11 @@ class APISession(requests.Session):
         already rotated the token, adopt that instead of refreshing again
         (replaying a superseded refresh token would revoke the session).
         """
-        with self._refresh_lock, self._token_store.lock():
+        with (
+            self._refresh_lock,
+            self._token_store.lock(),
+            _surface_server_warnings(),
+        ):
             record = self._token_store.load(self._identity)
             if (
                 record is not None
@@ -268,12 +418,9 @@ class APISession(requests.Session):
                     timeout=10,
                 )
             except HTTPError as e:
-                # Recover by re-logging-in when the refresh token is rejected
-                # (401/403) or when the endpoint is absent (404 from a backend
-                # that issued a refresh token but doesn't expose /auth/refresh,
-                # e.g. mid-rollback) — re-login itself drops to legacy mode if
-                # the backend has no refresh support. Other statuses are real
-                # errors and propagate.
+                # A rejected (401/403) or missing (404) refresh endpoint falls back
+                # to a fresh login, which drops to legacy mode when the server has
+                # no refresh support. Other statuses propagate.
                 if e.status_code in (401, 403, 404):
                     self._relogin()
                     return
@@ -294,12 +441,18 @@ class APISession(requests.Session):
             not self._refreshing
             and not self._legacy_mode
             and self._refresh_token is not None
-            and time.time() >= self._expires_at - SKEW_SECONDS
+            and time.time() >= self._expires_at - _SKEW_SECONDS
         )
 
     def request(self, method: str, url: str, *args, **kwargs):
+        kwargs.setdefault("timeout", self.timeout)
         if self._should_refresh_proactively():
             self._refresh()
+
+        # Freeze the JSON body once so a reactive 401 retry resends the same
+        # payload under the same idempotency key.
+        if method.upper() == "POST":
+            _freeze_idempotent_json(kwargs)
 
         full_url = urljoin(self.backend, url)
         response = super().request(method, full_url, *args, **kwargs)
@@ -314,13 +467,13 @@ class APISession(requests.Session):
             self._refresh()
             response = super().request(method, full_url, *args, **kwargs)
 
-        if (js := kwargs.get("json")) and js is not None:
-            if _total_size(js) > 1e6:
-                warnings.warn(
-                    "The requested payload is >1MB. There might be some delays or issues in processing. If the request fails, please try again with smaller sizes."
-                )
+        _warn_from_server(response)
 
-        # intercept CloudFront errors
+        if (js := kwargs.get("json")) and _total_size(js) > 1e6:
+            warnings.warn(
+                "The requested payload is >1MB. There might be some delays or issues in processing. If the request fails, please try again with smaller sizes."
+            )
+
         if "cloudfront" in response.headers.get("Server", "").lower():
             if response.status_code in (502, 503):
                 raise CloudFrontError(
@@ -330,8 +483,7 @@ class APISession(requests.Session):
                 raise TimeoutError(
                     "Your request took too long to process likely due to it's size. Please try breaking it up into smaller requests if possible."
                 )
-        elif not response.ok:
-            # raise custom exception that prints better error message than requests.HTTPError
+        if not response.ok:
             raise HTTPError(response)
         return response
 

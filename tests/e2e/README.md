@@ -6,30 +6,32 @@ This directory contains end-to-end tests for the OpenProtein Python SDK.
 
 ### Prerequisites
 
-1. Install dependencies including pytest-xdist for parallel execution:
+1. Install the package with the `dev` dependency group, which includes pytest-xdist:
 ```bash
-pip install -e ".[dev]"
-# or with pixi
-pixi install
+uv sync
 ```
+Prefix the commands below with `uv run`, or activate `.venv`.
 
-2. Set environment variables for authentication:
+2. Set credentials as environment variables:
 ```bash
 export OPENPROTEIN_USERNAME="your_username"
 export OPENPROTEIN_PASSWORD="your_password"
 ```
+or as `username` and `password` in `~/.openprotein/config.toml`. Environment variables take precedence.
+
+3. Choose the backend with `OPENPROTEIN_API_BACKEND`, or `backend` in the config file. With neither set, tests run against `https://api.openprotein.ai/api/`. Tests submit real jobs to that backend.
 
 ### Test Data
 
-The test suite uses three dataset sizes:
+Assay tests use three dataset sizes, all in `tests/data`:
 
-1. **Small** (~41 sequences): `tests/data/AMIE_PSEAE.csv` (included)
-2. **Medium** (~1000 sequences): `tests/data/PLACEHOLDER_MEDIUM_1000.csv` (you need to provide)
-3. **Large** (~10000 sequences): `tests/data/PLACEHOLDER_LARGE_10000.csv` (you need to provide)
-
-Tests will skip if medium/large datasets are not available.
+1. **Small** (~15 sequences): `AMIE_PSEAE_Whitehead.wide.15.csv`
+2. **Medium** (~1000 sequences): `AMIE_PSEAE_Whitehead.wide.1000.csv`
+3. **Large** (~6800 sequences): `AMIE_PSEAE_Whitehead.wide.csv`
 
 ## Running Tests
+
+`-m e2e` is required: the default pytest options deselect e2e tests.
 
 ### Run all E2E tests
 ```bash
@@ -122,9 +124,9 @@ Defined in `conftest.py`:
 
 - `session`: Session-scoped OpenProtein connection
 - `protein_complex_with_msa`: Pre-computed MSA for fold tests
-- `assay_small`: Small assay dataset (~41 sequences)
+- `assay_small`: Small assay dataset (~15 sequences)
 - `assay_medium`: Medium assay dataset (~1000 sequences)
-- `assay_large`: Large assay dataset (~10000 sequences)
+- `assay_large`: Large assay dataset (~6800 sequences)
 - `test_sequences_varied`: Sequences of varying lengths
 - `test_sequences_short`: Short sequences for quick tests
 
@@ -135,7 +137,7 @@ The test suite is designed for parallel execution:
 1. **Session-scoped fixtures** are shared across all workers
 2. **Independent tests** can run concurrently
 3. **Parametrized tests** distribute across workers automatically
-4. **Backend parallelism**: Multiple models can process jobs concurrently
+4. **Server parallelism**: Multiple models can process jobs concurrently
 
 ### Recommended Parallel Configurations
 
@@ -152,14 +154,7 @@ pytest tests/e2e -m e2e
 
 ## Timeouts
 
-Default timeouts are configured per test type:
-
-- Embeddings: 10 minutes
-- Predictor training: 20 minutes
-- Align (MSA): 10 minutes
-- Fold: 10 minutes
-
-Adjust in individual test files if needed.
+Each test waits for its jobs up to a base timeout times a per-test multiplier (1x to 4x). Set the base in seconds with `OPENPROTEIN_E2E_TIMEOUT_SECONDS` (default 600).
 
 ## Adding New Tests
 
@@ -167,10 +162,13 @@ Adjust in individual test files if needed.
 
 ```python
 @pytest.mark.e2e
-@pytest.mark.parametrize("model_id,expected_dim", [
-    ("esm2_t33_650M_UR50D", 1280),
-    ("prot-seq", 1024),
-])
+@pytest.mark.parametrize(
+    "model_id,expected_dim",
+    [
+        ("esm2_t33_650M_UR50D", 1280),
+        ("prot-seq", 1024),
+    ],
+)
 def test_new_feature(session: OpenProtein, model_id: str, expected_dim: int):
     model = session.embedding.get_model(model_id)
     # ... test logic
@@ -183,15 +181,14 @@ def test_new_feature(session: OpenProtein, model_id: str, expected_dim: int):
 def test_with_assay(session: OpenProtein, assay_small: AssayDataset):
     # assay_small is automatically created and reused
     predictor = session.embedding.esm2.fit_gp(
-        assay=assay_small,
-        properties=[assay_small.measurement_names[0]]
+        assay=assay_small, properties=[assay_small.measurement_names[0]]
     )
 ```
 
 ## Troubleshooting
 
 ### Tests timing out
-- Increase timeout values in test files
+- Raise `OPENPROTEIN_E2E_TIMEOUT_SECONDS`
 - Check backend status
 - Reduce batch sizes for testing
 
@@ -200,13 +197,9 @@ def test_with_assay(session: OpenProtein, assay_small: AssayDataset):
 - Use `-n 1` to run sequentially for debugging
 - Check for shared state between tests
 
-### Missing fixtures
-- Ensure medium/large CSV files are present
-- Tests will skip if fixtures are unavailable
-
 ### Authentication errors
-- Verify OPENPROTEIN_USERNAME and OPENPROTEIN_PASSWORD are set
-- Check credentials are valid
+- Check the credentials in the environment or `~/.openprotein/config.toml`
+- Check that `OPENPROTEIN_API_BACKEND` points at the backend those credentials belong to
 
 ## Future Improvements
 

@@ -1,7 +1,7 @@
 """Test the api for the design domain."""
+
 from unittest.mock import MagicMock
 
-import pytest
 
 from openprotein.design import api
 from openprotein.design.schemas import Criteria, Criterion, ModelCriterion
@@ -9,14 +9,12 @@ from openprotein.jobs import JobType
 
 
 def test_designs_list(mock_session: MagicMock):
-    """Test designs_list."""
     mock_session.get.return_value.json.return_value = []
     api.designs_list(mock_session)
     mock_session.get.assert_called_once_with("v1/designer/design")
 
 
 def test_designer_create_genetic_algorithm(mock_session: MagicMock):
-    """Test designer_create_genetic_algorithm."""
     mock_session.post.return_value.json.return_value = {
         "job_id": "job-123",
         "status": "SUCCESS",

@@ -33,11 +33,8 @@ def test_design_workflow_e2e(session: OpenProtein, assay_small: AssayDataset):
     predictor = predictor_future
     assert predictor.id is not None
 
-    # The SDK's ModelCriterion requires direction and target to be set
-    # before serialization (otherwise the inner `criterion` field is dropped
-    # by Pydantic's union resolution and the backend rejects the request
-    # with KeyError 'criterion'). `> 0` is a generic maximize-toward-positive
-    # constraint suitable for a smoke test against any numeric assay.
+    # ModelCriterion needs a direction and target before it serializes; `> 0` is a
+    # generic maximize constraint that suits any numeric assay.
     criterion = (
         ModelCriterion(model_id=predictor.id, measurement_name=property_name) > 0
     )

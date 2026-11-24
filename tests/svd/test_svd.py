@@ -16,13 +16,11 @@ from openprotein.svd.svd import SVDAPI
 
 @pytest.fixture
 def svd_api(mock_session: MagicMock):
-    """Fixture to create an SVDAPI instance."""
     return SVDAPI(mock_session)
 
 
 @pytest.fixture
 def mock_svd_fit_job():
-    """Fixture for a valid SVDFitJob instance."""
     return SVDFitJob(
         job_id="svd-123",
         status=JobStatus.SUCCESS,
@@ -32,7 +30,6 @@ def mock_svd_fit_job():
 
 
 def test_list_svd(svd_api: SVDAPI, mock_svd_fit_job):
-    """Test the list_svd method."""
     svd_api.session.jobs = MagicMock(spec=JobsAPI)  # type: ignore
     svd_api.session.jobs.get_job.return_value = mock_svd_fit_job  # type: ignore
 
@@ -47,7 +44,6 @@ def test_list_svd(svd_api: SVDAPI, mock_svd_fit_job):
 
 
 def test_get_svd(svd_api: SVDAPI, mock_svd_fit_job):
-    """Test the get_svd method."""
     svd_id = "svd-123"
     svd_api.session.jobs = MagicMock(spec=JobsAPI)  # type: ignore
     svd_api.session.jobs.get_job.return_value = mock_svd_fit_job  # type: ignore
@@ -59,9 +55,41 @@ def test_get_svd(svd_api: SVDAPI, mock_svd_fit_job):
             mock_get.assert_called_once_with(svd_api.session, svd_id)
 
 
+def test_fit_svd_accepts_a_models_namespace_handle():
+    """Both fit paths take a session.models handle without a string lookup."""
+    from openprotein.embeddings.poet2 import PoET2Model
+    from openprotein.prompt import PromptAPI
+    from openprotein.svd import api as svd_api_module
+
+    session = MagicMock()
+    session.svd = SVDAPI(session)
+    session.embedding = EmbeddingsAPI(session)
+    session.prompt = MagicMock(spec=PromptAPI)
+    handle = PoET2Model(session, "poet-2", metadata=MagicMock())
+
+    job = MagicMock(spec=SVDFitJob)
+    job.job_id = "svd-123"
+    metadata = SVDMetadata(
+        id="svd-123",
+        status=JobStatus.PENDING,
+        model_id="poet-2",
+        n_components=1024,
+    )
+    with (
+        patch.object(svd_api_module, "svd_fit_post", return_value=job) as fit_post,
+        patch.object(svd_api_module, "svd_get", return_value=metadata),
+    ):
+        via_api = session.svd.fit_svd(model=handle, sequences=[b"ACGT"])
+        via_handle = handle.fit_svd(sequences=[b"ACGT"])
+
+    assert isinstance(via_api, SVDModel)
+    assert isinstance(via_handle, SVDModel)
+    assert fit_post.call_count == 2
+    assert fit_post.call_args_list[0].kwargs["model_id"] == "poet-2"
+
+
 @patch("openprotein.svd.api.svd_get")
 def test_fit_svd(mock_get, svd_api: SVDAPI, mock_session: MagicMock):
-    """Test the fit_svd method."""
     model_id = "model-1"
     sequences = [b"ACGT"]
 

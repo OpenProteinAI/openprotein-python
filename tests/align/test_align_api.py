@@ -1,9 +1,13 @@
-import io
+import warnings
+from datetime import datetime
+from io import BytesIO
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from openprotein.align.api import (
+    _msa_mmseqs_search_post,
+    _sample_prompt,
     abnumber_post,
     antibody_schema_get,
     clustalo_post,
@@ -15,10 +19,14 @@ from openprotein.align.api import (
     msa_post,
     prompt_post,
 )
-from openprotein.align.schemas import AlignType, MSASamplingMethod, UnnumberedPolicy
-from openprotein.base import APISession
+from openprotein.align.schemas import (
+    AlignType,
+    Pairing,
+    UnnumberedPolicy,
+)
 from openprotein.errors import HTTPError, InvalidParameterError, MissingParameterError
 from openprotein.jobs import Job, JobStatus, JobType
+from openprotein.prompt.schemas import PromptMetadata
 
 
 @pytest.fixture
@@ -37,14 +45,16 @@ def test_get_align_job_inputs(mock_session: MagicMock):
     """Test get_align_job_inputs calls the correct endpoint and params."""
     mock_session.get.return_value = MagicMock()
 
-    get_align_job_inputs(mock_session, "job1", AlignType.MSA)
+    with pytest.warns(FutureWarning):
+        get_align_job_inputs(mock_session, "job1", AlignType.MSA)
     mock_session.get.assert_called_with(
         "v1/align/inputs",
         params={"job_id": "job1", "msa_type": "GENERATED"},
         stream=True,
     )
 
-    get_align_job_inputs(mock_session, "job1", AlignType.PROMPT, prompt_index=1)
+    with pytest.warns(FutureWarning):
+        get_align_job_inputs(mock_session, "job1", AlignType.PROMPT, prompt_index=1)
     mock_session.get.assert_called_with(
         "v1/align/inputs",
         params={"job_id": "job1", "msa_type": "PROMPT", "replicate": 1},
@@ -52,11 +62,12 @@ def test_get_align_job_inputs(mock_session: MagicMock):
     )
 
 
-@patch("openprotein.align.api.get_align_job_inputs")
+@patch("openprotein.align.api._get_align_job_inputs")
 @patch("openprotein.csv.parse_stream")
 def test_get_input(mock_csv_stream, mock_get_align_job_inputs, mock_session: MagicMock):
     """Test get_input correctly calls dependencies."""
-    get_input(mock_session, "job1", AlignType.MSA)
+    with pytest.warns(FutureWarning):
+        get_input(mock_session, "job1", AlignType.MSA)
     mock_get_align_job_inputs.assert_called_once_with(
         session=mock_session, job_id="job1", input_type=AlignType.MSA, prompt_index=None
     )
@@ -64,73 +75,159 @@ def test_get_input(mock_csv_stream, mock_get_align_job_inputs, mock_session: Mag
 
 
 def test_get_msa_surfaces_incomplete_job_error(mock_session: MagicMock):
-    """Backend returns 409 when results are requested before the align job completes.
+    """Reading a stored MSA whose job has not finished raises an HTTPError.
 
-    The client should propagate the HTTPError carrying both the status code and
-    the backend's clarifying detail, so the user can tell the job is still
-    pending rather than missing.
+    The error carries the 409 status code and text naming the MSA id, so the
+    user can tell the job is still pending.
     """
     response = MagicMock()
     response.status_code = 409
-    response.url = "https://api.openprotein.ai/api/v1/align/inputs"
-    response.text = (
-        '{"detail":"Job abc has not produced results yet (status: PENDING). '
-        'Results are only available once the job completes successfully."}'
-    )
-    mock_session.get.side_effect = HTTPError(response)
+    response.url = "https://api.openprotein.ai/api/v1/data/msa/abc"
+    response.text = '{"detail":"msa abc is PENDING"}'
+    job = MagicMock(status_code=200)
+    job.json.return_value = {
+        "job_id": "abc",
+        "job_type": "/align/align",
+        "status": "SUCCESS",
+        "created_date": datetime(2023, 1, 1).isoformat(),
+    }
+
+    def get(endpoint, **kwargs):
+        if endpoint.startswith("v1/data/msa/"):
+            raise HTTPError(response)
+        return job
+
+    mock_session.get.side_effect = get
 
     with pytest.raises(HTTPError) as excinfo:
-        # get_msa -> get_input -> get_align_job_inputs -> session.get
         list(get_msa(mock_session, "abc"))
 
     assert excinfo.value.status_code == 409
-    assert "has not produced results yet" in excinfo.value.text
-    assert "PENDING" in excinfo.value.text
+    assert "abc" in excinfo.value.text
 
 
-def test_msa_post_with_seed(mock_session: MagicMock, sample_job_dict: dict):
-    """Test msa_post with a seed sequence."""
+def test_get_seed(mock_session: MagicMock):
+    """get_seed calls GET v1/align/seed?msa_id=... and returns the sequence."""
+    mock_session.get.return_value.json.return_value = {
+        "sequence": "ACDEFGHIK",
+        "length": 9,
+    }
+
+    assert get_seed(mock_session, "job123") == "ACDEFGHIK"
+
+    args, kwargs = mock_session.get.call_args
+    assert args[0] == "v1/align/seed"
+    assert kwargs["params"] == {"msa_id": "job123"}
+
+
+def test_msa_mmseqs_search_post(mock_session: MagicMock, sample_job_dict: dict):
+    """create_msa's homology search posts the seed to the mmseqs2 search endpoint."""
     mock_session.post.return_value.json.return_value = sample_job_dict
-    job = msa_post(mock_session, seed="ACGT")
+    job = _msa_mmseqs_search_post(mock_session, seed="ACGT")
 
     args, kwargs = mock_session.post.call_args
-    assert args[0] == "v1/align/msa"
-    assert kwargs["params"] == {"is_seed": True}
-    assert "msa_file" in kwargs["files"]
+    assert args[0] == "v1/align/search/mmseqs2/msa"
+    assert kwargs["data"] == {"query": "ACGT", "pairing": "both"}
+    assert "files" not in kwargs
     assert isinstance(job, Job)
 
 
-def test_msa_post_with_file(mock_session: MagicMock, sample_job_dict: dict):
-    """Test msa_post with a file."""
+def test_msa_mmseqs_search_post_pairing(mock_session: MagicMock, sample_job_dict: dict):
+    """A non-default pairing mode is sent as the pairing form field."""
     mock_session.post.return_value.json.return_value = sample_job_dict
-    msa_file = io.BytesIO(b"test")
+    _msa_mmseqs_search_post(mock_session, seed="ACGT", pairing=Pairing.PAIRED)
 
-    job = msa_post(mock_session, msa_file=msa_file)
-    mock_session.post.assert_called_once_with(
-        "v1/align/msa", files={"msa_file": msa_file}, params={"is_seed": False}
-    )
-    assert isinstance(job, Job)
+    _, kwargs = mock_session.post.call_args
+    assert kwargs["data"] == {"query": "ACGT", "pairing": "paired"}
 
 
-def test_msa_post_missing_params(mock_session: MagicMock):
-    """Test msa_post raises error if both or neither param is given."""
-    with pytest.raises(MissingParameterError):
-        msa_post(mock_session)
+@pytest.mark.parametrize(
+    ("post", "option", "value"),
+    [
+        (mafft_post, "auto", False),
+        (clustalo_post, "clustersize", 50),
+        (abnumber_post, "scheme", "kabat"),
+    ],
+)
+@pytest.mark.parametrize("positional", [False, True])
+def test_align_post_accepts_sequence_files(
+    mock_session, sample_job_dict, post, option, value, positional
+):
+    mock_session.post.return_value.json.return_value = sample_job_dict
+    file = BytesIO(b">first\nACDE\n>second\nACDF\n")
 
-    with pytest.raises(MissingParameterError):
-        msa_post(mock_session, seed="ACGT", msa_file=io.BytesIO())
+    with pytest.warns(FutureWarning, match=r"0\.18\.0.*0\.19\.0"):
+        job = (
+            post(mock_session, file, value)
+            if positional
+            else post(mock_session, sequence_file=file, **{option: value})
+        )
+
+    assert job.job_id == "job123"
+    assert mock_session.post.call_args.kwargs["json"] == {
+        "sequences": ["ACDE", "ACDF"],
+        "names": ["first", "second"],
+    }
+    assert mock_session.post.call_args.kwargs["params"][option] == value
 
 
 def test_mafft_post(mock_session: MagicMock, sample_job_dict: dict):
     """Test mafft_post."""
     mock_session.post.return_value.json.return_value = sample_job_dict
-    sequence_file = io.BytesIO(b"test")
-    mafft_post(mock_session, sequence_file, auto=False, ep=0.1, op=1.5)
+    sequences = ["ACGT", "ACGA"]
+    mafft_post(mock_session, sequences, auto=False, ep=0.1, op=1.5)
     mock_session.post.assert_called_once_with(
         "v1/align/mafft",
-        files={"file": sequence_file},
+        json={"sequences": sequences},
         params={"auto": False, "ep": 0.1, "op": 1.5},
     )
+
+
+def test_mafft_post_carries_names(mock_session: MagicMock, sample_job_dict: dict):
+    """Row labels ride alongside the sequences when the caller supplies them."""
+    mock_session.post.return_value.json.return_value = sample_job_dict
+    sequences = ["ACGT", "ACGA"]
+    names = ["a", "b"]
+    mafft_post(mock_session, sequences, names=names)
+
+    _args, kwargs = mock_session.post.call_args
+    assert kwargs["json"] == {"sequences": sequences, "names": names}
+
+
+def test_mafft_post_omits_names_when_absent(
+    mock_session: MagicMock, sample_job_dict: dict
+):
+    """No names means no key, so the server applies its own labelling."""
+    mock_session.post.return_value.json.return_value = sample_job_dict
+    mafft_post(mock_session, ["ACGT", "ACGA"])
+
+    _args, kwargs = mock_session.post.call_args
+    assert "names" not in kwargs["json"]
+
+
+def test_clustalo_post(mock_session: MagicMock, sample_job_dict: dict):
+    """Test clustalo_post."""
+    mock_session.post.return_value.json.return_value = sample_job_dict
+    sequences = ["ACGT", "ACGA"]
+    clustalo_post(mock_session, sequences, clustersize=50, iterations=2)
+    mock_session.post.assert_called_once_with(
+        "v1/align/clustalo",
+        json={"sequences": sequences},
+        params={"clustersize": 50, "iterations": 2},
+    )
+
+
+def test_clustalo_post_carries_names(mock_session: MagicMock, sample_job_dict: dict):
+    """Row labels ride alongside the sequences when the caller supplies them."""
+    mock_session.post.return_value.json.return_value = sample_job_dict
+    sequences = ["ACGT", "ACGA"]
+    clustalo_post(mock_session, sequences, names=["a", "b"])
+
+    _args, kwargs = mock_session.post.call_args
+    assert kwargs["json"] == {"sequences": sequences, "names": ["a", "b"]}
+
+
+SEQUENCES = ["QVQLQESGPG", "DIVMTQSPAS"]
 
 
 def test_abnumber_post_invalid_scheme(mock_session: MagicMock):
@@ -138,7 +235,18 @@ def test_abnumber_post_invalid_scheme(mock_session: MagicMock):
     with pytest.raises(
         Exception, match="Antibody numbering invalid_scheme not recognized"
     ):
-        abnumber_post(mock_session, io.BytesIO(), scheme="invalid_scheme")  # type: ignore - testing runtime error
+        abnumber_post(mock_session, SEQUENCES, scheme="invalid_scheme")
+
+
+def test_abnumber_post_sends_sequences_as_the_body(
+    mock_session: MagicMock, sample_job_dict: dict
+):
+    """The sequences are the request body, not a file upload."""
+    mock_session.post.return_value.json.return_value = sample_job_dict
+    abnumber_post(mock_session, SEQUENCES, names=["h", "l"])
+
+    _args, kwargs = mock_session.post.call_args
+    assert kwargs["json"] == {"sequences": SEQUENCES, "names": ["h", "l"]}
 
 
 def test_abnumber_post_default_drop_minority_chains(
@@ -146,8 +254,7 @@ def test_abnumber_post_default_drop_minority_chains(
 ):
     """abnumber_post should default drop_minority_chains to False."""
     mock_session.post.return_value.json.return_value = sample_job_dict
-    sequence_file = io.BytesIO(b"test")
-    abnumber_post(mock_session, sequence_file)
+    abnumber_post(mock_session, SEQUENCES)
 
     args, kwargs = mock_session.post.call_args
     assert args[0] == "v1/align/abnumber"
@@ -159,8 +266,7 @@ def test_abnumber_post_with_drop_minority_chains(
 ):
     """abnumber_post should forward drop_minority_chains=True."""
     mock_session.post.return_value.json.return_value = sample_job_dict
-    sequence_file = io.BytesIO(b"test")
-    abnumber_post(mock_session, sequence_file, drop_minority_chains=True)
+    abnumber_post(mock_session, SEQUENCES, drop_minority_chains=True)
 
     args, kwargs = mock_session.post.call_args
     assert kwargs["params"]["drop_minority_chains"] is True
@@ -172,7 +278,7 @@ def test_abnumber_post_default_unnumbered_policy(
     """abnumber_post should default unnumbered_policy to error, so dropping
     residues is always a choice the caller made."""
     mock_session.post.return_value.json.return_value = sample_job_dict
-    abnumber_post(mock_session, io.BytesIO(b"test"))
+    abnumber_post(mock_session, SEQUENCES)
 
     _args, kwargs = mock_session.post.call_args
     assert kwargs["params"]["unnumbered_policy"] == "error"
@@ -184,7 +290,7 @@ def test_abnumber_post_forwards_unnumbered_policy(
 ):
     """abnumber_post should forward the policy as its wire value."""
     mock_session.post.return_value.json.return_value = sample_job_dict
-    abnumber_post(mock_session, io.BytesIO(b"test"), unnumbered_policy=policy)
+    abnumber_post(mock_session, SEQUENCES, unnumbered_policy=policy)
 
     _args, kwargs = mock_session.post.call_args
     assert kwargs["params"]["unnumbered_policy"] == policy
@@ -195,9 +301,7 @@ def test_abnumber_post_accepts_policy_enum(
 ):
     """The enum and its string value are interchangeable on the wire."""
     mock_session.post.return_value.json.return_value = sample_job_dict
-    abnumber_post(
-        mock_session, io.BytesIO(b"test"), unnumbered_policy=UnnumberedPolicy.RETAIN
-    )
+    abnumber_post(mock_session, SEQUENCES, unnumbered_policy=UnnumberedPolicy.RETAIN)
 
     _args, kwargs = mock_session.post.call_args
     assert kwargs["params"]["unnumbered_policy"] == "retain"
@@ -208,7 +312,7 @@ def test_abnumber_post_invalid_unnumbered_policy(mock_session: MagicMock):
     with pytest.raises(
         Exception, match="Unnumbered residue policy maybe not recognized"
     ):
-        abnumber_post(mock_session, io.BytesIO(), unnumbered_policy="maybe")
+        abnumber_post(mock_session, SEQUENCES, unnumbered_policy="maybe")
 
 
 def test_antibody_schema_get(mock_session: MagicMock):
@@ -223,30 +327,142 @@ def test_antibody_schema_get(mock_session: MagicMock):
     assert kwargs["params"] == {"job_id": "job123"}
 
 
-def test_prompt_post_valid(mock_session: MagicMock, sample_job_dict: dict):
-    """Test prompt_post with valid parameters."""
-    mock_session.post.return_value.json.return_value = sample_job_dict
-    prompt_post(mock_session, "msa123", num_sequences=10)
+@pytest.fixture
+def sample_prompt_metadata() -> dict:
+    """A PENDING prompt-metadata response from sampling an MSA."""
+    return {
+        "id": "prompt123",
+        "name": "prompt123",
+        "description": None,
+        "created_date": "2023-01-01T00:00:00",
+        "num_replicates": 1,
+        "job_id": "prompt123",
+        "status": JobStatus.PENDING,
+    }
 
+
+def test_prompt_post_warns_and_samples_through_the_align_route(
+    mock_session: MagicMock, sample_job_dict: dict
+):
+    mock_session.post.return_value.json.return_value = sample_job_dict
+
+    with pytest.warns(FutureWarning) as record:
+        job = prompt_post(mock_session, "msa123", num_sequences=10)
+
+    assert str(record[0].message) == (
+        "`openprotein.align.api.prompt_post` is deprecated since 0.18.0 and will be "
+        "removed in 0.19.0. Use `MSAFuture.sample_prompt` or `MSA.sample_prompt`."
+    )
+    assert record[0].filename == __file__
     args, kwargs = mock_session.post.call_args
     assert args[0] == "v1/align/prompt"
     assert kwargs["params"]["msa_id"] == "msa123"
     assert kwargs["params"]["max_msa_sequences"] == 10
+    assert isinstance(job, Job)
 
 
-def test_prompt_post_missing_both_sizing_params(
-    mock_session: MagicMock, sample_job_dict: dict
+def test_sampling_a_prompt_returns_its_metadata(
+    mock_session: MagicMock, sample_prompt_metadata: dict
 ):
-    """Test prompt_post uses default if both num_sequences and num_residues are None."""
-    mock_session.post.return_value.json.return_value = sample_job_dict
-    prompt_post(mock_session, "msa123")
+    mock_session.post.return_value.json.return_value = sample_prompt_metadata
+
+    metadata = _sample_prompt(mock_session, "msa123", num_sequences=10)
+
+    args, kwargs = mock_session.post.call_args
+    assert args[0] == "v1/prompt/sample_msa"
+    assert kwargs["params"]["msa_id"] == "msa123"
+    assert kwargs["params"]["max_msa_sequences"] == 10
+    assert isinstance(metadata, PromptMetadata)
+
+
+def test_sampling_without_a_size_takes_the_default_token_budget(
+    mock_session: MagicMock, sample_prompt_metadata: dict
+):
+    mock_session.post.return_value.json.return_value = sample_prompt_metadata
+    _sample_prompt(mock_session, "msa123")
     assert mock_session.post.call_args.kwargs["params"]["max_msa_tokens"] == 12288
 
 
-def test_prompt_post_invalid_params(mock_session: MagicMock):
-    """Test prompt_post raises errors for invalid parameter combinations."""
+def test_sampling_refuses_invalid_params_before_any_request(mock_session: MagicMock):
     with pytest.raises(MissingParameterError):
-        prompt_post(mock_session, "msa123", num_sequences=10, num_residues=100)
-
+        _sample_prompt(mock_session, "msa123", num_sequences=10, num_residues=100)
     with pytest.raises(InvalidParameterError):
-        prompt_post(mock_session, "msa123", homology_level=2.0)
+        _sample_prompt(mock_session, "msa123", homology_level=2.0)
+    mock_session.post.assert_not_called()
+
+
+def test_msa_post_warns_and_posts_the_file_as_a_ready_made_msa(
+    mock_session: MagicMock, sample_job_dict: dict
+):
+    mock_session.post.return_value.json.return_value = sample_job_dict
+    msa_file = MagicMock()
+
+    with pytest.warns(FutureWarning) as record:
+        job = msa_post(mock_session, msa_file)
+
+    expected = (
+        "`openprotein.align.api.msa_post` is deprecated since 0.18.0 and will be "
+        "removed in 0.19.0. Use `session.data.MSA.create` for a ready-made MSA, "
+        "or `session.align.create_msa` for a seed."
+    )
+    assert [str(w.message) for w in record] == [expected]
+    mock_session.post.assert_called_once_with(
+        "v1/align/msa", files={"msa_file": msa_file}, params={"is_seed": False}
+    )
+    assert job.job_id == "job123"
+
+
+@pytest.mark.parametrize("seed", ["ACDE", b"ACDE"])
+def test_msa_post_posts_a_seed_as_the_seed_file(
+    mock_session: MagicMock, sample_job_dict: dict, seed
+):
+    mock_session.post.return_value.json.return_value = sample_job_dict
+
+    with pytest.warns(FutureWarning) as record:
+        job = msa_post(mock_session, seed=seed)
+
+    assert len(record) == 1
+    args, kwargs = mock_session.post.call_args
+    assert args[0] == "v1/align/msa"
+    assert kwargs["params"] == {"is_seed": True}
+    assert kwargs["files"]["msa_file"].read() == b">seed\nACDE"
+    assert job.job_id == "job123"
+
+
+def test_msa_post_requires_exactly_one_of_msa_file_and_seed(mock_session: MagicMock):
+    with (
+        pytest.warns(FutureWarning) as record,
+        pytest.raises(MissingParameterError, match="seed OR msa_file"),
+    ):
+        msa_post(mock_session)
+    assert len(record) == 1
+
+    with (
+        pytest.warns(FutureWarning) as record,
+        pytest.raises(MissingParameterError, match="seed OR msa_file"),
+    ):
+        msa_post(mock_session, MagicMock(), seed="ACDE")
+    assert len(record) == 1
+    mock_session.post.assert_not_called()
+
+
+def test_a_tuple_of_sequences_is_not_taken_for_a_sequence_file(
+    mock_session: MagicMock, sample_job_dict: dict
+):
+    """A tuple of strings is a batch of sequences and sends with no warning."""
+    mock_session.post.return_value.json.return_value = sample_job_dict
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        mafft_post(mock_session, ("ACDE", "ACDF"))
+    assert mock_session.post.call_args.kwargs["json"] == {"sequences": ("ACDE", "ACDF")}
+
+
+def test_a_named_file_tuple_is_a_sequence_file(
+    mock_session: MagicMock, sample_job_dict: dict
+):
+    """A ``(name, file)`` tuple reads as a sequence file."""
+    mock_session.post.return_value.json.return_value = sample_job_dict
+    file = ("seqs.fasta", BytesIO(b">first\nACDE\n>second\nACDF\n"))
+    with pytest.warns(FutureWarning, match=r"0\.18\.0"):
+        mafft_post(mock_session, file)
+    assert mock_session.post.call_args.kwargs["json"]["sequences"] == ["ACDE", "ACDF"]

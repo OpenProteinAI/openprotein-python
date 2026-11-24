@@ -7,6 +7,8 @@ from pydantic import BaseModel, ConfigDict
 
 from openprotein.jobs import BatchJob, Job, JobStatus, JobType
 
+__all__ = ["SVDEmbeddingsJob", "SVDFitJob", "SVDMetadata"]
+
 
 class SVDMetadata(BaseModel):
     id: str

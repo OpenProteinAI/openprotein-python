@@ -16,7 +16,7 @@ def pytest_addoption(parser):
         "--update-baselines",
         action="store_true",
         default=False,
-        help="Capture mode: probe the configured backend and (re)write baseline fixtures.",
+        help="Capture mode: probe the configured API and (re)write baseline fixtures.",
     )
     parser.addoption(
         "--baseline-repeats",
