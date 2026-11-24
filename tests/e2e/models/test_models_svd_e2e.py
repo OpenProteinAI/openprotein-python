@@ -32,7 +32,7 @@ def test_svd_fits_projects_and_is_managed_as_a_model(
     card = session.models.get_model(svd.id).metadata
     assert card.dimension == 8
     assert [method.path for method in card.methods] == ["batch/embeddings"]
-    assert svd.id in [listed.id for listed in session.models.SVD.list()]
+    assert svd.id in [listed.id for listed in session.models.SVD.list(limit=None)]
 
     projected = svd.embed(sequences[:2])
     values = cast(list[Any], projected.wait(timeout=TIMEOUT))
@@ -41,7 +41,7 @@ def test_svd_fits_projects_and_is_managed_as_a_model(
     assert projected.status is JobStatus.SUCCESS
 
     svd.delete()
-    assert svd.id not in [listed.id for listed in session.models.SVD.list()]
+    assert svd.id not in [listed.id for listed in session.models.SVD.list(limit=None)]
 
 
 @pytest.mark.e2e
@@ -57,7 +57,7 @@ def test_an_svd_fit_outside_the_models_api_reads_back_and_projects(
         pytest.skip("the fit is a models API job")
     svd = future.wait(timeout=TIMEOUT)
     assert (svd.id, svd.n_components) == (f"svd/{future.id}", 4)
-    assert svd.id in [listed.id for listed in session.models.SVD.list()]
+    assert svd.id in [listed.id for listed in session.models.SVD.list(limit=None)]
 
     projected = svd.embed(sequences[:2])
     projected.wait_until_done(timeout=TIMEOUT)
@@ -68,4 +68,4 @@ def test_an_svd_fit_outside_the_models_api_reads_back_and_projects(
     assert len(values) == 2
 
     svd.delete()
-    assert svd.id not in [listed.id for listed in session.models.SVD.list()]
+    assert svd.id not in [listed.id for listed in session.models.SVD.list(limit=None)]

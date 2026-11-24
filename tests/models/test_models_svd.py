@@ -165,7 +165,7 @@ def test_embed_projects_through_the_fitted_model(session, row):
 
 def test_list_reads_the_callers_svds(session, row):
     session.get.return_value = response([card(row)])
-    listed = ModelsAPI(session).SVD.list()
+    listed = ModelsAPI(session).SVD.list(limit=None)
     session.get.assert_called_once_with(
         "v1/models",
         params={

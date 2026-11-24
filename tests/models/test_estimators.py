@@ -883,48 +883,74 @@ class TestAccessors:
     @pytest.mark.parametrize(
         "kind, family", [("GP", "gp"), ("SVD", "svd"), ("UMAP", "umap")]
     )
-    def test_list_follows_every_page(
-        self, models, models_session, model_card, monkeypatch, kind, family
+    @pytest.mark.parametrize(
+        "kwargs, available, expected, warn",
+        [({}, 101, 100, True), ({}, 99, 99, False), ({"limit": None}, 101, 101, False)],
+        ids=["default-cap", "short-page", "all"],
+    )
+    def test_list_limit_and_warning(
+        self,
+        models,
+        models_session,
+        model_card,
+        monkeypatch,
+        recwarn,
+        kind,
+        family,
+        kwargs,
+        available,
+        expected,
+        warn,
     ):
-        monkeypatch.setattr("openprotein.models._api._LIST_PAGE", 2)
-        cards = [model_card(f"{family}/x-{i}") for i in range(3)]
+        monkeypatch.setattr("openprotein.models._api._LIST_PAGE", 100)
+        cards = [model_card(f"{family}/x-{i}") for i in range(available)]
         if family == "svd":
             cards = [card | {"svd": {"id": f"x-{i}"}} for i, card in enumerate(cards)]
-        pages = iter([cards[:2], cards[2:]])
+        pages = iter([cards[:100], cards[100:]])
         models_session.session.get.side_effect = lambda *a, **k: MagicMock(
             json=MagicMock(return_value=next(pages))
         )
 
-        listed = getattr(models, kind).list()
+        listed = getattr(models, kind).list(**kwargs)
 
-        assert [m.id for m in listed] == [f"{family}/x-{i}" for i in range(3)]
+        if warn:
+            warning = recwarn.pop(UserWarning)
+            assert f"session.models.{kind}.list()" in str(warning.message)
+            assert "default limit of 100 models" in str(warning.message)
+            assert "limit=None" in str(warning.message)
+            assert warning.filename == __file__
+        assert not recwarn
+        assert [m.id for m in listed] == [f"{family}/x-{i}" for i in range(expected)]
         assert [
             (call.kwargs["params"]["limit"], call.kwargs["params"]["offset"])
             for call in models_session.session.get.call_args_list
-        ] == [(2, 0), (2, 2)]
+        ] == [(100, offset) for offset in range(0, expected, 100)]
 
     @pytest.mark.parametrize(
         "kind, family", [("GP", "gp"), ("SVD", "svd"), ("UMAP", "umap")]
     )
     def test_list_reads_up_to_the_limit_from_the_offset(
-        self, models, models_session, model_card, kind, family
+        self, models, models_session, model_card, recwarn, kind, family
     ):
-        listed = model_card(f"{family}/x-1")
+        cards = [model_card(f"{family}/x-{i}") for i in range(100, 200)]
         if family == "svd":
-            listed |= {"svd": {"id": "x-1"}}
-        models_session.get_routes["v1/models"] = [listed]
+            cards = [
+                card | {"svd": {"id": f"x-{i}"}} for i, card in enumerate(cards, 100)
+            ]
+        models_session.get_routes["v1/models"] = cards
 
-        page = getattr(models, kind).list(limit=2, offset=4)
+        page = getattr(models, kind).list(limit=100, offset=100)
 
-        assert [m.id for m in page] == [f"{family}/x-1"]
+        assert not recwarn
+        assert [m.id for m in page] == [f"{family}/x-{i}" for i in range(100, 200)]
         models_session.session.get.assert_called_once_with(
             "v1/models",
             params={
                 "scope": "mine",
                 "type": family,
                 "verbose": "true",
-                "limit": 2,
-                "offset": 4,
+                "limit": 100,
+                "offset": 100,
             },
         )
 
@@ -1014,7 +1040,7 @@ class TestPipelines:
 
         models.GP(kernel="rbf").fit(assay=_assay())
         gp = models.GP(id="p-1")
-        gps = models.GP.list()
+        gps = models.GP.list(limit=None)
 
         assert models_session.submitted[1]["features"] == {}
         assert gp.id == "gp/p-1"
