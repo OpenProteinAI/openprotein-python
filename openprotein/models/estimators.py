@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import builtins
+import warnings
 from collections.abc import Callable
 from typing import Any, ClassVar, Generic, TypeVar, cast, overload
 
@@ -30,6 +31,32 @@ __all__ = ["GP", "SVD", "UMAP"]
 
 _F = TypeVar("_F", bound=FitFuture)
 _H = TypeVar("_H")
+
+
+class _DefaultListLimit(int):
+    """Distinguish the default limit from an explicit integer."""
+
+
+_DEFAULT_LIST_LIMIT = _DefaultListLimit(100)
+
+
+def _list_fitted(
+    read_models: Callable[[APISession, int | None, int | None], list[_H]],
+    session: APISession,
+    family: str,
+    limit: int | None,
+    offset: int | None,
+) -> list[_H]:
+    models = read_models(session, limit, offset)
+    if limit is _DEFAULT_LIST_LIMIT and len(models) == _DEFAULT_LIST_LIMIT:
+        warnings.warn(
+            f"`session.models.{family}.list()` reached the default limit of "
+            f"{_DEFAULT_LIST_LIMIT} models. "
+            "Pass `limit=None` to read all models from the requested offset.",
+            UserWarning,
+            stacklevel=3,
+        )
+    return models
 
 
 def _describe(x: Any) -> str:
@@ -200,10 +227,16 @@ class SVD(_Estimator[SVDFitFuture, SVDModel]):
 
     @classmethod
     def list(
-        cls, limit: int | None = None, offset: int | None = None
+        cls,
+        limit: int | None = _DEFAULT_LIST_LIMIT,
+        offset: int | None = None,
     ) -> builtins.list[SVDModel]:
-        """The caller's SVDs from every page, newest first, at most ``limit``."""
-        return svd._page(cls._bound(), limit, offset)
+        """List the caller's fitted SVDs newest first, starting at ``offset``.
+
+        By default, return up to 100 models and warn if the limit is reached.
+        Pass ``limit=None`` to read all pages from ``offset``.
+        """
+        return _list_fitted(svd._page, cls._bound(), "SVD", limit, offset)
 
 
 class UMAP(_Estimator[UMAPFitFuture, UMAPModel]):
@@ -279,10 +312,16 @@ class UMAP(_Estimator[UMAPFitFuture, UMAPModel]):
 
     @classmethod
     def list(
-        cls, limit: int | None = None, offset: int | None = None
+        cls,
+        limit: int | None = _DEFAULT_LIST_LIMIT,
+        offset: int | None = None,
     ) -> builtins.list[UMAPModel]:
-        """The caller's UMAPs from every page, newest first, at most ``limit``."""
-        return umap._page(cls._bound(), limit, offset)
+        """List the caller's fitted UMAPs newest first, starting at ``offset``.
+
+        By default, return up to 100 models and warn if the limit is reached.
+        Pass ``limit=None`` to read all pages from ``offset``.
+        """
+        return _list_fitted(umap._page, cls._bound(), "UMAP", limit, offset)
 
 
 def _training(
@@ -394,7 +433,13 @@ class GP(_Estimator[GPFitFuture, GPModel]):
 
     @classmethod
     def list(
-        cls, limit: int | None = None, offset: int | None = None
+        cls,
+        limit: int | None = _DEFAULT_LIST_LIMIT,
+        offset: int | None = None,
     ) -> builtins.list[GPModel]:
-        """The caller's GPs from every page, newest first, at most ``limit``."""
-        return gp._page(cls._bound(), limit, offset)
+        """List the caller's fitted GPs newest first, starting at ``offset``.
+
+        By default, return up to 100 models and warn if the limit is reached.
+        Pass ``limit=None`` to read all pages from ``offset``.
+        """
+        return _list_fitted(gp._page, cls._bound(), "GP", limit, offset)

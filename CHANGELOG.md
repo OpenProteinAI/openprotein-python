@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.18.1 (2026-11-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* **models:** GP.list(), SVD.list(), and UMAP.list() return up to 100 fitted models by default. Pass limit=None to list every model from the requested offset.
+
+### Bug Fixes
+
+* **models:** cap fitted model listings at 100 by default
+
 ## 0.18.0 (2026-11-24)
 
 
